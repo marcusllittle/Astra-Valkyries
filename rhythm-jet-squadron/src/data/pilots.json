@@ -13,7 +13,9 @@
       "label": "+10ms Perfect window",
       "value": 10
     },
-    "artPlaceholder": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+    "artPlaceholder": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+    "artUrl": "/assets/pilots/nova_starling.webp",
+    "feverCutinUrl": "/assets/cutins/nova_fever.mp4"
   },
   {
     "id": "pilot_rex",
@@ -29,7 +31,8 @@
       "label": "+5% combo score bonus",
       "value": 5
     },
-    "artPlaceholder": "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+    "artPlaceholder": "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+    "artUrl": "/assets/pilots/rex_thunderbolt.webp"
   },
   {
     "id": "pilot_yuki",
@@ -45,6 +48,7 @@
       "label": "+3s Fever duration",
       "value": 3
     },
-    "artPlaceholder": "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)"
+    "artPlaceholder": "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
+    "artUrl": "/assets/pilots/yuki_frostweaver.webp"
   }
 ]

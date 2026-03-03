@@ -15,6 +15,9 @@ export interface Pilot {
   stats: { accuracy: number; rhythm: number; endurance: number };
   perk: PilotPerk;
   artPlaceholder: string;
+  artUrl?: string;
+  cutinUrl?: string;
+  feverCutinUrl?: string;
 }
 
 export interface OutfitPerk {
@@ -29,6 +32,8 @@ export interface Outfit {
   name: string;
   rarity: "Common" | "Rare" | "SR" | "SSR";
   artPlaceholder: string;
+  artUrl?: string;
+  cutinUrl?: string;
   perk: OutfitPerk;
 }
 
