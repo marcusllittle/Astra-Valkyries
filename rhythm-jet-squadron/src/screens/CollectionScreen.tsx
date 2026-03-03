@@ -5,6 +5,7 @@
 import { useNavigate } from "react-router-dom";
 import { useGame } from "../context/GameContext";
 import { getEffectivePerkValue, canUpgrade, SHARD_THRESHOLDS } from "../lib/gacha";
+import CardArt from "../components/CardArt";
 import type { Outfit, OwnedOutfit } from "../types";
 import outfitsData from "../data/outfits.json";
 
@@ -46,12 +47,11 @@ export default function CollectionScreen() {
               key={outfit.id}
               className={`card outfit-card rarity-${outfit.rarity.toLowerCase()}`}
             >
-              <div
-                className="card-art"
-                style={{ background: outfit.artPlaceholder }}
-              >
-                <span className="card-art-label">{outfit.name}</span>
-              </div>
+              <CardArt
+                artUrl={outfit.artUrl}
+                placeholder={outfit.artPlaceholder}
+                label={outfit.name}
+              />
               <div className="card-info">
                 <strong>{outfit.name}</strong>
                 <span

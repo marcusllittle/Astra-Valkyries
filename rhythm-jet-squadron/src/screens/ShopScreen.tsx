@@ -5,6 +5,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGame } from "../context/GameContext";
+import CardArt from "../components/CardArt";
+import CutinOverlay from "../components/CutinOverlay";
 import { pullOne, pullTen, PULL_COST_1, PULL_COST_10 } from "../lib/gacha";
 import type { GachaResult } from "../types";
 
@@ -20,6 +22,7 @@ export default function ShopScreen() {
   const { save, spendCredits, applyGachaResults } = useGame();
   const [results, setResults] = useState<GachaResult[] | null>(null);
   const [isRevealing, setIsRevealing] = useState(false);
+  const [activeCutin, setActiveCutin] = useState<{ id: number; url: string } | null>(null);
 
   const doPull = (count: 1 | 10) => {
     const cost = count === 1 ? PULL_COST_1 : PULL_COST_10;
@@ -36,6 +39,14 @@ export default function ShopScreen() {
     applyGachaResults(pulled);
     setIsRevealing(true);
     setResults(pulled);
+
+    const ssrCutin = pulled.find(
+      (result) => result.outfit.rarity === "SSR" && result.outfit.cutinUrl
+    )?.outfit.cutinUrl;
+
+    if (ssrCutin) {
+      setActiveCutin({ id: Date.now(), url: ssrCutin });
+    }
   };
 
   const closeResults = () => {
@@ -94,12 +105,12 @@ export default function ShopScreen() {
                   key={i}
                   className={`gacha-result-card rarity-${r.outfit.rarity.toLowerCase()}`}
                 >
-                  <div
-                    className="card-art card-art-small"
-                    style={{ background: r.outfit.artPlaceholder }}
-                  >
-                    <span className="card-art-label">{r.outfit.name}</span>
-                  </div>
+                  <CardArt
+                    artUrl={r.outfit.artUrl}
+                    placeholder={r.outfit.artPlaceholder}
+                    label={r.outfit.name}
+                    className="card-art-small"
+                  />
                   <div className="gacha-result-info">
                     <span
                       className="rarity-text"
@@ -121,6 +132,14 @@ export default function ShopScreen() {
             </button>
           </div>
         </div>
+      )}
+
+      {activeCutin && (
+        <CutinOverlay
+          key={activeCutin.id}
+          src={activeCutin.url}
+          onComplete={() => setActiveCutin(null)}
+        />
       )}
     </div>
   );

@@ -5,6 +5,7 @@
 import { useNavigate } from "react-router-dom";
 import { useGame } from "../context/GameContext";
 import { getEffectivePerkValue } from "../lib/gacha";
+import CardArt from "../components/CardArt";
 import type { Pilot, Outfit, OwnedOutfit } from "../types";
 import pilotsData from "../data/pilots.json";
 import outfitsData from "../data/outfits.json";
@@ -45,13 +46,11 @@ export default function HangarScreen() {
               className={`card pilot-card ${pilot.id === save.selectedPilotId ? "selected" : ""}`}
               onClick={() => selectPilot(pilot.id)}
             >
-              {/* Placeholder art - hook for future images */}
-              <div
-                className="card-art"
-                style={{ background: pilot.artPlaceholder }}
-              >
-                <span className="card-art-label">{pilot.name}</span>
-              </div>
+              <CardArt
+                artUrl={pilot.artUrl}
+                placeholder={pilot.artPlaceholder}
+                label={pilot.name}
+              />
               <div className="card-info">
                 <strong>{pilot.name}</strong>
                 <div className="stats-row">
@@ -81,12 +80,11 @@ export default function HangarScreen() {
                 }`}
                 onClick={() => selectOutfit(outfit.id)}
               >
-                <div
-                  className="card-art"
-                  style={{ background: outfit.artPlaceholder }}
-                >
-                  <span className="card-art-label">{outfit.name}</span>
-                </div>
+                <CardArt
+                  artUrl={outfit.artUrl}
+                  placeholder={outfit.artPlaceholder}
+                  label={outfit.name}
+                />
                 <div className="card-info">
                   <strong>{outfit.name}</strong>
                   <div className="star-display">{"★".repeat(owned.stars)}{"☆".repeat(5 - owned.stars)}</div>

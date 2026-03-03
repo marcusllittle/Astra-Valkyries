@@ -10,6 +10,7 @@
 import { useRef, useEffect, useCallback, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useGame } from "../context/GameContext";
+import CutinOverlay from "../components/CutinOverlay";
 import { SongClock, getJudgment } from "../lib/timing";
 import { ScoreTracker } from "../lib/scoring";
 import { getEffectivePerkValue } from "../lib/gacha";
@@ -61,6 +62,11 @@ export default function PlayScreen() {
   const [feverActive, setFeverActive] = useState(false);
   const [feverMeter, setFeverMeter] = useState(0);
   const [countdown, setCountdown] = useState<number | null>(3);
+  const [activeCutin, setActiveCutin] = useState<{
+    id: number;
+    url: string;
+    allowPointerThrough: boolean;
+  } | null>(null);
 
   // Find track
   const track = (tracksData as Track[]).find((t) => t.id === trackId);
@@ -157,6 +163,19 @@ export default function PlayScreen() {
       // Auto-activate fever when ready
       if (scorer.feverReady) {
         scorer.activateFever(elapsed);
+
+        const feverCutinUrl =
+          pilot?.feverCutinUrl ??
+          pilot?.cutinUrl ??
+          outfit?.cutinUrl;
+
+        if (feverCutinUrl) {
+          setActiveCutin({
+            id: Date.now(),
+            url: feverCutinUrl,
+            allowPointerThrough: true,
+          });
+        }
       }
 
       // Show judgment flash
@@ -172,7 +191,7 @@ export default function PlayScreen() {
       setFeverActive(scorer.feverActive);
       setFeverMeter(scorer.feverMeter);
     },
-    [perfectBonus]
+    [perfectBonus, pilot, outfit]
   );
 
   // ─── Keyboard input ──────────────────────────────────
@@ -471,6 +490,15 @@ export default function PlayScreen() {
             </button>
           </div>
         </div>
+      )}
+
+      {activeCutin && (
+        <CutinOverlay
+          key={activeCutin.id}
+          src={activeCutin.url}
+          allowPointerThrough={activeCutin.allowPointerThrough}
+          onComplete={() => setActiveCutin(null)}
+        />
       )}
 
       {/* Mobile on-screen buttons */}

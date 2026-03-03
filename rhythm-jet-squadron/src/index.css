@@ -214,6 +214,7 @@ html, body {
   align-items: center;
   justify-content: center;
   position: relative;
+  overflow: hidden;
 }
 
 .card-art-label {
@@ -227,6 +228,13 @@ html, body {
 
 .card-art-small {
   height: 60px;
+}
+
+.card-art-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .card-info {
@@ -491,6 +499,27 @@ html, body {
   background: var(--bg-secondary);
   border-radius: 12px;
   border: 1px solid rgba(255,255,255,0.1);
+}
+
+.cutin-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0,0,0,0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cutin-overlay-pass-through {
+  pointer-events: none;
+}
+
+.cutin-video {
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
+  display: block;
 }
 
 /* Mobile buttons */
