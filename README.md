@@ -1,6 +1,6 @@
 # Astra-Valkyries
 
-## Rhythm Jet Squadron
+## Astra Valkyries
 
 A minimal rhythm game MVP built with Vite + React + TypeScript.
 

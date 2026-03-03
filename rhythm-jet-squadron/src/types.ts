@@ -1,4 +1,4 @@
-/** Core type definitions for Rhythm Jet Squadron */
+/** Core type definitions for Astra Valkyries */
 
 // ─── Data types ──────────────────────────────────────────
 

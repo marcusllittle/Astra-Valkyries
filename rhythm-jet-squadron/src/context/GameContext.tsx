@@ -8,7 +8,7 @@ import type { SaveData, OwnedOutfit, GameSettings, GameResult, GachaResult } fro
 import pilotsData from "../data/pilots.json";
 import { SHARD_THRESHOLDS } from "../lib/gacha";
 
-const STORAGE_KEY = "rhythm-jet-squadron-save";
+const STORAGE_KEY = "astra-valkyries-save";
 
 const DEFAULT_SETTINGS: GameSettings = {
   noteSpeed: 400,

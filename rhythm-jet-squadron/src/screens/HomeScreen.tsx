@@ -12,7 +12,7 @@ export default function HomeScreen() {
   return (
     <div className="screen home-screen">
       <div className="home-header">
-        <h1 className="game-title">Rhythm Jet Squadron</h1>
+        <h1 className="game-title">Astra Valkyries</h1>
         <p className="subtitle">Suit up. Lock in. Take flight.</p>
       </div>
 
