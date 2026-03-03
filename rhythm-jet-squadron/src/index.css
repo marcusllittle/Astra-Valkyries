@@ -1,0 +1,761 @@
+/* ─── Reset & base ─────────────────────────────────────── */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-primary: #0a0a1a;
+  --bg-secondary: #12122a;
+  --bg-card: #1a1a3e;
+  --text-primary: #e8e8f0;
+  --text-secondary: #8888aa;
+  --accent: #667eea;
+  --accent-hover: #7b93ff;
+  --danger: #ff6b6b;
+  --success: #51cf66;
+  --gold: #ffd43b;
+  --rarity-common: #a8a8a8;
+  --rarity-rare: #339af0;
+  --rarity-sr: #be4bdb;
+  --rarity-ssr: #ffd43b;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* ─── App container ───────────────────────────────────── */
+
+.app-container {
+  max-width: 520px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+/* ─── Screens ─────────────────────────────────────────── */
+
+.screen {
+  padding: 16px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.screen-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.screen-header h2 {
+  font-size: 1.4rem;
+}
+
+/* ─── Buttons ─────────────────────────────────────────── */
+
+.btn {
+  padding: 10px 20px;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: rgba(102, 126, 234, 0.15);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.btn-secondary {
+  background: transparent;
+}
+
+.btn-large {
+  padding: 14px 32px;
+  font-size: 1.2rem;
+}
+
+.btn-small {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
+.btn-back {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  background: transparent;
+}
+
+.btn-danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+
+.btn-upgrade {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #000;
+  font-weight: 600;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  margin-top: 4px;
+}
+
+/* ─── Home Screen ─────────────────────────────────────── */
+
+.home-screen {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 24px;
+}
+
+.game-title {
+  font-size: 2rem;
+  background: linear-gradient(135deg, var(--accent), #f093fb);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.home-credits {
+  font-size: 1.2rem;
+  color: var(--gold);
+}
+
+.credit-icon {
+  font-size: 1em;
+}
+
+.home-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 280px;
+}
+
+/* ─── Card grid ───────────────────────────────────────── */
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 2px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255,255,255,0.2);
+}
+
+.card.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px rgba(102, 126, 234, 0.4);
+}
+
+/* Rarity border colors */
+.rarity-rare { border-color: var(--rarity-rare); }
+.rarity-sr { border-color: var(--rarity-sr); }
+.rarity-ssr { border-color: var(--rarity-ssr); box-shadow: 0 0 8px rgba(255, 212, 59, 0.3); }
+.rarity-rare.selected { border-color: var(--rarity-rare); box-shadow: 0 0 12px rgba(51, 154, 240, 0.4); }
+.rarity-sr.selected { border-color: var(--rarity-sr); box-shadow: 0 0 12px rgba(190, 75, 219, 0.4); }
+.rarity-ssr.selected { border-color: var(--rarity-ssr); box-shadow: 0 0 12px rgba(255, 212, 59, 0.5); }
+
+.card-art {
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.card-art-label {
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.9);
+  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  text-align: center;
+  padding: 4px;
+}
+
+.card-art-small {
+  height: 60px;
+}
+
+.card-info {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.8rem;
+}
+
+.stats-row {
+  display: flex;
+  gap: 8px;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.star-display {
+  color: var(--gold);
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+}
+
+.rarity-badge {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+}
+
+.rarity-text {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.perk-label {
+  font-size: 0.7rem;
+  color: var(--accent);
+}
+
+.shard-progress {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.empty-msg {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 40px 0;
+}
+
+/* ─── Hangar ──────────────────────────────────────────── */
+
+.hangar-section {
+  margin-bottom: 24px;
+}
+
+.hangar-section h3 {
+  margin-bottom: 12px;
+  font-size: 1rem;
+  color: var(--text-secondary);
+}
+
+.hangar-summary {
+  margin-top: auto;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.summary-item {
+  font-size: 0.9rem;
+}
+
+/* ─── Track Select ────────────────────────────────────── */
+
+.track-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.track-card {
+  display: flex;
+  align-items: center;
+  background: var(--bg-card);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.track-card:hover {
+  border-color: var(--accent);
+  background: rgba(102, 126, 234, 0.08);
+}
+
+.track-info {
+  flex: 1;
+}
+
+.track-info h3 {
+  font-size: 1.1rem;
+  margin-bottom: 4px;
+}
+
+.track-artist {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.track-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.difficulty {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+
+.difficulty-easy { background: rgba(81, 207, 102, 0.2); color: var(--success); }
+.difficulty-normal { background: rgba(51, 154, 240, 0.2); color: var(--rarity-rare); }
+.difficulty-hard { background: rgba(255, 107, 107, 0.2); color: var(--danger); }
+
+.track-high-score {
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: var(--gold);
+}
+
+.track-play-arrow {
+  font-size: 1.5rem;
+  color: var(--accent);
+  margin-left: 12px;
+}
+
+/* ─── Play Screen ─────────────────────────────────────── */
+
+.play-screen {
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+  align-items: center;
+}
+
+.play-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  width: 100%;
+  background: rgba(0,0,0,0.6);
+  z-index: 10;
+}
+
+.hud-score {
+  font-size: 1.3rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-combo .combo-text {
+  font-size: 0.85rem;
+  color: var(--gold);
+}
+
+.hud-track-title {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.fever-bar-container {
+  width: 100%;
+  height: 6px;
+  background: rgba(255,255,255,0.1);
+  position: relative;
+}
+
+.fever-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #f093fb);
+  transition: width 0.1s;
+}
+
+.fever-bar.fever-active {
+  background: linear-gradient(90deg, #ffd43b, #f5576c, #ffd43b);
+  animation: feverPulse 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes feverPulse {
+  from { opacity: 0.8; }
+  to { opacity: 1; }
+}
+
+.fever-label {
+  position: absolute;
+  top: -1px;
+  right: 8px;
+  font-size: 0.55rem;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.play-canvas {
+  display: block;
+}
+
+/* Countdown */
+.countdown-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.5);
+  z-index: 20;
+}
+
+.countdown-number {
+  font-size: 6rem;
+  font-weight: 700;
+  color: var(--gold);
+  animation: countPop 0.8s ease-out;
+}
+
+@keyframes countPop {
+  from { transform: scale(2); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Pause */
+.pause-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.7);
+  z-index: 20;
+}
+
+.pause-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 32px;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Mobile buttons */
+.mobile-buttons {
+  display: flex;
+  width: 100%;
+  gap: 4px;
+  padding: 4px;
+}
+
+.mobile-lane-btn {
+  flex: 1;
+  height: 64px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #fff;
+  opacity: 0.8;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.mobile-lane-btn:active {
+  opacity: 1;
+  transform: scale(0.95);
+}
+
+/* ─── Results Screen ──────────────────────────────────── */
+
+.results-screen {
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  text-align: center;
+}
+
+.grade-display {
+  font-size: 5rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.results-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.result-item {
+  background: var(--bg-card);
+  padding: 12px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+.result-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.result-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.perfect-count { color: var(--gold); }
+.good-count { color: var(--success); }
+.miss-count { color: var(--danger); }
+
+.credits-earned {
+  font-size: 1.3rem;
+  color: var(--gold);
+}
+
+.results-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+/* ─── Shop Screen ─────────────────────────────────────── */
+
+.shop-screen {
+  gap: 20px;
+}
+
+.shop-credits {
+  text-align: center;
+  font-size: 1.3rem;
+  color: var(--gold);
+}
+
+.shop-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.btn-gacha {
+  padding: 20px 28px;
+  border-radius: 12px;
+  text-align: center;
+  background: linear-gradient(135deg, var(--bg-card), var(--bg-secondary));
+  border: 2px solid var(--accent);
+}
+
+.btn-gacha-10 {
+  border-color: var(--rarity-sr);
+}
+
+.gacha-btn-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.gacha-btn-cost {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.shop-rates {
+  text-align: center;
+}
+
+.shop-rates h4 {
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.rate-list {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  font-size: 0.8rem;
+}
+
+/* Gacha results modal */
+.gacha-results-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+}
+
+.gacha-results-modal {
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 460px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.gacha-results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+.gacha-result-card {
+  background: var(--bg-card);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  text-align: center;
+}
+
+.gacha-result-info {
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.75rem;
+}
+
+.new-badge {
+  color: var(--success);
+  font-weight: 700;
+}
+
+.shard-badge {
+  color: var(--text-secondary);
+}
+
+/* ─── Settings Screen ─────────────────────────────────── */
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg-card);
+  border-radius: 8px;
+}
+
+.setting-row label {
+  width: 120px;
+  font-size: 0.9rem;
+}
+
+.setting-row input[type="range"] {
+  flex: 1;
+  accent-color: var(--accent);
+}
+
+.setting-row span {
+  width: 60px;
+  text-align: right;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.settings-danger {
+  margin-top: auto;
+  padding-top: 32px;
+}
+
+.settings-danger h3 {
+  font-size: 0.9rem;
+  color: var(--danger);
+  margin-bottom: 8px;
+}
+
+/* ─── Collection Screen ───────────────────────────────── */
+
+.collection-screen .card-grid {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+
+/* ─── Responsive ──────────────────────────────────────── */
+
+@media (max-width: 400px) {
+  .card-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .rate-list {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .results-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}

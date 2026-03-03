@@ -1,0 +1,50 @@
+[
+  {
+    "id": "pilot_nova",
+    "name": "Nova Starling",
+    "description": "A fearless squadron leader with unmatched precision. Her calm demeanor under pressure inspires the entire fleet.",
+    "stats": {
+      "accuracy": 8,
+      "rhythm": 7,
+      "endurance": 6
+    },
+    "perk": {
+      "type": "perfectWindow",
+      "label": "+10ms Perfect window",
+      "value": 10
+    },
+    "artPlaceholder": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+  },
+  {
+    "id": "pilot_rex",
+    "name": "Rex Thunderbolt",
+    "description": "An ex-racer turned pilot who thrives on speed. His aggressive flying style pushes combos to the limit.",
+    "stats": {
+      "accuracy": 5,
+      "rhythm": 9,
+      "endurance": 7
+    },
+    "perk": {
+      "type": "comboBonus",
+      "label": "+5% combo score bonus",
+      "value": 5
+    },
+    "artPlaceholder": "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+  },
+  {
+    "id": "pilot_yuki",
+    "name": "Yuki Frostweaver",
+    "description": "A prodigious musician and ace pilot. She channels her musical talent into devastating rhythm attacks.",
+    "stats": {
+      "accuracy": 9,
+      "rhythm": 6,
+      "endurance": 8
+    },
+    "perk": {
+      "type": "feverDuration",
+      "label": "+3s Fever duration",
+      "value": 3
+    },
+    "artPlaceholder": "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)"
+  }
+]
