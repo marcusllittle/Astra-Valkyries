@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { resolveAssetUrl } from "../lib/assetUrl";
 
 interface CutinOverlayProps {
   src: string;
@@ -12,6 +13,7 @@ export default function CutinOverlay({
   allowPointerThrough = false,
 }: CutinOverlayProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const resolvedSrc = resolveAssetUrl(src) ?? src;
 
   useEffect(() => {
     const video = videoRef.current;
@@ -21,7 +23,7 @@ export default function CutinOverlay({
     void video.play().catch(() => {
       onComplete();
     });
-  }, [src, onComplete]);
+  }, [resolvedSrc, onComplete]);
 
   return (
     <div
@@ -30,7 +32,7 @@ export default function CutinOverlay({
       <video
         ref={videoRef}
         className="cutin-video"
-        src={src}
+        src={resolvedSrc}
         autoPlay
         muted
         playsInline

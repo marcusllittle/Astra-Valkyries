@@ -6,7 +6,10 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import type { SaveData, OwnedOutfit, GameSettings, GameResult, GachaResult } from "../types";
 import pilotsData from "../data/pilots.json";
+import shipsData from "../data/ships.json";
+import outfitsData from "../data/outfits.json";
 import { SHARD_THRESHOLDS } from "../lib/gacha";
+import { SHMUP_MAPS } from "../lib/shmupWaves";
 
 const STORAGE_KEY = "astra-valkyries-save";
 
@@ -17,16 +20,42 @@ const DEFAULT_SETTINGS: GameSettings = {
   showFPS: false,
 };
 
-/** Default save data: all pilots unlocked, 1 starter outfit, some credits */
+function getStarterOutfits(): OwnedOutfit[] {
+  const commons = outfitsData
+    .filter((outfit) => outfit.rarity === "Common")
+    .slice(0, 3)
+    .map((outfit) => outfit.id);
+  const rares = outfitsData.filter((outfit) => outfit.rarity === "Rare");
+  const srPilotSpecific = outfitsData.filter(
+    (outfit) => outfit.rarity === "SR" && Boolean(outfit.pilotId)
+  );
+
+  const rare = rares[Math.floor(Math.random() * rares.length)];
+  const sr = srPilotSpecific[Math.floor(Math.random() * srPilotSpecific.length)];
+
+  const starterIds = [commons[0], commons[1], commons[2], rare?.id, sr?.id].filter(
+    (id): id is string => Boolean(id)
+  );
+
+  return [...new Set(starterIds)].map((outfitId) => ({
+    outfitId,
+    stars: 1,
+    shards: 0,
+  }));
+}
+
+/** Default save data: all pilots and ships unlocked, starter outfit bundle, some credits */
 function getDefaultSave(): SaveData {
+  const starterOutfits = getStarterOutfits();
   return {
     credits: 500,
     ownedPilots: pilotsData.map((p) => p.id),
-    ownedOutfits: [
-      { outfitId: "outfit_01", stars: 1, shards: 0 }, // Standard Flight Suit
-    ],
+    ownedShips: shipsData.map((ship) => ship.id),
+    ownedOutfits: starterOutfits,
     selectedPilotId: pilotsData[0].id,
-    selectedOutfitId: "outfit_01",
+    selectedShipId: shipsData[0].id,
+    selectedMapId: SHMUP_MAPS[0]?.id ?? null,
+    selectedOutfitId: starterOutfits[0]?.outfitId ?? null,
     highScores: {},
     settings: { ...DEFAULT_SETTINGS },
   };
@@ -37,10 +66,17 @@ function loadSave(): SaveData {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return getDefaultSave();
     const parsed = JSON.parse(raw) as SaveData;
+    const defaultSave = getDefaultSave();
+    const validMapIds = new Set(SHMUP_MAPS.map((map) => map.id));
+    const selectedMapId =
+      parsed.selectedMapId && validMapIds.has(parsed.selectedMapId)
+        ? parsed.selectedMapId
+        : defaultSave.selectedMapId;
     // Merge with defaults for forward compatibility
     return {
-      ...getDefaultSave(),
+      ...defaultSave,
       ...parsed,
+      selectedMapId,
       settings: { ...DEFAULT_SETTINGS, ...parsed.settings },
     };
   } catch {
@@ -54,6 +90,8 @@ interface GameContextValue {
   save: SaveData;
   // Selection
   selectPilot: (id: string) => void;
+  selectShip: (id: string) => void;
+  selectMap: (id: string) => void;
   selectOutfit: (id: string) => void;
   // Economy
   addCredits: (amount: number) => void;
@@ -82,6 +120,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const selectPilot = useCallback((id: string) => {
     setSave((s) => ({ ...s, selectedPilotId: id }));
+  }, []);
+
+  const selectShip = useCallback((id: string) => {
+    setSave((s) => ({ ...s, selectedShipId: id }));
+  }, []);
+
+  const selectMap = useCallback((id: string) => {
+    setSave((s) => ({ ...s, selectedMapId: id }));
   }, []);
 
   const selectOutfit = useCallback((id: string) => {
@@ -140,7 +186,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       const best = s.highScores[result.trackId] ?? 0;
       return {
         ...s,
-        credits: s.credits + result.creditsEarned,
+        credits: s.credits + (result.mode === "rhythm" ? result.creditsEarned : 0),
         highScores: {
           ...s.highScores,
           [result.trackId]: Math.max(best, result.score),
@@ -165,6 +211,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       value={{
         save,
         selectPilot,
+        selectShip,
+        selectMap,
         selectOutfit,
         addCredits,
         spendCredits,

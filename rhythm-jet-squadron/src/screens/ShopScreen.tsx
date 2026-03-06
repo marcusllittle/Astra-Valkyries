@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { useGame } from "../context/GameContext";
 import CardArt from "../components/CardArt";
 import CutinOverlay from "../components/CutinOverlay";
+import { summarizeOutfitKit } from "../lib/outfitKits";
 import { pullOne, pullTen, PULL_COST_1, PULL_COST_10 } from "../lib/gacha";
 import type { GachaResult } from "../types";
 
@@ -17,12 +18,20 @@ const RARITY_COLORS: Record<string, string> = {
   SSR: "#ffd43b",
 };
 
+const RARITY_RANK: Record<string, number> = {
+  Common: 1,
+  Rare: 2,
+  SR: 3,
+  SSR: 4,
+};
+
 export default function ShopScreen() {
   const navigate = useNavigate();
   const { save, spendCredits, applyGachaResults } = useGame();
   const [results, setResults] = useState<GachaResult[] | null>(null);
   const [isRevealing, setIsRevealing] = useState(false);
   const [activeCutin, setActiveCutin] = useState<{ id: number; url: string } | null>(null);
+  const [previewResult, setPreviewResult] = useState<GachaResult | null>(null);
 
   const doPull = (count: 1 | 10) => {
     const cost = count === 1 ? PULL_COST_1 : PULL_COST_10;
@@ -39,6 +48,10 @@ export default function ShopScreen() {
     applyGachaResults(pulled);
     setIsRevealing(true);
     setResults(pulled);
+    const featured = [...pulled].sort(
+      (left, right) => RARITY_RANK[right.outfit.rarity] - RARITY_RANK[left.outfit.rarity]
+    )[0] ?? null;
+    setPreviewResult(featured);
 
     const ssrCutin = pulled.find(
       (result) => result.outfit.rarity === "SSR" && result.outfit.cutinUrl
@@ -52,46 +65,61 @@ export default function ShopScreen() {
   const closeResults = () => {
     setResults(null);
     setIsRevealing(false);
+    setPreviewResult(null);
   };
 
   return (
     <div className="screen shop-screen">
       <div className="screen-header">
         <button className="btn btn-back" onClick={() => navigate("/")}>← Back</button>
-        <h2>Outfit Shop</h2>
-      </div>
-
-      <div className="shop-credits">
-        <span className="credit-icon">✦</span> {save.credits} Credits
-      </div>
-
-      <div className="shop-buttons">
-        <button
-          className="btn btn-gacha"
-          onClick={() => doPull(1)}
-          disabled={save.credits < PULL_COST_1 || isRevealing}
-        >
-          <div className="gacha-btn-title">1-Pull</div>
-          <div className="gacha-btn-cost">{PULL_COST_1} Credits</div>
-        </button>
-        <button
-          className="btn btn-gacha btn-gacha-10"
-          onClick={() => doPull(10)}
-          disabled={save.credits < PULL_COST_10 || isRevealing}
-        >
-          <div className="gacha-btn-title">10-Pull</div>
-          <div className="gacha-btn-cost">{PULL_COST_10} Credits</div>
-        </button>
-      </div>
-
-      <div className="shop-rates">
-        <h4>Pull Rates</h4>
-        <div className="rate-list">
-          <span style={{ color: RARITY_COLORS.Common }}>Common: 70%</span>
-          <span style={{ color: RARITY_COLORS.Rare }}>Rare: 20%</span>
-          <span style={{ color: RARITY_COLORS.SR }}>SR: 9%</span>
-          <span style={{ color: RARITY_COLORS.SSR }}>SSR: 1%</span>
+        <div className="header-title-stack">
+          <h2>Outfit Shop</h2>
+          <p>Acquire pilot-specific kits, rare cosmetics, and premium deploy loadouts.</p>
         </div>
+      </div>
+
+      <section className="shop-hero panel-surface">
+        <div className="shop-credits">
+          <span className="credit-icon">✦</span> {save.credits.toLocaleString()} Credits
+        </div>
+        <p className="shop-flavor">
+          Limited sortie wardrobe uplink is active. High-rarity pulls unlock advanced shmup kits and cut-ins.
+        </p>
+      </section>
+
+      <div className="shop-layout">
+        <section className="shop-pulls panel-surface">
+          <h3>Summon Bay</h3>
+          <div className="shop-buttons">
+            <button
+              className="btn btn-gacha"
+              onClick={() => doPull(1)}
+              disabled={save.credits < PULL_COST_1 || isRevealing}
+            >
+              <div className="gacha-btn-title">1-Pull</div>
+              <div className="gacha-btn-cost">{PULL_COST_1} Credits</div>
+            </button>
+            <button
+              className="btn btn-gacha btn-gacha-10"
+              onClick={() => doPull(10)}
+              disabled={save.credits < PULL_COST_10 || isRevealing}
+            >
+              <div className="gacha-btn-title">10-Pull</div>
+              <div className="gacha-btn-cost">{PULL_COST_10} Credits</div>
+            </button>
+          </div>
+        </section>
+
+        <section className="shop-rates panel-surface">
+          <h4>Drop Rates</h4>
+          <div className="rate-list">
+            <span style={{ color: RARITY_COLORS.Common }}>Common: 70%</span>
+            <span style={{ color: RARITY_COLORS.Rare }}>Rare: 20%</span>
+            <span style={{ color: RARITY_COLORS.SR }}>SR: 9%</span>
+            <span style={{ color: RARITY_COLORS.SSR }}>SSR: 1%</span>
+          </div>
+          <p className="shop-note">SSR reveals can trigger dedicated cut-in videos.</p>
+        </section>
       </div>
 
       {/* Pull results modal */}
@@ -104,11 +132,13 @@ export default function ShopScreen() {
                 <div
                   key={i}
                   className={`gacha-result-card rarity-${r.outfit.rarity.toLowerCase()}`}
+                  onClick={() => setPreviewResult(r)}
                 >
                   <CardArt
+                    title={r.outfit.name}
                     artUrl={r.outfit.artUrl}
-                    placeholder={r.outfit.artPlaceholder}
-                    label={r.outfit.name}
+                    artPlaceholder={r.outfit.artPlaceholder}
+                    rarity={r.outfit.rarity}
                     className="card-art-small"
                   />
                   <div className="gacha-result-info">
@@ -129,6 +159,40 @@ export default function ShopScreen() {
             </div>
             <button className="btn btn-primary" onClick={closeResults}>
               OK
+            </button>
+          </div>
+        </div>
+      )}
+
+      {previewResult && (
+        <div className="card-preview-overlay" onClick={() => setPreviewResult(null)}>
+          <div className="card-preview-modal panel-surface" onClick={(event) => event.stopPropagation()}>
+            <div className={`card outfit-card card-preview-card rarity-${previewResult.outfit.rarity.toLowerCase()}`}>
+              <CardArt
+                title={previewResult.outfit.name}
+                artUrl={previewResult.outfit.artUrl}
+                artPlaceholder={previewResult.outfit.artPlaceholder}
+                rarity={previewResult.outfit.rarity}
+                className="card-preview-art"
+              />
+              <div className="card-info">
+                <strong className="card-title">{previewResult.outfit.name}</strong>
+                <span
+                  className="rarity-text"
+                  style={{ color: RARITY_COLORS[previewResult.outfit.rarity] }}
+                >
+                  {previewResult.outfit.rarity}
+                </span>
+                <div className="perk-label">{summarizeOutfitKit(previewResult.outfit)}</div>
+                {previewResult.isNew ? (
+                  <span className="new-badge">NEW Pull</span>
+                ) : (
+                  <span className="shard-badge">Duplicate • +{previewResult.shardsGained} shards</span>
+                )}
+              </div>
+            </div>
+            <button className="btn btn-secondary" onClick={() => setPreviewResult(null)}>
+              Close
             </button>
           </div>
         </div>

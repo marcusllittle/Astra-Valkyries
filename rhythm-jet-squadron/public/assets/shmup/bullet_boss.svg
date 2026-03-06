@@ -1,0 +1,19 @@
+<svg width="224" height="112" viewBox="0 0 224 112" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bossTrail" x1="18" y1="56" x2="208" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5A2400" stop-opacity="0"/>
+      <stop offset="0.18" stop-color="#FF8A1F" stop-opacity="0.52"/>
+      <stop offset="0.68" stop-color="#FFD166" stop-opacity="0.96"/>
+      <stop offset="1" stop-color="#FFF8E1"/>
+    </linearGradient>
+    <radialGradient id="bossFlare" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(180 56) rotate(180) scale(40 28)">
+      <stop stop-color="#FFF8E1"/>
+      <stop offset="0.5" stop-color="#FFD166" stop-opacity="0.96"/>
+      <stop offset="1" stop-color="#FF922B" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="102" cy="56" rx="84" ry="18" fill="url(#bossTrail)"/>
+  <ellipse cx="142" cy="56" rx="50" ry="12" fill="#FFE8B0" fill-opacity="0.9"/>
+  <ellipse cx="182" cy="56" rx="28" ry="20" fill="url(#bossFlare)"/>
+  <path d="M138 56L198 56" stroke="#FFF8E1" stroke-width="12" stroke-linecap="round"/>
+</svg>

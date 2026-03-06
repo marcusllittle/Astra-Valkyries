@@ -1,0 +1,43 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="hull" x1="128" y1="26" x2="128" y2="214" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FBFF"/>
+      <stop offset="0.3" stop-color="#C7D3E8"/>
+      <stop offset="0.68" stop-color="#6C7C98"/>
+      <stop offset="1" stop-color="#1E2738"/>
+    </linearGradient>
+    <linearGradient id="wing" x1="128" y1="76" x2="128" y2="218" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7387A8"/>
+      <stop offset="1" stop-color="#161C27"/>
+    </linearGradient>
+    <linearGradient id="cockpit" x1="128" y1="54" x2="128" y2="132" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B8F2FF"/>
+      <stop offset="1" stop-color="#1877B7"/>
+    </linearGradient>
+    <radialGradient id="engine" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(128 204) rotate(90) scale(34 28)">
+      <stop stop-color="#B1FFFF"/>
+      <stop offset="0.55" stop-color="#45C7FF" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#45C7FF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow" x="74" y="170" width="108" height="68" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
+  </defs>
+  <g opacity="0.78" filter="url(#glow)">
+    <ellipse cx="128" cy="204" rx="34" ry="20" fill="url(#engine)"/>
+  </g>
+  <path d="M128 20L148 72L166 148L128 222L90 148L108 72L128 20Z" fill="url(#hull)"/>
+  <path d="M108 72L78 118L58 170L108 156L118 102L108 72Z" fill="url(#wing)"/>
+  <path d="M148 72L178 118L198 170L148 156L138 102L148 72Z" fill="url(#wing)"/>
+  <path d="M128 54L140 90L128 138L116 90L128 54Z" fill="url(#cockpit)"/>
+  <path d="M128 32L138 66H118L128 32Z" fill="#F3F7FF"/>
+  <path d="M128 142L146 188L128 214L110 188L128 142Z" fill="#2B3548"/>
+  <path d="M70 154L44 184L92 178L98 156L70 154Z" fill="#283241"/>
+  <path d="M186 154L212 184L164 178L158 156L186 154Z" fill="#283241"/>
+  <path d="M128 74L138 104H118L128 74Z" fill="#E8F8FF"/>
+  <path d="M108 72L128 88L148 72" stroke="#DCE6F6" stroke-width="4" stroke-linecap="round"/>
+  <path d="M96 116L128 128L160 116" stroke="#5FB4FF" stroke-width="4" stroke-linecap="round" opacity="0.68"/>
+  <path d="M108 158L128 172L148 158" stroke="#8DD8FF" stroke-width="3" stroke-linecap="round" opacity="0.56"/>
+  <path d="M116 184H140" stroke="#59D0FF" stroke-width="5" stroke-linecap="round"/>
+  <path d="M126 194H130" stroke="#F3FDFF" stroke-width="6" stroke-linecap="round"/>
+</svg>

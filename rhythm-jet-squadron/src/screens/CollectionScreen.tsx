@@ -2,12 +2,15 @@
  * Collection Screen - View all owned outfits with details, upgrade with shards.
  */
 
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGame } from "../context/GameContext";
-import { getEffectivePerkValue, canUpgrade, SHARD_THRESHOLDS } from "../lib/gacha";
+import { canUpgrade, SHARD_THRESHOLDS } from "../lib/gacha";
+import { summarizeOutfitKit } from "../lib/outfitKits";
 import CardArt from "../components/CardArt";
-import type { Outfit, OwnedOutfit } from "../types";
+import type { Outfit, OwnedOutfit, Pilot } from "../types";
 import outfitsData from "../data/outfits.json";
+import pilotsData from "../data/pilots.json";
 
 const RARITY_COLORS: Record<string, string> = {
   Common: "#a8a8a8",
@@ -19,62 +22,87 @@ const RARITY_COLORS: Record<string, string> = {
 export default function CollectionScreen() {
   const navigate = useNavigate();
   const { save, upgradeOutfit } = useGame();
+  const [previewOutfitId, setPreviewOutfitId] = useState<string | null>(null);
 
   const allOutfits = outfitsData as Outfit[];
+  const pilots = pilotsData as Pilot[];
+  const pilotNameById = new Map(pilots.map((pilot) => [pilot.id, pilot.name]));
   const ownedMap = new Map<string, OwnedOutfit>();
   save.ownedOutfits.forEach((o) => ownedMap.set(o.outfitId, o));
 
-  const ownedOutfits = allOutfits
-    .filter((o) => ownedMap.has(o.id))
-    .map((o) => ({ outfit: o, owned: ownedMap.get(o.id)! }));
+  const ownedCount = allOutfits.filter((outfit) => ownedMap.has(outfit.id)).length;
+  const previewOutfit = previewOutfitId
+    ? allOutfits.find((outfit) => outfit.id === previewOutfitId) ?? null
+    : null;
+  const previewOwned = previewOutfit ? ownedMap.get(previewOutfit.id) : undefined;
+  const previewIsOwned = Boolean(previewOwned);
+  const previewNextThreshold = previewOwned && previewOwned.stars < 5
+    ? SHARD_THRESHOLDS[previewOwned.stars + 1]
+    : null;
+  const previewUpgradable = previewOwned ? canUpgrade(previewOwned) : false;
 
   return (
     <div className="screen collection-screen">
       <div className="screen-header">
         <button className="btn btn-back" onClick={() => navigate("/")}>← Back</button>
-        <h2>Collection ({ownedOutfits.length}/{allOutfits.length})</h2>
+        <div className="header-title-stack">
+          <h2>Collection ({ownedCount}/{allOutfits.length})</h2>
+          <p>Review wardrobe progression and upgrade owned pilot kits.</p>
+        </div>
       </div>
 
-      <div className="card-grid">
-        {ownedOutfits.map(({ outfit, owned }) => {
-          const perkVal = getEffectivePerkValue(outfit, owned.stars);
-          const upgradable = canUpgrade(owned);
-          const nextThreshold =
-            owned.stars < 5 ? SHARD_THRESHOLDS[owned.stars + 1] : null;
+      <div className="card-grid collection-grid">
+        {allOutfits.map((outfit) => {
+          const owned = ownedMap.get(outfit.id);
+          const isOwned = Boolean(owned);
+          const upgradable = owned ? canUpgrade(owned) : false;
+          const nextThreshold = owned && owned.stars < 5
+            ? SHARD_THRESHOLDS[owned.stars + 1]
+            : null;
 
           return (
             <div
               key={outfit.id}
-              className={`card outfit-card rarity-${outfit.rarity.toLowerCase()}`}
+              className={`card outfit-card rarity-${outfit.rarity.toLowerCase()} ${isOwned ? "" : "card-locked"}`}
+              onClick={() => setPreviewOutfitId(outfit.id)}
             >
               <CardArt
+                title={outfit.name}
                 artUrl={outfit.artUrl}
-                placeholder={outfit.artPlaceholder}
-                label={outfit.name}
+                artPlaceholder={outfit.artPlaceholder}
+                rarity={outfit.rarity}
               />
               <div className="card-info">
-                <strong>{outfit.name}</strong>
+                <strong className="card-title">{outfit.name}</strong>
                 <span
                   className="rarity-text"
                   style={{ color: RARITY_COLORS[outfit.rarity] }}
                 >
-                  {outfit.rarity}
+                  {outfit.rarity}{!isOwned ? " • Locked" : ""}
                 </span>
                 <div className="star-display">
-                  {"★".repeat(owned.stars)}{"☆".repeat(5 - owned.stars)}
+                  {isOwned && owned
+                    ? `${"★".repeat(owned.stars)}${"☆".repeat(5 - owned.stars)}`
+                    : "☆☆☆☆☆"}
                 </div>
-                <div className="perk-label">
-                  {outfit.perk.label.replace("{v}", String(perkVal))}
-                </div>
-                {nextThreshold && (
-                  <div className="shard-progress">
-                    Shards: {owned.shards}/{nextThreshold}
+                {outfit.pilotId && (
+                  <div className="rarity-badge">
+                    Pilot-Specific: {pilotNameById.get(outfit.pilotId) ?? outfit.pilotId}
                   </div>
                 )}
-                {upgradable && (
+                <div className="perk-label">{summarizeOutfitKit(outfit)}</div>
+                {nextThreshold && (
+                  <div className="shard-progress">
+                    Shards: {owned?.shards ?? 0}/{nextThreshold}
+                  </div>
+                )}
+                {isOwned && upgradable && (
                   <button
                     className="btn btn-upgrade"
-                    onClick={() => upgradeOutfit(outfit.id)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      upgradeOutfit(outfit.id);
+                    }}
                   >
                     ★ Upgrade
                   </button>
@@ -85,8 +113,62 @@ export default function CollectionScreen() {
         })}
       </div>
 
-      {ownedOutfits.length === 0 && (
+      {ownedCount === 0 && (
         <p className="empty-msg">No outfits yet. Visit the Shop to pull!</p>
+      )}
+
+      {previewOutfit && (
+        <div className="card-preview-overlay" onClick={() => setPreviewOutfitId(null)}>
+          <div className="card-preview-modal panel-surface" onClick={(event) => event.stopPropagation()}>
+            <div
+              className={`card outfit-card card-preview-card rarity-${previewOutfit.rarity.toLowerCase()} ${previewIsOwned ? "" : "card-locked"}`}
+            >
+              <CardArt
+                title={previewOutfit.name}
+                artUrl={previewOutfit.artUrl}
+                artPlaceholder={previewOutfit.artPlaceholder}
+                rarity={previewOutfit.rarity}
+                className="card-preview-art"
+              />
+              <div className="card-info">
+                <strong className="card-title">{previewOutfit.name}</strong>
+                <span
+                  className="rarity-text"
+                  style={{ color: RARITY_COLORS[previewOutfit.rarity] }}
+                >
+                  {previewOutfit.rarity}{!previewIsOwned ? " • Locked" : ""}
+                </span>
+                <div className="star-display">
+                  {previewOwned
+                    ? `${"★".repeat(previewOwned.stars)}${"☆".repeat(5 - previewOwned.stars)}`
+                    : "☆☆☆☆☆"}
+                </div>
+                {previewOutfit.pilotId && (
+                  <div className="rarity-badge">
+                    Pilot-Specific: {pilotNameById.get(previewOutfit.pilotId) ?? previewOutfit.pilotId}
+                  </div>
+                )}
+                <div className="perk-label">{summarizeOutfitKit(previewOutfit)}</div>
+                {previewNextThreshold && (
+                  <div className="shard-progress">
+                    Shards: {previewOwned?.shards ?? 0}/{previewNextThreshold}
+                  </div>
+                )}
+                {previewIsOwned && previewUpgradable && (
+                  <button
+                    className="btn btn-upgrade"
+                    onClick={() => upgradeOutfit(previewOutfit.id)}
+                  >
+                    ★ Upgrade
+                  </button>
+                )}
+              </div>
+            </div>
+            <button className="btn btn-secondary" onClick={() => setPreviewOutfitId(null)}>
+              Close
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

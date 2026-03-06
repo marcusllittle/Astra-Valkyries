@@ -1,0 +1,86 @@
+[
+  {
+    "id": "ship_astra_interceptor",
+    "name": "Astra Interceptor",
+    "className": "Interceptor",
+    "manufacturer": "Icarus Dynamics",
+    "description": "A fast-response frame tuned for lane control and clean routing. It keeps pressure high without sacrificing precision.",
+    "stats": {
+      "mobility": 9,
+      "firepower": 6,
+      "control": 8
+    },
+    "artPlaceholder": "linear-gradient(135deg, #6fb1fc 0%, #4364f7 45%, #1f2f98 100%)",
+    "artUrl": "/assets/ships/astra_interceptor.png",
+    "spriteUrl": "/assets/shmup/ships/astra_interceptor_sprite.png",
+    "trait": {
+      "label": "Slipstream Core",
+      "description": "Higher strafe speed and faster overdrive charging keep multiplier routes active."
+    },
+    "modifiers": {
+      "maxHp": 0,
+      "moveSpeedPct": 12,
+      "overdriveRate": 8,
+      "overdriveDuration": 0,
+      "scoreMult": 4,
+      "scoreFlat": 0,
+      "comboBonus": 2
+    }
+  },
+  {
+    "id": "ship_valkyrie_lancer",
+    "name": "Valkyrie Lancer",
+    "className": "Assault",
+    "manufacturer": "Sol Frontier Works",
+    "description": "An offensive spearhead frame built to cash out pressure. Less forgiving, but its routing ceiling is higher.",
+    "stats": {
+      "mobility": 6,
+      "firepower": 9,
+      "control": 6
+    },
+    "artPlaceholder": "linear-gradient(135deg, #ff9966 0%, #ff5e62 55%, #7f1d1d 100%)",
+    "artUrl": "/assets/ships/valkyrie_lancer.png",
+    "spriteUrl": "/assets/shmup/ships/valkyrie_lancer_sprite.png",
+    "trait": {
+      "label": "Frontline Vector",
+      "description": "Pushes passive score multiplier and combo-route growth for aggressive scoring."
+    },
+    "modifiers": {
+      "maxHp": 0,
+      "moveSpeedPct": -4,
+      "overdriveRate": 0,
+      "overdriveDuration": 1,
+      "scoreMult": 8,
+      "scoreFlat": 0,
+      "comboBonus": 4
+    }
+  },
+  {
+    "id": "ship_seraph_guard",
+    "name": "Seraph Guard",
+    "className": "Bulwark",
+    "manufacturer": "Crown Orbital",
+    "description": "A heavier command frame that trades speed for uptime. It stabilizes runs and gives overdrive more room to work.",
+    "stats": {
+      "mobility": 5,
+      "firepower": 7,
+      "control": 9
+    },
+    "artPlaceholder": "linear-gradient(135deg, #d3cce3 0%, #8ec5fc 45%, #2b5876 100%)",
+    "artUrl": "/assets/ships/seraph_guard.png",
+    "spriteUrl": "/assets/shmup/ships/seraph_guard_sprite.png",
+    "trait": {
+      "label": "Aegis Loop",
+      "description": "Extra hull integrity and longer overdrive windows make high-value chains easier to preserve."
+    },
+    "modifiers": {
+      "maxHp": 1,
+      "moveSpeedPct": -8,
+      "overdriveRate": 5,
+      "overdriveDuration": 2,
+      "scoreMult": 2,
+      "scoreFlat": 6,
+      "comboBonus": 0
+    }
+  }
+]

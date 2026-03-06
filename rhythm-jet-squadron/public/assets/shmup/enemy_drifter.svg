@@ -1,0 +1,22 @@
+<svg width="192" height="192" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="core" x1="96" y1="36" x2="96" y2="156" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFD4E6"/>
+      <stop offset="0.42" stop-color="#FF76AF"/>
+      <stop offset="1" stop-color="#5D102C"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="96" y1="44" x2="96" y2="150" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3B0D1D"/>
+      <stop offset="1" stop-color="#1B0A13"/>
+    </linearGradient>
+  </defs>
+  <path d="M96 24L136 72L156 132L96 168L36 132L56 72L96 24Z" fill="url(#core)"/>
+  <path d="M96 48L118 86L96 134L74 86L96 48Z" fill="#18070D"/>
+  <path d="M56 74L32 110L68 118L76 88L56 74Z" fill="url(#panel)"/>
+  <path d="M136 74L160 110L124 118L116 88L136 74Z" fill="url(#panel)"/>
+  <path d="M72 136L48 154L90 146L96 168L102 146L144 154L120 136L96 142L72 136Z" fill="#300A18"/>
+  <path d="M96 64L110 88L96 114L82 88L96 64Z" fill="#FFDCEA"/>
+  <path d="M54 126L78 114" stroke="#FFA3C8" stroke-width="4" stroke-linecap="round"/>
+  <path d="M138 126L114 114" stroke="#FFA3C8" stroke-width="4" stroke-linecap="round"/>
+  <path d="M80 142H112" stroke="#FF8CBD" stroke-width="4" stroke-linecap="round"/>
+</svg>

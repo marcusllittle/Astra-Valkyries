@@ -14,7 +14,7 @@
       "value": 10
     },
     "artPlaceholder": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-    "artUrl": "/assets/pilots/nova_starling.webp",
+    "artUrl": "/assets/pilots/nova_starling.png",
     "feverCutinUrl": "/assets/cutins/nova_fever.mp4"
   },
   {
@@ -32,7 +32,7 @@
       "value": 5
     },
     "artPlaceholder": "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-    "artUrl": "/assets/pilots/rex_thunderbolt.webp"
+    "artUrl": "/assets/pilots/rex_thunderbolt.png"
   },
   {
     "id": "pilot_yuki",
@@ -49,6 +49,6 @@
       "value": 3
     },
     "artPlaceholder": "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
-    "artUrl": "/assets/pilots/yuki_frostweaver.webp"
+    "artUrl": "/assets/pilots/yuki_frostweaver.png"
   }
 ]

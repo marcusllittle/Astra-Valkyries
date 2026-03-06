@@ -1,0 +1,18 @@
+<svg width="192" height="192" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="core" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(96 96) rotate(90) scale(28 28)">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="0.5" stop-color="#FFF3BF" stop-opacity="0.98"/>
+      <stop offset="1" stop-color="#FFF3BF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="96" cy="96" r="28" fill="url(#core)"/>
+  <path d="M96 22L108 70L96 58L84 70L96 22Z" fill="#FFF9DB"/>
+  <path d="M96 170L84 122L96 134L108 122L96 170Z" fill="#FFF9DB"/>
+  <path d="M22 96L70 108L58 96L70 84L22 96Z" fill="#FFF9DB"/>
+  <path d="M170 96L122 84L134 96L122 108L170 96Z" fill="#FFF9DB"/>
+  <path d="M42 42L78 74L64 76L66 90L42 42Z" fill="#FFE8A3"/>
+  <path d="M150 42L126 90L128 76L114 74L150 42Z" fill="#FFE8A3"/>
+  <path d="M42 150L90 126L76 128L74 114L42 150Z" fill="#FFE8A3"/>
+  <path d="M150 150L114 118L128 116L126 102L150 150Z" fill="#FFE8A3"/>
+</svg>

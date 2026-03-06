@@ -156,6 +156,7 @@ export class ScoreTracker {
   buildResult(trackId: string): GameResult {
     const grade = calculateGrade(this.accuracy);
     return {
+      mode: "rhythm",
       trackId,
       score: this.score,
       maxCombo: this.maxCombo,

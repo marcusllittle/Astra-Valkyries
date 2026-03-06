@@ -1,0 +1,21 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="chipBody" x1="64" y1="18" x2="64" y2="110" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF7C2"/>
+      <stop offset="0.52" stop-color="#FFD43B"/>
+      <stop offset="1" stop-color="#9A6400"/>
+    </linearGradient>
+    <linearGradient id="chipCore" x1="64" y1="30" x2="64" y2="98" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFBEA"/>
+      <stop offset="1" stop-color="#FFEC99"/>
+    </linearGradient>
+  </defs>
+  <path d="M64 16L106 64L64 112L22 64L64 16Z" fill="url(#chipBody)"/>
+  <path d="M64 34L88 64L64 94L40 64L64 34Z" fill="url(#chipCore)"/>
+  <path d="M64 24V42" stroke="#FFF9DB" stroke-width="6" stroke-linecap="round"/>
+  <path d="M64 86V104" stroke="#C99200" stroke-width="6" stroke-linecap="round"/>
+  <path d="M24 64H42" stroke="#FFF3BF" stroke-width="6" stroke-linecap="round"/>
+  <path d="M86 64H104" stroke="#C99200" stroke-width="6" stroke-linecap="round"/>
+  <path d="M48 64H80" stroke="#D59A00" stroke-width="6" stroke-linecap="round"/>
+  <path d="M64 48V80" stroke="#D59A00" stroke-width="6" stroke-linecap="round"/>
+</svg>
