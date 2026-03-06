@@ -11,6 +11,31 @@ npm run dev
 
 Open `http://localhost:5173` in your browser.
 
+### Packaging Targets
+
+These commands are additive and do not change the browser dev loop (`npm run dev`).
+
+```bash
+# Desktop app (run packaged build locally in Electron)
+npm run desktop:start
+
+# Desktop installers
+npm run desktop:build:mac   # builds DMG on macOS
+npm run desktop:build:win   # builds NSIS EXE installer
+
+# Mobile wrappers (Capacitor)
+npm run mobile:add:android  # one-time setup
+npm run mobile:add:ios      # one-time setup
+npm run mobile:sync
+npm run mobile:android      # opens Android Studio project
+npm run mobile:ios          # opens Xcode project
+```
+
+Notes:
+- Windows `.exe` generation is most reliable on a Windows runner/machine.
+- iOS packaging requires macOS + Xcode + Apple Developer signing.
+- Android packaging requires Android Studio + SDK/keystore setup.
+
 ### Controls
 
 | Action | Keyboard | Mobile |
@@ -65,7 +90,27 @@ src/
 
 ### Adding Real Assets
 
-**Pilot/Outfit art**: Replace the `artPlaceholder` gradient string in the JSON data files with an image path, then update the `card-art` div in `HangarScreen.tsx` and `CollectionScreen.tsx` to render an `<img>` tag.
+**Art + cutins live in `public/assets`:**
+
+- `public/assets/pilots/`
+- `public/assets/outfits/`
+- `public/assets/cutins/`
+
+**Data wiring:**
+
+- Pilots: `src/data/pilots.json` (`artUrl`, optional `feverCutinUrl`)
+- Outfits: `src/data/outfits.json` (`artUrl`, optional `cutinUrl`)
+
+**Naming convention:**
+
+- lowercase snake case filenames, e.g. `nova_starling.png`, `aurora_borealis.png`, `nova_fever.mp4`
+- keep extensions explicit in JSON URLs
+
+**Fallback behavior:**
+
+- Cards always render the JSON `artPlaceholder` gradient base.
+- If `artUrl` exists, the image overlays it.
+- If image loading fails, the image hides and the gradient remains.
 
 **Audio tracks**: Add audio files to `public/audio/`, then in `PlayScreen.tsx` create an `Audio` element and start playback when the countdown finishes in sync with `clockRef.current.start()`.
 

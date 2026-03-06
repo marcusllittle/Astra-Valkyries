@@ -27,6 +27,15 @@ export interface OutfitPerk {
   scalingPerStar: number;
 }
 
+export type ShmupKit = {
+  primary: string;
+  secondary: string;
+  passives: string[];
+  visuals?: {
+    shotColor?: string;
+  };
+};
+
 export interface Outfit {
   id: string;
   name: string;
@@ -34,7 +43,39 @@ export interface Outfit {
   artPlaceholder: string;
   artUrl?: string;
   cutinUrl?: string;
+  pilotId?: "pilot_nova" | "pilot_rex" | "pilot_yuki";
+  shmupKit?: ShmupKit;
   perk: OutfitPerk;
+}
+
+export interface ShipTrait {
+  label: string;
+  description: string;
+}
+
+export interface ShipModifiers {
+  maxHp: number;
+  moveSpeedPct: number;
+  overdriveRate: number;
+  overdriveDuration: number;
+  scoreMult: number;
+  scoreFlat: number;
+  comboBonus: number;
+}
+
+export interface Ship {
+  id: string;
+  name: string;
+  className: string;
+  manufacturer: string;
+  description: string;
+  stats: { mobility: number; firepower: number; control: number };
+  artPlaceholder: string;
+  artUrl?: string;
+  spriteUrl?: string;
+  cutinUrl?: string;
+  trait: ShipTrait;
+  modifiers: ShipModifiers;
 }
 
 export interface BeatNote {
@@ -64,8 +105,11 @@ export interface OwnedOutfit {
 export interface SaveData {
   credits: number;
   ownedPilots: string[];          // pilot IDs (all unlocked by default)
+  ownedShips: string[];           // ship IDs
   ownedOutfits: OwnedOutfit[];    // outfit instances
   selectedPilotId: string | null;
+  selectedShipId: string | null;
+  selectedMapId: string | null;
   selectedOutfitId: string | null;
   highScores: Record<string, number>; // trackId -> best score
   settings: GameSettings;
@@ -82,18 +126,36 @@ export interface GameSettings {
 
 export type HitJudgment = "Perfect" | "Good" | "Miss";
 
-export interface GameResult {
+export type Grade = "S" | "A" | "B" | "C" | "D";
+
+interface BaseGameResult {
+  mode: "rhythm" | "shmup";
   trackId: string;
   score: number;
+  grade: Grade;
+  creditsEarned: number;
+}
+
+export interface RhythmGameResult extends BaseGameResult {
+  mode: "rhythm";
   maxCombo: number;
   perfects: number;
   goods: number;
   misses: number;
   totalNotes: number;
   accuracy: number;   // 0-100
-  grade: "S" | "A" | "B" | "C" | "D";
-  creditsEarned: number;
 }
+
+export interface ShmupGameResult extends BaseGameResult {
+  mode: "shmup";
+  kills: number;
+  timeSurvivedMs: number;
+  bestMultiplier: number;
+  weaponLevel: number;
+  damageTaken: number;
+}
+
+export type GameResult = RhythmGameResult | ShmupGameResult;
 
 export interface GachaResult {
   outfit: Outfit;

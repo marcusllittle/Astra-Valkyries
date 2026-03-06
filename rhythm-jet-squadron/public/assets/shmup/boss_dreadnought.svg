@@ -1,0 +1,41 @@
+<svg width="512" height="384" viewBox="0 0 512 384" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bossHull" x1="256" y1="42" x2="256" y2="330" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFE9D9"/>
+      <stop offset="0.26" stop-color="#FFB076"/>
+      <stop offset="0.62" stop-color="#88452A"/>
+      <stop offset="1" stop-color="#24161B"/>
+    </linearGradient>
+    <linearGradient id="bossWing" x1="256" y1="100" x2="256" y2="320" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#46251B"/>
+      <stop offset="1" stop-color="#181114"/>
+    </linearGradient>
+    <linearGradient id="bossCore" x1="256" y1="104" x2="256" y2="196" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF4E6"/>
+      <stop offset="1" stop-color="#FF9F43"/>
+    </linearGradient>
+    <radialGradient id="bossEngine" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(256 294) rotate(90) scale(58 92)">
+      <stop stop-color="#FFE4C7"/>
+      <stop offset="0.45" stop-color="#FF922B" stop-opacity="0.88"/>
+      <stop offset="1" stop-color="#FF922B" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="256" cy="294" rx="94" ry="54" fill="url(#bossEngine)" opacity="0.64"/>
+  <path d="M256 24L324 76L428 118L452 220L380 334L256 360L132 334L60 220L84 118L188 76L256 24Z" fill="url(#bossHull)"/>
+  <path d="M188 82L122 142L96 230L152 226L194 170L188 82Z" fill="url(#bossWing)"/>
+  <path d="M324 82L390 142L416 230L360 226L318 170L324 82Z" fill="url(#bossWing)"/>
+  <path d="M256 64L300 128L286 244L256 316L226 244L212 128L256 64Z" fill="#231B20"/>
+  <path d="M256 102L282 144L256 190L230 144L256 102Z" fill="url(#bossCore)"/>
+  <path d="M164 244L112 286L182 278L208 254L164 244Z" fill="#28171A"/>
+  <path d="M348 244L400 286L330 278L304 254L348 244Z" fill="#28171A"/>
+  <path d="M218 264L256 322L294 264L286 244H226L218 264Z" fill="#2E1D1C"/>
+  <path d="M256 50L274 84H238L256 50Z" fill="#FFF2E6"/>
+  <path d="M188 76L256 114L324 76" stroke="#FFD8BF" stroke-width="8" stroke-linecap="round"/>
+  <path d="M172 156L256 180L340 156" stroke="#FFB98B" stroke-width="8" stroke-linecap="round" opacity="0.82"/>
+  <path d="M152 232L256 220L360 232" stroke="#FF9F62" stroke-width="7" stroke-linecap="round" opacity="0.7"/>
+  <path d="M210 280H302" stroke="#FFA45D" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="206" cy="166" r="16" fill="#FFE7D1"/>
+  <circle cx="306" cy="166" r="16" fill="#FFE7D1"/>
+  <circle cx="206" cy="166" r="7" fill="#FF8C42"/>
+  <circle cx="306" cy="166" r="7" fill="#FF8C42"/>
+</svg>
