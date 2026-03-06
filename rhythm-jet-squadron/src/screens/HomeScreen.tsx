@@ -1,14 +1,26 @@
 /**
- * Home Screen - Epic space-themed main menu with animated starfield,
- * featured pilot banner, and glowing title.
+ * Home Screen - Space-themed main menu with animated starfield,
+ * configurable hero media (image or video), and glowing title.
+ *
+ * Hero media:  Drop your own file into public/assets/hero/
+ *   Supported: hero.mp4, hero.webm, hero.png, hero.jpg, hero.webp
+ *   The component auto-detects the format.
+ *   If no file is found, a gradient fallback is shown.
  */
 
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGame } from "../context/GameContext";
-import { resolveAssetUrl } from "../lib/assetUrl";
-import type { Pilot } from "../types";
-import pilotsData from "../data/pilots.json";
+
+// ─── Hero media config ───────────────────────────────────
+// Order matters: first match wins. Videos before images.
+const HERO_CANDIDATES = [
+  { src: "/assets/hero/hero.mp4", type: "video" },
+  { src: "/assets/hero/hero.webm", type: "video" },
+  { src: "/assets/hero/hero.png", type: "image" },
+  { src: "/assets/hero/hero.jpg", type: "image" },
+  { src: "/assets/hero/hero.webp", type: "image" },
+] as const;
 
 // ─── Starfield types ─────────────────────────────────────
 
@@ -34,14 +46,37 @@ interface FloatingParticle {
 export default function HomeScreen() {
   const navigate = useNavigate();
   const { save } = useGame();
-  const pilots = pilotsData as Pilot[];
-  const featuredPilot = pilots.find((pilot) => pilot.id === save.selectedPilotId) ?? pilots[0];
-  const featuredPilotArtUrl = resolveAssetUrl(featuredPilot?.artUrl);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef(0);
   const starsRef = useRef<Star[]>([]);
   const floatersRef = useRef<FloatingParticle[]>([]);
+
+  // ─── Detect hero media ─────────────────────────────────
+  const [heroMedia, setHeroMedia] = useState<{ src: string; type: "video" | "image" } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function probe() {
+      for (const candidate of HERO_CANDIDATES) {
+        try {
+          const res = await fetch(candidate.src, { method: "HEAD" });
+          if (res.ok && !cancelled) {
+            setHeroMedia({ src: candidate.src, type: candidate.type });
+            return;
+          }
+        } catch {
+          // not found, try next
+        }
+      }
+    }
+
+    probe();
+    return () => { cancelled = true; };
+  }, []);
+
+  // ─── Starfield ─────────────────────────────────────────
 
   const initStars = useCallback((width: number, height: number) => {
     const stars: Star[] = [];
@@ -103,18 +138,13 @@ export default function HomeScreen() {
       const w = canvas.width;
       const h = canvas.height;
       const time = performance.now() / 1000;
-
       ctx.clearRect(0, 0, w, h);
 
       for (const star of starsRef.current) {
         const twinkle = Math.sin(time * star.twinkleSpeed + star.twinkleOffset);
         const alpha = star.baseAlpha * (0.6 + 0.4 * twinkle);
-
         star.y += 0.08;
-        if (star.y > h + 5) {
-          star.y = -5;
-          star.x = Math.random() * w;
-        }
+        if (star.y > h + 5) { star.y = -5; star.x = Math.random() * w; }
 
         ctx.save();
         ctx.globalAlpha = Math.max(0, alpha);
@@ -146,7 +176,6 @@ export default function HomeScreen() {
         if (p.y < -10) { p.y = h + 10; p.x = Math.random() * w; }
         if (p.x < -10) p.x = w + 10;
         if (p.x > w + 10) p.x = -10;
-
         ctx.save();
         ctx.globalAlpha = p.alpha;
         ctx.shadowColor = "#667eea";
@@ -162,18 +191,17 @@ export default function HomeScreen() {
     };
 
     animRef.current = requestAnimationFrame(loop);
-
     return () => {
       cancelAnimationFrame(animRef.current);
       window.removeEventListener("resize", resize);
     };
   }, [initStars]);
 
+  // ─── Render ────────────────────────────────────────────
+
   return (
     <div className="screen home-screen">
-      {/* Animated starfield canvas */}
       <canvas ref={canvasRef} className="home-starfield" />
-
       <div className="home-atmosphere" aria-hidden />
       <div className="home-vignette" aria-hidden />
 
@@ -221,30 +249,32 @@ export default function HomeScreen() {
           </nav>
         </section>
 
-        <aside className="home-feature-banner" aria-label="Featured pilot banner">
-          <div
-            className="home-feature-backdrop"
-            style={{ background: featuredPilot?.artPlaceholder ?? "linear-gradient(145deg, #334a7d, #18274d)" }}
-            aria-hidden
-          />
-          {featuredPilotArtUrl ? (
-            <img
-              src={featuredPilotArtUrl}
-              alt={featuredPilot.name}
-              className="home-feature-pilot"
-              loading="eager"
-              onError={(event) => {
-                event.currentTarget.style.display = "none";
-              }}
-            />
-          ) : null}
-          <div className="home-feature-overlay" aria-hidden />
-          <div className="home-feature-info">
-            <p className="home-feature-label">Featured Pilot</p>
-            <h2 className="home-feature-title">{featuredPilot?.name ?? "Vanguard Ace"}</h2>
-            <p className="home-feature-copy">
-              {featuredPilot?.description ?? "Elite strike pilot configured for high-intensity sortie lanes."}
-            </p>
+        {/* Hero media slot — drop your own image or video in public/assets/hero/ */}
+        <aside className="home-hero-media" aria-label="Hero media">
+          <div className="home-hero-media-inner">
+            {heroMedia?.type === "video" ? (
+              <video
+                className="home-hero-media-content"
+                src={heroMedia.src}
+                autoPlay
+                loop
+                muted
+                playsInline
+              />
+            ) : heroMedia?.type === "image" ? (
+              <img
+                className="home-hero-media-content"
+                src={heroMedia.src}
+                alt="Astra Valkyries"
+                loading="eager"
+              />
+            ) : (
+              <div
+                className="home-hero-media-content home-hero-fallback"
+                aria-hidden
+              />
+            )}
+            <div className="home-hero-media-vignette" aria-hidden />
           </div>
         </aside>
       </div>
