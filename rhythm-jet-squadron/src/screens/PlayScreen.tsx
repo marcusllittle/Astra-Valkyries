@@ -34,6 +34,44 @@ const JUDGMENT_COLORS: Record<HitJudgment, string> = {
   Miss: "#ff6b6b",
 };
 
+// ─── Impact effect types ─────────────────────────────────
+
+interface Shake {
+  magnitude: number;
+  duration: number;
+  startTime: number;
+}
+
+interface Flash {
+  alpha: number;
+  duration: number;
+  startTime: number;
+  color: string;
+}
+
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  color: string;
+  size: number;
+  life: number;
+  born: number;
+}
+
+interface LaneGlow {
+  alpha: number;
+  startTime: number;
+}
+
+interface Ripple {
+  x: number;
+  y: number;
+  startTime: number;
+  color: string;
+}
+
 interface ActiveNote extends BeatNote {
   id: number;
   hit: boolean;
@@ -56,6 +94,17 @@ export default function PlayScreen() {
   const songEndedRef = useRef(false);
   const resultRef = useRef<GameResult | null>(null);
 
+  // Impact effect refs
+  const shakeRef = useRef<Shake | null>(null);
+  const flashRef = useRef<Flash | null>(null);
+  const particlesRef = useRef<Particle[]>([]);
+  const laneGlowRef = useRef<LaneGlow[]>([
+    { alpha: 0, startTime: 0 },
+    { alpha: 0, startTime: 0 },
+    { alpha: 0, startTime: 0 },
+  ]);
+  const ripplesRef = useRef<Ripple[]>([]);
+
   const [isPaused, setIsPaused] = useState(false);
   const [score, setScore] = useState(0);
   const [combo, setCombo] = useState(0);
@@ -77,6 +126,35 @@ export default function PlayScreen() {
   const ownedOutfit = save.ownedOutfits.find((o) => o.outfitId === save.selectedOutfitId);
 
   const noteSpeed = save.settings.noteSpeed;
+
+  // ─── Impact effect helpers ─────────────────────────────
+
+  const triggerShake = (magnitude: number, duration: number, elapsed: number) => {
+    shakeRef.current = { magnitude, duration, startTime: elapsed };
+  };
+
+  const triggerFlash = (alpha: number, duration: number, elapsed: number, color = "#ffffff") => {
+    flashRef.current = { alpha, duration, startTime: elapsed, color };
+  };
+
+  const spawnParticles = (
+    x: number, y: number, count: number, color: string,
+    sizeRange: [number, number], speedRange: [number, number], elapsed: number
+  ) => {
+    for (let i = 0; i < count; i++) {
+      const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.8;
+      const speed = speedRange[0] + Math.random() * (speedRange[1] - speedRange[0]);
+      particlesRef.current.push({
+        x, y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        color,
+        size: sizeRange[0] + Math.random() * (sizeRange[1] - sizeRange[0]),
+        life: 400 + Math.random() * 200,
+        born: elapsed,
+      });
+    }
+  };
 
   // ─── Initialize scorer with perks ─────────────────────
 
@@ -160,7 +238,33 @@ export default function PlayScreen() {
       bestNote.hit = true;
       scorer.registerHit(judgment, elapsed);
 
+      // Calculate note screen position for effects
+      const canvasW = canvasRef.current?.width ?? 480;
+      const canvasH = canvasRef.current?.height ?? 700;
+      const laneW = canvasW / 3;
+      const hitY = canvasH * HIT_LINE_Y_RATIO;
+      const noteX = (lane + 0.5) * laneW;
+
+      // ── Impact effects ──
+      if (judgment === "Perfect") {
+        triggerShake(6, 120, elapsed);
+        triggerFlash(0.25, 100, elapsed);
+        spawnParticles(noteX, hitY, 12, "#ffd43b", [4, 6], [80, 200], elapsed);
+        laneGlowRef.current[lane] = { alpha: 0.4, startTime: elapsed };
+      } else if (judgment === "Good") {
+        triggerShake(3, 80, elapsed);
+        triggerFlash(0.12, 80, elapsed);
+        spawnParticles(noteX, hitY, 8, "#51cf66", [3, 4], [60, 150], elapsed);
+        laneGlowRef.current[lane] = { alpha: 0.25, startTime: elapsed };
+      }
+
+      // Ripple on hit line
+      if (judgment !== "Miss") {
+        ripplesRef.current.push({ x: noteX, y: hitY, startTime: elapsed, color: LANE_COLORS[lane] });
+      }
+
       // Auto-activate fever when ready
+      const wasFeverActive = scorer.feverActive;
       if (scorer.feverReady) {
         scorer.activateFever(elapsed);
 
@@ -176,6 +280,16 @@ export default function PlayScreen() {
             allowPointerThrough: true,
           });
         }
+      }
+
+      // Fever activation burst
+      if (!wasFeverActive && scorer.feverActive && canvasRef.current) {
+        const cx = canvasRef.current.width / 2;
+        const cy = canvasRef.current.height / 2;
+        triggerShake(10, 200, elapsed);
+        triggerFlash(0.3, 200, elapsed, "#ffd43b");
+        spawnParticles(cx, cy, 25, "#ffd43b", [4, 7], [100, 280], elapsed);
+        spawnParticles(cx, cy, 10, "#f093fb", [3, 5], [80, 220], elapsed);
       }
 
       // Show judgment flash
@@ -299,8 +413,20 @@ export default function PlayScreen() {
         (n) => !n.hit && !n.missed || elapsed - n.t < 500
       );
 
+      // ── Calculate screen shake offset ──
+      let shakeX = 0;
+      let shakeY = 0;
+      const shake = shakeRef.current;
+      if (shake && elapsed - shake.startTime < shake.duration) {
+        const decay = 1 - (elapsed - shake.startTime) / shake.duration;
+        shakeX = (Math.random() * 2 - 1) * shake.magnitude * decay;
+        shakeY = (Math.random() * 2 - 1) * shake.magnitude * decay;
+      }
+
       // ── Draw ──
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.translate(shakeX, shakeY);
 
       // Background
       if (scorer.feverActive) {
@@ -308,7 +434,18 @@ export default function PlayScreen() {
       } else {
         ctx.fillStyle = "#0a0a1a";
       }
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillRect(-10, -10, canvas.width + 20, canvas.height + 20);
+
+      // ── Hit flash overlay ──
+      const flash = flashRef.current;
+      if (flash && elapsed - flash.startTime < flash.duration) {
+        const fProgress = (elapsed - flash.startTime) / flash.duration;
+        ctx.save();
+        ctx.globalAlpha = flash.alpha * (1 - fProgress);
+        ctx.fillStyle = flash.color;
+        ctx.fillRect(-10, -10, canvas.width + 20, canvas.height + 20);
+        ctx.restore();
+      }
 
       // Lane dividers
       ctx.strokeStyle = "rgba(255,255,255,0.1)";
@@ -318,6 +455,24 @@ export default function PlayScreen() {
         ctx.moveTo(i * laneWidth, 0);
         ctx.lineTo(i * laneWidth, canvas.height);
         ctx.stroke();
+      }
+
+      // ── Lane glow on hit ──
+      for (let i = 0; i < 3; i++) {
+        const glow = laneGlowRef.current[i];
+        if (glow.alpha > 0) {
+          const age = elapsed - glow.startTime;
+          const glowAlpha = age < 150 ? glow.alpha * (1 - age / 150) : 0;
+          if (glowAlpha > 0) {
+            ctx.save();
+            ctx.globalAlpha = glowAlpha;
+            ctx.fillStyle = LANE_COLORS[i];
+            ctx.fillRect(i * laneWidth, hitLineY - 30, laneWidth, 60);
+            ctx.restore();
+          } else {
+            laneGlowRef.current[i].alpha = 0;
+          }
+        }
       }
 
       // Hit line
@@ -340,14 +495,12 @@ export default function PlayScreen() {
       for (const note of notesRef.current) {
         if (note.hit || note.missed) continue;
 
-        // Y position: note starts above canvas and scrolls down to hit line
         const timeDelta = note.t - elapsed;
         const y = hitLineY - (timeDelta / 1000) * noteSpeed;
         const x = (note.lane + 0.5) * laneWidth;
 
         if (y < -NOTE_RADIUS || y > canvas.height + NOTE_RADIUS) continue;
 
-        // Note circle
         ctx.beginPath();
         ctx.arc(x, y, NOTE_RADIUS, 0, Math.PI * 2);
         ctx.fillStyle = LANE_COLORS[note.lane];
@@ -357,16 +510,59 @@ export default function PlayScreen() {
         ctx.stroke();
       }
 
+      // ── Hit-line ripples ──
+      ripplesRef.current = ripplesRef.current.filter((r) => elapsed - r.startTime < 300);
+      for (const ripple of ripplesRef.current) {
+        const age = elapsed - ripple.startTime;
+        const progress = age / 300;
+        const radius = NOTE_RADIUS + progress * 30;
+        ctx.save();
+        ctx.globalAlpha = (1 - progress) * 0.6;
+        ctx.strokeStyle = ripple.color;
+        ctx.lineWidth = 3 * (1 - progress);
+        ctx.beginPath();
+        ctx.arc(ripple.x, ripple.y, radius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // ── Burst particles ──
+      particlesRef.current = particlesRef.current.filter((p) => elapsed - p.born < p.life);
+      for (const p of particlesRef.current) {
+        const age = elapsed - p.born;
+        const dt = 1 / 60;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.vy += 120 * dt;
+        p.vx *= 0.98;
+        p.vy *= 0.98;
+        const pAlpha = 1 - age / p.life;
+        const pSize = p.size * (1 - age / p.life * 0.5);
+        ctx.save();
+        ctx.globalAlpha = pAlpha;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 8;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, pSize, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
       // ── Judgment flash ──
       const jdg = judgmentRef.current;
       if (jdg && elapsed - jdg.time < 400) {
-        const alpha = 1 - (elapsed - jdg.time) / 400;
+        const age = elapsed - jdg.time;
+        const jAlpha = 1 - age / 400;
+        const scale = 1 + (1 - age / 400) * 0.3;
         ctx.save();
-        ctx.globalAlpha = alpha;
-        ctx.font = "bold 28px sans-serif";
+        ctx.globalAlpha = jAlpha;
+        ctx.font = `bold ${Math.round(28 * scale)}px sans-serif`;
         ctx.textAlign = "center";
+        ctx.shadowColor = jdg.color;
+        ctx.shadowBlur = 12;
         ctx.fillStyle = jdg.color;
-        ctx.fillText(jdg.text, canvas.width / 2, hitLineY - 50);
+        ctx.fillText(jdg.text, canvas.width / 2, hitLineY - 50 - (1 - jAlpha) * 20);
         ctx.restore();
       }
 
@@ -378,9 +574,12 @@ export default function PlayScreen() {
         ctx.fillStyle = "#ffd43b";
         ctx.shadowColor = "#ffd43b";
         ctx.shadowBlur = 20;
-        ctx.fillText("✦ FEVER ✦", canvas.width / 2, 40);
+        ctx.fillText("\u2726 FEVER \u2726", canvas.width / 2, 40);
         ctx.restore();
       }
+
+      // Restore from screen shake
+      ctx.restore();
 
       // ── Song end check ──
       if (elapsed >= durationMs && !songEndedRef.current) {

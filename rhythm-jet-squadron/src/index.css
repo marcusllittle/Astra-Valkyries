@@ -228,6 +228,16 @@ body::after {
   z-index: 3;
 }
 
+/* Starfield canvas behind everything */
+.home-starfield {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
 .home-atmosphere {
   position: absolute;
   inset: -16% -12% -10%;
@@ -302,23 +312,88 @@ body::after {
 }
 
 .game-title {
-  font-size: clamp(3.1rem, 7vw, 5.9rem);
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+  gap: 0;
+  position: relative;
+}
+
+.title-line {
+  display: block;
   font-weight: 900;
-  line-height: 0.86;
-  letter-spacing: 0.015em;
+  font-style: italic;
   text-transform: uppercase;
-  background: linear-gradient(130deg, #f6f9ff 0%, #ceddff 36%, #84e7ff 100%);
+  background: linear-gradient(180deg, #b8e0ff 0%, #4a9eff 30%, #667eea 60%, #8b5cf6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  text-shadow: 0 20px 40px rgba(48, 90, 196, 0.34);
+  transform: skewX(-5deg);
+}
+
+.title-astra {
+  font-size: clamp(2.6rem, 6vw, 4.8rem);
+  letter-spacing: 8px;
+}
+
+.title-valkyries {
+  font-size: clamp(2.8rem, 6.5vw, 5.2rem);
+  letter-spacing: 5px;
+  margin-top: -4px;
+}
+
+/* Glow behind title */
+.game-title::before {
+  content: "";
+  position: absolute;
+  inset: -20px -40px;
+  background: radial-gradient(ellipse at center, rgba(102, 126, 234, 0.25) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Animated shine sweep */
+.game-title::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.06) 40%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.06) 60%,
+    transparent 100%
+  );
+  transform: skewX(-20deg);
+  animation: titleShine 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes titleShine {
+  0%, 70% { left: -100%; }
+  100% { left: 200%; }
+}
+
+/* Horizontal light line under title */
+.title-light-line {
+  width: 80%;
+  max-width: 420px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(102, 180, 255, 0.8) 50%, transparent 100%);
+  box-shadow: 0 0 8px rgba(102, 180, 255, 0.5), 0 0 20px rgba(102, 126, 234, 0.3);
+  margin: 8px 0;
 }
 
 .subtitle {
-  color: #b0c5ee;
+  color: rgba(176, 197, 238, 0.9);
   font-size: clamp(1rem, 1.55vw, 1.18rem);
   line-height: 1.52;
   max-width: 48ch;
+  text-shadow: 0 0 12px rgba(102, 126, 234, 0.2);
 }
 
 .home-banner-meta {
@@ -401,7 +476,9 @@ body::after {
   box-shadow: 0 12px 24px rgba(8, 16, 36, 0.34);
 }
 
-.home-feature-banner {
+/* ─── Hero media slot ────────────────────────────────────── */
+
+.home-hero-media {
   position: relative;
   overflow: hidden;
   border-radius: 30px;
@@ -412,94 +489,34 @@ body::after {
   isolation: isolate;
 }
 
-.home-feature-banner::before {
-  content: "";
+.home-hero-media-inner {
   position: absolute;
   inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  background:
-    radial-gradient(420px 260px at 84% 22%, rgba(122, 170, 255, 0.3), transparent 78%),
-    radial-gradient(340px 210px at 30% 76%, rgba(107, 220, 255, 0.2), transparent 76%);
 }
 
-.home-feature-banner::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  pointer-events: none;
-  background:
-    repeating-linear-gradient(
-      to right,
-      rgba(255, 255, 255, 0.02) 0 1px,
-      transparent 1px 58px
-    ),
-    linear-gradient(122deg, transparent 48%, rgba(179, 214, 255, 0.08) 61%, transparent 74%);
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.45));
-}
-
-.home-feature-backdrop {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  filter: saturate(1.18) brightness(0.78);
-}
-
-.home-feature-pilot {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
+.home-hero-media-content {
   width: 100%;
   height: 100%;
   object-fit: cover;
   object-position: center top;
   display: block;
-  filter: saturate(1.1) contrast(1.05);
 }
 
-.home-feature-overlay {
+.home-hero-fallback {
+  background:
+    radial-gradient(ellipse at 40% 30%, rgba(84, 142, 255, 0.3) 0%, transparent 60%),
+    radial-gradient(ellipse at 70% 70%, rgba(139, 92, 246, 0.25) 0%, transparent 55%),
+    linear-gradient(160deg, #0a1628, #12082a);
+}
+
+.home-hero-media-vignette {
   position: absolute;
   inset: 0;
-  z-index: 4;
+  z-index: 2;
   pointer-events: none;
   background:
-    linear-gradient(90deg, rgba(4, 11, 30, 0.84) 0%, rgba(4, 11, 30, 0.28) 52%, rgba(4, 11, 30, 0.72) 100%),
-    linear-gradient(180deg, rgba(3, 8, 23, 0.18), rgba(3, 8, 23, 0.84) 86%);
-}
-
-.home-feature-info {
-  position: absolute;
-  left: 22px;
-  right: 22px;
-  bottom: 22px;
-  z-index: 5;
-  border-radius: 16px;
-  border: 1px solid rgba(162, 188, 248, 0.34);
-  background: linear-gradient(160deg, rgba(14, 28, 58, 0.86), rgba(10, 21, 43, 0.76));
-  padding: 18px 18px 16px;
-  backdrop-filter: blur(8px);
-  box-shadow: 0 14px 32px rgba(2, 8, 22, 0.42);
-}
-
-.home-feature-label {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  color: #b5cbf8;
-}
-
-.home-feature-title {
-  margin-top: 4px;
-  font-size: clamp(1.45rem, 2.4vw, 2.08rem);
-  line-height: 1.06;
-}
-
-.home-feature-copy {
-  margin-top: 8px;
-  color: #b0c4ee;
-  font-size: 0.92rem;
-  line-height: 1.45;
+    radial-gradient(circle at 50% 50%, transparent 40%, rgba(2, 7, 20, 0.6) 100%),
+    linear-gradient(180deg, rgba(2, 7, 20, 0.1) 0%, rgba(2, 7, 20, 0.4) 100%);
 }
 
 /* ─── Shared cards ────────────────────────────────────── */
@@ -1732,7 +1749,7 @@ body::after {
     width: min(100%, 560px);
   }
 
-  .home-feature-banner {
+  .home-hero-media {
     min-height: 440px;
     border-radius: 24px;
   }
@@ -1808,16 +1825,9 @@ body::after {
     height: 38px;
   }
 
-  .home-feature-banner {
+  .home-hero-media {
     min-height: 336px;
     border-radius: 20px;
-  }
-
-  .home-feature-info {
-    left: 12px;
-    right: 12px;
-    bottom: 12px;
-    padding: 12px 12px 11px;
   }
 
   .loadout-grid,
