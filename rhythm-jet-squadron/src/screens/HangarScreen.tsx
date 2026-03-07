@@ -1,8 +1,12 @@
 /**
  * Hangar Screen - Pilot and outfit selection before playing.
+ *
+ * Layout: scrollable selection sections + compact sticky deploy bar at bottom.
+ * On mobile: horizontal-scroll card strips, minimal footer.
+ * On desktop: grid cards with 2-column summary sidebar feel.
  */
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGame } from "../context/GameContext";
 import { buildShmupLoadout } from "../lib/loadout";
@@ -23,17 +27,14 @@ export default function HangarScreen() {
   const navigate = useNavigate();
   const { save, selectPilot, selectShip, selectMap, selectOutfit } = useGame();
   const [kitWarning, setKitWarning] = useState<string | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
   const [showAllOutfits, setShowAllOutfits] = useState<boolean>(() => {
-    if (typeof window === "undefined") {
-      return false;
-    }
+    if (typeof window === "undefined") return false;
     return window.localStorage.getItem(SHOW_ALL_OUTFITS_STORAGE_KEY) === "1";
   });
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
+    if (typeof window === "undefined") return;
     window.localStorage.setItem(SHOW_ALL_OUTFITS_STORAGE_KEY, showAllOutfits ? "1" : "0");
   }, [showAllOutfits]);
 
@@ -43,7 +44,6 @@ export default function HangarScreen() {
   const ownedShips = ships.filter((ship) => save.ownedShips.includes(ship.id));
   const pilotNameById = new Map(pilots.map((item) => [item.id, item.name]));
 
-  // Only show owned outfits
   const ownedOutfitMap = new Map<string, OwnedOutfit>();
   save.ownedOutfits.forEach((o) => ownedOutfitMap.set(o.outfitId, o));
 
@@ -69,15 +69,10 @@ export default function HangarScreen() {
   const selectedPilotId = save.selectedPilotId;
 
   const isOutfitInDefaultView = (outfit: Outfit): boolean => {
-    if (!selectedPilotId) {
-      return true;
-    }
-    if (!outfit.pilotId) {
-      return true;
-    }
-    if ((outfit.rarity === "SR" || outfit.rarity === "SSR") && outfit.pilotId !== selectedPilotId) {
+    if (!selectedPilotId) return true;
+    if (!outfit.pilotId) return true;
+    if ((outfit.rarity === "SR" || outfit.rarity === "SSR") && outfit.pilotId !== selectedPilotId)
       return false;
-    }
     return outfit.pilotId === selectedPilotId;
   };
 
@@ -105,9 +100,7 @@ export default function HangarScreen() {
         key={outfit.id}
         className={`card outfit-card rarity-${outfit.rarity.toLowerCase()} ${
           isLocked ? "card-locked" : ""
-        } ${
-          outfit.id === save.selectedOutfitId ? "selected" : ""
-        }`}
+        } ${outfit.id === save.selectedOutfitId ? "selected" : ""}`}
         onClick={() => {
           if (!isOwned) {
             setKitWarning(`${outfit.name} is locked. Pull in Shop to unlock.`);
@@ -139,12 +132,6 @@ export default function HangarScreen() {
             {outfit.rarity}
             {!isOwned ? " • Locked" : ""}
           </div>
-          {outfit.pilotId && (
-            <div className="rarity-badge">
-              Pilot-Specific: {pilotNameById.get(outfit.pilotId) ?? outfit.pilotId}
-            </div>
-          )}
-          <div className="perk-label">{summarizeOutfitKit(outfit)}</div>
         </div>
       </div>
     );
@@ -152,29 +139,24 @@ export default function HangarScreen() {
 
   return (
     <div className="screen hangar-screen">
-      <div className="screen-header">
+      {/* Compact top bar */}
+      <div className="hangar-topbar">
         <button className="btn btn-back" onClick={() => navigate("/")}>← Back</button>
-        <div className="header-title-stack">
-          <h2>Loadout</h2>
-          <p>Configure pilot, ship, and outfit before deployment.</p>
-        </div>
+        <h2 className="hangar-title">Loadout</h2>
       </div>
 
-      {/* Pilot selection */}
-      <section className="hangar-section panel-surface">
+      {/* Pilot selection — horizontal strip on mobile */}
+      <section className="hangar-section">
         <div className="section-head">
-          <h3>Select Pilot</h3>
-          <p>{selectedPilot?.name ?? "Choose your lead pilot"}</p>
+          <h3>Pilot</h3>
+          <span className="section-selected">{selectedPilot?.name ?? "—"}</span>
         </div>
-        <div className="card-grid loadout-grid">
+        <div className="hangar-strip">
           {pilots.map((pilot) => (
             <div
               key={pilot.id}
               className={`card pilot-card ${pilot.id === save.selectedPilotId ? "selected" : ""}`}
-              onClick={() => {
-                setKitWarning(null);
-                selectPilot(pilot.id);
-              }}
+              onClick={() => { setKitWarning(null); selectPilot(pilot.id); }}
             >
               <CardArt
                 title={pilot.name}
@@ -188,19 +170,19 @@ export default function HangarScreen() {
                   <span>RHY {pilot.stats.rhythm}</span>
                   <span>END {pilot.stats.endurance}</span>
                 </div>
-                <div className="perk-label">{pilot.perk.label}</div>
               </div>
             </div>
           ))}
         </div>
       </section>
 
-      <section className="hangar-section panel-surface">
+      {/* Ship selection */}
+      <section className="hangar-section">
         <div className="section-head">
-          <h3>Select Ship</h3>
-          <p>{selectedShip?.name ?? "Select frame class and systems profile"}</p>
+          <h3>Ship</h3>
+          <span className="section-selected">{selectedShip?.name ?? "—"}</span>
         </div>
-        <div className="card-grid loadout-grid">
+        <div className="hangar-strip">
           {ownedShips.map((ship) => (
             <div
               key={ship.id}
@@ -214,25 +196,24 @@ export default function HangarScreen() {
               />
               <div className="card-info">
                 <strong className="card-title">{ship.name}</strong>
-                <div className="rarity-badge">{ship.className} / {ship.manufacturer}</div>
+                <div className="rarity-badge">{ship.className}</div>
                 <div className="stats-row">
                   <span>MOB {ship.stats.mobility}</span>
                   <span>FIR {ship.stats.firepower}</span>
-                  <span>CTL {ship.stats.control}</span>
                 </div>
-                <div className="perk-label">{ship.trait.label}</div>
               </div>
             </div>
           ))}
         </div>
       </section>
 
-      <section className="hangar-section panel-surface">
+      {/* Map selection */}
+      <section className="hangar-section">
         <div className="section-head">
-          <h3>Select Map</h3>
-          <p>{selectedMap?.name ?? "Choose operation zone and boss profile"}</p>
+          <h3>Map</h3>
+          <span className="section-selected">{selectedMap?.name ?? "—"}</span>
         </div>
-        <div className="map-select-grid">
+        <div className="hangar-strip">
           {SHMUP_MAPS.map((map) => (
             <button
               key={map.id}
@@ -249,7 +230,6 @@ export default function HangarScreen() {
               <div className="map-card-info">
                 <strong className="map-card-title">{map.name}</strong>
                 <span className="map-card-meta">Boss: {map.bossName}</span>
-                <span className="map-card-meta">Warning at {Math.round(map.bossTriggerMs / 1000)}s</span>
               </div>
             </button>
           ))}
@@ -257,19 +237,16 @@ export default function HangarScreen() {
       </section>
 
       {/* Outfit selection */}
-      <section className="hangar-section panel-surface">
+      <section className="hangar-section">
         <div className="section-head">
-          <div className="section-head-main">
-            <h3>Select Outfit</h3>
-            <p>{selectedOutfit?.name ?? "Equip cosmetic + kit profile"}</p>
-          </div>
+          <h3>Outfit</h3>
           <label className="outfit-filter-toggle">
             <input
               type="checkbox"
               checked={showAllOutfits}
               onChange={(event) => setShowAllOutfits(event.currentTarget.checked)}
             />
-            Show all pilots
+            All pilots
           </label>
         </div>
         {showAllOutfits ? (
@@ -280,7 +257,7 @@ export default function HangarScreen() {
                   <h4>Universal</h4>
                   <span className="outfit-group-count">{universalOutfits.length}</span>
                 </div>
-                <div className="card-grid loadout-grid">
+                <div className="hangar-strip hangar-strip-wrap">
                   {universalOutfits.map(renderOutfitCard)}
                 </div>
               </div>
@@ -291,72 +268,77 @@ export default function HangarScreen() {
                   <h4>{group.pilot.name}</h4>
                   <span className="outfit-group-count">{group.outfits.length}</span>
                 </div>
-                <div className="card-grid loadout-grid">
+                <div className="hangar-strip hangar-strip-wrap">
                   {group.outfits.map(renderOutfitCard)}
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="card-grid loadout-grid">
+          <div className="hangar-strip hangar-strip-wrap">
             {displayedOutfits.map(renderOutfitCard)}
           </div>
         )}
         {kitWarning && <p className="kit-warning">{kitWarning}</p>}
         {ownedOutfits.length === 0 && (
-          <p className="empty-msg">No outfits owned. Visit the Shop!</p>
+          <p className="empty-msg">No outfits owned. Visit the Store!</p>
         )}
       </section>
 
-      {/* Summary and proceed */}
-      <div className="hangar-summary hangar-summary-sticky">
-        <div className="summary-topline">
-          <div className="summary-pill">
-            <span className="summary-label">Pilot</span>
-            <strong>{selectedPilot?.name ?? "None"}</strong>
-          </div>
-          <div className="summary-pill">
-            <span className="summary-label">Ship</span>
-            <strong>{selectedShip?.name ?? "None"}</strong>
-          </div>
-          <div className="summary-pill">
-            <span className="summary-label">Map</span>
-            <strong>{selectedMap?.name ?? "None"}</strong>
-          </div>
-          <div className="summary-pill">
-            <span className="summary-label">Outfit</span>
-            <strong>{selectedOutfit?.name ?? "None"}{selectedOwned ? ` (${selectedOwned.stars}★)` : ""}</strong>
-          </div>
+      {/* ── Compact sticky deploy bar ─── */}
+      <div className="hangar-deploy-bar">
+        <div className="deploy-bar-selections">
+          <span className="deploy-chip">{selectedPilot?.name ?? "Pilot?"}</span>
+          <span className="deploy-chip-sep">/</span>
+          <span className="deploy-chip">{selectedShip?.name ?? "Ship?"}</span>
+          <span className="deploy-chip-sep">/</span>
+          <span className="deploy-chip">{selectedMap?.name ?? "Map?"}</span>
+          {selectedOutfit && (
+            <>
+              <span className="deploy-chip-sep">/</span>
+              <span className="deploy-chip">{selectedOutfit.name}{selectedOwned ? ` ${selectedOwned.stars}★` : ""}</span>
+            </>
+          )}
         </div>
-        <div className="summary-item summary-item-wide">
-          <span className="summary-label">Frame Identity</span>
-          <span>{loadout.identityLine}</span>
-        </div>
-        <div className="summary-item summary-item-wide">
-          <span className="summary-label">Kit</span>
-          <span>{kitSummary}</span>
-        </div>
-        <div className="summary-item summary-item-wide">
-          <span className="summary-label">Scoring</span>
-          <span>{loadout.multiplierLine}</span>
-        </div>
-        <div className="summary-item summary-item-wide">
-          <span className="summary-label">Survivability</span>
-          <span>{loadout.survivabilityLine}</span>
-        </div>
-        <div className="summary-item summary-item-wide">
-          <span className="summary-label">Systems</span>
-          <span>{loadout.systemsLine}</span>
-        </div>
-        <div className="hangar-actions">
+        <div className="deploy-bar-row">
           <button
-            className="btn btn-primary btn-large"
+            className="btn btn-text deploy-details-toggle"
+            onClick={() => setShowDetails(!showDetails)}
+          >
+            {showDetails ? "Hide details ▴" : "Details ▾"}
+          </button>
+          <button
+            className="btn btn-primary deploy-btn"
             onClick={() => navigate("/shmup")}
             disabled={!save.selectedPilotId || !save.selectedShipId}
           >
             Deploy Ship
           </button>
         </div>
+        {showDetails && (
+          <div className="deploy-details">
+            <div className="deploy-detail-line">
+              <span className="deploy-detail-label">Frame</span>
+              <span>{loadout.identityLine}</span>
+            </div>
+            <div className="deploy-detail-line">
+              <span className="deploy-detail-label">Kit</span>
+              <span>{kitSummary}</span>
+            </div>
+            <div className="deploy-detail-line">
+              <span className="deploy-detail-label">Scoring</span>
+              <span>{loadout.multiplierLine}</span>
+            </div>
+            <div className="deploy-detail-line">
+              <span className="deploy-detail-label">HP</span>
+              <span>{loadout.survivabilityLine}</span>
+            </div>
+            <div className="deploy-detail-line">
+              <span className="deploy-detail-label">Systems</span>
+              <span>{loadout.systemsLine}</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
