@@ -1787,10 +1787,9 @@ export default function ShmupPlayScreen() {
           bullet.age >= bullet.boomerangTurnAt
         ) {
           bullet.boomerangReturning = true;
-          bullet.vx *= -0.64;
-          bullet.vy = Math.abs(
-            bullet.boomerangReturnVy > 0 ? bullet.boomerangReturnVy : bullet.vy * 0.78
-          );
+          // Sweep sideways — never fly back toward the player
+          bullet.vx *= -2.4;
+          bullet.vy *= 0.08;
         }
 
         // Despawn boomerang bullets before they reach the player ship
