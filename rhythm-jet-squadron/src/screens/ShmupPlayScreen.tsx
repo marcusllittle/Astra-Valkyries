@@ -582,8 +582,26 @@ export default function ShmupPlayScreen() {
     const scale = distance > TOUCH_PAD_RADIUS ? TOUCH_PAD_RADIUS / distance : 1;
     const clampedX = dx * scale;
     const clampedY = dy * scale;
-    touchMoveRef.current.x = clampedX / TOUCH_PAD_RADIUS;
-    touchMoveRef.current.y = clampedY / TOUCH_PAD_RADIUS;
+
+    // Normalize to -1..1 with deadzone and sensitivity curve
+    const DEADZONE = 0.12;
+    let normX = clampedX / TOUCH_PAD_RADIUS;
+    let normY = clampedY / TOUCH_PAD_RADIUS;
+    const normDist = Math.hypot(normX, normY);
+    if (normDist < DEADZONE) {
+      normX = 0;
+      normY = 0;
+    } else {
+      // Remap outside deadzone to 0..1 range with quadratic curve for fine control
+      const remapped = ((normDist - DEADZONE) / (1 - DEADZONE));
+      const curved = remapped * remapped; // quadratic: gentle at start, fast at edge
+      const angle = Math.atan2(normY, normX);
+      normX = Math.cos(angle) * curved;
+      normY = Math.sin(angle) * curved;
+    }
+
+    touchMoveRef.current.x = normX;
+    touchMoveRef.current.y = normY;
     setTouchKnob({ active: true, x: clampedX, y: clampedY });
   };
 
@@ -1017,7 +1035,9 @@ export default function ShmupPlayScreen() {
     const spawnEnemyFromWave = (spawn: ScheduledWaveSpawn, elapsedMs: number) => {
       const pattern = spawn.pattern;
       const loopDifficulty = 1 + Math.min(0.45, spawn.loop * 0.08 + elapsedMs / 180_000);
-      const spawnX = clamp(spawn.x * canvas.width, 28, canvas.width - 28);
+      // Randomize spawn position within ±12% of screen width for variety
+      const xJitter = (Math.random() - 0.5) * 0.24;
+      const spawnX = clamp((spawn.x + xJitter) * canvas.width, 28, canvas.width - 28);
       const defaultRadius =
         pattern === "drifter"
           ? 16
@@ -1043,6 +1063,12 @@ export default function ShmupPlayScreen() {
             ? 0.82
             : 0.95;
 
+      // Randomize velocity ±15% and amplitude/frequency ±20% per spawn
+      const velRand = 0.85 + Math.random() * 0.3;
+      const ampRand = 0.8 + Math.random() * 0.4;
+      const freqRand = 0.8 + Math.random() * 0.4;
+      const vxJitter = (Math.random() - 0.5) * 30;
+
       activeWaveLabelRef.current = spawn.waveLabel;
       enemiesRef.current.push({
         id: enemyIdRef.current++,
@@ -1050,7 +1076,7 @@ export default function ShmupPlayScreen() {
         x: spawnX,
         y: spawn.y ?? -24,
         originX: spawnX,
-        vx: (spawn.vx ?? 0) * loopDifficulty,
+        vx: ((spawn.vx ?? 0) + vxJitter) * loopDifficulty,
         vy:
           (spawn.vy ??
             (pattern === "drifter"
@@ -1059,14 +1085,14 @@ export default function ShmupPlayScreen() {
                 ? 102
                 : pattern === "orbiter"
                   ? 84
-                  : 92)) * loopDifficulty,
+                  : 92)) * loopDifficulty * velRand,
         radius: spawn.radius ?? defaultRadius,
         hp: Math.max(1, Math.round((spawn.hp ?? defaultHp) + spawn.loop * 0.15)),
         scoreValue: Math.round((spawn.scoreValue ?? defaultScore) * (1 + spawn.loop * 0.12)),
         fireCooldown: Math.max(0.4, (spawn.fireCooldown ?? defaultFireCooldown) - spawn.loop * 0.03),
         age: 0,
-        amplitude: spawn.amplitude ?? 52,
-        frequency: spawn.frequency ?? 2.2,
+        amplitude: (spawn.amplitude ?? 52) * ampRand,
+        frequency: (spawn.frequency ?? 2.2) * freqRand,
       });
     };
 
@@ -2311,6 +2337,14 @@ export default function ShmupPlayScreen() {
               : enemy.pattern === "zigzag"
                 ? "#ff922b"
                 : "#74c0fc";
+        const enemyCoreDark =
+          enemy.pattern === "drifter"
+            ? "#a03060"
+            : enemy.pattern === "sine"
+              ? "#5030a0"
+              : enemy.pattern === "zigzag"
+                ? "#b06010"
+                : "#3070a0";
         if (sprite) {
           ctx.save();
           const glow = ctx.createRadialGradient(enemy.x, enemy.y, 4, enemy.x, enemy.y, enemy.radius * 2.4);
@@ -2323,28 +2357,117 @@ export default function ShmupPlayScreen() {
           ctx.restore();
           drawSpriteCentered(sprite, enemy.x, enemy.y, enemy.radius * 3.5, enemy.radius * 3.5);
         } else {
+          const r = enemy.radius;
+          const pulse = 0.92 + Math.sin(enemy.age * 4.5) * 0.08;
           ctx.save();
           ctx.translate(enemy.x, enemy.y);
-          ctx.fillStyle = enemyColor;
-          ctx.beginPath();
+
+          // Outer glow
+          ctx.shadowColor = enemyColor;
+          ctx.shadowBlur = 12;
+
           if (enemy.pattern === "zigzag") {
-            ctx.moveTo(-enemy.radius, enemy.radius * 0.2);
-            ctx.lineTo(-enemy.radius * 0.25, -enemy.radius);
-            ctx.lineTo(0, -enemy.radius * 0.1);
-            ctx.lineTo(enemy.radius * 0.25, -enemy.radius);
-            ctx.lineTo(enemy.radius, enemy.radius * 0.2);
-            ctx.lineTo(0, enemy.radius);
+            // Angular fighter with swept wings
+            const grad = ctx.createLinearGradient(0, -r, 0, r);
+            grad.addColorStop(0, enemyColor);
+            grad.addColorStop(1, enemyCoreDark);
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.moveTo(0, -r * 1.1);
+            ctx.lineTo(r * 0.4, -r * 0.3);
+            ctx.lineTo(r * 1.2, r * 0.1);
+            ctx.lineTo(r * 0.5, r * 0.5);
+            ctx.lineTo(r * 0.2, r * 0.9);
+            ctx.lineTo(0, r * 0.6);
+            ctx.lineTo(-r * 0.2, r * 0.9);
+            ctx.lineTo(-r * 0.5, r * 0.5);
+            ctx.lineTo(-r * 1.2, r * 0.1);
+            ctx.lineTo(-r * 0.4, -r * 0.3);
             ctx.closePath();
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            // Cockpit
+            ctx.fillStyle = `rgba(255,255,255,${0.35 * pulse})`;
+            ctx.beginPath();
+            ctx.ellipse(0, -r * 0.2, r * 0.18, r * 0.3, 0, 0, Math.PI * 2);
+            ctx.fill();
           } else if (enemy.pattern === "orbiter") {
-            ctx.arc(0, 0, enemy.radius * 0.95, 0, Math.PI * 2);
-          } else {
-            ctx.moveTo(0, enemy.radius);
-            ctx.lineTo(enemy.radius, -enemy.radius);
-            ctx.lineTo(0, -enemy.radius * 0.4);
-            ctx.lineTo(-enemy.radius, -enemy.radius);
+            // Shielded sphere with ring
+            const grad = ctx.createRadialGradient(0, -r * 0.3, r * 0.1, 0, 0, r);
+            grad.addColorStop(0, "#e0f0ff");
+            grad.addColorStop(0.4, enemyColor);
+            grad.addColorStop(1, enemyCoreDark);
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.85, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            // Orbital ring
+            ctx.strokeStyle = `${enemyColor}88`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, r * 1.1, r * 0.35, enemy.age * 1.8, 0, Math.PI * 2);
+            ctx.stroke();
+            // Core eye
+            ctx.fillStyle = `rgba(255,255,255,${0.6 * pulse})`;
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.25, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (enemy.pattern === "sine") {
+            // Sleek cruiser with tail fins
+            const grad = ctx.createLinearGradient(0, -r, 0, r);
+            grad.addColorStop(0, enemyColor);
+            grad.addColorStop(1, enemyCoreDark);
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.moveTo(0, -r * 1.1);
+            ctx.lineTo(r * 0.35, -r * 0.4);
+            ctx.lineTo(r * 0.7, r * 0.2);
+            ctx.lineTo(r * 0.9, r * 0.9);
+            ctx.lineTo(r * 0.25, r * 0.5);
+            ctx.lineTo(0, r * 0.7);
+            ctx.lineTo(-r * 0.25, r * 0.5);
+            ctx.lineTo(-r * 0.9, r * 0.9);
+            ctx.lineTo(-r * 0.7, r * 0.2);
+            ctx.lineTo(-r * 0.35, -r * 0.4);
             ctx.closePath();
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            // Cockpit
+            ctx.fillStyle = `rgba(255,255,255,${0.3 * pulse})`;
+            ctx.beginPath();
+            ctx.ellipse(0, -r * 0.35, r * 0.15, r * 0.28, 0, 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            // Drifter — armored diamond with engine ports
+            const grad = ctx.createLinearGradient(0, -r, 0, r * 1.1);
+            grad.addColorStop(0, enemyColor);
+            grad.addColorStop(1, enemyCoreDark);
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.moveTo(0, -r * 1.05);
+            ctx.lineTo(r * 0.6, -r * 0.15);
+            ctx.lineTo(r * 0.8, r * 0.4);
+            ctx.lineTo(r * 0.3, r * 1.0);
+            ctx.lineTo(0, r * 0.7);
+            ctx.lineTo(-r * 0.3, r * 1.0);
+            ctx.lineTo(-r * 0.8, r * 0.4);
+            ctx.lineTo(-r * 0.6, -r * 0.15);
+            ctx.closePath();
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            // Engine ports
+            ctx.fillStyle = `rgba(255,200,150,${0.5 * pulse})`;
+            ctx.beginPath();
+            ctx.arc(-r * 0.25, r * 0.75, r * 0.1, 0, Math.PI * 2);
+            ctx.arc(r * 0.25, r * 0.75, r * 0.1, 0, Math.PI * 2);
+            ctx.fill();
+            // Cockpit
+            ctx.fillStyle = `rgba(255,255,255,${0.35 * pulse})`;
+            ctx.beginPath();
+            ctx.ellipse(0, -r * 0.3, r * 0.14, r * 0.24, 0, 0, Math.PI * 2);
+            ctx.fill();
           }
-          ctx.fill();
           ctx.restore();
         }
       }
@@ -2374,30 +2497,84 @@ export default function ShmupPlayScreen() {
             Math.sin(boss.age * 0.8) * 0.03
           );
         } else {
+          const br = boss.radius;
+          const bossColor = boss.phase === 1 ? activeMap.palette.bossPrimary : activeMap.palette.bossSecondary;
+          const bPulse = 0.88 + Math.sin(boss.age * 2.5) * 0.12;
           ctx.save();
           ctx.translate(boss.x, boss.y);
-          ctx.fillStyle = boss.phase === 1 ? activeMap.palette.bossPrimary : activeMap.palette.bossSecondary;
+
+          // Outer glow aura
+          ctx.shadowColor = bossColor;
+          ctx.shadowBlur = 24;
+
+          // Main hull — wide armored dreadnought
+          const hullGrad = ctx.createLinearGradient(0, -br * 1.1, 0, br * 1.2);
+          hullGrad.addColorStop(0, bossColor);
+          hullGrad.addColorStop(0.6, "#2a1535");
+          hullGrad.addColorStop(1, "#0d0810");
+          ctx.fillStyle = hullGrad;
           ctx.beginPath();
-          ctx.moveTo(0, boss.radius + 12);
-          ctx.lineTo(boss.radius + 20, 6);
-          ctx.lineTo(boss.radius - 8, -boss.radius + 4);
-          ctx.lineTo(18, -boss.radius - 18);
-          ctx.lineTo(0, -boss.radius + 8);
-          ctx.lineTo(-18, -boss.radius - 18);
-          ctx.lineTo(-boss.radius + 8, -boss.radius + 4);
-          ctx.lineTo(-boss.radius - 20, 6);
+          ctx.moveTo(0, -br * 1.1);
+          ctx.lineTo(br * 0.45, -br * 0.7);
+          ctx.lineTo(br * 1.1, -br * 0.15);
+          ctx.lineTo(br * 1.25, br * 0.4);
+          ctx.lineTo(br * 0.7, br * 1.0);
+          ctx.lineTo(br * 0.2, br * 1.15);
+          ctx.lineTo(0, br * 0.9);
+          ctx.lineTo(-br * 0.2, br * 1.15);
+          ctx.lineTo(-br * 0.7, br * 1.0);
+          ctx.lineTo(-br * 1.25, br * 0.4);
+          ctx.lineTo(-br * 1.1, -br * 0.15);
+          ctx.lineTo(-br * 0.45, -br * 0.7);
           ctx.closePath();
           ctx.fill();
+          ctx.shadowBlur = 0;
 
-          ctx.fillStyle = "rgba(255,255,255,0.18)";
-          ctx.fillRect(-boss.radius - 8, -10, 16, boss.radius + 14);
-          ctx.fillRect(boss.radius - 8, -10, 16, boss.radius + 14);
+          // Wing armor panels
+          const panelGrad = ctx.createLinearGradient(-br * 1.2, 0, br * 1.2, 0);
+          panelGrad.addColorStop(0, `${bossColor}44`);
+          panelGrad.addColorStop(0.5, `${bossColor}22`);
+          panelGrad.addColorStop(1, `${bossColor}44`);
+          ctx.fillStyle = panelGrad;
+          ctx.fillRect(-br * 1.15, -br * 0.1, br * 0.4, br * 0.9);
+          ctx.fillRect(br * 0.75, -br * 0.1, br * 0.4, br * 0.9);
 
-          ctx.fillStyle = "#f8f9fa";
+          // Central cockpit/eye
+          const eyeGrad = ctx.createRadialGradient(0, -br * 0.2, 2, 0, -br * 0.2, br * 0.35);
+          eyeGrad.addColorStop(0, "#ffffff");
+          eyeGrad.addColorStop(0.3, bossColor);
+          eyeGrad.addColorStop(1, `${bossColor}00`);
+          ctx.fillStyle = eyeGrad;
           ctx.beginPath();
-          ctx.arc(-16, -6, 7, 0, Math.PI * 2);
-          ctx.arc(16, -6, 7, 0, Math.PI * 2);
+          ctx.arc(0, -br * 0.2, br * 0.35 * bPulse, 0, Math.PI * 2);
           ctx.fill();
+
+          // Weapon turret mounts
+          ctx.fillStyle = `rgba(255,255,255,${0.4 * bPulse})`;
+          for (const turretX of [-br * 0.65, -br * 0.3, br * 0.3, br * 0.65]) {
+            ctx.beginPath();
+            ctx.arc(turretX, br * 0.5, br * 0.09, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // Engine array
+          ctx.fillStyle = `rgba(255,180,100,${0.55 * bPulse})`;
+          for (const engX of [-br * 0.4, 0, br * 0.4]) {
+            ctx.beginPath();
+            ctx.ellipse(engX, br * 1.0, br * 0.08, br * 0.15, 0, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // Panel line details
+          ctx.strokeStyle = `${bossColor}55`;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(-br * 0.45, -br * 0.7);
+          ctx.lineTo(-br * 0.2, br * 0.3);
+          ctx.moveTo(br * 0.45, -br * 0.7);
+          ctx.lineTo(br * 0.2, br * 0.3);
+          ctx.stroke();
+
           ctx.restore();
         }
       }

@@ -13,10 +13,10 @@ import { cursorMove, menuConfirm, pressStart } from "../lib/retroSfx";
 
 // ─── Menu items ─────────────────────────────────────────
 const MENU_ITEMS = [
-  { label: "SORTIE", route: "/shmup" },
+  { label: "PLAY", route: "/shmup" },
   { label: "LOADOUT", route: "/hangar" },
   { label: "COLLECTION", route: "/collection" },
-  { label: "REQUISITIONS", route: "/shop" },
+  { label: "STORE", route: "/shop" },
   { label: "SETTINGS", route: "/settings" },
 ] as const;
 

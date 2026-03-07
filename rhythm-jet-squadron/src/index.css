@@ -941,6 +941,43 @@ body::after {
   margin-left: 12px;
 }
 
+/* ─── Collection Filter Tabs ─────────────────────────── */
+
+.collection-filter-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 2px 4px;
+  border-radius: 12px;
+  background: rgba(20, 30, 55, 0.6);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.collection-tab {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.collection-tab:hover {
+  background: rgba(100, 140, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.collection-tab.active {
+  background: rgba(74, 118, 230, 0.25);
+  border-color: rgba(116, 192, 252, 0.4);
+  color: #fff;
+}
+
 /* ─── Play Screen ─────────────────────────────────────── */
 
 .play-screen {
@@ -1772,6 +1809,53 @@ body::after {
   .shmup-touch-secondary {
     width: 112px;
     height: 112px;
+  }
+
+  /* ─── Mobile shmup layout: minimize HUD, maximize game area ─── */
+  .play-screen .play-hud {
+    padding: 4px 8px;
+    gap: 4px;
+  }
+
+  .play-screen .hud-score {
+    font-size: 1.1rem;
+  }
+
+  .play-screen .shmup-hud-center {
+    display: none;
+  }
+
+  .play-screen .shmup-status-row {
+    display: none;
+  }
+
+  .play-screen .passive-badges {
+    display: none;
+  }
+
+  .play-screen .play-help {
+    display: none;
+  }
+
+  .secondary-indicator {
+    position: absolute;
+    right: 8px;
+    top: 80px;
+    width: auto;
+    min-width: 140px;
+    margin: 0;
+    padding: 6px 10px;
+    opacity: 0.7;
+    z-index: 15;
+    font-size: 0.7rem;
+  }
+
+  .secondary-indicator-title {
+    font-size: 0.68rem;
+  }
+
+  .secondary-indicator-meta {
+    font-size: 0.64rem;
   }
 
   .shmup-touch-knob {

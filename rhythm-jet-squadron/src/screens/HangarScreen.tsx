@@ -354,7 +354,7 @@ export default function HangarScreen() {
             onClick={() => navigate("/shmup")}
             disabled={!save.selectedPilotId || !save.selectedShipId}
           >
-            Deploy Sortie
+            Deploy Ship
           </button>
         </div>
       </div>
