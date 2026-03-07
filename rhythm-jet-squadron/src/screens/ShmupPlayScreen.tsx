@@ -1494,7 +1494,7 @@ export default function ShmupPlayScreen() {
           dronesUntilRef.current = elapsedMs + secondaryDurationMs;
           dronesFireTimerRef.current = 0;
           startSecondaryCooldown(elapsedMs);
-          addPulse(ship.x, ship.y, "#63e6be", 11, 120, 0.14, 2.2);
+          addPulse(ship.x, ship.y, "#00e5ff", 11, 120, 0.14, 2.2);
           return;
         case "none":
         default:
@@ -1744,8 +1744,8 @@ export default function ShmupPlayScreen() {
               maxLife: 1.35,
               radius: 3.2,
               damage: SHMUP_BALANCE.effects.droneDamage,
-              color: "#63e6be",
-              coreColor: "#e6fcf5",
+              color: "#00e5ff",
+              coreColor: "#b2fff9",
               length: 12,
               spriteKey: undefined,
               pierce: 0,
@@ -1791,6 +1791,11 @@ export default function ShmupPlayScreen() {
           bullet.vy = Math.abs(
             bullet.boomerangReturnVy > 0 ? bullet.boomerangReturnVy : bullet.vy * 0.78
           );
+        }
+
+        // Despawn boomerang bullets before they reach the player ship
+        if (bullet.boomerangReturning && bullet.y >= ship.y - ship.radius * 2) {
+          bullet.age = bullet.maxLife + 1;
         }
 
         if (bullet.homingTurnRate > 0 && bullet.homingRange > 0) {
@@ -2496,14 +2501,14 @@ export default function ShmupPlayScreen() {
           const orbitY = ship.y - 10 + Math.sin(angle) * 18;
           ctx.save();
           ctx.globalAlpha = 0.9;
-          ctx.fillStyle = "#63e6be";
-          ctx.shadowColor = "#63e6be";
+          ctx.fillStyle = "#00e5ff";
+          ctx.shadowColor = "#00e5ff";
           ctx.shadowBlur = 10;
           ctx.beginPath();
           ctx.arc(orbitX, orbitY, 5.8, 0, Math.PI * 2);
           ctx.fill();
           ctx.shadowBlur = 0;
-          ctx.fillStyle = "#e6fcf5";
+          ctx.fillStyle = "#b2fff9";
           ctx.beginPath();
           ctx.arc(orbitX, orbitY, 2.4, 0, Math.PI * 2);
           ctx.fill();
