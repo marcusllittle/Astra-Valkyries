@@ -1,28 +1,26 @@
 /**
- * Home Screen - Space-themed main menu with animated starfield,
- * configurable hero media (image or video), and glowing title.
+ * Home Screen — PS1/JRPG-style title screen.
  *
- * Hero media:  Drop your own file into public/assets/hero/
- *   Supported: hero.mp4, hero.webm, hero.png, hero.jpg, hero.webp
- *   The component auto-detects the format.
- *   If no file is found, a gradient fallback is shown.
+ * Two phases:
+ *  1. "title" — atmospheric starfield + glowing title + blinking "PRESS START"
+ *  2. "menu"  — title moves up, vertical menu with ▶ cursor + keyboard nav
  */
 
 import { useRef, useEffect, useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGame } from "../context/GameContext";
+import { cursorMove, menuConfirm, pressStart } from "../lib/retroSfx";
 
-// ─── Hero media config ───────────────────────────────────
-// Order matters: first match wins. Videos before images.
-const HERO_CANDIDATES = [
-  { src: "/assets/hero/hero.mp4", type: "video" },
-  { src: "/assets/hero/hero.webm", type: "video" },
-  { src: "/assets/hero/hero.png", type: "image" },
-  { src: "/assets/hero/hero.jpg", type: "image" },
-  { src: "/assets/hero/hero.webp", type: "image" },
+// ─── Menu items ─────────────────────────────────────────
+const MENU_ITEMS = [
+  { label: "SORTIE", route: "/shmup" },
+  { label: "LOADOUT", route: "/hangar" },
+  { label: "COLLECTION", route: "/collection" },
+  { label: "REQUISITIONS", route: "/shop" },
+  { label: "SETTINGS", route: "/settings" },
 ] as const;
 
-// ─── Starfield types ─────────────────────────────────────
+// ─── Starfield types ────────────────────────────────────
 
 interface Star {
   x: number;
@@ -31,92 +29,73 @@ interface Star {
   baseAlpha: number;
   twinkleSpeed: number;
   twinkleOffset: number;
+  speed: number;        // drift speed — far stars slow, near stars fast
   isHero: boolean;
-}
-
-interface FloatingParticle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  size: number;
-  alpha: number;
 }
 
 export default function HomeScreen() {
   const navigate = useNavigate();
   const { save } = useGame();
 
+  const [phase, setPhase] = useState<"title" | "menu">("title");
+  const [cursorIdx, setCursorIdx] = useState(0);
+  const [menuVisible, setMenuVisible] = useState(false);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef(0);
   const starsRef = useRef<Star[]>([]);
-  const floatersRef = useRef<FloatingParticle[]>([]);
 
-  // ─── Detect hero media ─────────────────────────────────
-  const [heroMedia, setHeroMedia] = useState<{ src: string; type: "video" | "image" } | null>(null);
+  // ─── Starfield init ───────────────────────────────────
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function probe() {
-      for (const candidate of HERO_CANDIDATES) {
-        try {
-          const res = await fetch(candidate.src, { method: "HEAD" });
-          if (res.ok && !cancelled) {
-            setHeroMedia({ src: candidate.src, type: candidate.type });
-            return;
-          }
-        } catch {
-          // not found, try next
-        }
-      }
-    }
-
-    probe();
-    return () => { cancelled = true; };
-  }, []);
-
-  // ─── Starfield ─────────────────────────────────────────
-
-  const initStars = useCallback((width: number, height: number) => {
+  const initStars = useCallback((w: number, h: number) => {
     const stars: Star[] = [];
-    for (let i = 0; i < 120; i++) {
+
+    // Far layer — small, slow
+    for (let i = 0; i < 100; i++) {
       stars.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        size: 0.5 + Math.random() * 2,
-        baseAlpha: 0.3 + Math.random() * 0.7,
-        twinkleSpeed: 0.5 + Math.random() * 2,
+        x: Math.random() * w,
+        y: Math.random() * h,
+        size: 0.4 + Math.random() * 1,
+        baseAlpha: 0.2 + Math.random() * 0.4,
+        twinkleSpeed: 0.3 + Math.random() * 1.2,
         twinkleOffset: Math.random() * Math.PI * 2,
+        speed: 0.02 + Math.random() * 0.04,
         isHero: false,
       });
     }
-    for (let i = 0; i < 6; i++) {
+
+    // Near layer — larger, faster
+    for (let i = 0; i < 40; i++) {
       stars.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
+        x: Math.random() * w,
+        y: Math.random() * h,
+        size: 1 + Math.random() * 2,
+        baseAlpha: 0.4 + Math.random() * 0.6,
+        twinkleSpeed: 0.5 + Math.random() * 2,
+        twinkleOffset: Math.random() * Math.PI * 2,
+        speed: 0.06 + Math.random() * 0.1,
+        isHero: false,
+      });
+    }
+
+    // Hero stars with lens flares
+    for (let i = 0; i < 5; i++) {
+      stars.push({
+        x: Math.random() * w,
+        y: Math.random() * h,
         size: 2 + Math.random() * 1.5,
         baseAlpha: 0.8 + Math.random() * 0.2,
         twinkleSpeed: 0.3 + Math.random() * 0.5,
         twinkleOffset: Math.random() * Math.PI * 2,
+        speed: 0.03 + Math.random() * 0.05,
         isHero: true,
       });
     }
-    starsRef.current = stars;
 
-    const floaters: FloatingParticle[] = [];
-    for (let i = 0; i < 8; i++) {
-      floaters.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 8,
-        vy: -(5 + Math.random() * 10),
-        size: 1.5 + Math.random() * 2.5,
-        alpha: 0.15 + Math.random() * 0.25,
-      });
-    }
-    floatersRef.current = floaters;
+    starsRef.current = stars;
   }, []);
+
+  // ─── Canvas animation ─────────────────────────────────
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -143,7 +122,7 @@ export default function HomeScreen() {
       for (const star of starsRef.current) {
         const twinkle = Math.sin(time * star.twinkleSpeed + star.twinkleOffset);
         const alpha = star.baseAlpha * (0.6 + 0.4 * twinkle);
-        star.y += 0.08;
+        star.y += star.speed;
         if (star.y > h + 5) { star.y = -5; star.x = Math.random() * w; }
 
         ctx.save();
@@ -170,23 +149,6 @@ export default function HomeScreen() {
         ctx.restore();
       }
 
-      for (const p of floatersRef.current) {
-        p.x += p.vx / 60;
-        p.y += p.vy / 60;
-        if (p.y < -10) { p.y = h + 10; p.x = Math.random() * w; }
-        if (p.x < -10) p.x = w + 10;
-        if (p.x > w + 10) p.x = -10;
-        ctx.save();
-        ctx.globalAlpha = p.alpha;
-        ctx.shadowColor = "#667eea";
-        ctx.shadowBlur = 6;
-        ctx.fillStyle = "#aabbff";
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      }
-
       animRef.current = requestAnimationFrame(loop);
     };
 
@@ -197,86 +159,110 @@ export default function HomeScreen() {
     };
   }, [initStars]);
 
-  // ─── Render ────────────────────────────────────────────
+  // ─── Transition to menu ───────────────────────────────
+
+  const enterMenu = useCallback(() => {
+    if (phase !== "title") return;
+    pressStart();
+    setPhase("menu");
+    // Stagger menu entrance
+    setTimeout(() => setMenuVisible(true), 300);
+  }, [phase]);
+
+  // ─── Keyboard navigation ─────────────────────────────
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (phase === "title") {
+        enterMenu();
+        return;
+      }
+
+      switch (e.key) {
+        case "ArrowUp":
+          e.preventDefault();
+          setCursorIdx(i => {
+            cursorMove();
+            return i <= 0 ? MENU_ITEMS.length - 1 : i - 1;
+          });
+          break;
+        case "ArrowDown":
+          e.preventDefault();
+          setCursorIdx(i => {
+            cursorMove();
+            return i >= MENU_ITEMS.length - 1 ? 0 : i + 1;
+          });
+          break;
+        case "Enter":
+        case " ":
+          e.preventDefault();
+          menuConfirm();
+          navigate(MENU_ITEMS[cursorIdx].route);
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [phase, cursorIdx, enterMenu, navigate]);
+
+  // ─── Render ───────────────────────────────────────────
 
   return (
-    <div className="screen home-screen">
+    <div
+      className={`screen home-screen ${phase === "menu" ? "home-menu-phase" : ""}`}
+      onClick={phase === "title" ? enterMenu : undefined}
+    >
       <canvas ref={canvasRef} className="home-starfield" />
       <div className="home-atmosphere" aria-hidden />
       <div className="home-vignette" aria-hidden />
 
-      <header className="home-topbar">
-        <div className="home-credits-pill">
-          <span className="credit-icon">{"\u2726"}</span> {save.credits.toLocaleString()} Credits
-        </div>
-      </header>
-
-      <div className="home-hero-stage">
-        <section className="home-title-block">
-          <p className="home-kicker">Featured Sortie</p>
-          <h1 className="game-title">
-            <span className="title-line title-astra">ASTRA</span>
-            <span className="title-line title-valkyries">VALKYRIES</span>
-          </h1>
-          <div className="title-light-line" />
-          <p className="subtitle">Assemble your squad. Tune your frame. Launch into the frontline.</p>
-          <div className="home-banner-meta">
-            <span className="home-meta-chip">Current Banner</span>
-            <span className="home-meta-chip">Pilot Collection</span>
-            <span className="home-meta-chip">Arcade Operations</span>
+      {/* Credits — visible in menu phase */}
+      {phase === "menu" && (
+        <header className="home-topbar home-fade-in">
+          <div className="home-credits-pill">
+            <span className="credit-icon">{"\u2726"}</span> {save.credits.toLocaleString()} Credits
           </div>
+        </header>
+      )}
 
-          <nav className="home-action-cluster">
-            <div className="home-primary-row">
-              <button className="btn home-menu-btn home-menu-primary" onClick={() => navigate("/shmup")}>
-                Deploy
+      {/* Title area — centered in title phase, moves up in menu phase */}
+      <div className="home-title-area">
+        <h1 className="game-title">
+          <span className="title-line title-astra">ASTRA</span>
+          <span className="title-line title-valkyries">VALKYRIES</span>
+        </h1>
+        <div className="title-light-line" />
+
+        {/* PRESS START — only in title phase */}
+        {phase === "title" && (
+          <p className="press-start">PRESS START</p>
+        )}
+
+        {/* Vertical menu — only in menu phase */}
+        {phase === "menu" && menuVisible && (
+          <nav className="retro-menu">
+            {MENU_ITEMS.map((item, i) => (
+              <button
+                key={item.route}
+                className={`retro-menu-item ${cursorIdx === i ? "active" : ""}`}
+                style={{ "--i": i } as React.CSSProperties}
+                onClick={() => { menuConfirm(); navigate(item.route); }}
+                onMouseEnter={() => {
+                  if (cursorIdx !== i) {
+                    cursorMove();
+                    setCursorIdx(i);
+                  }
+                }}
+              >
+                <span className="retro-menu-cursor" aria-hidden>
+                  {cursorIdx === i ? "▶" : "\u00A0\u00A0"}
+                </span>
+                <span className="retro-menu-label">{item.label}</span>
               </button>
-              <button className="btn home-menu-btn home-menu-primary" onClick={() => navigate("/hangar")}>
-                Loadout
-              </button>
-            </div>
-            <div className="home-secondary-row">
-              <button className="btn home-menu-btn home-menu-secondary" onClick={() => navigate("/collection")}>
-                Collection
-              </button>
-              <button className="btn home-menu-btn home-menu-secondary" onClick={() => navigate("/shop")}>
-                Shop
-              </button>
-            </div>
-            <button className="btn home-menu-btn home-menu-tertiary" onClick={() => navigate("/settings")}>
-              Settings
-            </button>
+            ))}
           </nav>
-        </section>
-
-        {/* Hero media slot — drop your own image or video in public/assets/hero/ */}
-        <aside className="home-hero-media" aria-label="Hero media">
-          <div className="home-hero-media-inner">
-            {heroMedia?.type === "video" ? (
-              <video
-                className="home-hero-media-content"
-                src={heroMedia.src}
-                autoPlay
-                loop
-                muted
-                playsInline
-              />
-            ) : heroMedia?.type === "image" ? (
-              <img
-                className="home-hero-media-content"
-                src={heroMedia.src}
-                alt="Astra Valkyries"
-                loading="eager"
-              />
-            ) : (
-              <div
-                className="home-hero-media-content home-hero-fallback"
-                aria-hidden
-              />
-            )}
-            <div className="home-hero-media-vignette" aria-hidden />
-          </div>
-        </aside>
+        )}
       </div>
     </div>
   );
