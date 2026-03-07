@@ -1217,6 +1217,134 @@ export function spawnPrimaryShots(
       );
       break;
     }
+    case "blazing_laser": {
+      // Blazing Lazers-style: thin beam → twin beams → triple + side beams → full power spread
+      if (level === 1) {
+        // Single focused beam
+        shots.push(
+          createBullet(primaryKey, state, {
+            radius: 3.6,
+            length: 52,
+            vy: -speed(1200, precisionRoute),
+            damage: damage(0.72, level, precisionRoute, aggressiveRoute),
+            pierce: 3,
+            maxLife: 0.65,
+          })
+        );
+        break;
+      }
+
+      if (level === 2) {
+        // Twin parallel beams — the classic double laser
+        shots.push(
+          createBullet(primaryKey, state, {
+            x: state.x - 6,
+            radius: 3.8,
+            length: 56,
+            vy: -speed(1220, precisionRoute),
+            damage: damage(0.68, level, precisionRoute, aggressiveRoute),
+            pierce: 3,
+            maxLife: 0.68,
+          }),
+          createBullet(primaryKey, state, {
+            x: state.x + 6,
+            radius: 3.8,
+            length: 56,
+            vy: -speed(1220, precisionRoute),
+            damage: damage(0.68, level, precisionRoute, aggressiveRoute),
+            pierce: 3,
+            maxLife: 0.68,
+          })
+        );
+        break;
+      }
+
+      if (level === 3) {
+        // Triple beam — center power beam flanked by two side beams
+        shots.push(
+          createBullet(primaryKey, state, {
+            x: state.x - 12,
+            radius: 3.6,
+            length: 50,
+            vy: -speed(1180, precisionRoute),
+            damage: damage(0.58, level, precisionRoute, aggressiveRoute),
+            pierce: 3,
+            maxLife: 0.72,
+          }),
+          createBullet(primaryKey, state, {
+            x: state.x,
+            radius: 4.4,
+            length: 62,
+            vy: -speed(1260, precisionRoute),
+            damage: damage(0.82, level, precisionRoute, aggressiveRoute),
+            pierce: 4,
+            maxLife: 0.7,
+          }),
+          createBullet(primaryKey, state, {
+            x: state.x + 12,
+            radius: 3.6,
+            length: 50,
+            vy: -speed(1180, precisionRoute),
+            damage: damage(0.58, level, precisionRoute, aggressiveRoute),
+            pierce: 3,
+            maxLife: 0.72,
+          })
+        );
+        break;
+      }
+
+      // Level 4: Full power — wide beam spread like max-power Blazing Lazers
+      shots.push(
+        createBullet(primaryKey, state, {
+          x: state.x - 20,
+          vx: -spread(60, precisionRoute),
+          radius: 3.4,
+          length: 46,
+          vy: -speed(1140, precisionRoute),
+          damage: damage(0.48, level, precisionRoute, aggressiveRoute),
+          pierce: 2,
+          maxLife: 0.74,
+        }),
+        createBullet(primaryKey, state, {
+          x: state.x - 8,
+          radius: 4,
+          length: 58,
+          vy: -speed(1240, precisionRoute),
+          damage: damage(0.66, level, precisionRoute, aggressiveRoute),
+          pierce: 4,
+          maxLife: 0.7,
+        }),
+        createBullet(primaryKey, state, {
+          x: state.x,
+          radius: 5,
+          length: 68,
+          vy: -speed(1300, precisionRoute),
+          damage: damage(0.92, level, precisionRoute, aggressiveRoute),
+          pierce: 5,
+          maxLife: 0.68,
+        }),
+        createBullet(primaryKey, state, {
+          x: state.x + 8,
+          radius: 4,
+          length: 58,
+          vy: -speed(1240, precisionRoute),
+          damage: damage(0.66, level, precisionRoute, aggressiveRoute),
+          pierce: 4,
+          maxLife: 0.7,
+        }),
+        createBullet(primaryKey, state, {
+          x: state.x + 20,
+          vx: spread(60, precisionRoute),
+          radius: 3.4,
+          length: 46,
+          vy: -speed(1140, precisionRoute),
+          damage: damage(0.48, level, precisionRoute, aggressiveRoute),
+          pierce: 2,
+          maxLife: 0.74,
+        })
+      );
+      break;
+    }
     case "standard":
     default: {
       if (level === 1) {

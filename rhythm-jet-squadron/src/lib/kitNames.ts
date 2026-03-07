@@ -8,6 +8,7 @@ const PRIMARY_NAMES: Record<string, string> = {
   void_rake: "Void Rake",
   photon_laser: "Photon Laser",
   homing_missiles: "Homing Missiles",
+  blazing_laser: "Blazing Laser",
 };
 
 const SECONDARY_NAMES: Record<string, string> = {

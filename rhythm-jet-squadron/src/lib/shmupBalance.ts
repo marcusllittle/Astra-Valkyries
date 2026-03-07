@@ -7,7 +7,8 @@ export type ShmupPrimaryKey =
   | "aurora_harmonics"
   | "void_rake"
   | "photon_laser"
-  | "homing_missiles";
+  | "homing_missiles"
+  | "blazing_laser";
 
 export type ShmupSecondaryKey =
   | "none"
@@ -183,6 +184,17 @@ export const SHMUP_BALANCE: {
       life: 2,
       color: "#ffd58a",
       coreColor: "#fff8db",
+    },
+    blazing_laser: {
+      baseFireInterval: 0.07,
+      overdriveFireInterval: 0.048,
+      damage: 0.68,
+      speed: 1200,
+      radius: 3.6,
+      length: 52,
+      life: 0.7,
+      color: "#ff4444",
+      coreColor: "#ffcccc",
     },
   },
   secondaries: {
