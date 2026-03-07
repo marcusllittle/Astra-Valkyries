@@ -83,7 +83,7 @@ export default function ShopScreen() {
           <span className="credit-icon">✦</span> {save.credits.toLocaleString()} Credits
         </div>
         <p className="shop-flavor">
-          Limited sortie wardrobe uplink is active. High-rarity pulls unlock advanced shmup kits and cut-ins.
+          Limited wardrobe uplink is active. High-rarity pulls unlock advanced kits and cut-ins.
         </p>
       </section>
 

@@ -1,8 +1,9 @@
 /**
  * Collection Screen - View all owned outfits with details, upgrade with shards.
+ * Sorted by pilot with filter tabs for easy browsing.
  */
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGame } from "../context/GameContext";
 import { canUpgrade, SHARD_THRESHOLDS } from "../lib/gacha";
@@ -19,10 +20,20 @@ const RARITY_COLORS: Record<string, string> = {
   SSR: "#ffd43b",
 };
 
+const RARITY_ORDER: Record<string, number> = {
+  SSR: 0,
+  SR: 1,
+  Rare: 2,
+  Common: 3,
+};
+
+type FilterTab = "all" | string;
+
 export default function CollectionScreen() {
   const navigate = useNavigate();
   const { save, upgradeOutfit } = useGame();
   const [previewOutfitId, setPreviewOutfitId] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<FilterTab>("all");
 
   const allOutfits = outfitsData as Outfit[];
   const pilots = pilotsData as Pilot[];
@@ -31,6 +42,23 @@ export default function CollectionScreen() {
   save.ownedOutfits.forEach((o) => ownedMap.set(o.outfitId, o));
 
   const ownedCount = allOutfits.filter((outfit) => ownedMap.has(outfit.id)).length;
+
+  // Filter and sort: by pilot, then owned first, then rarity
+  const filteredOutfits = useMemo(() => {
+    let list = allOutfits;
+    if (activeFilter !== "all") {
+      list = list.filter((outfit) => outfit.pilotId === activeFilter);
+    }
+    return [...list].sort((a, b) => {
+      const aOwned = ownedMap.has(a.id) ? 0 : 1;
+      const bOwned = ownedMap.has(b.id) ? 0 : 1;
+      if (aOwned !== bOwned) return aOwned - bOwned;
+      const aRarity = RARITY_ORDER[a.rarity] ?? 9;
+      const bRarity = RARITY_ORDER[b.rarity] ?? 9;
+      return aRarity - bRarity;
+    });
+  }, [allOutfits, activeFilter, save.ownedOutfits]);
+
   const previewOutfit = previewOutfitId
     ? allOutfits.find((outfit) => outfit.id === previewOutfitId) ?? null
     : null;
@@ -40,6 +68,11 @@ export default function CollectionScreen() {
     ? SHARD_THRESHOLDS[previewOwned.stars + 1]
     : null;
   const previewUpgradable = previewOwned ? canUpgrade(previewOwned) : false;
+
+  const filterTabs: { key: FilterTab; label: string }[] = [
+    { key: "all", label: "All" },
+    ...pilots.map((p) => ({ key: p.id, label: p.name.split(" ")[0] })),
+  ];
 
   return (
     <div className="screen collection-screen">
@@ -51,8 +84,20 @@ export default function CollectionScreen() {
         </div>
       </div>
 
+      <div className="collection-filter-tabs">
+        {filterTabs.map((tab) => (
+          <button
+            key={tab.key}
+            className={`collection-tab ${activeFilter === tab.key ? "active" : ""}`}
+            onClick={() => setActiveFilter(tab.key)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       <div className="card-grid collection-grid">
-        {allOutfits.map((outfit) => {
+        {filteredOutfits.map((outfit) => {
           const owned = ownedMap.get(outfit.id);
           const isOwned = Boolean(owned);
           const upgradable = owned ? canUpgrade(owned) : false;
@@ -87,7 +132,7 @@ export default function CollectionScreen() {
                 </div>
                 {outfit.pilotId && (
                   <div className="rarity-badge">
-                    Pilot-Specific: {pilotNameById.get(outfit.pilotId) ?? outfit.pilotId}
+                    {pilotNameById.get(outfit.pilotId) ?? outfit.pilotId}
                   </div>
                 )}
                 <div className="perk-label">{summarizeOutfitKit(outfit)}</div>
@@ -114,7 +159,7 @@ export default function CollectionScreen() {
       </div>
 
       {ownedCount === 0 && (
-        <p className="empty-msg">No outfits yet. Visit the Shop to pull!</p>
+        <p className="empty-msg">No outfits yet. Visit the Store to pull!</p>
       )}
 
       {previewOutfit && (
@@ -145,7 +190,7 @@ export default function CollectionScreen() {
                 </div>
                 {previewOutfit.pilotId && (
                   <div className="rarity-badge">
-                    Pilot-Specific: {pilotNameById.get(previewOutfit.pilotId) ?? previewOutfit.pilotId}
+                    {pilotNameById.get(previewOutfit.pilotId) ?? previewOutfit.pilotId}
                   </div>
                 )}
                 <div className="perk-label">{summarizeOutfitKit(previewOutfit)}</div>

@@ -52,9 +52,9 @@ export function getPrimaryFireInterval(
 
 function levelDamageScale(level: number): number {
   if (level <= 1) return 1;
-  if (level === 2) return 1.11;
-  if (level === 3) return 1.22;
-  return 1.34;
+  if (level === 2) return 1.18;
+  if (level === 3) return 1.38;
+  return 1.6;
 }
 
 function withPrimaryColors(
