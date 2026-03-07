@@ -1185,21 +1185,30 @@ body::after {
 }
 
 .shmup-touch-controls {
-  width: 100%;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 14px;
-  padding: 8px 12px 2px;
+  padding: 18px 16px;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.shmup-touch-controls > * {
+  pointer-events: auto;
 }
 
 .shmup-touch-pad {
   width: 132px;
   height: 132px;
   border-radius: 999px;
-  border: 1px solid rgba(116, 192, 252, 0.4);
-  background: radial-gradient(circle at 35% 30%, rgba(71, 145, 255, 0.24), rgba(11, 21, 40, 0.8));
-  box-shadow: inset 0 0 22px rgba(98, 164, 255, 0.16);
+  border: 1.5px solid rgba(116, 192, 252, 0.25);
+  background: radial-gradient(circle at 35% 30%, rgba(71, 145, 255, 0.1), rgba(11, 21, 40, 0.2));
+  box-shadow: inset 0 0 16px rgba(98, 164, 255, 0.08);
   position: relative;
   touch-action: none;
   user-select: none;
@@ -1207,8 +1216,9 @@ body::after {
 }
 
 .shmup-touch-pad.active {
-  border-color: rgba(153, 218, 255, 0.78);
-  box-shadow: 0 0 16px rgba(99, 230, 190, 0.24), inset 0 0 26px rgba(98, 164, 255, 0.24);
+  border-color: rgba(153, 218, 255, 0.5);
+  background: radial-gradient(circle at 35% 30%, rgba(71, 145, 255, 0.15), rgba(11, 21, 40, 0.25));
+  box-shadow: 0 0 12px rgba(99, 230, 190, 0.15), inset 0 0 20px rgba(98, 164, 255, 0.12);
 }
 
 .shmup-touch-ring {
@@ -1218,7 +1228,7 @@ body::after {
   width: 90px;
   height: 90px;
   border-radius: 999px;
-  border: 1px dashed rgba(166, 203, 255, 0.35);
+  border: 1px dashed rgba(166, 203, 255, 0.18);
   transform: translate(-50%, -50%);
 }
 
@@ -1229,9 +1239,9 @@ body::after {
   width: 44px;
   height: 44px;
   border-radius: 999px;
-  border: 1px solid rgba(215, 236, 255, 0.65);
-  background: radial-gradient(circle at 32% 28%, rgba(208, 238, 255, 0.92), rgba(93, 180, 255, 0.72));
-  box-shadow: 0 4px 14px rgba(77, 171, 247, 0.38);
+  border: 1.5px solid rgba(215, 236, 255, 0.4);
+  background: radial-gradient(circle at 32% 28%, rgba(208, 238, 255, 0.35), rgba(93, 180, 255, 0.2));
+  box-shadow: 0 2px 8px rgba(77, 171, 247, 0.15);
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
@@ -1244,7 +1254,7 @@ body::after {
   font-size: 0.64rem;
   text-transform: uppercase;
   letter-spacing: 0.09em;
-  color: #c9dcff;
+  color: rgba(201, 220, 255, 0.45);
   pointer-events: none;
 }
 
@@ -1252,20 +1262,22 @@ body::after {
   width: 126px;
   height: 126px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 184, 107, 0.6);
-  color: #fff4d6;
+  border: 1.5px solid rgba(255, 184, 107, 0.3);
+  color: rgba(255, 244, 214, 0.5);
   font-size: 0.86rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  background: radial-gradient(circle at 30% 24%, rgba(255, 211, 135, 0.5), rgba(80, 45, 11, 0.92));
-  box-shadow: 0 6px 16px rgba(255, 146, 43, 0.28);
+  background: radial-gradient(circle at 30% 24%, rgba(255, 211, 135, 0.15), rgba(80, 45, 11, 0.25));
+  box-shadow: 0 2px 8px rgba(255, 146, 43, 0.1);
   touch-action: manipulation;
 }
 
 .shmup-touch-secondary:active {
   transform: scale(0.96);
-  box-shadow: 0 0 20px rgba(255, 178, 74, 0.5);
+  border-color: rgba(255, 184, 107, 0.5);
+  background: radial-gradient(circle at 30% 24%, rgba(255, 211, 135, 0.25), rgba(80, 45, 11, 0.35));
+  box-shadow: 0 0 14px rgba(255, 178, 74, 0.25);
 }
 
 .play-help {
@@ -1753,7 +1765,7 @@ body::after {
   }
 
   .shmup-touch-controls {
-    padding: 8px 10px 0;
+    padding: 12px 10px;
   }
 
   .shmup-touch-pad,
