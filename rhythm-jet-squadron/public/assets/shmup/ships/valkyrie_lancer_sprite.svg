@@ -1,0 +1,79 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Valkyrie Lancer: Red/Orange - aggressive, heavy assault -->
+    <linearGradient id="hull" x1="128" y1="20" x2="128" y2="218" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFE0CC"/>
+      <stop offset="0.2" stop-color="#FF9966"/>
+      <stop offset="0.55" stop-color="#FF5E62"/>
+      <stop offset="1" stop-color="#7F1D1D"/>
+    </linearGradient>
+    <linearGradient id="wing" x1="128" y1="80" x2="128" y2="220" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E04040"/>
+      <stop offset="0.5" stop-color="#A01818"/>
+      <stop offset="1" stop-color="#3A0808"/>
+    </linearGradient>
+    <linearGradient id="cockpit" x1="128" y1="50" x2="128" y2="130" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFE8B0"/>
+      <stop offset="0.5" stop-color="#FFAA44"/>
+      <stop offset="1" stop-color="#CC4400"/>
+    </linearGradient>
+    <radialGradient id="engine" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(128 212) rotate(90) scale(32 26)">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="0.25" stop-color="#FFD080"/>
+      <stop offset="0.6" stop-color="#FF6633" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#FF4400" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow" x="68" y="178" width="120" height="64" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
+  </defs>
+
+  <!-- Engine glow - larger for assault ship -->
+  <g opacity="0.9" filter="url(#glow)">
+    <ellipse cx="128" cy="212" rx="32" ry="22" fill="url(#engine)"/>
+  </g>
+
+  <!-- Main fuselage - wider, more aggressive body -->
+  <path d="M128 20L152 72L164 146L128 222L92 146L104 72Z" fill="url(#hull)"/>
+
+  <!-- Heavy forward-swept wings - lancer assault style -->
+  <path d="M104 82L62 126L34 186L100 160L110 106Z" fill="url(#wing)"/>
+  <path d="M152 82L194 126L222 186L156 160L146 106Z" fill="url(#wing)"/>
+
+  <!-- Wing weapon pods -->
+  <path d="M52 150L34 186L54 180L60 154Z" fill="#8A1414"/>
+  <path d="M204 150L222 186L202 180L196 154Z" fill="#8A1414"/>
+
+  <!-- Pod tips (weapon barrels) -->
+  <path d="M42 166L34 186L50 176Z" fill="#FF6040" opacity="0.8"/>
+  <path d="M214 166L222 186L206 176Z" fill="#FF6040" opacity="0.8"/>
+
+  <!-- Wing edge highlights -->
+  <path d="M34 186L62 126" stroke="#FF7755" stroke-width="2" opacity="0.6"/>
+  <path d="M222 186L194 126" stroke="#FF7755" stroke-width="2" opacity="0.6"/>
+
+  <!-- Cockpit canopy - amber tint -->
+  <path d="M128 50L142 88L128 136L114 88Z" fill="url(#cockpit)"/>
+
+  <!-- Nose - sharper lance tip -->
+  <path d="M128 24L138 60H118Z" fill="#FFEEDD"/>
+
+  <!-- Central armor plating -->
+  <path d="M128 138L150 186L128 218L106 186Z" fill="#4A0E0E"/>
+
+  <!-- Armor panel lines -->
+  <path d="M108 82L128 94L148 82" stroke="#FF8866" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+  <path d="M94 120L128 136L162 120" stroke="#FF6644" stroke-width="3" stroke-linecap="round" opacity="0.55"/>
+  <path d="M106 158L128 170L150 158" stroke="#FF8855" stroke-width="2.5" stroke-linecap="round" opacity="0.5"/>
+
+  <!-- Twin thruster outlets -->
+  <path d="M116 194L120 212L124 194" stroke="#FFAA66" stroke-width="3" stroke-linecap="round" opacity="0.85"/>
+  <path d="M132 194L136 212L140 194" stroke="#FFAA66" stroke-width="3" stroke-linecap="round" opacity="0.85"/>
+  <path d="M118 200H126" stroke="#FFE0B0" stroke-width="4" stroke-linecap="round"/>
+  <path d="M130 200H138" stroke="#FFE0B0" stroke-width="4" stroke-linecap="round"/>
+  <path d="M120 206H124" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/>
+  <path d="M132 206H136" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Cockpit highlight -->
+  <path d="M128 56L136 78H120Z" fill="#FFE8CC" opacity="0.85"/>
+</svg>

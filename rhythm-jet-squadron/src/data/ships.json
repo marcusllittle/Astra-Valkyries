@@ -12,7 +12,7 @@
     },
     "artPlaceholder": "linear-gradient(135deg, #6fb1fc 0%, #4364f7 45%, #1f2f98 100%)",
     "artUrl": "/assets/ships/astra_interceptor.png",
-    "spriteUrl": "/assets/shmup/ships/astra_interceptor_sprite.png",
+    "spriteUrl": "/assets/shmup/ships/astra_interceptor_sprite.svg",
     "trait": {
       "label": "Slipstream Core",
       "description": "Higher strafe speed and faster overdrive charging keep multiplier routes active."
@@ -40,7 +40,7 @@
     },
     "artPlaceholder": "linear-gradient(135deg, #ff9966 0%, #ff5e62 55%, #7f1d1d 100%)",
     "artUrl": "/assets/ships/valkyrie_lancer.png",
-    "spriteUrl": "/assets/shmup/ships/valkyrie_lancer_sprite.png",
+    "spriteUrl": "/assets/shmup/ships/valkyrie_lancer_sprite.svg",
     "trait": {
       "label": "Frontline Vector",
       "description": "Pushes passive score multiplier and combo-route growth for aggressive scoring."
@@ -68,7 +68,7 @@
     },
     "artPlaceholder": "linear-gradient(135deg, #d3cce3 0%, #8ec5fc 45%, #2b5876 100%)",
     "artUrl": "/assets/ships/seraph_guard.png",
-    "spriteUrl": "/assets/shmup/ships/seraph_guard_sprite.png",
+    "spriteUrl": "/assets/shmup/ships/seraph_guard_sprite.svg",
     "trait": {
       "label": "Aegis Loop",
       "description": "Extra hull integrity and longer overdrive windows make high-value chains easier to preserve."

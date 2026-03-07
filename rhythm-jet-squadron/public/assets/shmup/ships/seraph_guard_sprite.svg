@@ -1,0 +1,90 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Seraph Guard: Silver/White/Light-Blue - bulwark, elegant, commanding -->
+    <linearGradient id="hull" x1="128" y1="18" x2="128" y2="224" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="0.2" stop-color="#E8E4F0"/>
+      <stop offset="0.5" stop-color="#D3CCE3"/>
+      <stop offset="0.75" stop-color="#8EC5FC"/>
+      <stop offset="1" stop-color="#2B5876"/>
+    </linearGradient>
+    <linearGradient id="wing" x1="128" y1="90" x2="128" y2="216" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B8C8E0"/>
+      <stop offset="0.4" stop-color="#7A9AC0"/>
+      <stop offset="1" stop-color="#1A3050"/>
+    </linearGradient>
+    <linearGradient id="cockpit" x1="128" y1="46" x2="128" y2="134" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E0F0FF"/>
+      <stop offset="0.4" stop-color="#A0D4FF"/>
+      <stop offset="1" stop-color="#4080B0"/>
+    </linearGradient>
+    <linearGradient id="shield" x1="128" y1="70" x2="128" y2="200" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#C8D8F0" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="#6090C0" stop-opacity="0.3"/>
+    </linearGradient>
+    <radialGradient id="engine" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(128 214) rotate(90) scale(36 28)">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="0.3" stop-color="#C0E8FF"/>
+      <stop offset="0.6" stop-color="#80C4FF" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#60A0E0" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow" x="64" y="178" width="128" height="68" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
+    <filter id="shieldGlow" x="40" y="60" width="176" height="160" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="3"/>
+    </filter>
+  </defs>
+
+  <!-- Engine glow - wide for a heavier ship -->
+  <g opacity="0.8" filter="url(#glow)">
+    <ellipse cx="128" cy="214" rx="36" ry="22" fill="url(#engine)"/>
+  </g>
+
+  <!-- Shield ring hint (bulwark identity) -->
+  <g opacity="0.25" filter="url(#shieldGlow)">
+    <ellipse cx="128" cy="130" rx="72" ry="56" fill="none" stroke="#8EC5FC" stroke-width="3"/>
+  </g>
+
+  <!-- Main fuselage - wider, more armored body -->
+  <path d="M128 18L156 76L168 150L128 226L88 150L100 76Z" fill="url(#hull)"/>
+
+  <!-- Broad stabilizer wings - wide protective shape -->
+  <path d="M100 90L68 130L46 190L96 164L108 112Z" fill="url(#wing)"/>
+  <path d="M156 90L188 130L210 190L160 164L148 112Z" fill="url(#wing)"/>
+
+  <!-- Shield plate extensions (bulwark style) -->
+  <path d="M68 130L56 156L46 190L66 178Z" fill="#5580A8"/>
+  <path d="M188 130L200 156L210 190L190 178Z" fill="#5580A8"/>
+
+  <!-- Wing armor plating highlights -->
+  <path d="M46 190L68 130" stroke="#B0C8E0" stroke-width="2.5" opacity="0.55"/>
+  <path d="M210 190L188 130" stroke="#B0C8E0" stroke-width="2.5" opacity="0.55"/>
+
+  <!-- Cockpit canopy - tall elegant dome -->
+  <path d="M128 46L142 92L128 140L114 92Z" fill="url(#cockpit)"/>
+
+  <!-- Crown-like nose structure (seraph motif) -->
+  <path d="M128 22L118 50L128 46L138 50Z" fill="#F0F4FF"/>
+  <path d="M128 18L122 40H134Z" fill="#FFFFFF"/>
+
+  <!-- Central spine - armored command section -->
+  <path d="M128 142L152 190L128 222L104 190Z" fill="#2A4060"/>
+
+  <!-- Decorative panel lines -->
+  <path d="M106 86L128 98L150 86" stroke="#B0D0F0" stroke-width="3" stroke-linecap="round" opacity="0.65"/>
+  <path d="M94 122L128 138L162 122" stroke="#90B8E0" stroke-width="3" stroke-linecap="round" opacity="0.5"/>
+  <path d="M104 160L128 174L152 160" stroke="#A0C4E8" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+
+  <!-- Halo/crown accent on top (seraph identity) -->
+  <path d="M114 42L128 34L142 42" stroke="#C0DCFF" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+
+  <!-- Wide thruster bank -->
+  <path d="M110 196L118 216L126 196" stroke="#A0D4FF" stroke-width="2.5" stroke-linecap="round" opacity="0.8"/>
+  <path d="M130 196L138 216L146 196" stroke="#A0D4FF" stroke-width="2.5" stroke-linecap="round" opacity="0.8"/>
+  <path d="M114 204H142" stroke="#D0E8FF" stroke-width="4" stroke-linecap="round"/>
+  <path d="M122 210H134" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Cockpit highlight -->
+  <path d="M128 52L136 82H120Z" fill="#E8F4FF" opacity="0.85"/>
+</svg>

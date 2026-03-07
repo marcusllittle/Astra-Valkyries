@@ -1,0 +1,76 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Astra Interceptor: Blue/Cyan - sleek, fast, angular -->
+    <linearGradient id="hull" x1="128" y1="16" x2="128" y2="220" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E8F4FF"/>
+      <stop offset="0.25" stop-color="#6FB1FC"/>
+      <stop offset="0.6" stop-color="#4364F7"/>
+      <stop offset="1" stop-color="#1F2F98"/>
+    </linearGradient>
+    <linearGradient id="wing" x1="128" y1="70" x2="128" y2="210" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4D8BF5"/>
+      <stop offset="1" stop-color="#0E1B4A"/>
+    </linearGradient>
+    <linearGradient id="cockpit" x1="128" y1="42" x2="128" y2="120" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#CCEEFF"/>
+      <stop offset="1" stop-color="#2080E0"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="128" y1="60" x2="128" y2="180" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#80D4FF"/>
+      <stop offset="1" stop-color="#3060D0"/>
+    </linearGradient>
+    <radialGradient id="engine" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(128 210) rotate(90) scale(30 24)">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="0.3" stop-color="#80DFFF"/>
+      <stop offset="0.65" stop-color="#4DA6FF" stop-opacity="0.8"/>
+      <stop offset="1" stop-color="#4DA6FF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow" x="74" y="176" width="108" height="58" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="5"/>
+    </filter>
+    <filter id="wingGlow" x="0" y="60" width="256" height="180" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="2"/>
+    </filter>
+  </defs>
+
+  <!-- Engine glow -->
+  <g opacity="0.85" filter="url(#glow)">
+    <ellipse cx="128" cy="210" rx="26" ry="18" fill="url(#engine)"/>
+  </g>
+
+  <!-- Main fuselage - sleek narrow body for interceptor -->
+  <path d="M128 16L146 68L158 140L128 224L98 140L110 68Z" fill="url(#hull)"/>
+
+  <!-- Swept-back wings - sharp delta wings -->
+  <path d="M110 68L72 112L42 172L104 152L114 96Z" fill="url(#wing)"/>
+  <path d="M146 68L184 112L214 172L152 152L142 96Z" fill="url(#wing)"/>
+
+  <!-- Wing tips - forward canards (interceptor style) -->
+  <path d="M82 100L54 82L72 112Z" fill="#3858C8"/>
+  <path d="M174 100L202 82L184 112Z" fill="#3858C8"/>
+
+  <!-- Wing edge highlights -->
+  <path d="M42 172L72 112" stroke="#6FB1FC" stroke-width="2" opacity="0.7"/>
+  <path d="M214 172L184 112" stroke="#6FB1FC" stroke-width="2" opacity="0.7"/>
+
+  <!-- Cockpit canopy -->
+  <path d="M128 42L139 82L128 128L117 82Z" fill="url(#cockpit)"/>
+
+  <!-- Nose tip -->
+  <path d="M128 22L136 56H120Z" fill="#F0F8FF"/>
+
+  <!-- Central spine detail -->
+  <path d="M128 130L144 182L128 216L112 182Z" fill="#1A2860"/>
+
+  <!-- Accent stripes on wings -->
+  <path d="M106 74L128 86L150 74" stroke="#80D4FF" stroke-width="3" stroke-linecap="round" opacity="0.75"/>
+  <path d="M92 112L128 126L164 112" stroke="#5FA8FF" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
+
+  <!-- Thruster details -->
+  <path d="M118 192L128 210L138 192" stroke="#80D4FF" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+  <path d="M122 198H134" stroke="#C0EEFF" stroke-width="4" stroke-linecap="round"/>
+  <path d="M126 204H130" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Cockpit highlight -->
+  <path d="M128 48L134 72H122Z" fill="#E0F4FF" opacity="0.9"/>
+</svg>
