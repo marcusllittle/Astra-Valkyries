@@ -9,7 +9,10 @@
 import { useRef, useEffect, useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGame } from "../context/GameContext";
+import { useWallet } from "../context/WalletContext";
 import { cursorMove, menuConfirm, pressStart } from "../lib/retroSfx";
+
+const HAVNAI_URL = import.meta.env.VITE_HAVNAI_WEB_URL ?? "https://joinhavn.io";
 
 // ─── Menu items ─────────────────────────────────────────
 const MENU_ITEMS = [
@@ -36,6 +39,7 @@ interface Star {
 export default function HomeScreen() {
   const navigate = useNavigate();
   const { save } = useGame();
+  const wallet = useWallet();
 
   const [phase, setPhase] = useState<"title" | "menu">("title");
   const [cursorIdx, setCursorIdx] = useState(0);
@@ -217,11 +221,43 @@ export default function HomeScreen() {
       <div className="home-atmosphere" aria-hidden />
       <div className="home-vignette" aria-hidden />
 
-      {/* Credits — visible in menu phase */}
+      {/* Credits + Wallet — visible in menu phase */}
       {phase === "menu" && (
         <header className="home-topbar home-fade-in">
-          <div className="home-credits-pill">
-            <span className="credit-icon">{"\u2726"}</span> {save.credits.toLocaleString()} Credits
+          <div className="home-topbar-left">
+            <div className="home-credits-pill">
+              <span className="credit-icon">{"\u2726"}</span> {save.credits.toLocaleString()} Credits
+            </div>
+            {wallet.status === "connected" && wallet.sharedBalance !== null && (
+              <div className="home-shared-pill">
+                <span className="shared-icon">&#x26A1;</span> {wallet.sharedBalance.toLocaleString()} HavnAI
+              </div>
+            )}
+          </div>
+          <div className="home-topbar-right">
+            {wallet.available && (
+              wallet.status === "connected" ? (
+                <button className="wallet-chip wallet-connected" onClick={wallet.disconnect} title="Disconnect wallet">
+                  <span className="wallet-dot" /> {wallet.short}
+                </button>
+              ) : (
+                <button
+                  className="wallet-chip wallet-connect"
+                  onClick={wallet.connect}
+                  disabled={wallet.status === "connecting"}
+                >
+                  {wallet.status === "connecting" ? "Connecting…" : "Connect Wallet"}
+                </button>
+              )
+            )}
+            <a
+              className="havnai-link"
+              href={HAVNAI_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Generate Images &#x2197;
+            </a>
           </div>
         </header>
       )}
