@@ -4,6 +4,7 @@
 
 import { BrowserRouter, HashRouter, Navigate, Routes, Route } from "react-router-dom";
 import { GameProvider } from "./context/GameContext";
+import { WalletProvider } from "./context/WalletContext";
 import HomeScreen from "./screens/HomeScreen";
 import HangarScreen from "./screens/HangarScreen";
 import ShmupPlayScreen from "./screens/ShmupPlayScreen";
@@ -18,6 +19,7 @@ export default function App() {
     : BrowserRouter;
 
   return (
+    <WalletProvider>
     <GameProvider>
       <Router>
         <div className="app-container">
@@ -37,5 +39,6 @@ export default function App() {
         </div>
       </Router>
     </GameProvider>
+    </WalletProvider>
   );
 }

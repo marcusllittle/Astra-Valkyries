@@ -278,12 +278,26 @@ body::after {
   );
 }
 
-/* Credits pill — top right */
+/* Credits + wallet bar — top strip */
 .home-topbar {
   position: absolute;
   top: 20px;
+  left: 20px;
   right: 20px;
   z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.home-topbar-left,
+.home-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .home-fade-in {
@@ -313,6 +327,103 @@ body::after {
 
 .credit-icon {
   font-size: 0.95em;
+}
+
+/* Shared HavnAI balance pill */
+.home-shared-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: rgba(17, 32, 64, 0.6);
+  border: 1px solid rgba(106, 141, 255, 0.3);
+  border-radius: 999px;
+  padding: 7px 13px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.shared-icon {
+  font-size: 0.9em;
+}
+
+/* Wallet chip */
+.wallet-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  border-radius: 999px;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.wallet-connect {
+  color: var(--text-primary);
+  background: rgba(106, 141, 255, 0.18);
+  border: 1px solid rgba(106, 141, 255, 0.4);
+}
+
+.wallet-connect:hover {
+  background: rgba(106, 141, 255, 0.3);
+}
+
+.wallet-connect:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.wallet-connected {
+  color: var(--success);
+  background: rgba(106, 224, 160, 0.12);
+  border: 1px solid rgba(106, 224, 160, 0.3);
+  font-family: "SF Mono", "Cascadia Code", "Fira Code", monospace;
+}
+
+.wallet-connected:hover {
+  background: rgba(255, 122, 143, 0.15);
+  border-color: rgba(255, 122, 143, 0.4);
+  color: var(--danger);
+}
+
+.wallet-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+}
+
+.wallet-connected:hover .wallet-dot {
+  background: var(--danger);
+}
+
+/* Generate Images link */
+.havnai-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  text-decoration: none;
+  background: rgba(17, 32, 64, 0.5);
+  border: 1px solid rgba(147, 168, 209, 0.2);
+  border-radius: 999px;
+  padding: 7px 14px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.havnai-link:hover {
+  color: var(--text-primary);
+  border-color: rgba(147, 168, 209, 0.4);
 }
 
 /* ─── Title area — vertically centered, moves up in menu phase */
@@ -1544,6 +1655,18 @@ body::after {
   color: var(--gold);
 }
 
+.credits-earned-shared {
+  font-size: 1.1rem;
+  color: var(--accent);
+  margin-top: 4px;
+}
+
+.reward-status-note {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
 .results-buttons {
   display: flex;
   gap: 12px;
@@ -1562,6 +1685,13 @@ body::after {
   gap: 8px;
 }
 
+.shop-credits-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .shop-credits {
   display: inline-flex;
   align-items: center;
@@ -1573,6 +1703,23 @@ body::after {
   border: 1px solid rgba(255, 221, 138, 0.3);
   border-radius: 999px;
   padding: 8px 13px;
+}
+
+.shop-credits-shared {
+  color: var(--accent);
+  border-color: rgba(106, 141, 255, 0.3);
+}
+
+.shared-active-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--success);
+  background: rgba(106, 224, 160, 0.15);
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin-left: 4px;
 }
 
 .shop-flavor {
