@@ -22,6 +22,7 @@ import {
   tryRestore,
   persistAddress,
   shortAddress,
+  getActiveProvider,
 } from "../lib/wallet";
 import { fetchCreditBalance } from "../lib/havnApi";
 
@@ -88,7 +89,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   // ─── Listen for account changes ──────────────────────────
   useEffect(() => {
-    if (!window.ethereum) return;
+    const provider = getActiveProvider();
+    if (!provider?.on) return;
     const handler = (...args: unknown[]) => {
       const accounts = args[0] as string[];
       if (accounts.length === 0) {
@@ -103,8 +105,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         persistAddress(addr);
       }
     };
-    window.ethereum.on("accountsChanged", handler);
-    return () => window.ethereum?.removeListener("accountsChanged", handler);
+    provider.on("accountsChanged", handler);
+    return () => provider.removeListener?.("accountsChanged", handler);
   }, []);
 
   // ─── Connect ─────────────────────────────────────────────
