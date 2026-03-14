@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useGame } from "../context/GameContext";
+import { useWallet } from "../context/WalletContext";
 import {
   creditsForGrade,
   gradeShmupRun,
   type ShmupRunResult,
 } from "../lib/shmupResults";
+import { astraReward } from "../lib/havnApi";
 
 const GRADE_COLORS: Record<string, string> = {
   S: "#ffd43b",
@@ -26,7 +28,10 @@ export default function ShmupResultsScreen() {
   const navigate = useNavigate();
   const location = useLocation();
   const { addCredits } = useGame();
+  const wallet = useWallet();
   const awardAppliedRef = useRef(false);
+  const [sharedReward, setSharedReward] = useState<number | null>(null);
+  const [rewardStatus, setRewardStatus] = useState<string | null>(null);
   const shmupResult = (location.state as { shmupResult?: ShmupRunResult } | undefined)?.shmupResult;
   const grade = shmupResult ? gradeShmupRun(shmupResult) : null;
   const creditsEarned = grade ? creditsForGrade(grade) : 0;
@@ -44,6 +49,7 @@ export default function ShmupResultsScreen() {
     ].join(":");
   }, [shmupResult]);
 
+  // ── Local credits (always awarded) ──────────────────────
   useEffect(() => {
     if (!shmupResult || !rewardKey || awardAppliedRef.current) return;
 
@@ -56,6 +62,29 @@ export default function ShmupResultsScreen() {
     sessionStorage.setItem(rewardKey, "1");
     awardAppliedRef.current = true;
   }, [addCredits, creditsEarned, rewardKey, shmupResult]);
+
+  // ── Shared credits reward (when wallet connected) ───────
+  useEffect(() => {
+    if (!shmupResult || !grade || !wallet.address || wallet.status !== "connected") return;
+    if (sessionStorage.getItem(`${rewardKey}:shared`) === "1") return;
+
+    const durationS = (shmupResult.timeSurvivedMs ?? 0) / 1000;
+    const mapId = (shmupResult as unknown as { mapId?: string }).mapId ?? "unknown";
+
+    astraReward(wallet.address, shmupResult.score, grade, durationS, mapId)
+      .then((res) => {
+        sessionStorage.setItem(`${rewardKey}:shared`, "1");
+        if (res.ok && res.reward && res.reward > 0) {
+          setSharedReward(res.reward);
+          wallet.refreshBalance();
+        } else if (!res.ok) {
+          setRewardStatus(res.reason ?? "not_eligible");
+        }
+      })
+      .catch(() => {
+        setRewardStatus("network_error");
+      });
+  }, [shmupResult, grade, wallet.address, wallet.status, rewardKey, wallet]);
 
   if (!shmupResult || !grade) {
     return (
@@ -107,6 +136,18 @@ export default function ShmupResultsScreen() {
       <div className="credits-earned">
         <span className="credit-icon">✦</span> +{creditsEarned} Credits
       </div>
+
+      {sharedReward !== null && sharedReward > 0 && (
+        <div className="credits-earned credits-earned-shared">
+          <span className="shared-icon">&#x26A1;</span> +{sharedReward} HavnAI Credits
+        </div>
+      )}
+      {rewardStatus === "daily_cap_reached" && (
+        <div className="reward-status-note">Daily HavnAI earn cap reached</div>
+      )}
+      {rewardStatus === "cooldown" && (
+        <div className="reward-status-note">HavnAI reward on cooldown</div>
+      )}
 
       <div className="results-buttons">
         <button className="btn btn-primary" onClick={() => navigate("/shmup")}>

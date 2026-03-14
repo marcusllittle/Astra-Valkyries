@@ -1655,6 +1655,18 @@ body::after {
   color: var(--gold);
 }
 
+.credits-earned-shared {
+  font-size: 1.1rem;
+  color: var(--accent);
+  margin-top: 4px;
+}
+
+.reward-status-note {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
 .results-buttons {
   display: flex;
   gap: 12px;
@@ -1673,6 +1685,13 @@ body::after {
   gap: 8px;
 }
 
+.shop-credits-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .shop-credits {
   display: inline-flex;
   align-items: center;
@@ -1684,6 +1703,23 @@ body::after {
   border: 1px solid rgba(255, 221, 138, 0.3);
   border-radius: 999px;
   padding: 8px 13px;
+}
+
+.shop-credits-shared {
+  color: var(--accent);
+  border-color: rgba(106, 141, 255, 0.3);
+}
+
+.shared-active-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--success);
+  background: rgba(106, 224, 160, 0.15);
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin-left: 4px;
 }
 
 .shop-flavor {

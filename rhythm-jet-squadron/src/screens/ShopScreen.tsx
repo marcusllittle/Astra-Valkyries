@@ -5,11 +5,17 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGame } from "../context/GameContext";
+import { useWallet } from "../context/WalletContext";
 import CardArt from "../components/CardArt";
 import CutinOverlay from "../components/CutinOverlay";
 import { summarizeOutfitKit } from "../lib/outfitKits";
 import { pullOne, pullTen, PULL_COST_1, PULL_COST_10 } from "../lib/gacha";
+import { astraSpend } from "../lib/havnApi";
 import type { GachaResult } from "../types";
+
+/** Shared credit costs (rebalanced for real economy) */
+const SHARED_COST_1 = 10;
+const SHARED_COST_10 = 80;
 
 const RARITY_COLORS: Record<string, string> = {
   Common: "#a8a8a8",
@@ -28,17 +34,46 @@ const RARITY_RANK: Record<string, number> = {
 export default function ShopScreen() {
   const navigate = useNavigate();
   const { save, spendCredits, applyGachaResults } = useGame();
+  const wallet = useWallet();
   const [results, setResults] = useState<GachaResult[] | null>(null);
   const [isRevealing, setIsRevealing] = useState(false);
   const [activeCutin, setActiveCutin] = useState<{ id: number; url: string } | null>(null);
   const [previewResult, setPreviewResult] = useState<GachaResult | null>(null);
+  const [spending, setSpending] = useState(false);
 
-  const doPull = (count: 1 | 10) => {
-    const cost = count === 1 ? PULL_COST_1 : PULL_COST_10;
-    if (save.credits < cost) return;
+  /** Whether we're in shared-credits mode (wallet connected with a balance) */
+  const useShared = wallet.status === "connected" && wallet.sharedBalance !== null && wallet.sharedBalance > 0;
 
-    const success = spendCredits(cost);
-    if (!success) return;
+  const doPull = async (count: 1 | 10) => {
+    if (spending || isRevealing) return;
+
+    // ── Shared credits path (wallet connected) ───────────
+    if (useShared && wallet.address) {
+      const action = count === 1 ? "gacha_1" as const : "gacha_10" as const;
+      const cost = count === 1 ? SHARED_COST_1 : SHARED_COST_10;
+      if ((wallet.sharedBalance ?? 0) < cost) return;
+
+      setSpending(true);
+      try {
+        const res = await astraSpend(wallet.address, action);
+        if (!res.ok) {
+          setSpending(false);
+          return;
+        }
+        // Refresh balance after spend
+        wallet.refreshBalance();
+      } catch {
+        setSpending(false);
+        return;
+      }
+      setSpending(false);
+    } else {
+      // ── Local credits path (offline / anonymous) ───────
+      const cost = count === 1 ? PULL_COST_1 : PULL_COST_10;
+      if (save.credits < cost) return;
+      const success = spendCredits(cost);
+      if (!success) return;
+    }
 
     const pulled =
       count === 1
@@ -79,11 +114,21 @@ export default function ShopScreen() {
       </div>
 
       <section className="shop-hero panel-surface">
-        <div className="shop-credits">
-          <span className="credit-icon">✦</span> {save.credits.toLocaleString()} Credits
+        <div className="shop-credits-row">
+          <div className="shop-credits">
+            <span className="credit-icon">✦</span> {save.credits.toLocaleString()} Credits
+          </div>
+          {useShared && (
+            <div className="shop-credits shop-credits-shared">
+              <span className="shared-icon">&#x26A1;</span> {(wallet.sharedBalance ?? 0).toLocaleString()} HavnAI
+              <span className="shared-active-badge">Active</span>
+            </div>
+          )}
         </div>
         <p className="shop-flavor">
-          Limited wardrobe uplink is active. High-rarity pulls unlock advanced kits and cut-ins.
+          {useShared
+            ? "Pulling with shared HavnAI credits. Costs are rebalanced for the shared economy."
+            : "Limited wardrobe uplink is active. High-rarity pulls unlock advanced kits and cut-ins."}
         </p>
       </section>
 
@@ -94,18 +139,28 @@ export default function ShopScreen() {
             <button
               className="btn btn-gacha"
               onClick={() => doPull(1)}
-              disabled={save.credits < PULL_COST_1 || isRevealing}
+              disabled={
+                spending || isRevealing ||
+                (useShared ? (wallet.sharedBalance ?? 0) < SHARED_COST_1 : save.credits < PULL_COST_1)
+              }
             >
               <div className="gacha-btn-title">1-Pull</div>
-              <div className="gacha-btn-cost">{PULL_COST_1} Credits</div>
+              <div className="gacha-btn-cost">
+                {useShared ? `${SHARED_COST_1} HavnAI` : `${PULL_COST_1} Credits`}
+              </div>
             </button>
             <button
               className="btn btn-gacha btn-gacha-10"
               onClick={() => doPull(10)}
-              disabled={save.credits < PULL_COST_10 || isRevealing}
+              disabled={
+                spending || isRevealing ||
+                (useShared ? (wallet.sharedBalance ?? 0) < SHARED_COST_10 : save.credits < PULL_COST_10)
+              }
             >
               <div className="gacha-btn-title">10-Pull</div>
-              <div className="gacha-btn-cost">{PULL_COST_10} Credits</div>
+              <div className="gacha-btn-cost">
+                {useShared ? `${SHARED_COST_10} HavnAI` : `${PULL_COST_10} Credits`}
+              </div>
             </button>
           </div>
         </section>
