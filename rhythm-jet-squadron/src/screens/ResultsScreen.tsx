@@ -1,9 +1,16 @@
 /**
- * Results Screen - Show score breakdown after completing a track.
+ * Results Screen - Show score breakdown after completing a rhythm track.
+ * Submits shared economy reward when wallet is connected.
  */
 
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import type { GameResult } from "../types";
+import { useWallet } from "../context/WalletContext";
+import { astraReward } from "../lib/havnApi";
+import type { RhythmGameResult, Track } from "../types";
+import tracksData from "../data/tracks.json";
+
+const tracks = tracksData as Track[];
 
 const GRADE_COLORS: Record<string, string> = {
   S: "#ffd43b",
@@ -16,14 +23,45 @@ const GRADE_COLORS: Record<string, string> = {
 export default function ResultsScreen() {
   const navigate = useNavigate();
   const location = useLocation();
-  const result = location.state as GameResult | undefined;
+  const wallet = useWallet();
+  const result = location.state as RhythmGameResult | undefined;
 
-  const formatTime = (timeMs: number) => {
-    const totalSeconds = Math.max(0, Math.floor(timeMs / 1000));
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-  };
+  const [sharedReward, setSharedReward] = useState<number | null>(null);
+  const [rewardStatus, setRewardStatus] = useState<string | null>(null);
+
+  const rewardKey = useMemo(() => {
+    if (!result) return null;
+    return [
+      "rhythm-reward",
+      result.trackId,
+      result.score,
+      result.accuracy,
+      result.maxCombo,
+    ].join(":");
+  }, [result]);
+
+  // ── Shared credits reward (when wallet connected) ───────
+  useEffect(() => {
+    if (!result || !wallet.address || wallet.status !== "connected") return;
+    if (!rewardKey || sessionStorage.getItem(`${rewardKey}:shared`) === "1") return;
+
+    const track = tracks.find((t) => t.id === result.trackId);
+    const durationS = track?.duration ?? 60;
+
+    astraReward(wallet.address, result.score, result.grade, durationS, result.trackId)
+      .then((res) => {
+        sessionStorage.setItem(`${rewardKey}:shared`, "1");
+        if (res.ok && res.reward && res.reward > 0) {
+          setSharedReward(res.reward);
+          wallet.refreshBalance();
+        } else if (!res.ok) {
+          setRewardStatus(res.reason ?? "not_eligible");
+        }
+      })
+      .catch(() => {
+        setRewardStatus("network_error");
+      });
+  }, [result, wallet.address, wallet.status, rewardKey, wallet]);
 
   if (!result) {
     return (
@@ -36,7 +74,7 @@ export default function ResultsScreen() {
 
   return (
     <div className="screen results-screen">
-      <h2>{result.mode === "shmup" ? "Arcade Run Complete!" : "Track Complete!"}</h2>
+      <h2>Track Complete!</h2>
 
       <div
         className="grade-display"
@@ -46,71 +84,52 @@ export default function ResultsScreen() {
       </div>
 
       <div className="results-grid">
-        {result.mode === "shmup" ? (
-          <>
-            <div className="result-item">
-              <span className="result-label">Score</span>
-              <span className="result-value">{result.score.toLocaleString()}</span>
-            </div>
-            <div className="result-item">
-              <span className="result-label">Kills</span>
-              <span className="result-value">{result.kills}</span>
-            </div>
-            <div className="result-item">
-              <span className="result-label">Time Survived</span>
-              <span className="result-value">{formatTime(result.timeSurvivedMs)}</span>
-            </div>
-            <div className="result-item">
-              <span className="result-label">Best Mult</span>
-              <span className="result-value">{result.bestMultiplier.toFixed(2)}x</span>
-            </div>
-            <div className="result-item">
-              <span className="result-label">Weapon Lv</span>
-              <span className="result-value">{result.weaponLevel}</span>
-            </div>
-            <div className="result-item">
-              <span className="result-label">Hull Hits</span>
-              <span className="result-value miss-count">{result.damageTaken}</span>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="result-item">
-              <span className="result-label">Score</span>
-              <span className="result-value">{result.score.toLocaleString()}</span>
-            </div>
-            <div className="result-item">
-              <span className="result-label">Accuracy</span>
-              <span className="result-value">{result.accuracy}%</span>
-            </div>
-            <div className="result-item">
-              <span className="result-label">Max Combo</span>
-              <span className="result-value">{result.maxCombo}x</span>
-            </div>
-            <div className="result-item">
-              <span className="result-label">Perfect</span>
-              <span className="result-value perfect-count">{result.perfects}</span>
-            </div>
-            <div className="result-item">
-              <span className="result-label">Good</span>
-              <span className="result-value good-count">{result.goods}</span>
-            </div>
-            <div className="result-item">
-              <span className="result-label">Miss</span>
-              <span className="result-value miss-count">{result.misses}</span>
-            </div>
-          </>
-        )}
+        <div className="result-item">
+          <span className="result-label">Score</span>
+          <span className="result-value">{result.score.toLocaleString()}</span>
+        </div>
+        <div className="result-item">
+          <span className="result-label">Accuracy</span>
+          <span className="result-value">{result.accuracy}%</span>
+        </div>
+        <div className="result-item">
+          <span className="result-label">Max Combo</span>
+          <span className="result-value">{result.maxCombo}x</span>
+        </div>
+        <div className="result-item">
+          <span className="result-label">Perfect</span>
+          <span className="result-value perfect-count">{result.perfects}</span>
+        </div>
+        <div className="result-item">
+          <span className="result-label">Good</span>
+          <span className="result-value good-count">{result.goods}</span>
+        </div>
+        <div className="result-item">
+          <span className="result-label">Miss</span>
+          <span className="result-value miss-count">{result.misses}</span>
+        </div>
       </div>
 
       <div className="credits-earned">
         <span className="credit-icon">✦</span> +{result.creditsEarned} Credits
       </div>
 
+      {sharedReward !== null && sharedReward > 0 && (
+        <div className="credits-earned credits-earned-shared">
+          <span className="shared-icon">&#x26A1;</span> +{sharedReward} HavnAI Credits
+        </div>
+      )}
+      {rewardStatus === "daily_cap_reached" && (
+        <div className="reward-status-note">Daily HavnAI earn cap reached</div>
+      )}
+      {rewardStatus === "cooldown" && (
+        <div className="reward-status-note">HavnAI reward on cooldown</div>
+      )}
+
       <div className="results-buttons">
         <button
           className="btn btn-primary"
-          onClick={() => navigate(result.mode === "shmup" ? "/shmup" : "/tracks")}
+          onClick={() => navigate("/tracks")}
         >
           Play Again
         </button>

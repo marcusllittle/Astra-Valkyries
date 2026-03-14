@@ -69,7 +69,7 @@ export default function ShmupResultsScreen() {
     if (sessionStorage.getItem(`${rewardKey}:shared`) === "1") return;
 
     const durationS = (shmupResult.timeSurvivedMs ?? 0) / 1000;
-    const mapId = (shmupResult as unknown as { mapId?: string }).mapId ?? "unknown";
+    const mapId = "shmup_arcade";
 
     astraReward(wallet.address, shmupResult.score, grade, durationS, mapId)
       .then((res) => {
