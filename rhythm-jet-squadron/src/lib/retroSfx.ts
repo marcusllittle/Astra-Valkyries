@@ -1,19 +1,17 @@
 /**
  * Procedural retro sound effects via Web Audio API.
  * No external audio files needed — all sounds are generated.
+ * Routes through the SFX bus from audioEngine for volume control.
  */
 
-let ctx: AudioContext | null = null;
+import { getAudioCtx, getSfxBus } from "./audioEngine";
 
-function getCtx(): AudioContext {
-  if (!ctx) ctx = new AudioContext();
-  if (ctx.state === "suspended") ctx.resume();
-  return ctx;
-}
+// ─── UI Sounds ────────────────────────────────────────────────
 
 /** Short square-wave blip for cursor movement. */
 export function cursorMove() {
-  const ac = getCtx();
+  const ac = getAudioCtx();
+  const bus = getSfxBus();
   const now = ac.currentTime;
 
   const osc = ac.createOscillator();
@@ -25,17 +23,17 @@ export function cursorMove() {
   gain.gain.setValueAtTime(0.18, now);
   gain.gain.linearRampToValueAtTime(0, now + 0.08);
 
-  osc.connect(gain).connect(ac.destination);
+  osc.connect(gain).connect(bus);
   osc.start(now);
   osc.stop(now + 0.08);
 }
 
 /** Rising two-tone chime for menu confirm. */
 export function menuConfirm() {
-  const ac = getCtx();
+  const ac = getAudioCtx();
+  const bus = getSfxBus();
   const now = ac.currentTime;
 
-  // First tone
   const osc1 = ac.createOscillator();
   osc1.type = "square";
   osc1.frequency.setValueAtTime(440, now);
@@ -44,11 +42,10 @@ export function menuConfirm() {
   g1.gain.setValueAtTime(0.2, now);
   g1.gain.linearRampToValueAtTime(0, now + 0.08);
 
-  osc1.connect(g1).connect(ac.destination);
+  osc1.connect(g1).connect(bus);
   osc1.start(now);
   osc1.stop(now + 0.08);
 
-  // Second tone (higher, delayed)
   const osc2 = ac.createOscillator();
   osc2.type = "square";
   osc2.frequency.setValueAtTime(880, now + 0.06);
@@ -58,17 +55,17 @@ export function menuConfirm() {
   g2.gain.setValueAtTime(0.2, now + 0.06);
   g2.gain.linearRampToValueAtTime(0, now + 0.18);
 
-  osc2.connect(g2).connect(ac.destination);
+  osc2.connect(g2).connect(bus);
   osc2.start(now + 0.06);
   osc2.stop(now + 0.18);
 }
 
 /** Sparkle/whoosh for "PRESS START" transition. */
 export function pressStart() {
-  const ac = getCtx();
+  const ac = getAudioCtx();
+  const bus = getSfxBus();
   const now = ac.currentTime;
 
-  // Sine sweep
   const osc = ac.createOscillator();
   osc.type = "sine";
   osc.frequency.setValueAtTime(200, now);
@@ -78,11 +75,10 @@ export function pressStart() {
   gain.gain.setValueAtTime(0.22, now);
   gain.gain.linearRampToValueAtTime(0, now + 0.25);
 
-  osc.connect(gain).connect(ac.destination);
+  osc.connect(gain).connect(bus);
   osc.start(now);
   osc.stop(now + 0.25);
 
-  // White noise burst
   const bufLen = Math.floor(ac.sampleRate * 0.06);
   const buf = ac.createBuffer(1, bufLen, ac.sampleRate);
   const data = buf.getChannelData(0);
@@ -95,6 +91,379 @@ export function pressStart() {
   ng.gain.setValueAtTime(0.15, now);
   ng.gain.linearRampToValueAtTime(0, now + 0.06);
 
-  noise.connect(ng).connect(ac.destination);
+  noise.connect(ng).connect(bus);
   noise.start(now);
+}
+
+// ─── Gameplay SFX ─────────────────────────────────────────────
+
+// Throttle rapid-fire sounds to avoid audio glitches
+let _lastShot = 0;
+
+/** Player primary weapon fire — short laser blip */
+export function sfxShoot() {
+  const now = performance.now();
+  if (now - _lastShot < 60) return; // max ~16 shots/sec audio
+  _lastShot = now;
+
+  const ac = getAudioCtx();
+  const bus = getSfxBus();
+  const t = ac.currentTime;
+
+  const osc = ac.createOscillator();
+  osc.type = "square";
+  osc.frequency.setValueAtTime(1200, t);
+  osc.frequency.exponentialRampToValueAtTime(400, t + 0.06);
+
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.09, t);
+  g.gain.linearRampToValueAtTime(0, t + 0.07);
+
+  osc.connect(g).connect(bus);
+  osc.start(t);
+  osc.stop(t + 0.07);
+}
+
+/** Enemy destroyed — noise burst + descending tone */
+export function sfxEnemyDeath() {
+  const ac = getAudioCtx();
+  const bus = getSfxBus();
+  const t = ac.currentTime;
+
+  // Noise burst
+  const bufLen = Math.floor(ac.sampleRate * 0.08);
+  const buf = ac.createBuffer(1, bufLen, ac.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < bufLen; i++) data[i] = (Math.random() * 2 - 1);
+
+  const noise = ac.createBufferSource();
+  noise.buffer = buf;
+
+  const filter = ac.createBiquadFilter();
+  filter.type = "bandpass";
+  filter.frequency.setValueAtTime(2000, t);
+  filter.frequency.exponentialRampToValueAtTime(300, t + 0.08);
+  filter.Q.value = 1;
+
+  const ng = ac.createGain();
+  ng.gain.setValueAtTime(0.14, t);
+  ng.gain.linearRampToValueAtTime(0, t + 0.1);
+
+  noise.connect(filter).connect(ng).connect(bus);
+  noise.start(t);
+
+  // Tone
+  const osc = ac.createOscillator();
+  osc.type = "square";
+  osc.frequency.setValueAtTime(600, t);
+  osc.frequency.exponentialRampToValueAtTime(80, t + 0.1);
+
+  const og = ac.createGain();
+  og.gain.setValueAtTime(0.08, t);
+  og.gain.linearRampToValueAtTime(0, t + 0.1);
+
+  osc.connect(og).connect(bus);
+  osc.start(t);
+  osc.stop(t + 0.1);
+}
+
+/** Big explosion — bomb, boss phase, boss death */
+export function sfxExplosion() {
+  const ac = getAudioCtx();
+  const bus = getSfxBus();
+  const t = ac.currentTime;
+
+  // Heavy noise
+  const bufLen = Math.floor(ac.sampleRate * 0.3);
+  const buf = ac.createBuffer(1, bufLen, ac.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < bufLen; i++) data[i] = (Math.random() * 2 - 1);
+
+  const noise = ac.createBufferSource();
+  noise.buffer = buf;
+
+  const filter = ac.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.setValueAtTime(3000, t);
+  filter.frequency.exponentialRampToValueAtTime(100, t + 0.3);
+
+  const ng = ac.createGain();
+  ng.gain.setValueAtTime(0.2, t);
+  ng.gain.exponentialRampToValueAtTime(0.01, t + 0.35);
+
+  noise.connect(filter).connect(ng).connect(bus);
+  noise.start(t);
+
+  // Sub bass thump
+  const osc = ac.createOscillator();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(120, t);
+  osc.frequency.exponentialRampToValueAtTime(30, t + 0.25);
+
+  const og = ac.createGain();
+  og.gain.setValueAtTime(0.18, t);
+  og.gain.linearRampToValueAtTime(0, t + 0.3);
+
+  osc.connect(og).connect(bus);
+  osc.start(t);
+  osc.stop(t + 0.3);
+}
+
+/** Player hit — harsh buzz */
+export function sfxPlayerHit() {
+  const ac = getAudioCtx();
+  const bus = getSfxBus();
+  const t = ac.currentTime;
+
+  const osc = ac.createOscillator();
+  osc.type = "sawtooth";
+  osc.frequency.setValueAtTime(150, t);
+  osc.frequency.linearRampToValueAtTime(80, t + 0.15);
+
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.16, t);
+  g.gain.linearRampToValueAtTime(0, t + 0.18);
+
+  osc.connect(g).connect(bus);
+  osc.start(t);
+  osc.stop(t + 0.18);
+
+  // Static
+  const bufLen = Math.floor(ac.sampleRate * 0.05);
+  const buf = ac.createBuffer(1, bufLen, ac.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < bufLen; i++) data[i] = (Math.random() * 2 - 1);
+
+  const noise = ac.createBufferSource();
+  noise.buffer = buf;
+
+  const ng = ac.createGain();
+  ng.gain.setValueAtTime(0.12, t);
+  ng.gain.linearRampToValueAtTime(0, t + 0.06);
+
+  noise.connect(ng).connect(bus);
+  noise.start(t);
+}
+
+/** Bomb launch — whoosh + thud */
+export function sfxBomb() {
+  const ac = getAudioCtx();
+  const bus = getSfxBus();
+  const t = ac.currentTime;
+
+  const osc = ac.createOscillator();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(800, t);
+  osc.frequency.exponentialRampToValueAtTime(60, t + 0.2);
+
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.15, t);
+  g.gain.linearRampToValueAtTime(0, t + 0.22);
+
+  osc.connect(g).connect(bus);
+  osc.start(t);
+  osc.stop(t + 0.22);
+
+  // Delayed explosion
+  setTimeout(() => sfxExplosion(), 100);
+}
+
+/** EMP activation — electrical zap */
+export function sfxEmp() {
+  const ac = getAudioCtx();
+  const bus = getSfxBus();
+  const t = ac.currentTime;
+
+  const osc = ac.createOscillator();
+  osc.type = "sawtooth";
+  osc.frequency.setValueAtTime(2000, t);
+  osc.frequency.exponentialRampToValueAtTime(100, t + 0.15);
+
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.12, t);
+  g.gain.linearRampToValueAtTime(0, t + 0.18);
+
+  osc.connect(g).connect(bus);
+  osc.start(t);
+  osc.stop(t + 0.18);
+
+  // Secondary crackle
+  const osc2 = ac.createOscillator();
+  osc2.type = "square";
+  osc2.frequency.setValueAtTime(3000, t + 0.03);
+  osc2.frequency.exponentialRampToValueAtTime(500, t + 0.12);
+
+  const g2 = ac.createGain();
+  g2.gain.setValueAtTime(0.06, t + 0.03);
+  g2.gain.linearRampToValueAtTime(0, t + 0.13);
+
+  osc2.connect(g2).connect(bus);
+  osc2.start(t + 0.03);
+  osc2.stop(t + 0.13);
+}
+
+/** Shield/barrier activation — resonant hum */
+export function sfxShield() {
+  const ac = getAudioCtx();
+  const bus = getSfxBus();
+  const t = ac.currentTime;
+
+  const osc = ac.createOscillator();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(300, t);
+  osc.frequency.linearRampToValueAtTime(600, t + 0.1);
+  osc.frequency.linearRampToValueAtTime(400, t + 0.25);
+
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.12, t);
+  g.gain.setValueAtTime(0.12, t + 0.15);
+  g.gain.linearRampToValueAtTime(0, t + 0.3);
+
+  osc.connect(g).connect(bus);
+  osc.start(t);
+  osc.stop(t + 0.3);
+
+  // Harmonic
+  const osc2 = ac.createOscillator();
+  osc2.type = "triangle";
+  osc2.frequency.setValueAtTime(600, t);
+  osc2.frequency.linearRampToValueAtTime(1200, t + 0.1);
+  osc2.frequency.linearRampToValueAtTime(800, t + 0.25);
+
+  const g2 = ac.createGain();
+  g2.gain.setValueAtTime(0.06, t);
+  g2.gain.linearRampToValueAtTime(0, t + 0.28);
+
+  osc2.connect(g2).connect(bus);
+  osc2.start(t);
+  osc2.stop(t + 0.28);
+}
+
+/** Drone deploy — ascending whirr */
+export function sfxDrones() {
+  const ac = getAudioCtx();
+  const bus = getSfxBus();
+  const t = ac.currentTime;
+
+  const osc = ac.createOscillator();
+  osc.type = "triangle";
+  osc.frequency.setValueAtTime(200, t);
+  osc.frequency.exponentialRampToValueAtTime(800, t + 0.15);
+
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.1, t);
+  g.gain.linearRampToValueAtTime(0.06, t + 0.1);
+  g.gain.linearRampToValueAtTime(0, t + 0.2);
+
+  osc.connect(g).connect(bus);
+  osc.start(t);
+  osc.stop(t + 0.2);
+}
+
+/** Weapon level up — ascending chime */
+export function sfxPowerup() {
+  const ac = getAudioCtx();
+  const bus = getSfxBus();
+  const t = ac.currentTime;
+
+  const notes = [523, 659, 784, 1047]; // C5, E5, G5, C6
+  notes.forEach((freq, i) => {
+    const osc = ac.createOscillator();
+    osc.type = "square";
+    osc.frequency.value = freq;
+
+    const g = ac.createGain();
+    const start = t + i * 0.06;
+    g.gain.setValueAtTime(0.1, start);
+    g.gain.linearRampToValueAtTime(0, start + 0.1);
+
+    osc.connect(g).connect(bus);
+    osc.start(start);
+    osc.stop(start + 0.1);
+  });
+}
+
+/** Boss warning siren — pulsing alert */
+export function sfxBossWarning() {
+  const ac = getAudioCtx();
+  const bus = getSfxBus();
+  const t = ac.currentTime;
+
+  for (let i = 0; i < 3; i++) {
+    const start = t + i * 0.35;
+    const osc = ac.createOscillator();
+    osc.type = "square";
+    osc.frequency.setValueAtTime(880, start);
+    osc.frequency.linearRampToValueAtTime(440, start + 0.15);
+
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.12, start);
+    g.gain.linearRampToValueAtTime(0, start + 0.25);
+
+    osc.connect(g).connect(bus);
+    osc.start(start);
+    osc.stop(start + 0.25);
+  }
+}
+
+/** Crystal bomb — icy shatter */
+export function sfxCrystalBomb() {
+  const ac = getAudioCtx();
+  const bus = getSfxBus();
+  const t = ac.currentTime;
+
+  // High shimmer
+  const osc = ac.createOscillator();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(2400, t);
+  osc.frequency.exponentialRampToValueAtTime(600, t + 0.15);
+
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.1, t);
+  g.gain.linearRampToValueAtTime(0, t + 0.2);
+
+  osc.connect(g).connect(bus);
+  osc.start(t);
+  osc.stop(t + 0.2);
+
+  // Crunch
+  const bufLen = Math.floor(ac.sampleRate * 0.12);
+  const buf = ac.createBuffer(1, bufLen, ac.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < bufLen; i++) data[i] = (Math.random() * 2 - 1);
+
+  const noise = ac.createBufferSource();
+  noise.buffer = buf;
+
+  const filter = ac.createBiquadFilter();
+  filter.type = "highpass";
+  filter.frequency.value = 3000;
+
+  const ng = ac.createGain();
+  ng.gain.setValueAtTime(0.08, t + 0.05);
+  ng.gain.linearRampToValueAtTime(0, t + 0.15);
+
+  noise.connect(filter).connect(ng).connect(bus);
+  noise.start(t + 0.05);
+}
+
+/** Shield pulse — ring burst */
+export function sfxShieldPulse() {
+  const ac = getAudioCtx();
+  const bus = getSfxBus();
+  const t = ac.currentTime;
+
+  const osc = ac.createOscillator();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(400, t);
+  osc.frequency.exponentialRampToValueAtTime(1600, t + 0.08);
+  osc.frequency.exponentialRampToValueAtTime(200, t + 0.2);
+
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.14, t);
+  g.gain.linearRampToValueAtTime(0, t + 0.22);
+
+  osc.connect(g).connect(bus);
+  osc.start(t);
+  osc.stop(t + 0.22);
 }
