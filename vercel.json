@@ -3,7 +3,7 @@
   "outputDirectory": "rhythm-jet-squadron/dist",
   "framework": "vite",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://api.joinhavn.io/:path*" },
+    { "source": "/api/:path*", "destination": "https://joinhavn.io/api/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

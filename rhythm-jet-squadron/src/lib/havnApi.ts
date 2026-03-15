@@ -115,7 +115,7 @@ export async function fetchPlayerStats(wallet: string): Promise<PlayerStats> {
 }
 
 export async function fetchLeaderboard(limit = 50): Promise<LeaderboardEntry[]> {
-  const res = await fetch(`${API_BASE}/astra/leaderboard?limit=${limit}`);
+  const res = await fetchWithRetry(`${API_BASE}/astra/leaderboard?limit=${limit}`, {});
   if (!res.ok) throw new Error(`Leaderboard fetch failed: ${res.status}`);
   const data = await res.json();
   return data.leaderboard;
