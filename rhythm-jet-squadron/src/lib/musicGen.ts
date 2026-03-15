@@ -44,6 +44,14 @@ interface TrackDef {
   loopBars: number; // how many bars before looping (each bar = notes.length / 16)
 }
 
+function getStepBeats(note: NoteEvent | null): number {
+  return note?.dur ?? 1;
+}
+
+function getVoiceDurationBeats(voice: TrackVoice): number {
+  return voice.notes.reduce((sum, note) => sum + getStepBeats(note), 0);
+}
+
 // ─── Active music state ───────────────────────────────────────
 
 let _activeTrack: string | null = null;
@@ -72,6 +80,8 @@ function playTrack(trackId: string, def: TrackDef, loop: boolean = true) {
   const ac = getAudioCtx();
   const musicBus = getMusicBus();
   const beatDur = 60 / def.bpm;
+  const loopDurationSeconds = Math.max(...def.voices.map(getVoiceDurationBeats)) * beatDur;
+  const scheduleLeadSeconds = 0.05;
   let cancelled = false;
   const activeNodes: { osc: OscillatorNode; gain: GainNode }[] = [];
   let loopTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -94,9 +104,8 @@ function playTrack(trackId: string, def: TrackDef, loop: boolean = true) {
     masterGain.disconnect();
   };
 
-  function scheduleLoop() {
+  function scheduleLoop(startTime: number) {
     if (cancelled) return;
-    const startTime = ac.currentTime + 0.05;
 
     for (const voice of def.voices) {
       let t = startTime;
@@ -136,18 +145,16 @@ function playTrack(trackId: string, def: TrackDef, loop: boolean = true) {
       }
     }
 
-    // Total loop duration
-    const totalBeats = def.voices[0].notes.length;
-    const loopDurationMs = totalBeats * beatDur * 1000;
-
     if (loop) {
+      const nextStartTime = startTime + loopDurationSeconds;
+      const loopDelayMs = Math.max(0, (nextStartTime - ac.currentTime - scheduleLeadSeconds) * 1000);
       loopTimeout = setTimeout(() => {
-        if (!cancelled) scheduleLoop();
-      }, loopDurationMs - 100);
+        if (!cancelled) scheduleLoop(nextStartTime);
+      }, loopDelayMs);
     }
   }
 
-  scheduleLoop();
+  scheduleLoop(ac.currentTime + scheduleLeadSeconds);
 
   _stopFn = (fadeMs = 300) => {
     cancelled = true;
