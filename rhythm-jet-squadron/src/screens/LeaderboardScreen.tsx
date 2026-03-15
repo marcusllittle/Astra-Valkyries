@@ -12,21 +12,22 @@ export default function LeaderboardScreen() {
   const wallet = useWallet();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [offline, setOffline] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
     fetchLeaderboard(50)
-      .then((data) => {
+      .then(({ entries: nextEntries, offline: isOffline }) => {
         if (!cancelled) {
-          setEntries(data);
+          setEntries(nextEntries);
+          setOffline(isOffline);
           setLoading(false);
         }
       })
-      .catch((err) => {
+      .catch(() => {
         if (!cancelled) {
-          setError(err.message ?? "Failed to load leaderboard");
+          setError("Unable to load leaderboard right now.");
           setLoading(false);
         }
       });
@@ -51,6 +52,10 @@ export default function LeaderboardScreen() {
         <div className="leaderboard-loading">Loading rankings...</div>
       ) : error ? (
         <div className="leaderboard-error">{error}</div>
+      ) : offline ? (
+        <div className="leaderboard-empty">
+          Online leaderboard unavailable. The game is running in local/offline mode.
+        </div>
       ) : entries.length === 0 ? (
         <div className="leaderboard-empty">No entries yet. Play to be the first!</div>
       ) : (
