@@ -11,6 +11,16 @@ npm run dev
 
 Open `http://localhost:5173` in your browser.
 
+If you want wallet balance, rewards, shop spending, and leaderboard to use a local `havnai-core`:
+
+```bash
+cp .env.example .env
+# start havnai-core separately, then run:
+npm run dev
+```
+
+By default, Vite proxies `/api` to `http://127.0.0.1:5001`, which matches the local `havnai-core` default.
+
 ### Packaging Targets
 
 These commands are additive and do not change the browser dev loop (`npm run dev`).

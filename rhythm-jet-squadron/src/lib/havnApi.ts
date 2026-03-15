@@ -3,7 +3,29 @@
  * Phase 1: balance | Phase 2: spend | Phase 3: reward + leaderboard
  */
 
-const API_BASE = import.meta.env.VITE_HAVNAI_API_BASE ?? "/api";
+const REMOTE_PROXY_BASE = "https://joinhavn.io/api";
+
+function trimTrailingSlash(value: string): string {
+  return value.replace(/\/+$/, "");
+}
+
+function isAbsoluteHttpUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value);
+}
+
+function getApiBase(): string {
+  const configuredBase = trimTrailingSlash(import.meta.env.VITE_HAVNAI_API_BASE?.trim() ?? "");
+  if (typeof window === "undefined") return configuredBase || "/api";
+
+  const { protocol } = window.location;
+  const isHttp = protocol === "http:" || protocol === "https:";
+
+  if (isHttp) return "/api";
+
+  return isAbsoluteHttpUrl(configuredBase) ? configuredBase : REMOTE_PROXY_BASE;
+}
+
+const API_BASE = getApiBase();
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -51,6 +73,11 @@ export interface LeaderboardEntry {
   best_score: number;
   total_runs: number;
   total_earned: number;
+}
+
+export interface LeaderboardFetchResult {
+  entries: LeaderboardEntry[];
+  offline: boolean;
 }
 
 // ─── Balance ────────────────────────────────────────────────
@@ -114,9 +141,19 @@ export async function fetchPlayerStats(wallet: string): Promise<PlayerStats> {
   return res.json();
 }
 
-export async function fetchLeaderboard(limit = 50): Promise<LeaderboardEntry[]> {
-  const res = await fetchWithRetry(`${API_BASE}/astra/leaderboard?limit=${limit}`, {});
-  if (!res.ok) throw new Error(`Leaderboard fetch failed: ${res.status}`);
-  const data = await res.json();
-  return data.leaderboard;
+export async function fetchLeaderboard(limit = 50): Promise<LeaderboardFetchResult> {
+  try {
+    const res = await fetchWithRetry(`${API_BASE}/astra/leaderboard?limit=${limit}`, {});
+    if (!res.ok) {
+      return { entries: [], offline: true };
+    }
+
+    const data = await res.json();
+    return {
+      entries: Array.isArray(data.leaderboard) ? data.leaderboard : [],
+      offline: false,
+    };
+  } catch {
+    return { entries: [], offline: true };
+  }
 }

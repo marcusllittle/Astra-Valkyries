@@ -14,7 +14,6 @@ const NOTE_FREQS: Record<string, number> = {};
 const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 for (let oct = 0; oct <= 8; oct++) {
   for (let i = 0; i < 12; i++) {
-    const freq = 440 * Math.pow(2, (oct - 4) * 12 + i - 9) / Math.pow(2, 0);
     NOTE_FREQS[`${NOTE_NAMES[i]}${oct}`] = 440 * Math.pow(2, ((oct - 4) + (i - 9) / 12));
   }
 }
@@ -48,11 +47,11 @@ interface TrackDef {
 // ─── Active music state ───────────────────────────────────────
 
 let _activeTrack: string | null = null;
-let _stopFn: (() => void) | null = null;
+let _stopFn: ((fadeMs?: number) => void) | null = null;
 
 export function stopMusic(fadeMs = 300) {
   if (_stopFn) {
-    _stopFn();
+    _stopFn(fadeMs);
     _stopFn = null;
   }
   _activeTrack = null;
@@ -67,7 +66,7 @@ export function isPlaying(trackId?: string): boolean {
 
 function playTrack(trackId: string, def: TrackDef, loop: boolean = true) {
   if (_activeTrack === trackId) return;
-  stopMusic();
+  stopMusic(0);
   _activeTrack = trackId;
 
   const ac = getAudioCtx();
@@ -76,11 +75,24 @@ function playTrack(trackId: string, def: TrackDef, loop: boolean = true) {
   let cancelled = false;
   const activeNodes: { osc: OscillatorNode; gain: GainNode }[] = [];
   let loopTimeout: ReturnType<typeof setTimeout> | null = null;
+  let cleanupTimeout: ReturnType<typeof setTimeout> | null = null;
+  let cleanedUp = false;
 
   // Master gain for fade-out
   const masterGain = ac.createGain();
   masterGain.gain.value = 1;
   masterGain.connect(musicBus);
+
+  const cleanup = () => {
+    if (cleanedUp) return;
+    cleanedUp = true;
+    for (const node of activeNodes) {
+      try { node.osc.stop(); } catch { /* ignore duplicate stop calls */ }
+      try { node.gain.disconnect(); } catch { /* ignore duplicate disconnects */ }
+    }
+    activeNodes.length = 0;
+    masterGain.disconnect();
+  };
 
   function scheduleLoop() {
     if (cancelled) return;
@@ -137,19 +149,23 @@ function playTrack(trackId: string, def: TrackDef, loop: boolean = true) {
 
   scheduleLoop();
 
-  _stopFn = () => {
+  _stopFn = (fadeMs = 300) => {
     cancelled = true;
     if (loopTimeout) clearTimeout(loopTimeout);
+    if (cleanupTimeout) clearTimeout(cleanupTimeout);
+
+    const fadeSeconds = Math.max(0, fadeMs) / 1000;
     const fadeTime = ac.currentTime;
+    masterGain.gain.cancelScheduledValues(fadeTime);
     masterGain.gain.setValueAtTime(masterGain.gain.value, fadeTime);
-    masterGain.gain.linearRampToValueAtTime(0, fadeTime + 0.3);
-    setTimeout(() => {
-      for (const n of activeNodes) {
-        try { n.osc.stop(); } catch {}
-      }
-      activeNodes.length = 0;
-      masterGain.disconnect();
-    }, 400);
+
+    if (fadeSeconds > 0) {
+      masterGain.gain.linearRampToValueAtTime(0, fadeTime + fadeSeconds);
+      cleanupTimeout = setTimeout(cleanup, fadeMs + 100);
+    } else {
+      masterGain.gain.setValueAtTime(0, fadeTime);
+      cleanup();
+    }
   };
 }
 
@@ -572,7 +588,7 @@ export function playTitleMusic() {
 
 /** Short death jingle — descending minor, no loop */
 export function playDeathJingle() {
-  stopMusic(100);
+  stopMusic(0);
   const ac = getAudioCtx();
   const musicBus = getMusicBus();
   const bps = 3; // notes per second
@@ -591,7 +607,7 @@ export function playDeathJingle() {
 
 /** Victory fanfare — triumphant ascending phrase */
 export function playVictoryFanfare() {
-  stopMusic(100);
+  stopMusic(0);
   const ac = getAudioCtx();
   const musicBus = getMusicBus();
   const step = 0.18;
