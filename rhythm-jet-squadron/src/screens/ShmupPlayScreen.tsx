@@ -208,6 +208,41 @@ interface BomberZone {
   damage: number;
 }
 
+interface DamageNumber {
+  x: number;
+  y: number;
+  vy: number;
+  value: number;
+  life: number;
+  color: string;
+}
+
+interface WaveAnnouncement {
+  text: string;
+  life: number;
+  maxLife: number;
+}
+
+interface BackgroundDebris {
+  x: number;
+  y: number;
+  vy: number;
+  radius: number;
+  rotation: number;
+  rotSpeed: number;
+  alpha: number;
+  shape: number; // 0-2 for different shapes
+}
+
+interface TrailParticle {
+  x: number;
+  y: number;
+  life: number;
+  maxLife: number;
+  radius: number;
+  color: string;
+}
+
 interface SparkParticle {
   x: number;
   y: number;
@@ -516,6 +551,13 @@ export default function ShmupPlayScreen() {
   const sparksRef = useRef<SparkParticle[]>([]);
   const pulsesRef = useRef<PulseEffect[]>([]);
   const bomberZonesRef = useRef<BomberZone[]>([]);
+  const damageNumbersRef = useRef<DamageNumber[]>([]);
+  const trailParticlesRef = useRef<TrailParticle[]>([]);
+  const waveAnnouncementRef = useRef<WaveAnnouncement | null>(null);
+  const backgroundDebrisRef = useRef<BackgroundDebris[]>([]);
+  const lastWaveLabelRef = useRef("");
+  const streakDisplayRef = useRef(0);
+  const streakDisplayTimerRef = useRef(0);
   const keysRef = useRef<Set<string>>(new Set());
   const enemyIdRef = useRef(0);
   const fireTimerRef = useRef(0);
@@ -727,6 +769,12 @@ export default function ShmupPlayScreen() {
     sparksRef.current = [];
     pulsesRef.current = [];
     bomberZonesRef.current = [];
+    damageNumbersRef.current = [];
+    trailParticlesRef.current = [];
+    waveAnnouncementRef.current = null;
+    lastWaveLabelRef.current = "";
+    streakDisplayRef.current = 0;
+    streakDisplayTimerRef.current = 0;
     enemyIdRef.current = 0;
     fireTimerRef.current = 0;
     queuedWaveSpawnsRef.current = [];
@@ -967,6 +1015,48 @@ export default function ShmupPlayScreen() {
       addScreenShake(0.8 + intensity * 0.25, 0.1 + intensity * 0.02);
     };
 
+    const addDamageNumber = (x: number, y: number, value: number, color: string = "#ffffff") => {
+      damageNumbersRef.current.push({
+        x: x + (Math.random() - 0.5) * 16,
+        y,
+        vy: -80 - Math.random() * 40,
+        value,
+        life: 0.7,
+        color,
+      });
+    };
+
+    const addTrailParticle = (x: number, y: number, color: string) => {
+      trailParticlesRef.current.push({
+        x: x + (Math.random() - 0.5) * 6,
+        y: y + 8 + Math.random() * 4,
+        life: 0.15 + Math.random() * 0.1,
+        maxLife: 0.25,
+        radius: 2 + Math.random() * 2,
+        color,
+      });
+    };
+
+    const triggerWaveAnnouncement = (text: string) => {
+      waveAnnouncementRef.current = { text, life: 2.0, maxLife: 2.0 };
+    };
+
+    // Initialize background debris
+    if (backgroundDebrisRef.current.length === 0) {
+      for (let i = 0; i < 12; i++) {
+        backgroundDebrisRef.current.push({
+          x: Math.random() * WORLD_WIDTH,
+          y: Math.random() * WORLD_HEIGHT,
+          vy: 15 + Math.random() * 30,
+          radius: 2 + Math.random() * 5,
+          rotation: Math.random() * Math.PI * 2,
+          rotSpeed: (Math.random() - 0.5) * 2,
+          alpha: 0.1 + Math.random() * 0.15,
+          shape: Math.floor(Math.random() * 3),
+        });
+      }
+    }
+
     const getSprite = (key: SpriteKey) => {
       const sprite = spritesRef.current[key];
       if (!sprite || !sprite.complete || sprite.naturalWidth === 0) return null;
@@ -1098,6 +1188,10 @@ export default function ShmupPlayScreen() {
         charger: 65, splitter: 85, bomber: 55, sniper: 38, swarm: 170,
       };
 
+      if (spawn.waveLabel !== lastWaveLabelRef.current) {
+        lastWaveLabelRef.current = spawn.waveLabel;
+        triggerWaveAnnouncement(spawn.waveLabel);
+      }
       activeWaveLabelRef.current = spawn.waveLabel;
       enemiesRef.current.push({
         id: enemyIdRef.current++,
@@ -1156,6 +1250,7 @@ export default function ShmupPlayScreen() {
       bossWarningUntilRef.current = elapsedMs + activeMap.bossWarningMs;
       queuedWaveSpawnsRef.current = [];
       activeWaveLabelRef.current = "Boss Warning";
+      triggerWaveAnnouncement(`WARNING: ${activeMap.bossName}`);
       enemyBulletsRef.current = [];
     };
 
@@ -1462,6 +1557,11 @@ export default function ShmupPlayScreen() {
     const registerKill = (enemy: EnemyState, elapsedMs: number) => {
       killsRef.current += 1;
       streakRef.current += 1;
+      // Update streak display for on-screen counter
+      if (streakRef.current >= 5) {
+        streakDisplayRef.current = streakRef.current;
+        streakDisplayTimerRef.current = 1.5;
+      }
       const totalMultiplier = getScoreMultiplier(elapsedMs);
       bestMultiplierRef.current = Math.max(bestMultiplierRef.current, totalMultiplier);
       scoreRef.current += Math.round((enemy.scoreValue + scoreFlatBonus) * totalMultiplier);
@@ -1536,8 +1636,17 @@ export default function ShmupPlayScreen() {
       bestMultiplierRef.current = Math.max(bestMultiplierRef.current, totalMultiplier);
       scoreRef.current += Math.round((4200 + scoreFlatBonus) * totalMultiplier);
       enemyBulletsRef.current = [];
+      bomberZonesRef.current = [];
+      // Multi-stage boss death explosion sequence
       addExplosion(x, y, "#ffd43b", 34, 5.4);
       addExplosion(x, y - 26, "#ff922b", 42, 6);
+      addExplosion(x + 30, y + 10, "#ff6b6b", 28, 4.5);
+      addExplosion(x - 25, y - 15, "#4dabf7", 30, 4.8);
+      addSparkBurst(x, y, "#ffffff", 24, 200, [3, 6]);
+      addSparkBurst(x, y, "#ffd43b", 16, 160, [2, 5]);
+      addPulse(x, y, "#ffd43b", 20, 300, 0.4, 3);
+      addPulse(x, y, "#ffffff", 10, 400, 0.3, 2);
+      triggerWaveAnnouncement("BOSS DEFEATED!");
       if (secondaryUsesCharges) {
         addSecondaryCharge(2);
       }
@@ -2105,6 +2214,48 @@ export default function ShmupPlayScreen() {
       }
       pulsesRef.current = pulsesRef.current.filter((pulse) => pulse.life > 0);
 
+      // Update damage numbers
+      for (const dmg of damageNumbersRef.current) {
+        dmg.y += dmg.vy * deltaSeconds;
+        dmg.life -= deltaSeconds;
+      }
+      damageNumbersRef.current = damageNumbersRef.current.filter((d) => d.life > 0);
+
+      // Update trail particles
+      for (const trail of trailParticlesRef.current) {
+        trail.life -= deltaSeconds;
+      }
+      trailParticlesRef.current = trailParticlesRef.current.filter((t) => t.life > 0);
+
+      // Spawn trail particles behind player
+      if (Math.random() < 0.6) {
+        const trailColor = overdriveUntilRef.current > elapsedMs ? "#ffd43b" : "#74c0fc";
+        addTrailParticle(ship.x, ship.y, trailColor);
+      }
+
+      // Update wave announcement
+      if (waveAnnouncementRef.current) {
+        waveAnnouncementRef.current.life -= deltaSeconds;
+        if (waveAnnouncementRef.current.life <= 0) {
+          waveAnnouncementRef.current = null;
+        }
+      }
+
+      // Update streak display timer
+      if (streakDisplayTimerRef.current > 0) {
+        streakDisplayTimerRef.current -= deltaSeconds;
+      }
+
+      // Update background debris
+      for (const debris of backgroundDebrisRef.current) {
+        debris.y += debris.vy * deltaSeconds;
+        debris.rotation += debris.rotSpeed * deltaSeconds;
+        if (debris.y > canvas.height + 20) {
+          debris.y = -20;
+          debris.x = Math.random() * canvas.width;
+        }
+      }
+
       if (shakeTimeRef.current > 0) {
         shakeTimeRef.current = Math.max(0, shakeTimeRef.current - deltaSeconds);
         if (shakeTimeRef.current === 0) {
@@ -2434,6 +2585,7 @@ export default function ShmupPlayScreen() {
           consumePlayerBullet(bulletIndex);
           addSparkBurst(bullet.x, bullet.y, bullet.color, 4, 90);
           addPulse(bullet.x, bullet.y, bullet.color, 4, 42, 0.08, 1.2);
+          addDamageNumber(enemy.x, enemy.y - enemy.radius, Math.round(bullet.damage * 10));
           if (enemy.hp <= 0) {
             registerKill(enemy, elapsedMs);
             enemiesRef.current.splice(enemyIndex, 1);
@@ -2456,6 +2608,7 @@ export default function ShmupPlayScreen() {
 
           activeBoss.hp -= bullet.damage;
           consumePlayerBullet(bulletIndex);
+          addDamageNumber(bullet.x, bullet.y - 10, Math.round(bullet.damage * 10), "#ffd43b");
           addSparkBurst(bullet.x, bullet.y, activeBoss.phase === 1 ? "#ffa8a8" : "#ffd43b", 5, 96);
           addPulse(
             bullet.x,
@@ -2527,6 +2680,42 @@ export default function ShmupPlayScreen() {
 
       drawTiledBackground(getSprite("backgroundFar"), elapsedMs, 12, 0.8);
       drawTiledBackground(getSprite("backgroundNear"), elapsedMs, 34, 0.64);
+
+      // Parallax background debris/asteroids
+      for (const debris of backgroundDebrisRef.current) {
+        ctx.save();
+        ctx.globalAlpha = debris.alpha;
+        ctx.translate(debris.x, debris.y);
+        ctx.rotate(debris.rotation);
+        ctx.fillStyle = "#4a5568";
+        ctx.strokeStyle = "#718096";
+        ctx.lineWidth = 0.5;
+        if (debris.shape === 0) {
+          // Irregular polygon
+          ctx.beginPath();
+          ctx.moveTo(-debris.radius, -debris.radius * 0.5);
+          ctx.lineTo(debris.radius * 0.3, -debris.radius);
+          ctx.lineTo(debris.radius, -debris.radius * 0.2);
+          ctx.lineTo(debris.radius * 0.7, debris.radius * 0.8);
+          ctx.lineTo(-debris.radius * 0.5, debris.radius);
+          ctx.closePath();
+        } else if (debris.shape === 1) {
+          // Small circle
+          ctx.beginPath();
+          ctx.arc(0, 0, debris.radius * 0.7, 0, Math.PI * 2);
+        } else {
+          // Diamond
+          ctx.beginPath();
+          ctx.moveTo(0, -debris.radius);
+          ctx.lineTo(debris.radius * 0.6, 0);
+          ctx.lineTo(0, debris.radius);
+          ctx.lineTo(-debris.radius * 0.6, 0);
+          ctx.closePath();
+        }
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
 
       const corridorGlow = ctx.createRadialGradient(
         canvas.width / 2,
@@ -3276,6 +3465,18 @@ export default function ShmupPlayScreen() {
         }
       }
 
+      // Trail particles behind player ship
+      for (const trail of trailParticlesRef.current) {
+        const alpha = clamp(trail.life / trail.maxLife, 0, 1);
+        ctx.save();
+        ctx.globalAlpha = alpha * 0.6;
+        ctx.fillStyle = trail.color;
+        ctx.beginPath();
+        ctx.arc(trail.x, trail.y, trail.radius * alpha, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
       drawShip(elapsedMs);
       if (barrierUntilRef.current > elapsedMs) {
         ctx.save();
@@ -3287,6 +3488,66 @@ export default function ShmupPlayScreen() {
         ctx.stroke();
         ctx.restore();
       }
+
+      // Damage numbers
+      for (const dmg of damageNumbersRef.current) {
+        const alpha = clamp(dmg.life / 0.7, 0, 1);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = dmg.color;
+        ctx.font = `bold ${dmg.value >= 20 ? 14 : 11}px monospace`;
+        ctx.textAlign = "center";
+        ctx.fillText(String(dmg.value), dmg.x, dmg.y);
+        ctx.restore();
+      }
+
+      // Wave announcement text
+      if (waveAnnouncementRef.current) {
+        const wa = waveAnnouncementRef.current;
+        const progress = 1 - wa.life / wa.maxLife;
+        const fadeIn = Math.min(1, progress * 5);
+        const fadeOut = Math.min(1, wa.life * 3);
+        const alpha = fadeIn * fadeOut;
+        const scale = 0.8 + fadeIn * 0.2;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.translate(canvas.width / 2, canvas.height * 0.28);
+        ctx.scale(scale, scale);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 22px monospace";
+        ctx.textAlign = "center";
+        ctx.shadowColor = "#000000";
+        ctx.shadowBlur = 6;
+        ctx.fillText(wa.text, 0, 0);
+        ctx.shadowBlur = 0;
+        // Underline
+        const textWidth = ctx.measureText(wa.text).width;
+        ctx.strokeStyle = `rgba(255,255,255,${alpha * 0.5})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(-textWidth / 2, 6);
+        ctx.lineTo(textWidth / 2, 6);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Kill streak counter
+      if (streakDisplayTimerRef.current > 0 && streakDisplayRef.current >= 5) {
+        const alpha = clamp(streakDisplayTimerRef.current / 0.5, 0, 1);
+        const streak = streakDisplayRef.current;
+        const streakColor = streak >= 20 ? "#ffd43b" : streak >= 10 ? "#ff922b" : "#74c0fc";
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = streakColor;
+        ctx.font = "bold 16px monospace";
+        ctx.textAlign = "right";
+        ctx.shadowColor = "#000000";
+        ctx.shadowBlur = 4;
+        ctx.fillText(`${streak} KILL STREAK!`, canvas.width - 12, canvas.height - 16);
+        ctx.shadowBlur = 0;
+        ctx.restore();
+      }
+
       ctx.restore();
 
       if (elapsedMs - hudSyncRef.current >= 75) {
@@ -3410,9 +3671,19 @@ export default function ShmupPlayScreen() {
       <div className="fever-bar-container">
         <div
           className={`fever-bar ${hud.overdriveActive ? "fever-active" : ""}`}
-          style={{ width: `${hud.overdriveActive ? 100 : hud.overdriveMeter}%` }}
+          style={{
+            width: `${hud.overdriveActive ? 100 : hud.overdriveMeter}%`,
+            boxShadow: hud.overdriveActive
+              ? "0 0 12px rgba(255,212,59,0.8), 0 0 24px rgba(255,212,59,0.4)"
+              : hud.overdriveMeter >= 80
+                ? "0 0 8px rgba(69,199,255,0.5)"
+                : "none",
+            transition: "box-shadow 0.3s ease",
+          }}
         />
-        <span className="fever-label">
+        <span className="fever-label" style={{
+          textShadow: hud.overdriveActive ? "0 0 8px rgba(255,212,59,0.8)" : "none",
+        }}>
           {hud.overdriveActive ? "OVERDRIVE" : `Overdrive ${Math.round(hud.overdriveMeter)}%`}
         </span>
       </div>
