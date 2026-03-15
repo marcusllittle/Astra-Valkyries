@@ -30,6 +30,8 @@ export interface RewardResult {
   daily_earned?: number;
   daily_cap?: number;
   wait_seconds?: number;
+  bonuses?: string[] | null;
+  multiplier?: number | null;
 }
 
 export interface PlayerStats {
@@ -61,7 +63,9 @@ export async function fetchCreditBalance(wallet: string): Promise<CreditBalance>
 
 // ─── Spend (Phase 2) ───────────────────────────────────────
 
-export async function astraSpend(wallet: string, action: "gacha_1" | "gacha_10"): Promise<SpendResult> {
+export type SpendAction = "gacha_1" | "gacha_10" | "continue" | "boost_damage";
+
+export async function astraSpend(wallet: string, action: SpendAction): Promise<SpendResult> {
   const res = await fetch(`${API_BASE}/astra/spend`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
