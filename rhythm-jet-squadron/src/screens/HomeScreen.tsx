@@ -243,7 +243,7 @@ export default function HomeScreen() {
             )}
             <a
               className="havnai-link-sm"
-              href={`${HAVNAI_URL}/generate`}
+              href={`${HAVNAI_URL}/generator`}
               target="_blank"
               rel="noopener noreferrer"
             >

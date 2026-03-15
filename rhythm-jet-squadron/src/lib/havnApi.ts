@@ -3,7 +3,7 @@
  * Phase 1: balance | Phase 2: spend | Phase 3: reward + leaderboard
  */
 
-const API_BASE = import.meta.env.VITE_HAVNAI_API_BASE ?? "https://api.joinhavn.io";
+const API_BASE = import.meta.env.VITE_HAVNAI_API_BASE ?? "/api";
 
 // ─── Types ──────────────────────────────────────────────────
 
