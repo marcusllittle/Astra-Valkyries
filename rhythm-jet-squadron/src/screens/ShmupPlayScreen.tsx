@@ -217,12 +217,6 @@ interface DamageNumber {
   color: string;
 }
 
-interface WaveAnnouncement {
-  text: string;
-  life: number;
-  maxLife: number;
-}
-
 interface BackgroundDebris {
   x: number;
   y: number;
@@ -553,9 +547,7 @@ export default function ShmupPlayScreen() {
   const bomberZonesRef = useRef<BomberZone[]>([]);
   const damageNumbersRef = useRef<DamageNumber[]>([]);
   const trailParticlesRef = useRef<TrailParticle[]>([]);
-  const waveAnnouncementRef = useRef<WaveAnnouncement | null>(null);
   const backgroundDebrisRef = useRef<BackgroundDebris[]>([]);
-  const lastWaveLabelRef = useRef("");
   const streakDisplayRef = useRef(0);
   const streakDisplayTimerRef = useRef(0);
   const keysRef = useRef<Set<string>>(new Set());
@@ -771,8 +763,6 @@ export default function ShmupPlayScreen() {
     bomberZonesRef.current = [];
     damageNumbersRef.current = [];
     trailParticlesRef.current = [];
-    waveAnnouncementRef.current = null;
-    lastWaveLabelRef.current = "";
     streakDisplayRef.current = 0;
     streakDisplayTimerRef.current = 0;
     enemyIdRef.current = 0;
@@ -1037,10 +1027,6 @@ export default function ShmupPlayScreen() {
       });
     };
 
-    const triggerWaveAnnouncement = (text: string) => {
-      waveAnnouncementRef.current = { text, life: 2.0, maxLife: 2.0 };
-    };
-
     // Initialize background debris
     if (backgroundDebrisRef.current.length === 0) {
       for (let i = 0; i < 12; i++) {
@@ -1188,10 +1174,6 @@ export default function ShmupPlayScreen() {
         charger: 65, splitter: 85, bomber: 55, sniper: 38, swarm: 170,
       };
 
-      if (spawn.waveLabel !== lastWaveLabelRef.current) {
-        lastWaveLabelRef.current = spawn.waveLabel;
-        triggerWaveAnnouncement(spawn.waveLabel);
-      }
       activeWaveLabelRef.current = spawn.waveLabel;
       enemiesRef.current.push({
         id: enemyIdRef.current++,
@@ -1250,7 +1232,6 @@ export default function ShmupPlayScreen() {
       bossWarningUntilRef.current = elapsedMs + activeMap.bossWarningMs;
       queuedWaveSpawnsRef.current = [];
       activeWaveLabelRef.current = "Boss Warning";
-      triggerWaveAnnouncement(`WARNING: ${activeMap.bossName}`);
       enemyBulletsRef.current = [];
     };
 
@@ -1646,7 +1627,6 @@ export default function ShmupPlayScreen() {
       addSparkBurst(x, y, "#ffd43b", 16, 160, [2, 5]);
       addPulse(x, y, "#ffd43b", 20, 300, 0.4, 3);
       addPulse(x, y, "#ffffff", 10, 400, 0.3, 2);
-      triggerWaveAnnouncement("BOSS DEFEATED!");
       if (secondaryUsesCharges) {
         addSecondaryCharge(2);
       }
@@ -2231,14 +2211,6 @@ export default function ShmupPlayScreen() {
       if (Math.random() < 0.6) {
         const trailColor = overdriveUntilRef.current > elapsedMs ? "#ffd43b" : "#74c0fc";
         addTrailParticle(ship.x, ship.y, trailColor);
-      }
-
-      // Update wave announcement
-      if (waveAnnouncementRef.current) {
-        waveAnnouncementRef.current.life -= deltaSeconds;
-        if (waveAnnouncementRef.current.life <= 0) {
-          waveAnnouncementRef.current = null;
-        }
       }
 
       // Update streak display timer
@@ -3498,36 +3470,6 @@ export default function ShmupPlayScreen() {
         ctx.font = `bold ${dmg.value >= 20 ? 14 : 11}px monospace`;
         ctx.textAlign = "center";
         ctx.fillText(String(dmg.value), dmg.x, dmg.y);
-        ctx.restore();
-      }
-
-      // Wave announcement text
-      if (waveAnnouncementRef.current) {
-        const wa = waveAnnouncementRef.current;
-        const progress = 1 - wa.life / wa.maxLife;
-        const fadeIn = Math.min(1, progress * 5);
-        const fadeOut = Math.min(1, wa.life * 3);
-        const alpha = fadeIn * fadeOut;
-        const scale = 0.8 + fadeIn * 0.2;
-        ctx.save();
-        ctx.globalAlpha = alpha;
-        ctx.translate(canvas.width / 2, canvas.height * 0.28);
-        ctx.scale(scale, scale);
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 22px monospace";
-        ctx.textAlign = "center";
-        ctx.shadowColor = "#000000";
-        ctx.shadowBlur = 6;
-        ctx.fillText(wa.text, 0, 0);
-        ctx.shadowBlur = 0;
-        // Underline
-        const textWidth = ctx.measureText(wa.text).width;
-        ctx.strokeStyle = `rgba(255,255,255,${alpha * 0.5})`;
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(-textWidth / 2, 6);
-        ctx.lineTo(textWidth / 2, 6);
-        ctx.stroke();
         ctx.restore();
       }
 
