@@ -76,6 +76,21 @@ export async function astraSpend(wallet: string, action: SpendAction): Promise<S
 
 // ─── Reward (Phase 3) ──────────────────────────────────────
 
+async function fetchWithRetry(
+  input: RequestInfo,
+  init: RequestInit,
+  retries = 2,
+): Promise<Response> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fetch(input, init);
+    } catch (err) {
+      if (attempt >= retries) throw err;
+      await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
+    }
+  }
+}
+
 export async function astraReward(
   wallet: string,
   score: number,
@@ -83,7 +98,7 @@ export async function astraReward(
   durationS: number,
   mapId: string,
 ): Promise<RewardResult> {
-  const res = await fetch(`${API_BASE}/astra/reward`, {
+  const res = await fetchWithRetry(`${API_BASE}/astra/reward`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ wallet, score, grade, duration_s: durationS, map_id: mapId }),
