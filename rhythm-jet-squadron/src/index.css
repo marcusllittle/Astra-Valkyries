@@ -281,23 +281,31 @@ body::after {
 /* Credits + wallet bar — top strip */
 .home-topbar {
   position: absolute;
-  top: 20px;
-  left: 20px;
-  right: 20px;
+  top: 16px;
+  right: 16px;
   z-index: 10;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
-.home-topbar-left,
 .home-topbar-right {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.home-bottombar {
+  position: absolute;
+  bottom: 24px;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .home-fade-in {
@@ -309,58 +317,56 @@ body::after {
   to { opacity: 1; }
 }
 
-.home-credits-pill {
+/* Small credit pills — bottom bar */
+.home-credits-pill-sm {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.82rem;
+  gap: 5px;
+  font-size: 0.68rem;
   font-weight: 600;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--gold);
-  background: rgba(17, 32, 64, 0.6);
-  border: 1px solid rgba(255, 224, 138, 0.3);
+  background: rgba(17, 32, 64, 0.5);
+  border: 1px solid rgba(255, 224, 138, 0.25);
   border-radius: 999px;
-  padding: 7px 13px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  padding: 5px 10px;
 }
 
 .credit-icon {
-  font-size: 0.95em;
+  font-size: 0.85em;
 }
 
-/* Shared HavnAI balance pill */
-.home-shared-pill {
+.home-shared-pill-sm {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.78rem;
+  gap: 4px;
+  font-size: 0.68rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--accent);
-  background: rgba(17, 32, 64, 0.6);
-  border: 1px solid rgba(106, 141, 255, 0.3);
+  background: rgba(17, 32, 64, 0.5);
+  border: 1px solid rgba(106, 141, 255, 0.25);
   border-radius: 999px;
-  padding: 7px 13px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  padding: 5px 10px;
 }
 
 .shared-icon {
-  font-size: 0.9em;
+  font-size: 0.8em;
 }
 
 /* Wallet chip */
 .wallet-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   font-family: inherit;
-  font-size: 0.78rem;
+  font-size: 0.68rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   border-radius: 999px;
-  padding: 7px 14px;
+  padding: 5px 10px;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
@@ -404,12 +410,12 @@ body::after {
   background: var(--danger);
 }
 
-/* Generate Images link */
-.havnai-link {
+/* Generate link — small */
+.havnai-link-sm {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 0.78rem;
+  gap: 3px;
+  font-size: 0.68rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   color: var(--text-secondary);
@@ -417,11 +423,11 @@ body::after {
   background: rgba(17, 32, 64, 0.5);
   border: 1px solid rgba(147, 168, 209, 0.2);
   border-radius: 999px;
-  padding: 7px 14px;
+  padding: 5px 10px;
   transition: color 0.15s, border-color 0.15s;
 }
 
-.havnai-link:hover {
+.havnai-link-sm:hover {
   color: var(--text-primary);
   border-color: rgba(147, 168, 209, 0.4);
 }
@@ -1948,22 +1954,60 @@ body::after {
 
 /* ─── Collection Screen ───────────────────────────────── */
 
-.collection-screen .card-grid {
-  grid-template-columns: repeat(auto-fill, minmax(172px, 1fr));
+.collection-pilot-section {
+  margin-bottom: 20px;
 }
 
-.collection-grid .card-info {
+.collection-pilot-heading {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin: 0 0 10px 4px;
+}
+
+.collection-scroll-row {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  padding-bottom: 8px;
+}
+
+.collection-scroll-row::-webkit-scrollbar {
+  height: 4px;
+}
+
+.collection-scroll-row::-webkit-scrollbar-track {
+  background: rgba(20, 30, 55, 0.4);
+  border-radius: 2px;
+}
+
+.collection-scroll-row::-webkit-scrollbar-thumb {
+  background: rgba(106, 141, 255, 0.3);
+  border-radius: 2px;
+}
+
+.collection-scroll-row > .card {
+  flex: 0 0 164px;
+  scroll-snap-align: start;
+}
+
+.collection-scroll-row .card-info {
   gap: 3px;
 }
 
-.collection-grid .perk-label {
+.collection-scroll-row .perk-label {
   color: #9ab4ff;
   max-height: 3.2em;
   overflow: hidden;
 }
 
-.collection-grid .card.card-locked .card-title,
-.collection-grid .card.card-locked .rarity-text {
+.collection-scroll-row .card.card-locked .card-title,
+.collection-scroll-row .card.card-locked .rarity-text {
   color: #9aa9cc;
 }
 

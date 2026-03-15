@@ -2021,7 +2021,7 @@ export default function ShmupPlayScreen() {
         dronesFireTimerRef.current -= deltaSeconds;
         if (dronesFireTimerRef.current <= 0) {
           dronesFireTimerRef.current += SHMUP_BALANCE.effects.droneFireInterval;
-          for (const phase of [0, Math.PI]) {
+          for (const phase of [0, Math.PI * 0.4, Math.PI * 0.8, Math.PI * 1.2, Math.PI * 1.6]) {
             const orbitX = ship.x + Math.cos(droneOrbitRef.current + phase) * 24;
             const orbitY = ship.y - 10 + Math.sin(droneOrbitRef.current + phase) * 18;
             playerBulletsRef.current.push({
@@ -3416,7 +3416,7 @@ export default function ShmupPlayScreen() {
       }
 
       if (dronesUntilRef.current > elapsedMs) {
-        for (const phase of [0, Math.PI]) {
+        for (const phase of [0, Math.PI * 0.4, Math.PI * 0.8, Math.PI * 1.2, Math.PI * 1.6]) {
           const angle = droneOrbitRef.current + phase;
           const orbitX = ship.x + Math.cos(angle) * 24;
           const orbitY = ship.y - 10 + Math.sin(angle) * 18;
