@@ -1954,22 +1954,60 @@ body::after {
 
 /* ─── Collection Screen ───────────────────────────────── */
 
-.collection-screen .card-grid {
-  grid-template-columns: repeat(auto-fill, minmax(172px, 1fr));
+.collection-pilot-section {
+  margin-bottom: 20px;
 }
 
-.collection-grid .card-info {
+.collection-pilot-heading {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin: 0 0 10px 4px;
+}
+
+.collection-scroll-row {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  padding-bottom: 8px;
+}
+
+.collection-scroll-row::-webkit-scrollbar {
+  height: 4px;
+}
+
+.collection-scroll-row::-webkit-scrollbar-track {
+  background: rgba(20, 30, 55, 0.4);
+  border-radius: 2px;
+}
+
+.collection-scroll-row::-webkit-scrollbar-thumb {
+  background: rgba(106, 141, 255, 0.3);
+  border-radius: 2px;
+}
+
+.collection-scroll-row > .card {
+  flex: 0 0 164px;
+  scroll-snap-align: start;
+}
+
+.collection-scroll-row .card-info {
   gap: 3px;
 }
 
-.collection-grid .perk-label {
+.collection-scroll-row .perk-label {
   color: #9ab4ff;
   max-height: 3.2em;
   overflow: hidden;
 }
 
-.collection-grid .card.card-locked .card-title,
-.collection-grid .card.card-locked .rarity-text {
+.collection-scroll-row .card.card-locked .card-title,
+.collection-scroll-row .card.card-locked .rarity-text {
   color: #9aa9cc;
 }
 

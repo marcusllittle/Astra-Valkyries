@@ -43,13 +43,9 @@ export default function CollectionScreen() {
 
   const ownedCount = allOutfits.filter((outfit) => ownedMap.has(outfit.id)).length;
 
-  // Filter and sort: by pilot, then owned first, then rarity
-  const filteredOutfits = useMemo(() => {
-    let list = allOutfits;
-    if (activeFilter !== "all") {
-      list = list.filter((outfit) => outfit.pilotId === activeFilter);
-    }
-    return [...list].sort((a, b) => {
+  // Group outfits by pilot, sorted: owned first, then rarity
+  const sortOutfits = (list: Outfit[]) =>
+    [...list].sort((a, b) => {
       const aOwned = ownedMap.has(a.id) ? 0 : 1;
       const bOwned = ownedMap.has(b.id) ? 0 : 1;
       if (aOwned !== bOwned) return aOwned - bOwned;
@@ -57,7 +53,16 @@ export default function CollectionScreen() {
       const bRarity = RARITY_ORDER[b.rarity] ?? 9;
       return aRarity - bRarity;
     });
-  }, [allOutfits, activeFilter, save.ownedOutfits]);
+
+  const pilotSections = useMemo(() => {
+    const visiblePilots = activeFilter === "all"
+      ? pilots
+      : pilots.filter((p) => p.id === activeFilter);
+    return visiblePilots.map((pilot) => ({
+      pilot,
+      outfits: sortOutfits(allOutfits.filter((o) => o.pilotId === pilot.id)),
+    }));
+  }, [allOutfits, activeFilter, pilots, save.ownedOutfits]);
 
   const previewOutfit = previewOutfitId
     ? allOutfits.find((outfit) => outfit.id === previewOutfitId) ?? null
@@ -96,67 +101,67 @@ export default function CollectionScreen() {
         ))}
       </div>
 
-      <div className="card-grid collection-grid">
-        {filteredOutfits.map((outfit) => {
-          const owned = ownedMap.get(outfit.id);
-          const isOwned = Boolean(owned);
-          const upgradable = owned ? canUpgrade(owned) : false;
-          const nextThreshold = owned && owned.stars < 5
-            ? SHARD_THRESHOLDS[owned.stars + 1]
-            : null;
+      {pilotSections.map(({ pilot, outfits }) => (
+        <section key={pilot.id} className="collection-pilot-section">
+          <h3 className="collection-pilot-heading">{pilot.name}</h3>
+          <div className="collection-scroll-row">
+            {outfits.map((outfit) => {
+              const owned = ownedMap.get(outfit.id);
+              const isOwned = Boolean(owned);
+              const upgradable = owned ? canUpgrade(owned) : false;
+              const nextThreshold = owned && owned.stars < 5
+                ? SHARD_THRESHOLDS[owned.stars + 1]
+                : null;
 
-          return (
-            <div
-              key={outfit.id}
-              className={`card outfit-card rarity-${outfit.rarity.toLowerCase()} ${isOwned ? "" : "card-locked"}`}
-              onClick={() => setPreviewOutfitId(outfit.id)}
-            >
-              <CardArt
-                title={outfit.name}
-                artUrl={outfit.artUrl}
-                artPlaceholder={outfit.artPlaceholder}
-                rarity={outfit.rarity}
-              />
-              <div className="card-info">
-                <strong className="card-title">{outfit.name}</strong>
-                <span
-                  className="rarity-text"
-                  style={{ color: RARITY_COLORS[outfit.rarity] }}
+              return (
+                <div
+                  key={outfit.id}
+                  className={`card outfit-card rarity-${outfit.rarity.toLowerCase()} ${isOwned ? "" : "card-locked"}`}
+                  onClick={() => setPreviewOutfitId(outfit.id)}
                 >
-                  {outfit.rarity}{!isOwned ? " • Locked" : ""}
-                </span>
-                <div className="star-display">
-                  {isOwned && owned
-                    ? `${"★".repeat(owned.stars)}${"☆".repeat(5 - owned.stars)}`
-                    : "☆☆☆☆☆"}
+                  <CardArt
+                    title={outfit.name}
+                    artUrl={outfit.artUrl}
+                    artPlaceholder={outfit.artPlaceholder}
+                    rarity={outfit.rarity}
+                  />
+                  <div className="card-info">
+                    <strong className="card-title">{outfit.name}</strong>
+                    <span
+                      className="rarity-text"
+                      style={{ color: RARITY_COLORS[outfit.rarity] }}
+                    >
+                      {outfit.rarity}{!isOwned ? " • Locked" : ""}
+                    </span>
+                    <div className="star-display">
+                      {isOwned && owned
+                        ? `${"★".repeat(owned.stars)}${"☆".repeat(5 - owned.stars)}`
+                        : "☆☆☆☆☆"}
+                    </div>
+                    <div className="perk-label">{summarizeOutfitKit(outfit)}</div>
+                    {nextThreshold && (
+                      <div className="shard-progress">
+                        Shards: {owned?.shards ?? 0}/{nextThreshold}
+                      </div>
+                    )}
+                    {isOwned && upgradable && (
+                      <button
+                        className="btn btn-upgrade"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          upgradeOutfit(outfit.id);
+                        }}
+                      >
+                        ★ Upgrade
+                      </button>
+                    )}
+                  </div>
                 </div>
-                {outfit.pilotId && (
-                  <div className="rarity-badge">
-                    {pilotNameById.get(outfit.pilotId) ?? outfit.pilotId}
-                  </div>
-                )}
-                <div className="perk-label">{summarizeOutfitKit(outfit)}</div>
-                {nextThreshold && (
-                  <div className="shard-progress">
-                    Shards: {owned?.shards ?? 0}/{nextThreshold}
-                  </div>
-                )}
-                {isOwned && upgradable && (
-                  <button
-                    className="btn btn-upgrade"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      upgradeOutfit(outfit.id);
-                    }}
-                  >
-                    ★ Upgrade
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+              );
+            })}
+          </div>
+        </section>
+      ))}
 
       {ownedCount === 0 && (
         <p className="empty-msg">No outfits yet. Visit the Store to pull!</p>
