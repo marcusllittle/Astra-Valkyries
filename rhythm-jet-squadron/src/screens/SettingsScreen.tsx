@@ -2,13 +2,19 @@
  * Settings Screen - Adjust game settings and reset save data.
  */
 
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGame } from "../context/GameContext";
+import { syncVolumes } from "../lib/audioEngine";
 
 export default function SettingsScreen() {
   const navigate = useNavigate();
   const { save, updateSettings, resetSave } = useGame();
   const { settings } = save;
+
+  useEffect(() => {
+    syncVolumes(settings.musicVolume, settings.sfxVolume);
+  }, [settings.musicVolume, settings.sfxVolume]);
 
   return (
     <div className="screen settings-screen">

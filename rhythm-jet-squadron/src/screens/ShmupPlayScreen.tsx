@@ -43,6 +43,13 @@ import type {
   Ship,
   ShmupGameResult,
 } from "../types";
+import { syncVolumes } from "../lib/audioEngine";
+import { playLevelMusic, playBossMusic, playDeathJingle, playVictoryFanfare, stopMusic } from "../lib/musicGen";
+import {
+  sfxShoot, sfxEnemyDeath, sfxExplosion, sfxPlayerHit,
+  sfxBomb, sfxEmp, sfxShield, sfxDrones, sfxPowerup,
+  sfxBossWarning, sfxCrystalBomb, sfxShieldPulse,
+} from "../lib/retroSfx";
 import pilotsData from "../data/pilots.json";
 import outfitsData from "../data/outfits.json";
 import shipsData from "../data/ships.json";
@@ -734,8 +741,17 @@ export default function ShmupPlayScreen() {
     };
   }, []);
 
+  // Sync audio volumes from settings
+  useEffect(() => {
+    syncVolumes(save.settings.musicVolume, save.settings.sfxVolume);
+  }, [save.settings.musicVolume, save.settings.sfxVolume]);
+
   useEffect(() => {
     if (!pilot) return;
+
+    // Start level music
+    const mapId = activeMap?.id ?? "nebula-runway";
+    playLevelMusic(mapId);
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -1229,6 +1245,8 @@ export default function ShmupPlayScreen() {
     const startBossIntro = (elapsedMs: number) => {
       if (bossIntroStartedRef.current) return;
       bossIntroStartedRef.current = true;
+      sfxBossWarning();
+      playBossMusic();
       bossWarningUntilRef.current = elapsedMs + activeMap.bossWarningMs;
       queuedWaveSpawnsRef.current = [];
       activeWaveLabelRef.current = "Boss Warning";
@@ -1536,6 +1554,7 @@ export default function ShmupPlayScreen() {
     };
 
     const registerKill = (enemy: EnemyState, elapsedMs: number) => {
+      sfxEnemyDeath();
       killsRef.current += 1;
       streakRef.current += 1;
       // Update streak display for on-screen counter
@@ -1611,6 +1630,8 @@ export default function ShmupPlayScreen() {
     };
 
     const registerBossDefeat = (elapsedMs: number, x: number, y: number) => {
+      sfxExplosion();
+      playVictoryFanfare();
       killsRef.current += 1;
       streakRef.current += 3;
       const totalMultiplier = getScoreMultiplier(elapsedMs);
@@ -1747,6 +1768,7 @@ export default function ShmupPlayScreen() {
         case "crystalBomb": {
           if (!secondaryUsesCharges || secondaryChargesRef.current <= 0) return;
           secondaryChargesRef.current -= 1;
+          if (secondaryKey === "crystalBomb") sfxCrystalBomb(); else sfxBomb();
           bombsRef.current.push({
             kind: secondaryKey,
             x: ship.x,
@@ -1765,21 +1787,25 @@ export default function ShmupPlayScreen() {
           return;
         }
         case "shieldPulse":
+          sfxShieldPulse();
           triggerShieldPulse(elapsedMs);
           startSecondaryCooldown(elapsedMs);
           return;
         case "barrier":
+          sfxShield();
           barrierUntilRef.current = elapsedMs + secondaryDurationMs;
           startSecondaryCooldown(elapsedMs);
           addPulse(ship.x, ship.y, "#8ce99a", 12, 140, 0.12, 2.2);
           return;
         case "emp":
+          sfxEmp();
           empUntilRef.current = elapsedMs + secondaryDurationMs;
           statusFlashUntilRef.current = elapsedMs + 260;
           startSecondaryCooldown(elapsedMs);
           addPulse(ship.x, ship.y, "#4dabf7", 10, 200, 0.16, 2.6);
           return;
         case "drones":
+          sfxDrones();
           dronesUntilRef.current = elapsedMs + secondaryDurationMs;
           dronesFireTimerRef.current = 0;
           startSecondaryCooldown(elapsedMs);
@@ -1846,6 +1872,7 @@ export default function ShmupPlayScreen() {
     const handleShipHit = (elapsedMs: number) => {
       if (elapsedMs < ship.invulnerableUntil || runEndedRef.current) return;
 
+      sfxPlayerHit();
       ship.hp = Math.max(0, ship.hp - damageTakenMultiplier);
       damageTakenRef.current += damageTakenMultiplier;
       lastHitMsRef.current = elapsedMs;
@@ -1860,6 +1887,8 @@ export default function ShmupPlayScreen() {
       }
 
       if (ship.hp <= 0) {
+        sfxExplosion();
+        playDeathJingle();
         finishRun(elapsedMs);
       }
     };
@@ -2013,6 +2042,7 @@ export default function ShmupPlayScreen() {
       );
       while (fireTimerRef.current <= 0) {
         spawnPlayerBullets(elapsedMs);
+        sfxShoot();
         fireTimerRef.current += fireInterval;
       }
 
@@ -2500,6 +2530,7 @@ export default function ShmupPlayScreen() {
         const hitDistance = ship.radius + chip.radius + 6;
         if (distanceSquared(ship.x, ship.y, chip.x, chip.y) <= hitDistance * hitDistance) {
           chipsRef.current.splice(chipIndex, 1);
+          sfxPowerup();
           if (weaponLevelRef.current < MAX_WEAPON_LEVEL) {
             weaponLevelRef.current = Math.min(MAX_WEAPON_LEVEL, weaponLevelRef.current + 1);
           } else {
@@ -3541,6 +3572,7 @@ export default function ShmupPlayScreen() {
       touchMoveRef.current = { active: false, pointerId: null, x: 0, y: 0 };
       setTouchKnob({ active: false, x: 0, y: 0 });
       secondaryQueuedRef.current = false;
+      stopMusic();
     };
   }, [
     comboBonus,

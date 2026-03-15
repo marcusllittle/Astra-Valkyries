@@ -10,6 +10,8 @@ import { useRef, useEffect, useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGame } from "../context/GameContext";
 import { useWallet } from "../context/WalletContext";
+import { syncVolumes } from "../lib/audioEngine";
+import { playTitleMusic, stopMusic } from "../lib/musicGen";
 import { cursorMove, menuConfirm, pressStart } from "../lib/retroSfx";
 
 const HAVNAI_URL = import.meta.env.VITE_HAVNAI_WEB_URL ?? "https://joinhavn.io";
@@ -49,6 +51,16 @@ export default function HomeScreen() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef(0);
   const starsRef = useRef<Star[]>([]);
+
+  // Sync volumes & play title music
+  useEffect(() => {
+    syncVolumes(save.settings.musicVolume, save.settings.sfxVolume);
+  }, [save.settings.musicVolume, save.settings.sfxVolume]);
+
+  useEffect(() => {
+    playTitleMusic();
+    return () => { stopMusic(); };
+  }, []);
 
   // ─── Starfield init ───────────────────────────────────
 
