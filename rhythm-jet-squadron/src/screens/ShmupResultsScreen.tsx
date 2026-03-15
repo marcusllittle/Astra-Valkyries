@@ -73,15 +73,20 @@ export default function ShmupResultsScreen() {
 
     astraReward(wallet.address, shmupResult.score, grade, durationS, mapId)
       .then((res) => {
-        sessionStorage.setItem(`${rewardKey}:shared`, "1");
         if (res.ok && res.reward && res.reward > 0) {
+          sessionStorage.setItem(`${rewardKey}:shared`, "1");
           setSharedReward(res.reward);
           wallet.refreshBalance();
         } else if (!res.ok) {
           setRewardStatus(res.reason ?? "not_eligible");
+          // Only mark as "done" for permanent rejections, not transient ones
+          if (res.reason === "duplicate_run" || res.reason === "daily_cap_reached") {
+            sessionStorage.setItem(`${rewardKey}:shared`, "1");
+          }
         }
       })
       .catch(() => {
+        // Don't set sessionStorage on network error — allow retry on next visit
         setRewardStatus("network_error");
       });
   }, [shmupResult, grade, wallet.address, wallet.status, rewardKey, wallet]);
@@ -142,11 +147,19 @@ export default function ShmupResultsScreen() {
           <span className="shared-icon">&#x26A1;</span> +{sharedReward} HavnAI Credits
         </div>
       )}
-      {rewardStatus === "daily_cap_reached" && (
-        <div className="reward-status-note">Daily HavnAI earn cap reached</div>
+      {wallet.status !== "connected" && (
+        <div className="reward-status-note">Connect wallet to earn HavnAI credits</div>
       )}
-      {rewardStatus === "cooldown" && (
-        <div className="reward-status-note">HavnAI reward on cooldown</div>
+      {rewardStatus && (
+        <div className="reward-status-note">
+          {rewardStatus === "daily_cap_reached" && "Daily HavnAI earn cap reached"}
+          {rewardStatus === "cooldown" && "HavnAI reward on cooldown — wait and play again"}
+          {rewardStatus === "score_too_low" && "Score below 5,000 — no HavnAI credits earned"}
+          {rewardStatus === "run_too_short" && "Run too short — survive longer to earn credits"}
+          {rewardStatus === "duplicate_run" && "Duplicate run detected"}
+          {rewardStatus === "network_error" && "Could not reach HavnAI server — credits will sync next run"}
+          {!["daily_cap_reached", "cooldown", "score_too_low", "run_too_short", "duplicate_run", "network_error"].includes(rewardStatus) && `HavnAI: ${rewardStatus}`}
+        </div>
       )}
 
       <div className="results-buttons">
