@@ -59,7 +59,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     playTitleMusic();
-    return () => { stopMusic(); };
+    return () => { stopMusic(0); };
   }, []);
 
   // ─── Starfield init ───────────────────────────────────

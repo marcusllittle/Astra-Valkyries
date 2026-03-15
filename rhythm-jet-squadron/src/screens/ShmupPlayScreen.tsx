@@ -3572,7 +3572,7 @@ export default function ShmupPlayScreen() {
       touchMoveRef.current = { active: false, pointerId: null, x: 0, y: 0 };
       setTouchKnob({ active: false, x: 0, y: 0 });
       secondaryQueuedRef.current = false;
-      stopMusic();
+      stopMusic(0);
     };
   }, [
     comboBonus,
