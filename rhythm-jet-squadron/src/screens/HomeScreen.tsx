@@ -222,19 +222,9 @@ export default function HomeScreen() {
       <div className="home-atmosphere" aria-hidden />
       <div className="home-vignette" aria-hidden />
 
-      {/* Credits + Wallet — visible in menu phase */}
+      {/* Wallet + Generate — visible in menu phase, top-right */}
       {phase === "menu" && (
         <header className="home-topbar home-fade-in">
-          <div className="home-topbar-left">
-            <div className="home-credits-pill">
-              <span className="credit-icon">{"\u2726"}</span> {save.credits.toLocaleString()} Credits
-            </div>
-            {wallet.status === "connected" && wallet.sharedBalance !== null && (
-              <div className="home-shared-pill">
-                <span className="shared-icon">&#x26A1;</span> {wallet.sharedBalance.toLocaleString()} HavnAI
-              </div>
-            )}
-          </div>
           <div className="home-topbar-right">
             {wallet.available && (
               wallet.status === "connected" ? (
@@ -252,15 +242,29 @@ export default function HomeScreen() {
               )
             )}
             <a
-              className="havnai-link"
-              href={HAVNAI_URL}
+              className="havnai-link-sm"
+              href={`${HAVNAI_URL}/generate`}
               target="_blank"
               rel="noopener noreferrer"
             >
-              Generate Images &#x2197;
+              Generate &#x2197;
             </a>
           </div>
         </header>
+      )}
+
+      {/* Credits — bottom bar, visible in menu phase */}
+      {phase === "menu" && (
+        <footer className="home-bottombar home-fade-in">
+          <div className="home-credits-pill-sm">
+            <span className="credit-icon">{"\u2726"}</span> {save.credits.toLocaleString()}
+          </div>
+          {wallet.status === "connected" && wallet.sharedBalance !== null && (
+            <div className="home-shared-pill-sm">
+              <span className="shared-icon">&#x26A1;</span> {wallet.sharedBalance.toLocaleString()} HavnAI
+            </div>
+          )}
+        </footer>
       )}
 
       {/* Title area — centered in title phase, moves up in menu phase */}
