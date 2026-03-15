@@ -12,6 +12,7 @@ import ShmupResultsScreen from "./screens/ShmupResultsScreen";
 import ShopScreen from "./screens/ShopScreen";
 import CollectionScreen from "./screens/CollectionScreen";
 import SettingsScreen from "./screens/SettingsScreen";
+import LeaderboardScreen from "./screens/LeaderboardScreen";
 
 export default function App() {
   const Router = typeof window !== "undefined" && window.location.protocol === "file:"
@@ -34,6 +35,7 @@ export default function App() {
             <Route path="/shop" element={<ShopScreen />} />
             <Route path="/collection" element={<CollectionScreen />} />
             <Route path="/settings" element={<SettingsScreen />} />
+            <Route path="/leaderboard" element={<LeaderboardScreen />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>

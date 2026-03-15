@@ -2147,3 +2147,106 @@ body::after {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* ─── Leaderboard ─────────────────────────────────────── */
+
+.leaderboard-screen {
+  max-width: 680px;
+}
+
+.leaderboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.leaderboard-title {
+  font-size: 1.6rem;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+.leaderboard-loading,
+.leaderboard-error,
+.leaderboard-empty {
+  text-align: center;
+  padding: 48px 16px;
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+.leaderboard-error {
+  color: #ff6b6b;
+}
+
+.leaderboard-player-rank {
+  text-align: center;
+  padding: 10px 16px;
+  background: rgba(106, 141, 255, 0.12);
+  border: 1px solid rgba(106, 141, 255, 0.25);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  color: var(--accent);
+}
+
+.leaderboard-table-wrap {
+  overflow-x: auto;
+  border-radius: 12px;
+  background: rgba(12, 22, 43, 0.5);
+  border: 1px solid rgba(154, 179, 255, 0.12);
+}
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.leaderboard-table th {
+  padding: 10px 12px;
+  text-align: left;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid rgba(154, 179, 255, 0.15);
+}
+
+.leaderboard-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(154, 179, 255, 0.06);
+}
+
+.leaderboard-row:hover {
+  background: rgba(106, 141, 255, 0.06);
+}
+
+.leaderboard-row-self {
+  background: rgba(106, 141, 255, 0.1);
+  font-weight: 600;
+}
+
+.leaderboard-row-top td {
+  color: var(--text-primary);
+}
+
+.leaderboard-rank {
+  font-weight: 700;
+  width: 48px;
+}
+
+.leaderboard-wallet {
+  font-family: monospace;
+  color: var(--text-secondary);
+}
+
+.leaderboard-score {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.rank-medal {
+  font-size: 1.1rem;
+}

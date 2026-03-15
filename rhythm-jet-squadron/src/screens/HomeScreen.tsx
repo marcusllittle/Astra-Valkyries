@@ -18,6 +18,7 @@ const HAVNAI_URL = import.meta.env.VITE_HAVNAI_WEB_URL ?? "https://joinhavn.io";
 const MENU_ITEMS = [
   { label: "PLAY", route: "/shmup" },
   { label: "LOADOUT", route: "/hangar" },
+  { label: "LEADERBOARD", route: "/leaderboard" },
   { label: "COLLECTION", route: "/collection" },
   { label: "STORE", route: "/shop" },
   { label: "SETTINGS", route: "/settings" },
