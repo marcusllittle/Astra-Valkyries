@@ -128,6 +128,21 @@ interface EnemyState {
   age: number;
   amplitude: number;
   frequency: number;
+  elite: boolean;
+  // charger state
+  chargeState?: "drift" | "pause" | "charge";
+  chargeTimer?: number;
+  chargeTargetX?: number;
+  chargeTargetY?: number;
+  // splitter state
+  splitOnDeath?: boolean;
+  splitGeneration?: number;
+  // bomber state
+  bombTimer?: number;
+  // sniper state
+  sniperLocked?: boolean;
+  sniperLockX?: number;
+  sniperLockY?: number;
 }
 
 interface TouchMoveState {
@@ -145,9 +160,15 @@ interface BossState {
   hp: number;
   maxHp: number;
   age: number;
-  phase: 1 | 2;
+  phase: 1 | 2 | 3;
   fireCooldown: number;
   burstCooldown: number;
+  sweepAngle: number;
+  sweepActive: boolean;
+  sweepCooldown: number;
+  minionCooldown: number;
+  phaseTransitionFlash: number;
+  lastPhase: 1 | 2 | 3;
 }
 
 interface PowerChip {
@@ -175,6 +196,16 @@ interface BombPickup {
   y: number;
   vy: number;
   radius: number;
+}
+
+interface BomberZone {
+  x: number;
+  y: number;
+  radius: number;
+  maxRadius: number;
+  growSpeed: number;
+  life: number;
+  damage: number;
 }
 
 interface SparkParticle {
@@ -484,6 +515,7 @@ export default function ShmupPlayScreen() {
   const bombPickupsRef = useRef<BombPickup[]>([]);
   const sparksRef = useRef<SparkParticle[]>([]);
   const pulsesRef = useRef<PulseEffect[]>([]);
+  const bomberZonesRef = useRef<BomberZone[]>([]);
   const keysRef = useRef<Set<string>>(new Set());
   const enemyIdRef = useRef(0);
   const fireTimerRef = useRef(0);
@@ -694,6 +726,7 @@ export default function ShmupPlayScreen() {
     bombPickupsRef.current = [];
     sparksRef.current = [];
     pulsesRef.current = [];
+    bomberZonesRef.current = [];
     enemyIdRef.current = 0;
     fireTimerRef.current = 0;
     queuedWaveSpawnsRef.current = [];
@@ -1035,39 +1068,35 @@ export default function ShmupPlayScreen() {
     const spawnEnemyFromWave = (spawn: ScheduledWaveSpawn, elapsedMs: number) => {
       const pattern = spawn.pattern;
       const loopDifficulty = 1 + Math.min(0.45, spawn.loop * 0.08 + elapsedMs / 180_000);
+      // Progressive difficulty: enemy bullet speed and count scale over time
+      const timeDifficultyScale = 1 + Math.min(0.5, elapsedMs / 240_000);
       // Randomize spawn position within ±12% of screen width for variety
       const xJitter = (Math.random() - 0.5) * 0.24;
       const spawnX = clamp((spawn.x + xJitter) * canvas.width, 28, canvas.width - 28);
-      const defaultRadius =
-        pattern === "drifter"
-          ? 16
-          : pattern === "orbiter"
-            ? 19
-            : 18;
-      const defaultHp =
-        pattern === "drifter"
-          ? 2
-          : pattern === "orbiter"
-            ? 4
-            : 3;
-      const defaultScore =
-        pattern === "drifter"
-          ? 180
-          : pattern === "orbiter"
-            ? 310
-            : 260;
-      const defaultFireCooldown =
-        pattern === "drifter"
-          ? 1.15
-          : pattern === "orbiter"
-            ? 0.82
-            : 0.95;
+      const DEFAULTS: Record<string, { radius: number; hp: number; score: number; fireCooldown: number }> = {
+        drifter:  { radius: 16, hp: 2, score: 180, fireCooldown: 1.15 },
+        sine:     { radius: 18, hp: 3, score: 260, fireCooldown: 0.95 },
+        zigzag:   { radius: 18, hp: 3, score: 260, fireCooldown: 0.95 },
+        orbiter:  { radius: 19, hp: 4, score: 310, fireCooldown: 0.82 },
+        charger:  { radius: 17, hp: 3, score: 300, fireCooldown: 1.5 },
+        splitter: { radius: 20, hp: 4, score: 350, fireCooldown: 1.1 },
+        bomber:   { radius: 22, hp: 5, score: 400, fireCooldown: 2.5 },
+        sniper:   { radius: 16, hp: 3, score: 380, fireCooldown: 2.0 },
+        swarm:    { radius: 10, hp: 1, score: 80,  fireCooldown: 3.0 },
+      };
+      const def = DEFAULTS[pattern] ?? DEFAULTS.drifter;
 
       // Randomize velocity ±15% and amplitude/frequency ±20% per spawn
       const velRand = 0.85 + Math.random() * 0.3;
       const ampRand = 0.8 + Math.random() * 0.4;
       const freqRand = 0.8 + Math.random() * 0.4;
       const vxJitter = (Math.random() - 0.5) * 30;
+      const isElite = spawn.elite || (spawn.loop >= 2 && Math.random() < 0.12 * spawn.loop);
+
+      const defaultVy: Record<string, number> = {
+        drifter: 110, sine: 92, zigzag: 102, orbiter: 84,
+        charger: 65, splitter: 85, bomber: 55, sniper: 38, swarm: 170,
+      };
 
       activeWaveLabelRef.current = spawn.waveLabel;
       enemiesRef.current.push({
@@ -1077,22 +1106,22 @@ export default function ShmupPlayScreen() {
         y: spawn.y ?? -24,
         originX: spawnX,
         vx: ((spawn.vx ?? 0) + vxJitter) * loopDifficulty,
-        vy:
-          (spawn.vy ??
-            (pattern === "drifter"
-              ? 110
-              : pattern === "zigzag"
-                ? 102
-                : pattern === "orbiter"
-                  ? 84
-                  : 92)) * loopDifficulty * velRand,
-        radius: spawn.radius ?? defaultRadius,
-        hp: Math.max(1, Math.round((spawn.hp ?? defaultHp) + spawn.loop * 0.15)),
-        scoreValue: Math.round((spawn.scoreValue ?? defaultScore) * (1 + spawn.loop * 0.12)),
-        fireCooldown: Math.max(0.4, (spawn.fireCooldown ?? defaultFireCooldown) - spawn.loop * 0.03),
+        vy: (spawn.vy ?? (defaultVy[pattern] ?? 92)) * loopDifficulty * velRand,
+        radius: spawn.radius ?? def.radius,
+        hp: Math.max(1, Math.round(((spawn.hp ?? def.hp) + spawn.loop * 0.15) * (isElite ? 1.8 : 1))),
+        scoreValue: Math.round(((spawn.scoreValue ?? def.score) * (1 + spawn.loop * 0.12)) * (isElite ? 1.5 : 1)),
+        fireCooldown: Math.max(0.3, ((spawn.fireCooldown ?? def.fireCooldown) - spawn.loop * 0.03) / timeDifficultyScale),
         age: 0,
         amplitude: (spawn.amplitude ?? 52) * ampRand,
         frequency: (spawn.frequency ?? 2.2) * freqRand,
+        elite: isElite,
+        // Pattern-specific init
+        chargeState: pattern === "charger" ? "drift" : undefined,
+        chargeTimer: pattern === "charger" ? 0.8 + Math.random() * 0.6 : undefined,
+        splitOnDeath: pattern === "splitter",
+        splitGeneration: 0,
+        bombTimer: pattern === "bomber" ? 1.5 + Math.random() * 1.0 : undefined,
+        sniperLocked: false,
       });
     };
 
@@ -1143,6 +1172,12 @@ export default function ShmupPlayScreen() {
         phase: 1,
         fireCooldown: 0.65,
         burstCooldown: 1.5,
+        sweepAngle: 0,
+        sweepActive: false,
+        sweepCooldown: 5.0,
+        minionCooldown: 8.0,
+        phaseTransitionFlash: 0,
+        lastPhase: 1,
       };
       activeWaveLabelRef.current = activeMap.bossName;
     };
@@ -1150,6 +1185,8 @@ export default function ShmupPlayScreen() {
     const shootEnemyBullets = (enemy: EnemyState) => {
       const enemyShotColor = activeMap.palette.enemyShotColor;
       const enemyShotCore = activeMap.palette.enemyShotCore;
+
+      if (enemy.pattern === "swarm") return; // swarm doesn't shoot
 
       if (enemy.pattern === "drifter") {
         enemyBulletsRef.current.push({
@@ -1202,6 +1239,95 @@ export default function ShmupPlayScreen() {
         return;
       }
 
+      if (enemy.pattern === "charger") {
+        // Charger fires a single aimed shot while drifting (not during charge)
+        if (enemy.chargeState === "charge") return;
+        const dx = ship.x - enemy.x;
+        const dy = ship.y - enemy.y;
+        const len = Math.hypot(dx, dy) || 1;
+        enemyBulletsRef.current.push({
+          x: enemy.x,
+          y: enemy.y + enemy.radius,
+          vx: (dx / len) * 200,
+          vy: (dy / len) * 200,
+          radius: 5,
+          color: "#ff6b6b",
+          coreColor: "#ffdeeb",
+          length: 14,
+          spriteKey: "bulletEnemy",
+        });
+        return;
+      }
+
+      if (enemy.pattern === "splitter") {
+        // Splitter fires twin aimed shots
+        const dx = ship.x - enemy.x;
+        const dy = ship.y - enemy.y;
+        const len = Math.hypot(dx, dy) || 1;
+        for (const offset of [-40, 40]) {
+          enemyBulletsRef.current.push({
+            x: enemy.x,
+            y: enemy.y + enemy.radius,
+            vx: (dx / len) * 180 + offset,
+            vy: (dy / len) * 180,
+            radius: 5,
+            color: "#69db7c",
+            coreColor: "#d3f9d8",
+            length: 12,
+            spriteKey: "bulletEnemy",
+          });
+        }
+        return;
+      }
+
+      if (enemy.pattern === "bomber") {
+        // Bomber fires slow, large shots downward
+        enemyBulletsRef.current.push({
+          x: enemy.x,
+          y: enemy.y + enemy.radius,
+          vx: (Math.random() - 0.5) * 60,
+          vy: 160,
+          radius: 8,
+          color: "#ffa94d",
+          coreColor: "#fff3bf",
+          length: 10,
+          spriteKey: "bulletEnemy",
+        });
+        return;
+      }
+
+      if (enemy.pattern === "sniper") {
+        // Sniper fires a precise aimed shot with lock-on
+        if (!enemy.sniperLocked) {
+          // First call: lock on (warning line will be drawn in render)
+          enemy.sniperLocked = true;
+          enemy.sniperLockX = ship.x;
+          enemy.sniperLockY = ship.y;
+          // Fire on next cooldown cycle
+          return;
+        }
+        // Second call: fire the shot
+        const tx = enemy.sniperLockX ?? ship.x;
+        const ty = enemy.sniperLockY ?? ship.y;
+        const dx = tx - enemy.x;
+        const dy = ty - enemy.y;
+        const len = Math.hypot(dx, dy) || 1;
+        enemyBulletsRef.current.push({
+          x: enemy.x,
+          y: enemy.y + enemy.radius,
+          vx: (dx / len) * 380,
+          vy: (dy / len) * 380,
+          radius: 4,
+          color: "#ff0000",
+          coreColor: "#ffffff",
+          length: 24,
+          spriteKey: "bulletEnemy",
+        });
+        enemy.sniperLocked = false;
+        return;
+      }
+
+      // Default: sine — aimed double shot
       const dx = ship.x - enemy.x;
       const dy = ship.y - enemy.y;
       const length = Math.hypot(dx, dy) || 1;
@@ -1238,7 +1364,20 @@ export default function ShmupPlayScreen() {
       const length = Math.hypot(dx, dy) || 1;
       const baseVx = (dx / length) * 180;
       const baseVy = (dy / length) * 180;
-      const fanOffsets = boss.phase === 1 ? [-36, 0, 36] : [-72, -24, 24, 72];
+      const fanOffsets = boss.phase === 1
+        ? [-36, 0, 36]
+        : boss.phase === 2
+          ? [-72, -24, 24, 72]
+          : [-96, -48, 0, 48, 96]; // Phase 3: 5-way fan
+
+      const shotColor = boss.phase === 1
+        ? activeMap.palette.enemyShotColor
+        : activeMap.palette.bossShotColor;
+      const shotCore = boss.phase === 1
+        ? activeMap.palette.enemyShotCore
+        : activeMap.palette.bossShotCore;
+      const shotRadius = boss.phase === 1 ? 6 : boss.phase === 2 ? 7 : 7;
+      const shotLength = boss.phase === 1 ? 14 : 16;
 
       for (const offset of fanOffsets) {
         enemyBulletsRef.current.push({
@@ -1246,68 +1385,74 @@ export default function ShmupPlayScreen() {
           y: boss.y + boss.radius * 0.7,
           vx: baseVx + offset,
           vy: baseVy + 26,
-          radius: boss.phase === 1 ? 6 : 7,
-          color:
-            boss.phase === 1
-              ? activeMap.palette.enemyShotColor
-              : activeMap.palette.bossShotColor,
-          coreColor:
-            boss.phase === 1
-              ? activeMap.palette.enemyShotCore
-              : activeMap.palette.bossShotCore,
-          length: boss.phase === 1 ? 14 : 16,
+          radius: shotRadius,
+          color: shotColor,
+          coreColor: shotCore,
+          length: shotLength,
           spriteKey: "bulletBoss",
         });
       }
 
-      if (boss.phase === 2) {
-        enemyBulletsRef.current.push({
-          x: boss.x - 30,
-          y: boss.y + 12,
-          vx: -150,
-          vy: 210,
-          radius: 6,
-          color: activeMap.palette.bossShotColor,
-          coreColor: activeMap.palette.bossShotCore,
-          length: 14,
-          spriteKey: "bulletBoss",
-        });
-        enemyBulletsRef.current.push({
-          x: boss.x + 30,
-          y: boss.y + 12,
-          vx: 150,
-          vy: 210,
-          radius: 6,
-          color: activeMap.palette.bossShotColor,
-          coreColor: activeMap.palette.bossShotCore,
-          length: 14,
-          spriteKey: "bulletBoss",
-        });
+      // Phase 2+: flanking shots
+      if (boss.phase >= 2) {
+        for (const side of [-1, 1]) {
+          enemyBulletsRef.current.push({
+            x: boss.x + side * 30,
+            y: boss.y + 12,
+            vx: side * 150,
+            vy: 210,
+            radius: 6,
+            color: activeMap.palette.bossShotColor,
+            coreColor: activeMap.palette.bossShotCore,
+            length: 14,
+            spriteKey: "bulletBoss",
+          });
+        }
+      }
+
+      // Phase 3: extra random scatter shots
+      if (boss.phase === 3) {
+        for (let i = 0; i < 3; i++) {
+          const angle = Math.PI * 0.2 + Math.random() * Math.PI * 0.6;
+          enemyBulletsRef.current.push({
+            x: boss.x + (Math.random() - 0.5) * 50,
+            y: boss.y + boss.radius * 0.5,
+            vx: Math.cos(angle) * 200,
+            vy: Math.sin(angle) * 200,
+            radius: 5,
+            color: "#ff4444",
+            coreColor: "#ffaaaa",
+            length: 12,
+            spriteKey: "bulletBoss",
+          });
+        }
       }
     };
 
     const shootBossBurst = (boss: BossState) => {
       const startAngle = boss.phase === 1 ? Math.PI * 0.22 : Math.PI * 0.1;
       const endAngle = Math.PI - startAngle;
-      const bulletCount = boss.phase === 1 ? 7 : 10;
+      const bulletCount = boss.phase === 1 ? 7 : boss.phase === 2 ? 10 : 14;
+
+      const shotColor = boss.phase === 1
+        ? activeMap.palette.enemyShotColor
+        : activeMap.palette.bossShotColor;
+      const shotCore = boss.phase === 1
+        ? activeMap.palette.enemyShotCore
+        : activeMap.palette.bossShotCore;
 
       for (let index = 0; index < bulletCount; index++) {
         const ratio = index / (bulletCount - 1);
         const angle = startAngle + (endAngle - startAngle) * ratio;
+        const speed = boss.phase === 3 ? 210 : 185;
         enemyBulletsRef.current.push({
           x: boss.x,
           y: boss.y + boss.radius * 0.55,
-          vx: Math.cos(angle) * 185,
-          vy: Math.sin(angle) * 185,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
           radius: boss.phase === 1 ? 5 : 6,
-          color:
-            boss.phase === 1
-              ? activeMap.palette.enemyShotColor
-              : activeMap.palette.bossShotColor,
-          coreColor:
-            boss.phase === 1
-              ? activeMap.palette.enemyShotCore
-              : activeMap.palette.bossShotCore,
+          color: shotColor,
+          coreColor: shotCore,
           length: boss.phase === 1 ? 12 : 14,
           spriteKey: "bulletBoss",
         });
@@ -1321,6 +1466,31 @@ export default function ShmupPlayScreen() {
       bestMultiplierRef.current = Math.max(bestMultiplierRef.current, totalMultiplier);
       scoreRef.current += Math.round((enemy.scoreValue + scoreFlatBonus) * totalMultiplier);
       extendOverdrive(elapsedMs, OVERDRIVE_EXTENSION_PER_KILL_MS);
+
+      // Splitter: spawn 2 smaller children on death (up to generation 1)
+      if (enemy.splitOnDeath && (enemy.splitGeneration ?? 0) < 1) {
+        for (const side of [-1, 1]) {
+          enemiesRef.current.push({
+            id: enemyIdRef.current++,
+            pattern: "splitter",
+            x: enemy.x + side * 16,
+            y: enemy.y,
+            originX: enemy.x + side * 16,
+            vx: side * 60,
+            vy: enemy.vy * 1.3,
+            radius: Math.max(8, enemy.radius * 0.6),
+            hp: 1,
+            scoreValue: Math.round(enemy.scoreValue * 0.4),
+            fireCooldown: 1.5,
+            age: 0,
+            amplitude: enemy.amplitude * 0.5,
+            frequency: enemy.frequency * 1.5,
+            elite: false,
+            splitOnDeath: false,
+            splitGeneration: (enemy.splitGeneration ?? 0) + 1,
+          });
+        }
+      }
 
       if (Math.random() < 0.22) {
         chipsRef.current.push({
@@ -1345,12 +1515,16 @@ export default function ShmupPlayScreen() {
         });
       }
 
+      const EXPLOSION_COLORS: Record<string, string> = {
+        drifter: "#f06595", sine: "#9775fa", zigzag: "#ff922b", orbiter: "#74c0fc",
+        charger: "#ff6b6b", splitter: "#69db7c", bomber: "#ffa94d", sniper: "#ff0000", swarm: "#adb5bd",
+      };
       addExplosion(
         enemy.x,
         enemy.y,
-        enemy.pattern === "drifter" ? "#f06595" : "#9775fa",
+        EXPLOSION_COLORS[enemy.pattern] ?? "#9775fa",
         enemy.radius,
-        enemy.pattern === "drifter" ? 2 : 2.6
+        enemy.elite ? 3.2 : enemy.radius > 16 ? 2.6 : 2
       );
       addOverdrive(12, elapsedMs);
     };
@@ -1941,33 +2115,94 @@ export default function ShmupPlayScreen() {
       for (const enemy of enemiesRef.current) {
         const enemyDelta = deltaSeconds * enemyTimeScale;
         enemy.age += enemyDelta;
-        enemy.y += enemy.vy * enemyDelta;
-        if (enemy.pattern === "drifter") {
+
+        if (enemy.pattern === "charger") {
+          // Charger: drift slowly, pause, then dash at player
+          if (enemy.chargeState === "drift") {
+            enemy.y += enemy.vy * enemyDelta;
+            enemy.x += enemy.vx * enemyDelta;
+            enemy.chargeTimer = (enemy.chargeTimer ?? 1.0) - enemyDelta;
+            if (enemy.chargeTimer <= 0) {
+              enemy.chargeState = "pause";
+              enemy.chargeTimer = 0.45;
+              enemy.chargeTargetX = ship.x;
+              enemy.chargeTargetY = ship.y;
+            }
+          } else if (enemy.chargeState === "pause") {
+            // Pause — vibrate slightly to telegraph
+            enemy.x += Math.sin(enemy.age * 40) * 1.5;
+            enemy.chargeTimer = (enemy.chargeTimer ?? 0.45) - enemyDelta;
+            if (enemy.chargeTimer <= 0) {
+              enemy.chargeState = "charge";
+              const dx = (enemy.chargeTargetX ?? ship.x) - enemy.x;
+              const dy = (enemy.chargeTargetY ?? ship.y) - enemy.y;
+              const len = Math.hypot(dx, dy) || 1;
+              const chargeSpeed = 520;
+              enemy.vx = (dx / len) * chargeSpeed;
+              enemy.vy = (dy / len) * chargeSpeed;
+            }
+          } else {
+            // charge — fly straight at target
+            enemy.x += enemy.vx * enemyDelta;
+            enemy.y += enemy.vy * enemyDelta;
+          }
+        } else if (enemy.pattern === "splitter") {
+          // Splitter moves like sine wave
+          enemy.y += enemy.vy * enemyDelta;
+          enemy.x = enemy.originX + Math.sin(enemy.age * enemy.frequency) * enemy.amplitude;
+        } else if (enemy.pattern === "bomber") {
+          // Bomber drifts slowly downward
+          enemy.y += enemy.vy * enemyDelta;
+          enemy.x += Math.sin(enemy.age * 0.8) * 18 * enemyDelta;
+          // Drop area-denial zone on timer
+          enemy.bombTimer = (enemy.bombTimer ?? 2.0) - enemyDelta;
+          if (enemy.bombTimer <= 0) {
+            enemy.bombTimer = 2.2 + Math.random() * 0.8;
+            // Create a danger zone at current position
+            bomberZonesRef.current.push({
+              x: enemy.x, y: enemy.y, radius: 0, maxRadius: 60,
+              growSpeed: 120, life: 3.0, damage: 1,
+            });
+          }
+        } else if (enemy.pattern === "sniper") {
+          // Sniper stays near top, slight horizontal drift
+          enemy.y += enemy.vy * enemyDelta;
+          if (enemy.y > 100) { enemy.vy = 0; enemy.y = 100; }
+          enemy.x = enemy.originX + Math.sin(enemy.age * 0.6) * 40;
+        } else if (enemy.pattern === "swarm") {
+          // Swarm — fast straight-line, no shooting
+          enemy.y += enemy.vy * enemyDelta;
+          enemy.x += enemy.vx * enemyDelta;
+        } else if (enemy.pattern === "drifter") {
+          enemy.y += enemy.vy * enemyDelta;
           enemy.x += enemy.vx * enemyDelta;
         } else if (enemy.pattern === "sine") {
+          enemy.y += enemy.vy * enemyDelta;
           enemy.x = enemy.originX + Math.sin(enemy.age * enemy.frequency) * enemy.amplitude;
         } else if (enemy.pattern === "zigzag") {
+          enemy.y += enemy.vy * enemyDelta;
           const base = Math.sin(enemy.age * enemy.frequency);
           const hardTurn = Math.sign(base) * enemy.amplitude * 0.78;
           const jitter = Math.sin(enemy.age * enemy.frequency * 2.6) * enemy.amplitude * 0.22;
           enemy.x = enemy.originX + hardTurn + jitter;
         } else {
+          // orbiter
+          enemy.y += enemy.vy * enemyDelta;
           enemy.x = enemy.originX + Math.cos(enemy.age * enemy.frequency) * enemy.amplitude;
           enemy.y += Math.sin(enemy.age * enemy.frequency * 0.65) * 22 * enemyDelta;
         }
 
-        enemy.fireCooldown -= enemyDelta;
-        if (enemy.fireCooldown <= 0) {
-          shootEnemyBullets(enemy);
-          const resetCooldown =
-            enemy.pattern === "drifter"
-              ? 1.2
-              : enemy.pattern === "sine"
-                ? 1.45
-                : enemy.pattern === "zigzag"
-                  ? 1.05
-                  : 0.88;
-          enemy.fireCooldown += resetCooldown;
+        // Fire cooldown (swarm and charging chargers don't shoot)
+        if (enemy.pattern !== "swarm" && !(enemy.pattern === "charger" && enemy.chargeState === "charge")) {
+          enemy.fireCooldown -= enemyDelta;
+          if (enemy.fireCooldown <= 0) {
+            shootEnemyBullets(enemy);
+            const FIRE_RATES: Record<string, number> = {
+              drifter: 1.2, sine: 1.45, zigzag: 1.05, orbiter: 0.88,
+              charger: 1.8, splitter: 1.1, bomber: 2.5, sniper: 2.0,
+            };
+            enemy.fireCooldown += FIRE_RATES[enemy.pattern] ?? 1.2;
+          }
         }
       }
       enemiesRef.current = enemiesRef.current.filter(
@@ -1991,28 +2226,149 @@ export default function ShmupPlayScreen() {
       if (boss) {
         const bossDelta = deltaSeconds * enemyTimeScale;
         boss.age += bossDelta;
-        boss.phase = boss.hp <= boss.maxHp * 0.45 ? 2 : 1;
+
+        // Determine phase from bossPhases config
+        const phases = activeMap.bossPhases;
+        const hpRatio = boss.hp / boss.maxHp;
+        let newPhase: 1 | 2 | 3 = 1;
+        if (phases && phases.length >= 3 && hpRatio <= phases[2].hpThreshold) {
+          newPhase = 3;
+        } else if (phases && phases.length >= 2 && hpRatio <= phases[1].hpThreshold) {
+          newPhase = 2;
+        }
+        boss.phase = newPhase;
+
+        // Phase transition flash
+        if (boss.phase !== boss.lastPhase) {
+          boss.phaseTransitionFlash = 0.6;
+          boss.lastPhase = boss.phase;
+          // Screen shake on phase change
+          shakeTimeRef.current = 0.4;
+          shakePowerRef.current = 6;
+          addExplosion(boss.x, boss.y, "#ffffff", 30, 4);
+        }
+        if (boss.phaseTransitionFlash > 0) {
+          boss.phaseTransitionFlash -= bossDelta;
+        }
+
+        const phaseConfig = phases?.[boss.phase - 1];
+        const moveSpeed = phaseConfig?.moveSpeed ?? (boss.phase === 1 ? 0.95 : boss.phase === 2 ? 1.35 : 1.8);
+        const moveFreq = phaseConfig?.moveFreq ?? (boss.phase === 1 ? 86 : boss.phase === 2 ? 132 : 160);
+
         const bossTargetY = 118;
         if (boss.y < bossTargetY) {
           boss.y = Math.min(bossTargetY, boss.y + 92 * bossDelta);
         }
-        boss.x = clamp(
-          canvas.width / 2 +
-            Math.sin(boss.age * (boss.phase === 1 ? 0.95 : 1.35)) *
-              (boss.phase === 1 ? 86 : 132),
-          boss.radius + 12,
-          canvas.width - boss.radius - 12
-        );
+
+        // Boss movement — horizontal sweeps + lunges in later phases
+        const baseX = canvas.width / 2 + Math.sin(boss.age * moveSpeed) * moveFreq;
+        if (boss.phase === 3) {
+          // Phase 3: occasional lunge toward player
+          const lungeX = baseX + Math.sin(boss.age * 3.2) * 20;
+          boss.x = clamp(lungeX, boss.radius + 12, canvas.width - boss.radius - 12);
+        } else {
+          boss.x = clamp(baseX, boss.radius + 12, canvas.width - boss.radius - 12);
+        }
+
         boss.fireCooldown -= bossDelta;
         boss.burstCooldown -= bossDelta;
 
+        const fireRate = phaseConfig?.fireRate ?? (boss.phase === 1 ? 0.85 : 0.58);
+        const burstRate = phaseConfig?.burstRate ?? (boss.phase === 1 ? 2.1 : 1.35);
+
         if (boss.y >= bossTargetY && boss.fireCooldown <= 0) {
           shootBossBullets(boss);
-          boss.fireCooldown += boss.phase === 1 ? 0.85 : 0.58;
+          boss.fireCooldown += fireRate;
         }
         if (boss.y >= bossTargetY && boss.burstCooldown <= 0) {
           shootBossBurst(boss);
-          boss.burstCooldown += boss.phase === 1 ? 2.1 : 1.35;
+          boss.burstCooldown += burstRate;
+        }
+
+        // Sweep laser (phase 2+)
+        if (phaseConfig?.sweepLaser !== false && boss.phase >= 2) {
+          boss.sweepCooldown -= bossDelta;
+          if (boss.sweepActive) {
+            boss.sweepAngle += Math.PI * 0.6 * bossDelta; // sweep across screen
+            if (boss.sweepAngle > Math.PI * 0.85) {
+              boss.sweepActive = false;
+              boss.sweepCooldown = boss.phase === 3 ? 3.0 : 5.0;
+            }
+          } else if (boss.sweepCooldown <= 0 && boss.y >= bossTargetY) {
+            boss.sweepActive = true;
+            boss.sweepAngle = Math.PI * 0.15;
+          }
+        }
+
+        // Minion summoning (phase 3)
+        if (phaseConfig?.summonMinions !== false && boss.phase === 3) {
+          boss.minionCooldown -= bossDelta;
+          if (boss.minionCooldown <= 0 && boss.y >= bossTargetY) {
+            boss.minionCooldown = 6.0;
+            // Spawn 3 swarm minions
+            for (let i = 0; i < 3; i++) {
+              enemiesRef.current.push({
+                id: enemyIdRef.current++,
+                pattern: "swarm",
+                x: boss.x + (i - 1) * 40,
+                y: boss.y + 20,
+                originX: boss.x + (i - 1) * 40,
+                vx: (i - 1) * 80,
+                vy: 180,
+                radius: 10,
+                hp: 1,
+                scoreValue: 60,
+                fireCooldown: 99,
+                age: 0,
+                amplitude: 0,
+                frequency: 0,
+                elite: false,
+              });
+            }
+          }
+        }
+      }
+
+      // Update bomber danger zones
+      for (const zone of bomberZonesRef.current) {
+        zone.life -= deltaSeconds;
+        if (zone.radius < zone.maxRadius) {
+          zone.radius = Math.min(zone.maxRadius, zone.radius + zone.growSpeed * deltaSeconds);
+        }
+        // Damage player if inside zone
+        if (
+          elapsedMs > ship.invulnerableUntil &&
+          barrierUntilRef.current <= elapsedMs &&
+          distanceSquared(ship.x, ship.y, zone.x, zone.y) <= zone.radius * zone.radius
+        ) {
+          ship.hp -= zone.damage * deltaSeconds;
+          if (ship.hp <= 0) {
+            finishRun(elapsedMs, false);
+          }
+        }
+      }
+      bomberZonesRef.current = bomberZonesRef.current.filter((z) => z.life > 0);
+
+      // Sweep laser collision with player
+      if (boss && boss.sweepActive && elapsedMs > ship.invulnerableUntil && barrierUntilRef.current <= elapsedMs) {
+        const laserDx = Math.cos(boss.sweepAngle);
+        const laserDy = Math.sin(boss.sweepAngle);
+        // Point-to-line distance check
+        const px = ship.x - boss.x;
+        const py = ship.y - boss.y;
+        const projLength = px * laserDx + py * laserDy;
+        if (projLength > 0) {
+          const perpDist = Math.abs(px * laserDy - py * laserDx);
+          if (perpDist < ship.radius + 4) {
+            ship.hp -= 1;
+            ship.invulnerableUntil = elapsedMs + PLAYER_INVULNERABLE_MS;
+            addSparkBurst(ship.x, ship.y, "#ff4444", 8, 130);
+            shakeTimeRef.current = 0.15;
+            shakePowerRef.current = 4;
+            if (ship.hp <= 0) {
+              finishRun(elapsedMs, false);
+            }
+          }
         }
       }
 
@@ -2329,22 +2685,16 @@ export default function ShmupPlayScreen() {
 
       for (const enemy of enemiesRef.current) {
         const sprite = getSprite(enemy.pattern === "drifter" ? "enemyDrifter" : "enemySine");
-        const enemyColor =
-          enemy.pattern === "drifter"
-            ? "#f06595"
-            : enemy.pattern === "sine"
-              ? "#845ef7"
-              : enemy.pattern === "zigzag"
-                ? "#ff922b"
-                : "#74c0fc";
-        const enemyCoreDark =
-          enemy.pattern === "drifter"
-            ? "#a03060"
-            : enemy.pattern === "sine"
-              ? "#5030a0"
-              : enemy.pattern === "zigzag"
-                ? "#b06010"
-                : "#3070a0";
+        const ENEMY_COLORS: Record<string, string> = {
+          drifter: "#f06595", sine: "#845ef7", zigzag: "#ff922b", orbiter: "#74c0fc",
+          charger: "#ff6b6b", splitter: "#69db7c", bomber: "#ffa94d", sniper: "#ff0000", swarm: "#adb5bd",
+        };
+        const ENEMY_CORE_DARK: Record<string, string> = {
+          drifter: "#a03060", sine: "#5030a0", zigzag: "#b06010", orbiter: "#3070a0",
+          charger: "#a03030", splitter: "#2b8a3e", bomber: "#b06010", sniper: "#800000", swarm: "#495057",
+        };
+        const enemyColor = enemy.elite ? "#ffd700" : (ENEMY_COLORS[enemy.pattern] ?? "#845ef7");
+        const enemyCoreDark = enemy.elite ? "#b8860b" : (ENEMY_CORE_DARK[enemy.pattern] ?? "#5030a0");
         if (sprite) {
           ctx.save();
           const glow = ctx.createRadialGradient(enemy.x, enemy.y, 4, enemy.x, enemy.y, enemy.radius * 2.4);
@@ -2438,6 +2788,116 @@ export default function ShmupPlayScreen() {
             ctx.beginPath();
             ctx.ellipse(0, -r * 0.35, r * 0.15, r * 0.28, 0, 0, Math.PI * 2);
             ctx.fill();
+          } else if (enemy.pattern === "charger") {
+            // Charger — arrow-shaped aggressive ship
+            const grad = ctx.createLinearGradient(0, -r, 0, r);
+            grad.addColorStop(0, enemyColor);
+            grad.addColorStop(1, enemyCoreDark);
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.moveTo(0, -r * 1.2);
+            ctx.lineTo(r * 0.7, r * 0.1);
+            ctx.lineTo(r * 0.4, r * 0.8);
+            ctx.lineTo(0, r * 0.5);
+            ctx.lineTo(-r * 0.4, r * 0.8);
+            ctx.lineTo(-r * 0.7, r * 0.1);
+            ctx.closePath();
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            // Thrust glow when charging
+            if (enemy.chargeState === "charge") {
+              ctx.fillStyle = `rgba(255,100,50,${0.8 * pulse})`;
+              ctx.beginPath();
+              ctx.ellipse(0, r * 0.7, r * 0.3, r * 0.5, 0, 0, Math.PI * 2);
+              ctx.fill();
+            } else if (enemy.chargeState === "pause") {
+              // Warning pulse
+              ctx.strokeStyle = `rgba(255,50,50,${0.6 * pulse})`;
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.arc(0, 0, r * 1.4, 0, Math.PI * 2);
+              ctx.stroke();
+            }
+          } else if (enemy.pattern === "splitter") {
+            // Splitter — hexagonal pod
+            const grad = ctx.createRadialGradient(0, 0, r * 0.1, 0, 0, r);
+            grad.addColorStop(0, "#b2f2bb");
+            grad.addColorStop(0.5, enemyColor);
+            grad.addColorStop(1, enemyCoreDark);
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+              const a = (Math.PI / 3) * i - Math.PI / 2;
+              const method = i === 0 ? "moveTo" : "lineTo";
+              ctx[method](Math.cos(a) * r * 0.9, Math.sin(a) * r * 0.9);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            // Inner split line
+            ctx.strokeStyle = `rgba(255,255,255,${0.4 * pulse})`;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(0, -r * 0.7);
+            ctx.lineTo(0, r * 0.7);
+            ctx.stroke();
+          } else if (enemy.pattern === "bomber") {
+            // Bomber — wide heavy ship
+            const grad = ctx.createLinearGradient(0, -r, 0, r * 1.2);
+            grad.addColorStop(0, enemyColor);
+            grad.addColorStop(1, enemyCoreDark);
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.moveTo(0, -r * 0.8);
+            ctx.lineTo(r * 1.1, -r * 0.2);
+            ctx.lineTo(r * 1.0, r * 0.6);
+            ctx.lineTo(r * 0.4, r * 1.0);
+            ctx.lineTo(-r * 0.4, r * 1.0);
+            ctx.lineTo(-r * 1.0, r * 0.6);
+            ctx.lineTo(-r * 1.1, -r * 0.2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            // Bomb bay indicator
+            ctx.fillStyle = `rgba(255,200,50,${0.5 * pulse})`;
+            ctx.beginPath();
+            ctx.arc(0, r * 0.3, r * 0.2, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (enemy.pattern === "sniper") {
+            // Sniper — thin elongated ship
+            const grad = ctx.createLinearGradient(0, -r * 1.3, 0, r);
+            grad.addColorStop(0, enemyColor);
+            grad.addColorStop(1, enemyCoreDark);
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.moveTo(0, -r * 1.3);
+            ctx.lineTo(r * 0.3, -r * 0.4);
+            ctx.lineTo(r * 0.5, r * 0.5);
+            ctx.lineTo(r * 0.2, r * 1.0);
+            ctx.lineTo(-r * 0.2, r * 1.0);
+            ctx.lineTo(-r * 0.5, r * 0.5);
+            ctx.lineTo(-r * 0.3, -r * 0.4);
+            ctx.closePath();
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            // Scope lens
+            ctx.fillStyle = `rgba(255,0,0,${0.7 * pulse})`;
+            ctx.beginPath();
+            ctx.arc(0, -r * 0.6, r * 0.12, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (enemy.pattern === "swarm") {
+            // Swarm — tiny triangle
+            const grad = ctx.createLinearGradient(0, -r, 0, r);
+            grad.addColorStop(0, enemyColor);
+            grad.addColorStop(1, enemyCoreDark);
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.moveTo(0, -r * 0.9);
+            ctx.lineTo(r * 0.7, r * 0.6);
+            ctx.lineTo(-r * 0.7, r * 0.6);
+            ctx.closePath();
+            ctx.fill();
+            ctx.shadowBlur = 0;
           } else {
             // Drifter — armored diamond with engine ports
             const grad = ctx.createLinearGradient(0, -r, 0, r * 1.1);
@@ -2468,13 +2928,67 @@ export default function ShmupPlayScreen() {
             ctx.ellipse(0, -r * 0.3, r * 0.14, r * 0.24, 0, 0, Math.PI * 2);
             ctx.fill();
           }
+
+          // Elite glow ring
+          if (enemy.elite) {
+            ctx.strokeStyle = `rgba(255,215,0,${0.6 * pulse})`;
+            ctx.lineWidth = 2;
+            ctx.shadowColor = "#ffd700";
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 1.3, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+          }
+
           ctx.restore();
         }
+
+        // Sniper warning line (drawn outside transform)
+        if (enemy.pattern === "sniper" && enemy.sniperLocked) {
+          ctx.save();
+          ctx.strokeStyle = "rgba(255,0,0,0.3)";
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([6, 4]);
+          ctx.beginPath();
+          ctx.moveTo(enemy.x, enemy.y + enemy.radius);
+          ctx.lineTo(enemy.sniperLockX ?? ship.x, enemy.sniperLockY ?? ship.y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.restore();
+        }
+      }
+
+      // Bomber danger zones
+      for (const zone of bomberZonesRef.current) {
+        const alpha = clamp(zone.life / 3.0, 0.1, 0.5);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = "rgba(255,100,0,0.15)";
+        ctx.beginPath();
+        ctx.arc(zone.x, zone.y, zone.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = `rgba(255,140,0,${alpha * 1.5})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(zone.x, zone.y, zone.radius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
       }
 
       if (bossRef.current) {
         const boss = bossRef.current;
         const sprite = getSprite("boss");
+
+        // Phase transition flash
+        if (boss.phaseTransitionFlash > 0) {
+          ctx.save();
+          ctx.globalAlpha = boss.phaseTransitionFlash;
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.restore();
+        }
+
         if (sprite) {
           ctx.save();
           const glow = ctx.createRadialGradient(boss.x, boss.y + 12, 12, boss.x, boss.y + 12, boss.radius * 3.4);
@@ -2498,7 +3012,11 @@ export default function ShmupPlayScreen() {
           );
         } else {
           const br = boss.radius;
-          const bossColor = boss.phase === 1 ? activeMap.palette.bossPrimary : activeMap.palette.bossSecondary;
+          const bossColor = boss.phase === 1
+            ? activeMap.palette.bossPrimary
+            : boss.phase === 2
+              ? activeMap.palette.bossSecondary
+              : "#ff2222"; // Phase 3: red desperation
           const bPulse = 0.88 + Math.sin(boss.age * 2.5) * 0.12;
           ctx.save();
           ctx.translate(boss.x, boss.y);
@@ -2575,6 +3093,72 @@ export default function ShmupPlayScreen() {
           ctx.lineTo(br * 0.2, br * 0.3);
           ctx.stroke();
 
+          ctx.restore();
+        }
+
+        // Sweep laser beam
+        if (boss.sweepActive) {
+          ctx.save();
+          const laserLen = 800;
+          const endX = boss.x + Math.cos(boss.sweepAngle) * laserLen;
+          const endY = boss.y + Math.sin(boss.sweepAngle) * laserLen;
+          // Beam glow
+          ctx.strokeStyle = "rgba(255,40,40,0.15)";
+          ctx.lineWidth = 20;
+          ctx.beginPath();
+          ctx.moveTo(boss.x, boss.y);
+          ctx.lineTo(endX, endY);
+          ctx.stroke();
+          // Core beam
+          ctx.strokeStyle = "rgba(255,80,80,0.7)";
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(boss.x, boss.y);
+          ctx.lineTo(endX, endY);
+          ctx.stroke();
+          // White core
+          ctx.strokeStyle = "rgba(255,255,255,0.8)";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(boss.x, boss.y);
+          ctx.lineTo(endX, endY);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // Boss health bar with phase markers
+        if (boss.y > 0) {
+          const barW = 180;
+          const barH = 8;
+          const barX = canvas.width / 2 - barW / 2;
+          const barY = 16;
+          const hpRatio = clamp(boss.hp / boss.maxHp, 0, 1);
+          ctx.save();
+          // Background
+          ctx.fillStyle = "rgba(0,0,0,0.6)";
+          ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+          // HP fill
+          const hpColor = boss.phase === 1 ? "#4dabf7" : boss.phase === 2 ? "#ff922b" : "#ff4444";
+          ctx.fillStyle = hpColor;
+          ctx.fillRect(barX, barY, barW * hpRatio, barH);
+          // Phase markers
+          const phases = activeMap.bossPhases;
+          if (phases) {
+            ctx.strokeStyle = "rgba(255,255,255,0.5)";
+            ctx.lineWidth = 1;
+            for (let i = 1; i < phases.length; i++) {
+              const markerX = barX + barW * phases[i].hpThreshold;
+              ctx.beginPath();
+              ctx.moveTo(markerX, barY - 2);
+              ctx.lineTo(markerX, barY + barH + 2);
+              ctx.stroke();
+            }
+          }
+          // Boss name
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "bold 10px monospace";
+          ctx.textAlign = "center";
+          ctx.fillText(boss.name, canvas.width / 2, barY - 4);
           ctx.restore();
         }
       }
