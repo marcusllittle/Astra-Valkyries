@@ -1,15 +1,26 @@
 /**
- * Shop Screen - Gacha pulls for outfits.
+ * Shop Screen - Gacha pulls with featured banner and pity counter.
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGame } from "../context/GameContext";
 import { useWallet } from "../context/WalletContext";
 import CardArt from "../components/CardArt";
 import CutinOverlay from "../components/CutinOverlay";
 import { summarizeOutfitKit } from "../lib/outfitKits";
-import { pullOne, pullTen, PULL_COST_1, PULL_COST_10 } from "../lib/gacha";
+import {
+  pullOne,
+  pullTen,
+  PULL_COST_1,
+  PULL_COST_10,
+  getFeaturedOutfit,
+  loadPityState,
+  savePityState,
+  PITY_THRESHOLD_SR,
+  PITY_THRESHOLD_SSR,
+  type PityState,
+} from "../lib/gacha";
 import { astraSpend } from "../lib/havnApi";
 import type { GachaResult } from "../types";
 
@@ -40,9 +51,34 @@ export default function ShopScreen() {
   const [activeCutin, setActiveCutin] = useState<{ id: number; url: string } | null>(null);
   const [previewResult, setPreviewResult] = useState<GachaResult | null>(null);
   const [spending, setSpending] = useState(false);
+  const [pity, setPity] = useState<PityState>(loadPityState);
+
+  const featured = getFeaturedOutfit();
+
+  // Sync pity state on mount
+  useEffect(() => {
+    setPity(loadPityState());
+  }, []);
 
   /** Whether we're in shared-credits mode (wallet connected with a balance) */
   const useShared = wallet.status === "connected" && wallet.sharedBalance !== null && wallet.sharedBalance > 0;
+
+  const updatePityAfterPull = (pulled: GachaResult[]) => {
+    const newPity = { ...pity };
+    for (const r of pulled) {
+      newPity.totalPulls += 1;
+      newPity.pullsSinceSR += 1;
+      newPity.pullsSinceSSR += 1;
+      if (r.outfit.rarity === "SR" || r.outfit.rarity === "SSR") {
+        newPity.pullsSinceSR = 0;
+      }
+      if (r.outfit.rarity === "SSR") {
+        newPity.pullsSinceSSR = 0;
+      }
+    }
+    savePityState(newPity);
+    setPity(newPity);
+  };
 
   const doPull = async (count: 1 | 10) => {
     if (spending || isRevealing) return;
@@ -81,6 +117,7 @@ export default function ShopScreen() {
         : pullTen(save.ownedOutfits);
 
     applyGachaResults(pulled);
+    updatePityAfterPull(pulled);
     setIsRevealing(true);
     setResults(pulled);
     const featured = [...pulled].sort(
@@ -102,6 +139,9 @@ export default function ShopScreen() {
     setIsRevealing(false);
     setPreviewResult(null);
   };
+
+  const srPityPct = Math.min(100, (pity.pullsSinceSR / PITY_THRESHOLD_SR) * 100);
+  const ssrPityPct = Math.min(100, (pity.pullsSinceSSR / PITY_THRESHOLD_SSR) * 100);
 
   return (
     <div className="screen shop-screen">
@@ -131,6 +171,30 @@ export default function ShopScreen() {
             : "Limited wardrobe uplink is active. High-rarity pulls unlock advanced kits and cut-ins."}
         </p>
       </section>
+
+      {/* Featured Banner */}
+      {featured && (
+        <section className="shop-featured panel-surface">
+          <div className="shop-featured-badge">FEATURED</div>
+          <div className="shop-featured-content">
+            <CardArt
+              title={featured.name}
+              artUrl={featured.artUrl}
+              artPlaceholder={featured.artPlaceholder}
+              rarity={featured.rarity}
+              className="shop-featured-art"
+            />
+            <div className="shop-featured-info">
+              <strong className="shop-featured-name">{featured.name}</strong>
+              <span className="rarity-text" style={{ color: RARITY_COLORS[featured.rarity] }}>
+                {featured.rarity}
+              </span>
+              <div className="perk-label">{summarizeOutfitKit(featured)}</div>
+              <p className="shop-featured-flavor">Rate-up this week. SSR drops have increased odds of pulling this outfit.</p>
+            </div>
+          </div>
+        </section>
+      )}
 
       <div className="shop-layout">
         <section className="shop-pulls panel-surface">
@@ -176,6 +240,29 @@ export default function ShopScreen() {
           <p className="shop-note">SSR reveals can trigger dedicated cut-in videos.</p>
         </section>
       </div>
+
+      {/* Pity Counters */}
+      <section className="shop-pity panel-surface">
+        <h4>Pity Progress</h4>
+        <p className="shop-pity-note">Guaranteed SR at {PITY_THRESHOLD_SR} pulls, SSR at {PITY_THRESHOLD_SSR} pulls without one.</p>
+        <div className="shop-pity-bars">
+          <div className="shop-pity-row">
+            <span className="shop-pity-label" style={{ color: RARITY_COLORS.SR }}>SR Pity</span>
+            <div className="shop-pity-track">
+              <div className="shop-pity-fill shop-pity-fill-sr" style={{ width: `${srPityPct}%` }} />
+            </div>
+            <span className="shop-pity-count">{pity.pullsSinceSR}/{PITY_THRESHOLD_SR}</span>
+          </div>
+          <div className="shop-pity-row">
+            <span className="shop-pity-label" style={{ color: RARITY_COLORS.SSR }}>SSR Pity</span>
+            <div className="shop-pity-track">
+              <div className="shop-pity-fill shop-pity-fill-ssr" style={{ width: `${ssrPityPct}%` }} />
+            </div>
+            <span className="shop-pity-count">{pity.pullsSinceSSR}/{PITY_THRESHOLD_SSR}</span>
+          </div>
+        </div>
+        <div className="shop-pity-total">Total pulls: {pity.totalPulls}</div>
+      </section>
 
       {/* Pull results modal */}
       {results && (

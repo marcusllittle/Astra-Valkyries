@@ -10,6 +10,12 @@ import shipsData from "../data/ships.json";
 import outfitsData from "../data/outfits.json";
 import { SHARD_THRESHOLDS } from "../lib/gacha";
 import { SHMUP_MAPS } from "../lib/shmupWaves";
+import {
+  checkAchievements,
+  loadUnlocked,
+  type Achievement,
+  type UnlockedAchievements,
+} from "../lib/achievements";
 
 const STORAGE_KEY = "astra-valkyries-save";
 
@@ -106,16 +112,47 @@ interface GameContextValue {
   updateSettings: (partial: Partial<GameSettings>) => void;
   // Reset
   resetSave: () => void;
+  // Achievements
+  unlockedAchievements: UnlockedAchievements;
+  pendingAchievement: Achievement | null;
+  dismissAchievement: () => void;
 }
 
 const GameContext = createContext<GameContextValue | null>(null);
 
 export function GameProvider({ children }: { children: ReactNode }) {
   const [save, setSave] = useState<SaveData>(loadSave);
+  const [unlockedAchievements, setUnlockedAchievements] = useState<UnlockedAchievements>(loadUnlocked);
+  const [pendingAchievement, setPendingAchievement] = useState<Achievement | null>(null);
+  const achievementQueueRef = useState<Achievement[]>([])[0];
+
+  const dismissAchievement = useCallback(() => {
+    setPendingAchievement(null);
+    // Show next queued achievement if any
+    if (achievementQueueRef.length > 0) {
+      const next = achievementQueueRef.shift()!;
+      setTimeout(() => setPendingAchievement(next), 300);
+    }
+  }, [achievementQueueRef]);
 
   // Persist on every change
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(save));
+  }, [save]);
+
+  // Check achievements on save change
+  useEffect(() => {
+    const { newlyUnlocked, allUnlocked } = checkAchievements(save, unlockedAchievements);
+    if (newlyUnlocked.length > 0) {
+      setUnlockedAchievements(allUnlocked);
+      if (!pendingAchievement) {
+        setPendingAchievement(newlyUnlocked[0]);
+        achievementQueueRef.push(...newlyUnlocked.slice(1));
+      } else {
+        achievementQueueRef.push(...newlyUnlocked);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [save]);
 
   const selectPilot = useCallback((id: string) => {
@@ -221,6 +258,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
         submitResult,
         updateSettings,
         resetSave,
+        unlockedAchievements,
+        pendingAchievement,
+        dismissAchievement,
       }}
     >
       {children}

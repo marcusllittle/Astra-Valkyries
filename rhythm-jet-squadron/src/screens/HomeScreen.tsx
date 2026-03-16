@@ -41,16 +41,37 @@ interface Star {
 
 export default function HomeScreen() {
   const navigate = useNavigate();
-  const { save } = useGame();
+  const { save, updateSettings } = useGame();
   const wallet = useWallet();
 
   const [phase, setPhase] = useState<"title" | "menu">("title");
   const [cursorIdx, setCursorIdx] = useState(0);
   const [menuVisible, setMenuVisible] = useState(false);
+  const [muted, setMuted] = useState(() => save.settings.musicVolume === 0 && save.settings.sfxVolume === 0);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef(0);
   const starsRef = useRef<Star[]>([]);
+  const prevVolumesRef = useRef({ music: 0.8, sfx: 0.8 });
+
+  const toggleMute = useCallback(() => {
+    if (muted) {
+      const prev = prevVolumesRef.current;
+      updateSettings({ musicVolume: prev.music, sfxVolume: prev.sfx });
+      syncVolumes(prev.music, prev.sfx);
+      setMuted(false);
+      playTitleMusic();
+    } else {
+      prevVolumesRef.current = {
+        music: save.settings.musicVolume || 0.8,
+        sfx: save.settings.sfxVolume || 0.8,
+      };
+      updateSettings({ musicVolume: 0, sfxVolume: 0 });
+      syncVolumes(0, 0);
+      stopMusic();
+      setMuted(true);
+    }
+  }, [muted, save.settings.musicVolume, save.settings.sfxVolume, updateSettings]);
 
   // Sync volumes & play title music
   useEffect(() => {
@@ -233,6 +254,16 @@ export default function HomeScreen() {
       <canvas ref={canvasRef} className="home-starfield" />
       <div className="home-atmosphere" aria-hidden />
       <div className="home-vignette" aria-hidden />
+
+      {/* Mute toggle — always visible */}
+      <button
+        className="home-mute-btn"
+        onClick={(e) => { e.stopPropagation(); toggleMute(); }}
+        title={muted ? "Unmute" : "Mute"}
+        aria-label={muted ? "Unmute audio" : "Mute audio"}
+      >
+        {muted ? "\u{1F507}" : "\u{1F50A}"}
+      </button>
 
       {/* Wallet + Generate — visible in menu phase, top-right */}
       {phase === "menu" && (

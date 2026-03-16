@@ -3,7 +3,7 @@
  */
 
 import { BrowserRouter, HashRouter, Navigate, Routes, Route } from "react-router-dom";
-import { GameProvider } from "./context/GameContext";
+import { GameProvider, useGame } from "./context/GameContext";
 import { WalletProvider } from "./context/WalletContext";
 import HomeScreen from "./screens/HomeScreen";
 import HangarScreen from "./screens/HangarScreen";
@@ -13,6 +13,19 @@ import ShopScreen from "./screens/ShopScreen";
 import CollectionScreen from "./screens/CollectionScreen";
 import SettingsScreen from "./screens/SettingsScreen";
 import LeaderboardScreen from "./screens/LeaderboardScreen";
+import AchievementToast from "./components/AchievementToast";
+
+function AchievementLayer() {
+  const { pendingAchievement, dismissAchievement } = useGame();
+  if (!pendingAchievement) return null;
+  return (
+    <AchievementToast
+      key={pendingAchievement.id}
+      achievement={pendingAchievement}
+      onDone={dismissAchievement}
+    />
+  );
+}
 
 export default function App() {
   const Router = typeof window !== "undefined" && window.location.protocol === "file:"
@@ -38,6 +51,7 @@ export default function App() {
             <Route path="/leaderboard" element={<LeaderboardScreen />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          <AchievementLayer />
         </div>
       </Router>
     </GameProvider>
