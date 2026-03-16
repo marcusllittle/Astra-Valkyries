@@ -20,7 +20,6 @@ import {
 const STORAGE_KEY = "astra-valkyries-save";
 
 const DEFAULT_SETTINGS: GameSettings = {
-  noteSpeed: 400,
   musicVolume: 0.8,
   sfxVolume: 0.8,
   showFPS: false,
@@ -223,7 +222,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
       const best = s.highScores[result.trackId] ?? 0;
       return {
         ...s,
-        credits: s.credits + (result.mode === "rhythm" ? result.creditsEarned : 0),
         highScores: {
           ...s.highScores,
           [result.trackId]: Math.max(best, result.score),

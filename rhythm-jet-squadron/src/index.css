@@ -1087,76 +1087,6 @@ body::after {
   padding-top: 1px;
 }
 
-/* ─── Track Select ────────────────────────────────────── */
-
-.track-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.track-card {
-  display: flex;
-  align-items: center;
-  background: var(--bg-elevated);
-  border: 1px solid rgba(145, 171, 239, 0.28);
-  border-radius: 14px;
-  padding: 16px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.track-card:hover {
-  border-color: rgba(157, 184, 255, 0.65);
-  background: rgba(30, 47, 84, 0.88);
-}
-
-.track-info {
-  flex: 1;
-}
-
-.track-info h3 {
-  font-size: 1.1rem;
-  margin-bottom: 4px;
-}
-
-.track-artist {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  margin-bottom: 8px;
-}
-
-.track-meta {
-  display: flex;
-  gap: 12px;
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-}
-
-.difficulty {
-  padding: 2px 8px;
-  border-radius: 6px;
-  font-weight: 600;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-}
-
-.difficulty-easy { background: rgba(81, 207, 102, 0.2); color: var(--success); }
-.difficulty-normal { background: rgba(51, 154, 240, 0.2); color: var(--rarity-rare); }
-.difficulty-hard { background: rgba(255, 107, 107, 0.2); color: var(--danger); }
-
-.track-high-score {
-  margin-top: 6px;
-  font-size: 0.8rem;
-  color: var(--gold);
-}
-
-.track-play-arrow {
-  font-size: 1.5rem;
-  color: var(--accent);
-  margin-left: 12px;
-}
-
 /* ─── Collection Filter Tabs ─────────────────────────── */
 
 .collection-filter-tabs {
@@ -1661,34 +1591,6 @@ body::after {
   display: block;
 }
 
-/* Mobile buttons */
-.mobile-buttons {
-  display: flex;
-  width: 100%;
-  gap: 4px;
-  padding: 4px;
-}
-
-.mobile-lane-btn {
-  flex: 1;
-  height: 64px;
-  border: none;
-  border-radius: 8px;
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: #fff;
-  opacity: 0.8;
-  cursor: pointer;
-  user-select: none;
-  -webkit-user-select: none;
-  touch-action: manipulation;
-}
-
-.mobile-lane-btn:active {
-  opacity: 1;
-  transform: scale(0.95);
-}
-
 /* ─── Results Screen ──────────────────────────────────── */
 
 .results-screen {
@@ -1730,10 +1632,6 @@ body::after {
   font-size: 1.3rem;
   font-weight: 700;
 }
-
-.perfect-count { color: var(--gold); }
-.good-count { color: var(--success); }
-.miss-count { color: var(--danger); }
 
 .credits-earned {
   font-size: 1.3rem;

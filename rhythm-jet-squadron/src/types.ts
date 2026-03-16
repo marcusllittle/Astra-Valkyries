@@ -78,22 +78,6 @@ export interface Ship {
   modifiers: ShipModifiers;
 }
 
-export interface BeatNote {
-  t: number;    // time in ms
-  lane: 0 | 1 | 2;
-  type: "tap";
-}
-
-export interface Track {
-  id: string;
-  title: string;
-  artist: string;
-  bpm: number;
-  duration: number; // seconds
-  difficulty: "Easy" | "Normal" | "Hard";
-  beatmap: BeatNote[];
-}
-
 // ─── Save data types ────────────────────────────────────
 
 export interface OwnedOutfit {
@@ -116,7 +100,6 @@ export interface SaveData {
 }
 
 export interface GameSettings {
-  noteSpeed: number;       // pixels per second (default 400)
   musicVolume: number;     // 0-1
   sfxVolume: number;       // 0-1
   showFPS: boolean;
@@ -124,38 +107,20 @@ export interface GameSettings {
 
 // ─── Gameplay types ─────────────────────────────────────
 
-export type HitJudgment = "Perfect" | "Good" | "Miss";
-
 export type Grade = "S" | "A" | "B" | "C" | "D";
 
-interface BaseGameResult {
-  mode: "rhythm" | "shmup";
+export interface GameResult {
+  mode: "shmup";
   trackId: string;
   score: number;
   grade: Grade;
   creditsEarned: number;
-}
-
-export interface RhythmGameResult extends BaseGameResult {
-  mode: "rhythm";
-  maxCombo: number;
-  perfects: number;
-  goods: number;
-  misses: number;
-  totalNotes: number;
-  accuracy: number;   // 0-100
-}
-
-export interface ShmupGameResult extends BaseGameResult {
-  mode: "shmup";
   kills: number;
   timeSurvivedMs: number;
   bestMultiplier: number;
   weaponLevel: number;
   damageTaken: number;
 }
-
-export type GameResult = RhythmGameResult | ShmupGameResult;
 
 export interface GachaResult {
   outfit: Outfit;

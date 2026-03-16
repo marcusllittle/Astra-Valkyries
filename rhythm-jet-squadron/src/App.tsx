@@ -40,11 +40,8 @@ export default function App() {
           <Routes>
             <Route path="/" element={<HomeScreen />} />
             <Route path="/hangar" element={<HangarScreen />} />
-            <Route path="/tracks" element={<Navigate to="/hangar" replace />} />
-            <Route path="/play/:trackId" element={<Navigate to="/hangar" replace />} />
             <Route path="/shmup" element={<ShmupPlayScreen />} />
             <Route path="/shmup-results" element={<ShmupResultsScreen />} />
-            <Route path="/results" element={<Navigate to="/hangar" replace />} />
             <Route path="/shop" element={<ShopScreen />} />
             <Route path="/collection" element={<CollectionScreen />} />
             <Route path="/settings" element={<SettingsScreen />} />

@@ -76,21 +76,6 @@ export default function SettingsScreen() {
           </div>
 
           <div className="setting-row">
-            <label>Note Speed</label>
-            <input
-              type="range"
-              min={200}
-              max={800}
-              step={50}
-              value={settings.noteSpeed}
-              onChange={(e) =>
-                updateSettings({ noteSpeed: Number(e.target.value) })
-              }
-            />
-            <span>{settings.noteSpeed} px/s</span>
-          </div>
-
-          <div className="setting-row">
             <label>Show FPS</label>
             <input
               type="checkbox"

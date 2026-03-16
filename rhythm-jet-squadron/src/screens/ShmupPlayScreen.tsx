@@ -44,7 +44,7 @@ import type {
   Pilot,
   ShmupKit,
   Ship,
-  ShmupGameResult,
+  GameResult,
 } from "../types";
 import { syncVolumes } from "../lib/audioEngine";
 import { playLevelMusic, playBossMusic, playDeathJingle, playVictoryFanfare, stopMusic } from "../lib/musicGen";
@@ -1856,7 +1856,7 @@ export default function ShmupPlayScreen() {
         maxWeaponLevel: weaponLevelRef.current,
       };
 
-      const scoreRecord: ShmupGameResult = {
+      const scoreRecord: GameResult = {
         mode: "shmup",
         trackId: SHMUP_TRACK_ID,
         score: shmupResult.score,
