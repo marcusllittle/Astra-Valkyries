@@ -8,7 +8,14 @@ export interface PilotPerk {
   value: number;
 }
 
-export interface Pilot {
+export interface CutsceneAssetUrls {
+  deployCutinUrl?: string;
+  victoryCutinUrl?: string;
+  deathCutinUrl?: string;
+  newCardCutinUrl?: string;
+}
+
+export interface Pilot extends CutsceneAssetUrls {
   id: string;
   name: string;
   description: string;
@@ -36,7 +43,7 @@ export type ShmupKit = {
   };
 };
 
-export interface Outfit {
+export interface Outfit extends CutsceneAssetUrls {
   id: string;
   name: string;
   rarity: "Common" | "Rare" | "SR" | "SSR";
@@ -63,7 +70,7 @@ export interface ShipModifiers {
   comboBonus: number;
 }
 
-export interface Ship {
+export interface Ship extends CutsceneAssetUrls {
   id: string;
   name: string;
   className: string;
@@ -120,6 +127,18 @@ export interface GameSettings {
   musicVolume: number;     // 0-1
   sfxVolume: number;       // 0-1
   showFPS: boolean;
+}
+
+export interface ActiveCutscene {
+  videoUrl: string;
+  nextRoute?: string;
+  nextState?: unknown;
+}
+
+export interface PilotGratitudeCardData {
+  pilotName: string;
+  message: string;
+  imageUrl: string;
 }
 
 // ─── Gameplay types ─────────────────────────────────────

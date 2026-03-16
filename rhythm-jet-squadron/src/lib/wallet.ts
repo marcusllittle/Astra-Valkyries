@@ -1,12 +1,8 @@
 /**
  * Wallet connection for Astra Valkyries.
  *
- * Uses @metamask/sdk for broad device support (mobile browsers, in-app
- * browsers via QR/deeplink) with a fallback to the raw window.ethereum
- * injected provider for desktop extension users.
+ * Uses the injected window.ethereum provider when available.
  */
-
-import type { MetaMaskSDK as MetaMaskSDKType } from "@metamask/sdk";
 
 // ─── Provider interface ──────────────────────────────────────
 
@@ -33,64 +29,8 @@ export interface WalletState {
 
 const WALLET_STORAGE_KEY = "astra-wallet-address";
 
-// ─── MetaMask SDK singleton ──────────────────────────────────
-
-let sdkInstance: MetaMaskSDKType | null = null;
-let sdkProvider: EthereumProvider | null = null;
-let sdkInitPromise: Promise<EthereumProvider | null> | null = null;
-
-async function initSdkProvider(): Promise<EthereumProvider | null> {
-  if (sdkProvider) return sdkProvider;
-  if (typeof window === "undefined") return null;
-  if (sdkInitPromise) return sdkInitPromise;
-
-  sdkInitPromise = (async () => {
-    try {
-      const mod = await import("@metamask/sdk");
-      const Ctor = (mod.default || (mod as any).MetaMaskSDK) as
-        | (new (opts?: Record<string, unknown>) => MetaMaskSDKType)
-        | undefined;
-      if (typeof Ctor !== "function") return null;
-
-      sdkInstance = new Ctor({
-        dappMetadata: {
-          name: "Astra Valkyries",
-          url: window.location.origin,
-        },
-        checkInstallationImmediately: false,
-        injectProvider: false,
-        useDeeplink: true,
-        logging: { developerMode: false, sdk: false },
-      });
-
-      if (typeof (sdkInstance as any).init === "function") {
-        await (sdkInstance as any).init();
-      }
-
-      const provider = (sdkInstance as any).getProvider?.() as EthereumProvider | undefined;
-      if (provider && typeof provider.request === "function") {
-        sdkProvider = provider;
-        return sdkProvider;
-      }
-      return null;
-    } catch {
-      return null;
-    } finally {
-      if (!sdkProvider) sdkInitPromise = null;
-    }
-  })();
-
-  return sdkInitPromise;
-}
-
-// ─── Resolve best available provider ─────────────────────────
-
 async function resolveProvider(): Promise<EthereumProvider | null> {
-  // Try MetaMask SDK first (works on mobile, QR code, deeplinks)
-  const sdk = await initSdkProvider();
-  if (sdk) return sdk;
-
-  // Fall back to injected provider (browser extension)
+  if (typeof window === "undefined") return null;
   return window.ethereum ?? null;
 }
 
@@ -103,8 +43,7 @@ export function shortAddress(addr: string): string {
 
 /** Check if any provider is potentially available (sync hint for UI) */
 export function hasInjectedProvider(): boolean {
-  // Always return true — SDK can provide QR even without extension
-  return typeof window !== "undefined";
+  return typeof window !== "undefined" && Boolean(window.ethereum);
 }
 
 /** Request account connection */
@@ -156,8 +95,8 @@ export function persistAddress(addr: string | null): void {
 
 /**
  * Get the active provider for event listeners.
- * Returns window.ethereum or SDK provider if available.
+ * Returns the injected provider if available.
  */
 export function getActiveProvider(): EthereumProvider | null {
-  return sdkProvider ?? window.ethereum ?? null;
+  return window.ethereum ?? null;
 }

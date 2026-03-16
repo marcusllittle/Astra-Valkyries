@@ -1614,7 +1614,7 @@ export default function ShmupPlayScreen() {
       if (enemy.heavy && enemy.pattern !== "splitter") {
         const fragmentCount = enemy.elite ? 4 : 3;
         for (let index = 0; index < fragmentCount; index++) {
-          const spread = fragmentCount === 1 ? 0 : index / (fragmentCount - 1) - 0.5;
+          const spread = index / (fragmentCount - 1) - 0.5;
           enemiesRef.current.push({
             id: enemyIdRef.current++,
             pattern: "swarm",
