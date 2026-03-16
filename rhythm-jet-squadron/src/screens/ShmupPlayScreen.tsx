@@ -59,7 +59,7 @@ import shipsData from "../data/ships.json";
 
 const WORLD_WIDTH = 480;
 const WORLD_HEIGHT = 720;
-const HUD_HEIGHT = 120;
+const HUD_HEIGHT = 96;
 const BASE_SHIP_RADIUS = 14;
 const PLAYER_INVULNERABLE_MS = 900;
 const OVERDRIVE_MAX = 100;
@@ -139,6 +139,7 @@ interface EnemyState {
   amplitude: number;
   frequency: number;
   elite: boolean;
+  heavy?: boolean;
   // charger state
   chargeState?: "drift" | "pause" | "charge";
   chargeTimer?: number;
@@ -560,6 +561,7 @@ export default function ShmupPlayScreen() {
   const backgroundDebrisRef = useRef<BackgroundDebris[]>([]);
   const streakDisplayRef = useRef(0);
   const streakDisplayTimerRef = useRef(0);
+  const nextStreakMilestoneRef = useRef(10);
   const keysRef = useRef<Set<string>>(new Set());
   const enemyIdRef = useRef(0);
   const fireTimerRef = useRef(0);
@@ -788,6 +790,7 @@ export default function ShmupPlayScreen() {
     trailParticlesRef.current = [];
     streakDisplayRef.current = 0;
     streakDisplayTimerRef.current = 0;
+    nextStreakMilestoneRef.current = 10;
     enemyIdRef.current = 0;
     fireTimerRef.current = 0;
     queuedWaveSpawnsRef.current = [];
@@ -829,7 +832,6 @@ export default function ShmupPlayScreen() {
     droneOrbitRef.current = 0;
     secondaryQueuedRef.current = false;
     touchMoveRef.current = { active: false, pointerId: null, x: 0, y: 0 };
-    setTouchKnob({ active: false, x: 0, y: 0 });
 
     const spriteStore = spritesRef.current;
     const resolvedPlayerSpritePath = resolveAssetUrl(playerSpritePath) ?? playerSpritePath;
@@ -1184,6 +1186,11 @@ export default function ShmupPlayScreen() {
         swarm:    { radius: 10, hp: 1, score: 80,  fireCooldown: 3.0 },
       };
       const def = DEFAULTS[pattern] ?? DEFAULTS.drifter;
+      const radius = spawn.radius ?? def.radius;
+      const isHeavy = radius >= 20;
+      const heavyHpMultiplier = isHeavy ? 2.4 : 1;
+      const heavySpeedMultiplier = isHeavy ? 0.82 : 1;
+      const heavyScoreMultiplier = isHeavy ? 1.3 : 1;
 
       // Randomize velocity ±15% and amplitude/frequency ±20% per spawn
       const velRand = 0.85 + Math.random() * 0.3;
@@ -1204,16 +1211,28 @@ export default function ShmupPlayScreen() {
         x: spawnX,
         y: spawn.y ?? -24,
         originX: spawnX,
-        vx: ((spawn.vx ?? 0) + vxJitter) * loopDifficulty,
-        vy: (spawn.vy ?? (defaultVy[pattern] ?? 92)) * loopDifficulty * velRand,
-        radius: spawn.radius ?? def.radius,
-        hp: Math.max(1, Math.round(((spawn.hp ?? def.hp) + spawn.loop * 0.15) * (isElite ? 1.8 : 1))),
-        scoreValue: Math.round(((spawn.scoreValue ?? def.score) * (1 + spawn.loop * 0.12)) * (isElite ? 1.5 : 1)),
+        vx: ((spawn.vx ?? 0) + vxJitter) * loopDifficulty * heavySpeedMultiplier,
+        vy: (spawn.vy ?? (defaultVy[pattern] ?? 92)) * loopDifficulty * velRand * heavySpeedMultiplier,
+        radius,
+        hp: Math.max(
+          1,
+          Math.round(
+            ((spawn.hp ?? def.hp) + spawn.loop * 0.15) *
+              (isElite ? 1.8 : 1) *
+              heavyHpMultiplier
+          )
+        ),
+        scoreValue: Math.round(
+          ((spawn.scoreValue ?? def.score) * (1 + spawn.loop * 0.12)) *
+            (isElite ? 1.5 : 1) *
+            heavyScoreMultiplier
+        ),
         fireCooldown: Math.max(0.3, ((spawn.fireCooldown ?? def.fireCooldown) - spawn.loop * 0.03) / timeDifficultyScale),
         age: 0,
         amplitude: (spawn.amplitude ?? 52) * ampRand,
         frequency: (spawn.frequency ?? 2.2) * freqRand,
         elite: isElite,
+        heavy: isHeavy,
         // Pattern-specific init
         chargeState: pattern === "charger" ? "drift" : undefined,
         chargeTimer: pattern === "charger" ? 0.8 + Math.random() * 0.6 : undefined,
@@ -1564,10 +1583,10 @@ export default function ShmupPlayScreen() {
       sfxEnemyDeath();
       killsRef.current += 1;
       streakRef.current += 1;
-      // Update streak display for on-screen counter
-      if (streakRef.current >= 5) {
-        streakDisplayRef.current = streakRef.current;
-        streakDisplayTimerRef.current = 1.5;
+      if (streakRef.current >= nextStreakMilestoneRef.current) {
+        streakDisplayRef.current = nextStreakMilestoneRef.current;
+        streakDisplayTimerRef.current = 0.9;
+        nextStreakMilestoneRef.current += 10;
       }
       const totalMultiplier = getScoreMultiplier(elapsedMs);
       bestMultiplierRef.current = Math.max(bestMultiplierRef.current, totalMultiplier);
@@ -1595,6 +1614,33 @@ export default function ShmupPlayScreen() {
             elite: false,
             splitOnDeath: false,
             splitGeneration: (enemy.splitGeneration ?? 0) + 1,
+          });
+        }
+      }
+
+      if (enemy.heavy && enemy.pattern !== "splitter") {
+        const fragmentCount = enemy.elite ? 4 : 3;
+        for (let index = 0; index < fragmentCount; index++) {
+          const spread = index / (fragmentCount - 1) - 0.5;
+          enemiesRef.current.push({
+            id: enemyIdRef.current++,
+            pattern: "swarm",
+            x: enemy.x + spread * 24,
+            y: enemy.y + Math.random() * 8,
+            originX: enemy.x + spread * 24,
+            vx: spread * 150,
+            vy: Math.max(150, enemy.vy * 1.25),
+            radius: 10,
+            hp: enemy.elite ? 2 : 1,
+            scoreValue: Math.max(60, Math.round(enemy.scoreValue * 0.18)),
+            fireCooldown: 2.2,
+            age: 0,
+            amplitude: 12 + Math.abs(spread) * 10,
+            frequency: 4.6,
+            elite: false,
+            heavy: false,
+            splitOnDeath: false,
+            splitGeneration: 0,
           });
         }
       }
@@ -3530,11 +3576,11 @@ export default function ShmupPlayScreen() {
         ctx.save();
         ctx.globalAlpha = alpha;
         ctx.fillStyle = streakColor;
-        ctx.font = "bold 16px monospace";
+        ctx.font = "bold 14px monospace";
         ctx.textAlign = "right";
         ctx.shadowColor = "#000000";
         ctx.shadowBlur = 4;
-        ctx.fillText(`${streak} KILL STREAK!`, canvas.width - 12, canvas.height - 16);
+        ctx.fillText(`STREAK x${streak}`, canvas.width - 12, canvas.height - 16);
         ctx.shadowBlur = 0;
         ctx.restore();
       }
@@ -3671,6 +3717,20 @@ export default function ShmupPlayScreen() {
 
   const highScore = save.highScores[SHMUP_TRACK_ID] ?? 0;
 
+  const secondarySummary = hud.secondaryUsesCharges
+    ? `${hud.secondaryName} ${hud.secondaryCharges}/${hud.secondaryMaxCharges}`
+    : `${hud.secondaryName} ${hud.secondaryReady ? "Ready" : "Charging"}`;
+  const touchSecondaryState = hud.secondaryUsesCharges
+    ? `${hud.secondaryCharges}/${hud.secondaryMaxCharges}`
+    : hud.secondaryReady
+      ? "Ready"
+      : "Charge";
+  const liveStatuses = [
+    hud.barrierActive ? "Barrier" : null,
+    hud.empActive ? "EMP" : null,
+    hud.dronesActive ? "Drones" : null,
+  ].filter((status): status is string => Boolean(status));
+
   return (
     <div className="screen play-screen">
       <div className="play-hud">
@@ -3680,19 +3740,11 @@ export default function ShmupPlayScreen() {
             <span className="combo-text">{hud.multiplier.toFixed(2)}x multiplier</span>
           </div>
         </div>
-        <div className="hud-center shmup-hud-center">
-          <div className="hud-track-title">Arcade Shooter</div>
-          <div className="shmup-subtitle">
-            {pilot.name}
-            {selectedShip ? ` / ${selectedShip.name}` : ""}
-            {outfit ? ` / ${outfit.name}` : ""}
-          </div>
-        </div>
         <div className="hud-right hud-stat-stack hud-stat-stack-right">
-          <button className="btn btn-small" onClick={() => navigate("/")}>
+          <div className="shmup-high-score">Best {highScore.toLocaleString()}</div>
+          <button className="btn btn-small shmup-exit-btn" onClick={() => navigate("/")}>
             Exit
           </button>
-          <div className="shmup-high-score">Best {highScore.toLocaleString()}</div>
         </div>
       </div>
 
@@ -3720,53 +3772,25 @@ export default function ShmupPlayScreen() {
         <div className="boss-warning-banner">Warning: {activeMap.bossName} incoming</div>
       ) : null}
 
-      {hud.bossActive ? (
-        <div className="boss-health">
-          <div className="boss-health-top">
-            <span>{hud.bossLabel}</span>
-            <span>{Math.round(hud.bossHpRatio * 100)}%</span>
-          </div>
-          <div className="boss-health-track">
-            <div
-              className="boss-health-fill"
-              style={{ width: `${hud.bossHpRatio * 100}%` }}
-            />
-          </div>
-        </div>
-      ) : null}
-
       <div className="shmup-status-row">
-        <div className="hp-pips">
-          {Array.from({ length: hud.maxHp }).map((_, index) => (
-            <span
-              key={index}
-              className={`hp-pip ${index < hud.hp ? "filled" : ""}`}
-            />
-          ))}
+        <div className="hud-chip hud-chip-hp">
+          <span className="hud-chip-label">Hull</span>
+          <div className="hp-pips">
+            {Array.from({ length: hud.maxHp }).map((_, index) => (
+              <span
+                key={index}
+                className={`hp-pip ${index < hud.hp ? "filled" : ""}`}
+              />
+            ))}
+          </div>
         </div>
-        <span>Kills {hud.kills}</span>
-        <span>Weapon Lv {hud.weaponLevel} {hud.weaponLabel}</span>
-        {hud.secondaryUsesCharges ? (
-          <span>Charges {hud.secondaryCharges}/{hud.secondaryMaxCharges}</span>
-        ) : null}
-        <span>Kit {hud.kitLabel}</span>
-        <span>Zone {hud.mapLabel}</span>
-        <span>Time {formatTimeLabel(hud.timeSurvivedMs)}</span>
-        <span>{hud.waveLabel}</span>
-        <span>{hud.multiplierSaveReady ? "Multiplier Save Ready" : "Multiplier Save Used"}</span>
-      </div>
-
-      <div className="passive-badges">
-        {hud.activePassives.length > 0 ? (
-          hud.activePassives.map((passive) => (
-            <span key={passive} className="passive-badge">{passive}</span>
-          ))
-        ) : (
-          <span className="passive-badge passive-badge-muted">No passives</span>
-        )}
-        {hud.barrierActive ? <span className="passive-badge passive-badge-live">Barrier Active</span> : null}
-        {hud.empActive ? <span className="passive-badge passive-badge-live">EMP Active</span> : null}
-        {hud.dronesActive ? <span className="passive-badge passive-badge-live">Drones Active</span> : null}
+        <span className="hud-chip">Weapon {hud.weaponLevel}</span>
+        {!showTouchControls ? <span className="hud-chip">{secondarySummary}</span> : null}
+        <span className="hud-chip">{hud.waveLabel}</span>
+        <span className="hud-chip">{formatTimeLabel(hud.timeSurvivedMs)}</span>
+        {liveStatuses.map((status) => (
+          <span key={status} className="hud-chip hud-chip-live">{status}</span>
+        ))}
       </div>
 
       <canvas ref={canvasRef} className="play-canvas" />
@@ -3789,71 +3813,19 @@ export default function ShmupPlayScreen() {
             />
             <span className="shmup-touch-label">Move</span>
           </div>
-          <div className="shmup-touch-right">
-            <button
-              type="button"
-              className="shmup-touch-pause"
-              onPointerDown={(event) => {
-                event.preventDefault();
-                pausedRef.current = true;
-                pauseTimeRef.current = performance.now();
-                setPaused(true);
-              }}
-            >
-              ⏸
-            </button>
-            <button
-              type="button"
-              className="shmup-touch-secondary"
-              onPointerDown={(event) => {
-                event.preventDefault();
-                queueSecondary();
-              }}
-            >
-              Secondary
-            </button>
-          </div>
+          <button
+            type="button"
+            className={`shmup-touch-secondary ${hud.secondaryReady ? "ready" : ""}`}
+            onPointerDown={(event) => {
+              event.preventDefault();
+              queueSecondary();
+            }}
+          >
+            <span className="shmup-touch-secondary-name">{hud.secondaryName}</span>
+            <span className="shmup-touch-secondary-state">{touchSecondaryState}</span>
+          </button>
         </div>
       ) : null}
-
-      <div className="secondary-indicator">
-        <div className="secondary-indicator-title">Secondary: {hud.secondaryName}</div>
-        {hud.secondaryUsesCharges ? (
-          <div className="secondary-indicator-meta">
-            Charges {hud.secondaryCharges}/{hud.secondaryMaxCharges}
-          </div>
-        ) : (
-          <div className="secondary-indicator-meta">
-            {hud.secondaryReady ? "Ready" : "Cooling Down"}
-          </div>
-        )}
-        <div className="secondary-cooldown-track">
-          <div
-            className="secondary-cooldown-fill"
-            style={{ width: `${(1 - hud.secondaryCooldownPct) * 100}%` }}
-          />
-        </div>
-      </div>
-
-      <div className="play-help">
-        Move with WASD/arrow keys or touch pad. Weapons auto-fire. Secondary: Shift or touch button. Press Escape to pause.
-      </div>
-
-      {showTutorial && (
-        <TutorialOverlay onComplete={handleTutorialComplete} />
-      )}
-
-      {paused && (
-        <PauseMenu
-          score={hud.score}
-          kills={hud.kills}
-          timeMs={hud.timeSurvivedMs}
-          weaponLevel={hud.weaponLevel}
-          onResume={handlePauseResume}
-          onRestart={handlePauseRestart}
-          onQuit={handlePauseQuit}
-        />
-      )}
     </div>
   );
 }

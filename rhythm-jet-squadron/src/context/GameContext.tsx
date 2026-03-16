@@ -4,7 +4,7 @@
  */
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
-import type { SaveData, OwnedOutfit, GameSettings, GameResult, GachaResult } from "../types";
+import type { SaveData, OwnedOutfit, GameSettings, GameResult, GachaResult, ActiveCutscene } from "../types";
 import pilotsData from "../data/pilots.json";
 import shipsData from "../data/ships.json";
 import outfitsData from "../data/outfits.json";
@@ -94,6 +94,7 @@ function loadSave(): SaveData {
 
 interface GameContextValue {
   save: SaveData;
+  activeCutscene: ActiveCutscene | null;
   // Selection
   selectPilot: (id: string) => void;
   selectShip: (id: string) => void;
@@ -110,6 +111,7 @@ interface GameContextValue {
   submitResult: (result: GameResult) => void;
   // Settings
   updateSettings: (partial: Partial<GameSettings>) => void;
+  clearDeployCutscene: () => void;
   // Reset
   resetSave: () => void;
   // Achievements
@@ -122,18 +124,7 @@ const GameContext = createContext<GameContextValue | null>(null);
 
 export function GameProvider({ children }: { children: ReactNode }) {
   const [save, setSave] = useState<SaveData>(loadSave);
-  const [unlockedAchievements, setUnlockedAchievements] = useState<UnlockedAchievements>(loadUnlocked);
-  const [pendingAchievement, setPendingAchievement] = useState<Achievement | null>(null);
-  const achievementQueueRef = useState<Achievement[]>([])[0];
-
-  const dismissAchievement = useCallback(() => {
-    setPendingAchievement(null);
-    // Show next queued achievement if any
-    if (achievementQueueRef.length > 0) {
-      const next = achievementQueueRef.shift()!;
-      setTimeout(() => setPendingAchievement(next), 300);
-    }
-  }, [achievementQueueRef]);
+  const [activeCutscene, setActiveCutscene] = useState<ActiveCutscene | null>(null);
 
   // Persist on every change
   useEffect(() => {
@@ -239,6 +230,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const clearDeployCutscene = useCallback(() => {
+    setActiveCutscene(null);
+  }, []);
+
   const resetSave = useCallback(() => {
     setSave(getDefaultSave());
   }, []);
@@ -247,6 +242,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     <GameContext.Provider
       value={{
         save,
+        activeCutscene,
         selectPilot,
         selectShip,
         selectMap,
@@ -257,6 +253,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         upgradeOutfit,
         submitResult,
         updateSettings,
+        clearDeployCutscene,
         resetSave,
         unlockedAchievements,
         pendingAchievement,
