@@ -6,6 +6,7 @@ import {
   useEffect,
   useRef,
   useState,
+  useCallback,
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { useNavigate } from "react-router-dom";
@@ -14,6 +15,8 @@ import { resolveAssetUrl } from "../lib/assetUrl";
 import { BASE_SHMUP_HP, buildShmupLoadout } from "../lib/loadout";
 import { getSelectedOutfitKit } from "../lib/outfitKits";
 import { passiveName, primaryName, secondaryName } from "../lib/kitNames";
+import TutorialOverlay, { hasTutorialBeenSeen } from "../components/TutorialOverlay";
+import PauseMenu from "../components/PauseMenu";
 import {
   SHMUP_BALANCE,
   resolvePrimaryKey,
@@ -644,6 +647,10 @@ export default function ShmupPlayScreen() {
   const [hud, setHud] = useState<HudState>(() => createHudState(modifiers, activeMap));
   const [showTouchControls, setShowTouchControls] = useState(false);
   const [touchKnob, setTouchKnob] = useState({ active: false, x: 0, y: 0 });
+  const [showTutorial, setShowTutorial] = useState(() => !hasTutorialBeenSeen());
+  const [paused, setPaused] = useState(false);
+  const pausedRef = useRef(false);
+  const pauseTimeRef = useRef(0);
   const touchMoveRef = useRef<TouchMoveState>({
     active: false,
     pointerId: null,
@@ -2024,8 +2031,19 @@ export default function ShmupPlayScreen() {
 
     const drawLoop = (timestamp: number) => {
       if (runEndedRef.current) return;
+      if (pausedRef.current) {
+        animationRef.current = requestAnimationFrame(drawLoop);
+        return;
+      }
       if (!runStartRef.current) runStartRef.current = timestamp;
       if (!lastFrameRef.current) lastFrameRef.current = timestamp;
+      // Compensate for time spent paused
+      if (pauseTimeRef.current > 0) {
+        const pauseDuration = timestamp - pauseTimeRef.current;
+        runStartRef.current += pauseDuration;
+        lastFrameRef.current = timestamp;
+        pauseTimeRef.current = 0;
+      }
 
       const elapsedMs = timestamp - runStartRef.current;
       const deltaSeconds = Math.min(0.033, (timestamp - lastFrameRef.current) / 1000);
@@ -3579,6 +3597,17 @@ export default function ShmupPlayScreen() {
 
     const onKeyDown = (event: KeyboardEvent) => {
       const key = event.key.toLowerCase();
+      if (key === "escape" && !event.repeat) {
+        event.preventDefault();
+        if (runEndedRef.current) return;
+        pausedRef.current = !pausedRef.current;
+        if (pausedRef.current) {
+          pauseTimeRef.current = performance.now();
+        }
+        setPaused(pausedRef.current);
+        return;
+      }
+      if (pausedRef.current) return;
       const isSecondaryKey =
         event.code === "ShiftLeft" ||
         event.code === "ShiftRight";
@@ -3651,6 +3680,31 @@ export default function ShmupPlayScreen() {
     submitResult,
     playerSpritePath,
   ]);
+
+  const handleTutorialComplete = useCallback(() => {
+    setShowTutorial(false);
+  }, []);
+
+  const handlePauseResume = useCallback(() => {
+    pausedRef.current = false;
+    pauseTimeRef.current = performance.now();
+    setPaused(false);
+  }, []);
+
+  const handlePauseRestart = useCallback(() => {
+    pausedRef.current = false;
+    pauseTimeRef.current = 0;
+    setPaused(false);
+    navigate("/shmup", { replace: true });
+    window.location.reload();
+  }, [navigate]);
+
+  const handlePauseQuit = useCallback(() => {
+    pausedRef.current = false;
+    setPaused(false);
+    stopMusic();
+    navigate("/");
+  }, [navigate]);
 
   if (!pilot) {
     return (
