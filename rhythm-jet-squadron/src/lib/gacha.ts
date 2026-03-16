@@ -92,3 +92,42 @@ export function canUpgrade(owned: OwnedOutfit): boolean {
 export function getEffectivePerkValue(outfit: Outfit, stars: number): number {
   return outfit.perk.baseValue + outfit.perk.scalingPerStar * (stars - 1);
 }
+
+// ─── Pity counter ─────────────────────────────────────────
+
+const PITY_STORAGE_KEY = "astra.pityCounter";
+const PITY_THRESHOLD_SR = 30;
+const PITY_THRESHOLD_SSR = 90;
+
+export interface PityState {
+  pullsSinceSR: number;
+  pullsSinceSSR: number;
+  totalPulls: number;
+}
+
+export function loadPityState(): PityState {
+  try {
+    const raw = localStorage.getItem(PITY_STORAGE_KEY);
+    if (raw) return JSON.parse(raw) as PityState;
+  } catch { /* ignore */ }
+  return { pullsSinceSR: 0, pullsSinceSSR: 0, totalPulls: 0 };
+}
+
+export function savePityState(state: PityState): void {
+  try {
+    localStorage.setItem(PITY_STORAGE_KEY, JSON.stringify(state));
+  } catch { /* ignore */ }
+}
+
+export { PITY_THRESHOLD_SR, PITY_THRESHOLD_SSR };
+
+// ─── Featured banner ────────────────────────────────────────
+
+export function getFeaturedOutfit(): Outfit | null {
+  const allOutfits = outfitsData as Outfit[];
+  const ssrOutfits = allOutfits.filter((o) => o.rarity === "SSR");
+  if (ssrOutfits.length === 0) return null;
+  // Rotate featured outfit weekly based on date
+  const weekNumber = Math.floor(Date.now() / (7 * 24 * 60 * 60 * 1000));
+  return ssrOutfits[weekNumber % ssrOutfits.length];
+}
