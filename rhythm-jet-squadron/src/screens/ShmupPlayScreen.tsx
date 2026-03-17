@@ -646,8 +646,9 @@ export default function ShmupPlayScreen() {
   const [showTouchControls, setShowTouchControls] = useState(false);
   const [touchKnob, setTouchKnob] = useState({ active: false, x: 0, y: 0 });
   const [showTutorial, setShowTutorial] = useState(() => !hasTutorialBeenSeen());
-  const [paused, setPaused] = useState(false);
-  const pausedRef = useRef(false);
+  const tutorialActive = !hasTutorialBeenSeen();
+  const [paused, setPaused] = useState(tutorialActive);
+  const pausedRef = useRef(tutorialActive);
   const pauseTimeRef = useRef(0);
   const touchMoveRef = useRef<TouchMoveState>({
     active: false,
@@ -3637,6 +3638,10 @@ export default function ShmupPlayScreen() {
 
   const handleTutorialComplete = useCallback(() => {
     setShowTutorial(false);
+    // Resume the game loop now that the tutorial is dismissed
+    pausedRef.current = false;
+    pauseTimeRef.current = performance.now();
+    setPaused(false);
   }, []);
 
   const handlePauseResume = useCallback(() => {
@@ -3673,29 +3678,50 @@ export default function ShmupPlayScreen() {
 
   return (
     <div className="screen play-screen">
+      {/* ── Top HUD bar ─────────────────────────────── */}
       <div className="play-hud">
         <div className="hud-left hud-stat-stack">
           <div className="hud-score">{hud.score.toLocaleString()}</div>
           <div className="hud-combo">
-            <span className="combo-text">{hud.multiplier.toFixed(2)}x multiplier</span>
+            <span className="combo-text">{hud.multiplier.toFixed(2)}x</span>
           </div>
         </div>
         <div className="hud-center shmup-hud-center">
-          <div className="hud-track-title">Arcade Shooter</div>
+          <div className="hp-pips">
+            {Array.from({ length: hud.maxHp }).map((_, index) => (
+              <span
+                key={index}
+                className={`hp-pip ${index < hud.hp ? "filled" : ""}`}
+              />
+            ))}
+          </div>
           <div className="shmup-subtitle">
-            {pilot.name}
-            {selectedShip ? ` / ${selectedShip.name}` : ""}
-            {outfit ? ` / ${outfit.name}` : ""}
+            Lv{hud.weaponLevel} {hud.weaponLabel} &middot; {hud.waveLabel}
           </div>
         </div>
         <div className="hud-right hud-stat-stack hud-stat-stack-right">
-          <button className="btn btn-small" onClick={() => navigate("/")}>
-            Exit
-          </button>
+          <div className="hud-top-actions">
+            <button
+              type="button"
+              className="btn btn-icon"
+              onClick={() => {
+                pausedRef.current = true;
+                pauseTimeRef.current = performance.now();
+                setPaused(true);
+              }}
+              aria-label="Pause"
+            >
+              ||
+            </button>
+            <button className="btn btn-small" onClick={() => navigate("/")}>
+              Exit
+            </button>
+          </div>
           <div className="shmup-high-score">Best {highScore.toLocaleString()}</div>
         </div>
       </div>
 
+      {/* ── Overdrive meter ─────────────────────────── */}
       <div className="fever-bar-container">
         <div
           className={`fever-bar ${hud.overdriveActive ? "fever-active" : ""}`}
@@ -3712,10 +3738,11 @@ export default function ShmupPlayScreen() {
         <span className="fever-label" style={{
           textShadow: hud.overdriveActive ? "0 0 8px rgba(255,212,59,0.8)" : "none",
         }}>
-          {hud.overdriveActive ? "OVERDRIVE" : `Overdrive ${Math.round(hud.overdriveMeter)}%`}
+          {hud.overdriveActive ? "OVERDRIVE" : `OD ${Math.round(hud.overdriveMeter)}%`}
         </span>
       </div>
 
+      {/* ── Boss bar (only when boss active) ────────── */}
       {hud.bossWarning ? (
         <div className="boss-warning-banner">Warning: {activeMap.bossName} incoming</div>
       ) : null}
@@ -3735,42 +3762,30 @@ export default function ShmupPlayScreen() {
         </div>
       ) : null}
 
-      <div className="shmup-status-row">
-        <div className="hp-pips">
-          {Array.from({ length: hud.maxHp }).map((_, index) => (
-            <span
-              key={index}
-              className={`hp-pip ${index < hud.hp ? "filled" : ""}`}
+      {/* ── Secondary cooldown (compact, only when relevant) ─ */}
+      {hud.secondaryName !== "None" ? (
+        <div className="secondary-compact">
+          <span className="secondary-compact-label">{hud.secondaryName}</span>
+          {hud.secondaryUsesCharges ? (
+            <span className="secondary-compact-status">{hud.secondaryCharges}/{hud.secondaryMaxCharges}</span>
+          ) : (
+            <span className={`secondary-compact-status ${hud.secondaryReady ? "ready" : ""}`}>
+              {hud.secondaryReady ? "Ready" : "CD"}
+            </span>
+          )}
+          <div className="secondary-compact-bar">
+            <div
+              className="secondary-compact-fill"
+              style={{ width: `${(1 - hud.secondaryCooldownPct) * 100}%` }}
             />
-          ))}
+          </div>
         </div>
-        <span>Kills {hud.kills}</span>
-        <span>Weapon Lv {hud.weaponLevel} {hud.weaponLabel}</span>
-        {hud.secondaryUsesCharges ? (
-          <span>Charges {hud.secondaryCharges}/{hud.secondaryMaxCharges}</span>
-        ) : null}
-        <span>Kit {hud.kitLabel}</span>
-        <span>Zone {hud.mapLabel}</span>
-        <span>Time {formatTimeLabel(hud.timeSurvivedMs)}</span>
-        <span>{hud.waveLabel}</span>
-        <span>{hud.multiplierSaveReady ? "Multiplier Save Ready" : "Multiplier Save Used"}</span>
-      </div>
+      ) : null}
 
-      <div className="passive-badges">
-        {hud.activePassives.length > 0 ? (
-          hud.activePassives.map((passive) => (
-            <span key={passive} className="passive-badge">{passive}</span>
-          ))
-        ) : (
-          <span className="passive-badge passive-badge-muted">No passives</span>
-        )}
-        {hud.barrierActive ? <span className="passive-badge passive-badge-live">Barrier Active</span> : null}
-        {hud.empActive ? <span className="passive-badge passive-badge-live">EMP Active</span> : null}
-        {hud.dronesActive ? <span className="passive-badge passive-badge-live">Drones Active</span> : null}
-      </div>
-
+      {/* ── Game canvas ─────────────────────────────── */}
       <canvas ref={canvasRef} className="play-canvas" />
 
+      {/* ── Touch controls (mobile only) ────────────── */}
       {showTouchControls ? (
         <div className="shmup-touch-controls">
           <div
@@ -3789,61 +3804,26 @@ export default function ShmupPlayScreen() {
             />
             <span className="shmup-touch-label">Move</span>
           </div>
-          <div className="shmup-touch-right">
-            <button
-              type="button"
-              className="shmup-touch-pause"
-              onPointerDown={(event) => {
-                event.preventDefault();
-                pausedRef.current = true;
-                pauseTimeRef.current = performance.now();
-                setPaused(true);
-              }}
-            >
-              ⏸
-            </button>
-            <button
-              type="button"
-              className="shmup-touch-secondary"
-              onPointerDown={(event) => {
-                event.preventDefault();
-                queueSecondary();
-              }}
-            >
-              Secondary
-            </button>
-          </div>
+          <button
+            type="button"
+            className="shmup-touch-secondary"
+            onPointerDown={(event) => {
+              event.preventDefault();
+              queueSecondary();
+            }}
+          >
+            Secondary
+          </button>
         </div>
       ) : null}
 
-      <div className="secondary-indicator">
-        <div className="secondary-indicator-title">Secondary: {hud.secondaryName}</div>
-        {hud.secondaryUsesCharges ? (
-          <div className="secondary-indicator-meta">
-            Charges {hud.secondaryCharges}/{hud.secondaryMaxCharges}
-          </div>
-        ) : (
-          <div className="secondary-indicator-meta">
-            {hud.secondaryReady ? "Ready" : "Cooling Down"}
-          </div>
-        )}
-        <div className="secondary-cooldown-track">
-          <div
-            className="secondary-cooldown-fill"
-            style={{ width: `${(1 - hud.secondaryCooldownPct) * 100}%` }}
-          />
-        </div>
-      </div>
-
-      <div className="play-help">
-        Move with WASD/arrow keys or touch pad. Weapons auto-fire. Secondary: Shift or touch button. Press Escape to pause.
-      </div>
-
+      {/* ── Tutorial (pauses game until dismissed) ──── */}
       {showTutorial && (
         <TutorialOverlay onComplete={handleTutorialComplete} />
       )}
 
-      {paused && (
+      {/* ── Pause menu ──────────────────────────────── */}
+      {paused && !showTutorial && (
         <PauseMenu
           score={hud.score}
           kills={hud.kills}
