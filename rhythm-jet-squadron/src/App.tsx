@@ -2,7 +2,7 @@
  * App root - sets up React Router and GameProvider.
  */
 
-import { BrowserRouter, HashRouter, Navigate, Routes, Route } from "react-router-dom";
+import { BrowserRouter, HashRouter, Navigate, Routes, Route, useLocation } from "react-router-dom";
 import { GameProvider, useGame } from "./context/GameContext";
 import { WalletProvider } from "./context/WalletContext";
 import HomeScreen from "./screens/HomeScreen";
@@ -17,6 +17,12 @@ import AchievementToast from "./components/AchievementToast";
 
 function AchievementLayer() {
   const { pendingAchievement, dismissAchievement } = useGame();
+  const location = useLocation();
+
+  // Suppress achievement toasts during active gameplay — they're distracting
+  // and pop up repeatedly. Achievements still unlock; toast shows after the run.
+  if (location.pathname === "/shmup") return null;
+
   if (!pendingAchievement) return null;
   return (
     <AchievementToast
@@ -40,11 +46,8 @@ export default function App() {
           <Routes>
             <Route path="/" element={<HomeScreen />} />
             <Route path="/hangar" element={<HangarScreen />} />
-            <Route path="/tracks" element={<Navigate to="/hangar" replace />} />
-            <Route path="/play/:trackId" element={<Navigate to="/hangar" replace />} />
             <Route path="/shmup" element={<ShmupPlayScreen />} />
             <Route path="/shmup-results" element={<ShmupResultsScreen />} />
-            <Route path="/results" element={<Navigate to="/hangar" replace />} />
             <Route path="/shop" element={<ShopScreen />} />
             <Route path="/collection" element={<CollectionScreen />} />
             <Route path="/settings" element={<SettingsScreen />} />
