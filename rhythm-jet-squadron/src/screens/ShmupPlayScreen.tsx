@@ -153,6 +153,26 @@ interface EnemyState {
   sniperLocked?: boolean;
   sniperLockX?: number;
   sniperLockY?: number;
+  // dreadnought state
+  dreadShieldActive?: boolean;
+  dreadShieldTimer?: number;
+  dreadShieldCooldown?: number;
+  dreadAttackPhase?: number; // 0=spread, 1=mines, 2=beam
+  dreadAttackTimer?: number;
+  dreadBeamCharging?: boolean;
+  dreadBeamTimer?: number;
+  dreadBeamAngle?: number;
+  dreadAnchored?: boolean; // true once it reaches hold position
+  dreadMaxHp?: number; // for HP bar
+  // tank state
+  tankShieldActive?: boolean;
+  tankShieldTimer?: number;
+  tankShieldCooldown?: number;
+  tankMaxHp?: number;
+  // miniboss state
+  minibossPhase?: number; // 0=normal, 1=enraged (at 50% HP)
+  minibossMaxHp?: number;
+  minibossEnraged?: boolean;
 }
 
 interface TouchMoveState {
@@ -1183,6 +1203,9 @@ export default function ShmupPlayScreen() {
         bomber:   { radius: 22, hp: 5, score: 400, fireCooldown: 2.5 },
         sniper:   { radius: 16, hp: 3, score: 380, fireCooldown: 2.0 },
         swarm:    { radius: 10, hp: 1, score: 80,  fireCooldown: 3.0 },
+        dreadnought: { radius: 38, hp: 120, score: 2000, fireCooldown: 2.0 },
+        tank: { radius: 36, hp: 35, score: 800, fireCooldown: 1.8 },
+        miniboss: { radius: 28, hp: 18, score: 1200, fireCooldown: 1.2 },
       };
       const def = DEFAULTS[pattern] ?? DEFAULTS.drifter;
 
@@ -1196,6 +1219,7 @@ export default function ShmupPlayScreen() {
       const defaultVy: Record<string, number> = {
         drifter: 110, sine: 92, zigzag: 102, orbiter: 84,
         charger: 65, splitter: 85, bomber: 55, sniper: 38, swarm: 170,
+        dreadnought: 25, tank: 35, miniboss: 30,
       };
 
       activeWaveLabelRef.current = spawn.waveLabel;
@@ -1222,6 +1246,26 @@ export default function ShmupPlayScreen() {
         splitGeneration: 0,
         bombTimer: pattern === "bomber" ? 1.5 + Math.random() * 1.0 : undefined,
         sniperLocked: false,
+        // dreadnought init
+        dreadShieldActive: false,
+        dreadShieldTimer: 0,
+        dreadShieldCooldown: pattern === "dreadnought" ? 5.0 : undefined,
+        dreadAttackPhase: 0,
+        dreadAttackTimer: pattern === "dreadnought" ? 2.0 : undefined,
+        dreadBeamCharging: false,
+        dreadBeamTimer: 0,
+        dreadBeamAngle: 0,
+        dreadAnchored: false,
+        dreadMaxHp: pattern === "dreadnought" ? Math.max(1, Math.round(((spawn.hp ?? def.hp) + spawn.loop * 0.15) * (isElite ? 1.8 : 1))) : undefined,
+        // tank init
+        tankShieldActive: false,
+        tankShieldTimer: 0,
+        tankShieldCooldown: pattern === "tank" ? 4.0 : undefined,
+        tankMaxHp: pattern === "tank" ? Math.max(1, Math.round(((spawn.hp ?? def.hp) + spawn.loop * 0.15) * (isElite ? 1.8 : 1))) : undefined,
+        // miniboss init
+        minibossPhase: pattern === "miniboss" ? 0 : undefined,
+        minibossEnraged: false,
+        minibossMaxHp: pattern === "miniboss" ? Math.max(1, Math.round(((spawn.hp ?? def.hp) + spawn.loop * 0.15) * (isElite ? 1.8 : 1))) : undefined,
       });
     };
 
@@ -1395,6 +1439,107 @@ export default function ShmupPlayScreen() {
           length: 10,
           spriteKey: "bulletEnemy",
         });
+        return;
+      }
+
+      if (enemy.pattern === "dreadnought") {
+        // Dreadnought attack is handled in the movement update (phase-based)
+        // Default fire cooldown triggers spread shot
+        const dx = ship.x - enemy.x;
+        const dy = ship.y - enemy.y;
+        const len = Math.hypot(dx, dy) || 1;
+        // 5-bullet spread fan
+        const fanAngles = [-0.4, -0.2, 0, 0.2, 0.4];
+        const baseAngle = Math.atan2(dy, dx);
+        for (const offset of fanAngles) {
+          const angle = baseAngle + offset;
+          enemyBulletsRef.current.push({
+            x: enemy.x,
+            y: enemy.y + enemy.radius * 0.7,
+            vx: Math.cos(angle) * 165,
+            vy: Math.sin(angle) * 165,
+            radius: 7,
+            color: "#ff4444",
+            coreColor: "#ffaaaa",
+            length: 16,
+            spriteKey: "bulletBoss",
+          });
+        }
+        return;
+      }
+
+      if (enemy.pattern === "tank") {
+        // Tank fires 8-bullet 360-degree burst plus area-denial shot aimed at player
+        for (let i = 0; i < 8; i++) {
+          const angle = (Math.PI * 2 / 8) * i + enemy.age * 0.3;
+          enemyBulletsRef.current.push({
+            x: enemy.x,
+            y: enemy.y,
+            vx: Math.cos(angle) * 130,
+            vy: Math.sin(angle) * 130,
+            radius: 5,
+            color: "#66d9ef",
+            coreColor: "#c8f0ff",
+            length: 10,
+            spriteKey: "bulletEnemy",
+          });
+        }
+        // Slow area-denial shot aimed at player
+        const dx = ship.x - enemy.x;
+        const dy = ship.y - enemy.y;
+        const len = Math.hypot(dx, dy) || 1;
+        enemyBulletsRef.current.push({
+          x: enemy.x,
+          y: enemy.y + enemy.radius,
+          vx: (dx / len) * 100,
+          vy: (dy / len) * 100,
+          radius: 10,
+          color: "#66d9ef",
+          coreColor: "#ffffff",
+          length: 8,
+          spriteKey: "bulletBoss",
+        });
+        return;
+      }
+
+      if (enemy.pattern === "miniboss") {
+        // Miniboss: phase-dependent firing pattern
+        const dx = ship.x - enemy.x;
+        const dy = ship.y - enemy.y;
+        const len = Math.hypot(dx, dy) || 1;
+        if (enemy.minibossEnraged) {
+          // Enraged: 6-way spread + aimed shots
+          for (let i = 0; i < 6; i++) {
+            const angle = (Math.PI * 2 / 6) * i + enemy.age * 0.5;
+            enemyBulletsRef.current.push({
+              x: enemy.x, y: enemy.y + enemy.radius * 0.5,
+              vx: Math.cos(angle) * 170, vy: Math.sin(angle) * 170,
+              radius: 6, color: "#ff4466", coreColor: "#ffccdd",
+              length: 14, spriteKey: "bulletBoss",
+            });
+          }
+          // Two aimed shots
+          for (const offset of [-0.2, 0.2]) {
+            const aimAngle = Math.atan2(dy, dx) + offset;
+            enemyBulletsRef.current.push({
+              x: enemy.x, y: enemy.y + enemy.radius * 0.5,
+              vx: Math.cos(aimAngle) * 200, vy: Math.sin(aimAngle) * 200,
+              radius: 5, color: "#ff4466", coreColor: "#ffccdd",
+              length: 12, spriteKey: "bulletBoss",
+            });
+          }
+        } else {
+          // Normal: 3-way aimed fan
+          for (const offset of [-0.25, 0, 0.25]) {
+            const baseAngle = Math.atan2(dy, dx) + offset;
+            enemyBulletsRef.current.push({
+              x: enemy.x, y: enemy.y + enemy.radius * 0.5,
+              vx: Math.cos(baseAngle) * 180, vy: Math.sin(baseAngle) * 180,
+              radius: 6, color: "#e040a0", coreColor: "#ffd0e8",
+              length: 13, spriteKey: "bulletBoss",
+            });
+          }
+        }
         return;
       }
 
@@ -1575,6 +1720,94 @@ export default function ShmupPlayScreen() {
       scoreRef.current += Math.round((enemy.scoreValue + scoreFlatBonus) * totalMultiplier);
       extendOverdrive(elapsedMs, OVERDRIVE_EXTENSION_PER_KILL_MS);
 
+      // Dreadnought: spawn full mini-wave on death
+      if (enemy.pattern === "dreadnought") {
+        sfxExplosion();
+        shakeTimeRef.current = 0.6;
+        shakePowerRef.current = 10;
+        addExplosion(enemy.x, enemy.y, "#ff4444", 40, 6);
+        addExplosion(enemy.x - 20, enemy.y + 10, "#ff8800", 25, 4);
+        addExplosion(enemy.x + 20, enemy.y - 10, "#ffcc00", 25, 4);
+        // Spawn 6 enemies: 2 drifters, 2 swarm, 2 chargers
+        const spawnDefs: Array<{ pattern: EnemyPattern; hp: number; radius: number; score: number; vx: number; vy: number }> = [
+          { pattern: "drifter", hp: 2, radius: 16, score: 180, vx: -60, vy: 120 },
+          { pattern: "drifter", hp: 2, radius: 16, score: 180, vx: 60, vy: 120 },
+          { pattern: "swarm", hp: 1, radius: 10, score: 80, vx: -40, vy: 170 },
+          { pattern: "swarm", hp: 1, radius: 10, score: 80, vx: 40, vy: 170 },
+          { pattern: "charger", hp: 3, radius: 17, score: 300, vx: -30, vy: 65 },
+          { pattern: "charger", hp: 3, radius: 17, score: 300, vx: 30, vy: 65 },
+        ];
+        for (const def of spawnDefs) {
+          enemiesRef.current.push({
+            id: enemyIdRef.current++,
+            pattern: def.pattern,
+            x: enemy.x + def.vx * 0.3,
+            y: enemy.y,
+            originX: enemy.x + def.vx * 0.3,
+            vx: def.vx,
+            vy: def.vy,
+            radius: def.radius,
+            hp: def.hp,
+            scoreValue: def.score,
+            fireCooldown: 1.5,
+            age: 0,
+            amplitude: 40,
+            frequency: 2.2,
+            elite: false,
+            chargeState: def.pattern === "charger" ? "drift" : undefined,
+            chargeTimer: def.pattern === "charger" ? 0.8 + Math.random() * 0.6 : undefined,
+            splitOnDeath: false,
+            splitGeneration: 1,
+            sniperLocked: false,
+          });
+        }
+      }
+
+      // Tank: spawn 5 swarm children in a fan on death
+      if (enemy.pattern === "tank") {
+        sfxExplosion();
+        shakeTimeRef.current = 0.4;
+        shakePowerRef.current = 7;
+        addExplosion(enemy.x, enemy.y, "#66d9ef", 32, 4);
+        addExplosion(enemy.x - 15, enemy.y + 8, "#1a5276", 20, 3);
+        for (let i = 0; i < 5; i++) {
+          const angle = (Math.PI * 0.2) + (Math.PI * 0.6 / 4) * i;
+          enemiesRef.current.push({
+            id: enemyIdRef.current++,
+            pattern: "swarm",
+            x: enemy.x + Math.cos(angle) * 20,
+            y: enemy.y + Math.sin(angle) * 20,
+            originX: enemy.x + Math.cos(angle) * 20,
+            vx: Math.cos(angle) * 120,
+            vy: Math.sin(angle) * 100 + 80,
+            radius: 10,
+            hp: 1,
+            scoreValue: 60,
+            fireCooldown: 99,
+            age: 0,
+            amplitude: 0,
+            frequency: 0,
+            elite: false,
+            splitOnDeath: false,
+            splitGeneration: 1,
+            sniperLocked: false,
+          });
+        }
+      }
+
+      // Miniboss: dramatic death explosion
+      if (enemy.pattern === "miniboss") {
+        sfxExplosion();
+        shakeTimeRef.current = 0.5;
+        shakePowerRef.current = 8;
+        addExplosion(enemy.x, enemy.y, "#e040a0", 36, 5);
+        addExplosion(enemy.x + 15, enemy.y - 10, "#ff4466", 24, 3.5);
+        addExplosion(enemy.x - 10, enemy.y + 12, "#ffd700", 20, 3);
+        addSparkBurst(enemy.x, enemy.y, "#ffffff", 12, 150, [2, 5]);
+        // Drop guaranteed power chip
+        chipsRef.current.push({ x: enemy.x, y: enemy.y, vy: 90, radius: 12 });
+      }
+
       // Splitter: spawn 2 smaller children on death (up to generation 1)
       if (enemy.splitOnDeath && (enemy.splitGeneration ?? 0) < 1) {
         for (const side of [-1, 1]) {
@@ -1626,6 +1859,7 @@ export default function ShmupPlayScreen() {
       const EXPLOSION_COLORS: Record<string, string> = {
         drifter: "#f06595", sine: "#9775fa", zigzag: "#ff922b", orbiter: "#74c0fc",
         charger: "#ff6b6b", splitter: "#69db7c", bomber: "#ffa94d", sniper: "#ff0000", swarm: "#adb5bd",
+        dreadnought: "#ff4444", tank: "#66d9ef",
       };
       addExplosion(
         enemy.x,
@@ -1685,6 +1919,13 @@ export default function ShmupPlayScreen() {
         const blastDistance = radius + enemy.radius;
         if (distanceSquared(x, y, enemy.x, enemy.y) > blastDistance * blastDistance) {
           continue;
+        }
+        // Secondary abilities break dreadnought shield on hit
+        if (enemy.pattern === "dreadnought" && enemy.dreadShieldActive) {
+          enemy.dreadShieldActive = false;
+          enemy.dreadShieldCooldown = 5.0;
+          addSparkBurst(enemy.x, enemy.y, "#44aaff", 16, 200, [3, 7]);
+          addPulse(enemy.x, enemy.y, "#4488ff", 20, 250, 0.3, 3.0);
         }
         enemy.hp -= enemyDamage;
         addSparkBurst(enemy.x, enemy.y, color, 8, 130, [2, 5]);
@@ -1873,7 +2114,7 @@ export default function ShmupPlayScreen() {
       syncHud(elapsedMs);
       submitResult(scoreRecord);
       window.setTimeout(() => {
-        navigate("/shmup-results", { state: { shmupResult } });
+        navigate("/shmup-results", { state: { shmupResult, mapId: activeMap?.id } });
       }, bossDefeated ? 650 : 400);
     };
 
@@ -2336,6 +2577,105 @@ export default function ShmupPlayScreen() {
               growSpeed: 120, life: 3.0, damage: 1,
             });
           }
+        } else if (enemy.pattern === "dreadnought") {
+          // Dreadnought: descend to hold position, then anchor and attack
+          const holdY = canvas.height * 0.22;
+          if (!enemy.dreadAnchored) {
+            enemy.y += enemy.vy * enemyDelta;
+            if (enemy.y >= holdY) {
+              enemy.y = holdY;
+              enemy.dreadAnchored = true;
+            }
+          } else {
+            // Slow lateral sway once anchored
+            enemy.x = enemy.originX + Math.sin(enemy.age * 0.4) * 60;
+          }
+
+          // Shield phase cycling
+          if (enemy.dreadAnchored) {
+            if (enemy.dreadShieldActive) {
+              enemy.dreadShieldTimer = (enemy.dreadShieldTimer ?? 0) - enemyDelta;
+              if (enemy.dreadShieldTimer <= 0) {
+                enemy.dreadShieldActive = false;
+                enemy.dreadShieldCooldown = 5.0;
+              }
+            } else {
+              enemy.dreadShieldCooldown = (enemy.dreadShieldCooldown ?? 5.0) - enemyDelta;
+              if (enemy.dreadShieldCooldown <= 0) {
+                enemy.dreadShieldActive = true;
+                enemy.dreadShieldTimer = 3.0;
+              }
+            }
+
+            // Area denial mines (every 4 seconds)
+            enemy.dreadAttackTimer = (enemy.dreadAttackTimer ?? 2.0) - enemyDelta;
+            if (enemy.dreadAttackTimer <= 0) {
+              enemy.dreadAttackTimer = 4.0;
+              // Drop slow-moving mine bullets that linger
+              for (let i = 0; i < 3; i++) {
+                const angle = Math.PI * 0.3 + Math.random() * Math.PI * 0.4;
+                enemyBulletsRef.current.push({
+                  x: enemy.x + (Math.random() - 0.5) * 40,
+                  y: enemy.y + enemy.radius,
+                  vx: Math.cos(angle) * 45,
+                  vy: Math.sin(angle) * 45,
+                  radius: 9,
+                  color: "#ff6600",
+                  coreColor: "#ffcc88",
+                  length: 8,
+                  spriteKey: "bulletBoss",
+                });
+              }
+            }
+
+            // Beam attack (every 8 seconds, 1s charge + 0.5s fire)
+            enemy.dreadBeamTimer = (enemy.dreadBeamTimer ?? 8.0) - enemyDelta;
+            if (enemy.dreadBeamTimer <= 0 && !enemy.dreadBeamCharging) {
+              enemy.dreadBeamCharging = true;
+              enemy.dreadBeamTimer = 1.5; // 1s charge + 0.5s beam
+              enemy.dreadBeamAngle = Math.atan2(ship.y - enemy.y, ship.x - enemy.x);
+            }
+            if (enemy.dreadBeamCharging) {
+              enemy.dreadBeamTimer = (enemy.dreadBeamTimer ?? 0) - enemyDelta;
+              if (enemy.dreadBeamTimer <= 0) {
+                // Fire beam as a line of fast bullets
+                const angle = enemy.dreadBeamAngle ?? Math.PI / 2;
+                for (let i = 0; i < 8; i++) {
+                  enemyBulletsRef.current.push({
+                    x: enemy.x,
+                    y: enemy.y + enemy.radius * 0.5,
+                    vx: Math.cos(angle) * (300 + i * 40),
+                    vy: Math.sin(angle) * (300 + i * 40),
+                    radius: 6,
+                    color: "#ff0066",
+                    coreColor: "#ffaacc",
+                    length: 20,
+                    spriteKey: "bulletBoss",
+                  });
+                }
+                enemy.dreadBeamCharging = false;
+                enemy.dreadBeamTimer = 8.0;
+              }
+            }
+          }
+        } else if (enemy.pattern === "tank") {
+          // Tank: slow drift downward with slight sway, shield cycling
+          enemy.y += enemy.vy * enemyDelta;
+          enemy.x = enemy.originX + Math.sin(enemy.age * 0.5) * 30;
+          // Shield cycle
+          if (enemy.tankShieldActive) {
+            enemy.tankShieldTimer = (enemy.tankShieldTimer ?? 0) - enemyDelta;
+            if (enemy.tankShieldTimer <= 0) {
+              enemy.tankShieldActive = false;
+              enemy.tankShieldCooldown = 6.0;
+            }
+          } else {
+            enemy.tankShieldCooldown = (enemy.tankShieldCooldown ?? 4.0) - enemyDelta;
+            if (enemy.tankShieldCooldown <= 0) {
+              enemy.tankShieldActive = true;
+              enemy.tankShieldTimer = 2.0;
+            }
+          }
         } else if (enemy.pattern === "sniper") {
           // Sniper stays near top, slight horizontal drift
           enemy.y += enemy.vy * enemyDelta;
@@ -2365,13 +2705,14 @@ export default function ShmupPlayScreen() {
         }
 
         // Fire cooldown (swarm and charging chargers don't shoot)
-        if (enemy.pattern !== "swarm" && !(enemy.pattern === "charger" && enemy.chargeState === "charge")) {
+        if (enemy.pattern !== "swarm" && !(enemy.pattern === "charger" && enemy.chargeState === "charge") && !(enemy.pattern === "dreadnought" && !enemy.dreadAnchored)) {
           enemy.fireCooldown -= enemyDelta;
           if (enemy.fireCooldown <= 0) {
             shootEnemyBullets(enemy);
             const FIRE_RATES: Record<string, number> = {
               drifter: 1.2, sine: 1.45, zigzag: 1.05, orbiter: 0.88,
               charger: 1.8, splitter: 1.1, bomber: 2.5, sniper: 2.0,
+              dreadnought: 2.0, tank: 1.8,
             };
             enemy.fireCooldown += FIRE_RATES[enemy.pattern] ?? 1.2;
           }
@@ -2603,11 +2944,17 @@ export default function ShmupPlayScreen() {
             continue;
           }
 
-          enemy.hp -= bullet.damage;
+          // Dreadnought shield reduces damage by 50%
+          const shieldMult = (enemy.pattern === "dreadnought" && enemy.dreadShieldActive) ? 0.5 : (enemy.pattern === "tank" && enemy.tankShieldActive) ? 0.5 : 1;
+          enemy.hp -= bullet.damage * shieldMult;
           consumePlayerBullet(bulletIndex);
-          addSparkBurst(bullet.x, bullet.y, bullet.color, 4, 90);
+          if (shieldMult < 1) {
+            addSparkBurst(bullet.x, bullet.y, "#4488ff", 3, 60);
+          } else {
+            addSparkBurst(bullet.x, bullet.y, bullet.color, 4, 90);
+          }
           addPulse(bullet.x, bullet.y, bullet.color, 4, 42, 0.08, 1.2);
-          addDamageNumber(enemy.x, enemy.y - enemy.radius, Math.round(bullet.damage * 10));
+          addDamageNumber(enemy.x, enemy.y - enemy.radius, Math.round(bullet.damage * shieldMult * 10));
           if (enemy.hp <= 0) {
             registerKill(enemy, elapsedMs);
             enemiesRef.current.splice(enemyIndex, 1);
@@ -2899,10 +3246,12 @@ export default function ShmupPlayScreen() {
         const ENEMY_COLORS: Record<string, string> = {
           drifter: "#f06595", sine: "#845ef7", zigzag: "#ff922b", orbiter: "#74c0fc",
           charger: "#ff6b6b", splitter: "#69db7c", bomber: "#ffa94d", sniper: "#ff0000", swarm: "#adb5bd",
+          tank: "#66d9ef",
         };
         const ENEMY_CORE_DARK: Record<string, string> = {
           drifter: "#a03060", sine: "#5030a0", zigzag: "#b06010", orbiter: "#3070a0",
           charger: "#a03030", splitter: "#2b8a3e", bomber: "#b06010", sniper: "#800000", swarm: "#495057",
+          tank: "#1a5276",
         };
         const enemyColor = enemy.elite ? "#ffd700" : (ENEMY_COLORS[enemy.pattern] ?? "#845ef7");
         const enemyCoreDark = enemy.elite ? "#b8860b" : (ENEMY_CORE_DARK[enemy.pattern] ?? "#5030a0");
@@ -3074,6 +3423,182 @@ export default function ShmupPlayScreen() {
             ctx.beginPath();
             ctx.arc(0, r * 0.3, r * 0.2, 0, Math.PI * 2);
             ctx.fill();
+          } else if (enemy.pattern === "tank") {
+            // Tank — large armored octagonal hull
+            const r = enemy.radius;
+            const grad = ctx.createLinearGradient(0, -r * 1.1, 0, r * 1.1);
+            grad.addColorStop(0, enemyColor);
+            grad.addColorStop(0.5, "#2c7fb8");
+            grad.addColorStop(1, enemyCoreDark);
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            for (let i = 0; i < 8; i++) {
+              const a = (Math.PI / 4) * i - Math.PI / 2;
+              const method = i === 0 ? "moveTo" : "lineTo";
+              ctx[method](Math.cos(a) * r * 1.0, Math.sin(a) * r * 1.0);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            // Armor cross-plates
+            ctx.strokeStyle = `rgba(102,217,239,${0.4 * pulse})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.8, 0);
+            ctx.lineTo(r * 0.8, 0);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(0, -r * 0.8);
+            ctx.lineTo(0, r * 0.8);
+            ctx.stroke();
+            // Central reactor
+            ctx.fillStyle = `rgba(102,217,239,${0.7 * pulse})`;
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.22, 0, Math.PI * 2);
+            ctx.fill();
+            // HP bar
+            if (enemy.tankMaxHp && enemy.tankMaxHp > 0) {
+              const barWidth = r * 2.2;
+              const barHeight = 4;
+              const barY = -r * 1.3;
+              const hpRatio = Math.max(0, enemy.hp / enemy.tankMaxHp);
+              ctx.fillStyle = "rgba(0,0,0,0.6)";
+              ctx.fillRect(-barWidth / 2, barY, barWidth, barHeight);
+              const hpColor = hpRatio > 0.5 ? "#44ff66" : hpRatio > 0.25 ? "#ffaa22" : "#ff3333";
+              ctx.fillStyle = hpColor;
+              ctx.fillRect(-barWidth / 2, barY, barWidth * hpRatio, barHeight);
+              ctx.strokeStyle = "rgba(255,255,255,0.3)";
+              ctx.lineWidth = 0.5;
+              ctx.strokeRect(-barWidth / 2, barY, barWidth, barHeight);
+            }
+            // Shield ring when active
+            if (enemy.tankShieldActive) {
+              ctx.save();
+              ctx.strokeStyle = `rgba(102,217,239,${0.6 + Math.sin(enemy.age * 8) * 0.3})`;
+              ctx.lineWidth = 3;
+              ctx.shadowColor = "#66d9ef";
+              ctx.shadowBlur = 15;
+              ctx.beginPath();
+              ctx.arc(0, 0, r * 1.4, 0, Math.PI * 2);
+              ctx.stroke();
+              ctx.strokeStyle = `rgba(150,230,255,${0.3 + Math.sin(enemy.age * 12) * 0.2})`;
+              ctx.lineWidth = 1.5;
+              ctx.beginPath();
+              ctx.arc(0, 0, r * 1.25, 0, Math.PI * 2);
+              ctx.stroke();
+              ctx.restore();
+            }
+          } else if (enemy.pattern === "dreadnought") {
+            // Dreadnought — massive armored warship
+            const r = enemy.radius;
+            const grad = ctx.createLinearGradient(0, -r * 1.2, 0, r * 1.2);
+            grad.addColorStop(0, "#cc2244");
+            grad.addColorStop(0.4, "#881133");
+            grad.addColorStop(1, "#440818");
+            ctx.fillStyle = grad;
+            // Main hull — wide armored body
+            ctx.beginPath();
+            ctx.moveTo(0, -r * 1.1);
+            ctx.lineTo(r * 0.5, -r * 0.8);
+            ctx.lineTo(r * 1.3, -r * 0.2);
+            ctx.lineTo(r * 1.4, r * 0.3);
+            ctx.lineTo(r * 1.1, r * 0.8);
+            ctx.lineTo(r * 0.5, r * 1.1);
+            ctx.lineTo(-r * 0.5, r * 1.1);
+            ctx.lineTo(-r * 1.1, r * 0.8);
+            ctx.lineTo(-r * 1.4, r * 0.3);
+            ctx.lineTo(-r * 1.3, -r * 0.2);
+            ctx.lineTo(-r * 0.5, -r * 0.8);
+            ctx.closePath();
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Armor plating lines
+            ctx.strokeStyle = `rgba(255,100,100,${0.3 * pulse})`;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(-r * 1.0, 0);
+            ctx.lineTo(r * 1.0, 0);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.7, -r * 0.5);
+            ctx.lineTo(r * 0.7, -r * 0.5);
+            ctx.stroke();
+
+            // Central reactor core
+            ctx.fillStyle = `rgba(255,50,50,${0.7 * pulse})`;
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.28, 0, Math.PI * 2);
+            ctx.fill();
+            // Reactor glow ring
+            ctx.strokeStyle = `rgba(255,100,50,${0.5 * pulse})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.42, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Weapon turrets (left and right)
+            ctx.fillStyle = "#aa2244";
+            ctx.beginPath();
+            ctx.arc(-r * 0.9, r * 0.1, r * 0.18, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(r * 0.9, r * 0.1, r * 0.18, 0, Math.PI * 2);
+            ctx.fill();
+
+            // HP bar
+            if (enemy.dreadMaxHp && enemy.dreadMaxHp > 0) {
+              const barWidth = r * 2.4;
+              const barHeight = 4;
+              const barY = -r * 1.4;
+              const hpRatio = Math.max(0, enemy.hp / enemy.dreadMaxHp);
+              ctx.fillStyle = "rgba(0,0,0,0.6)";
+              ctx.fillRect(-barWidth / 2, barY, barWidth, barHeight);
+              const hpColor = hpRatio > 0.5 ? "#44ff66" : hpRatio > 0.25 ? "#ffaa22" : "#ff3333";
+              ctx.fillStyle = hpColor;
+              ctx.fillRect(-barWidth / 2, barY, barWidth * hpRatio, barHeight);
+              ctx.strokeStyle = "rgba(255,255,255,0.3)";
+              ctx.lineWidth = 0.5;
+              ctx.strokeRect(-barWidth / 2, barY, barWidth, barHeight);
+            }
+
+            // Shield effect (drawn around the ship when active)
+            if (enemy.dreadShieldActive) {
+              ctx.save();
+              ctx.strokeStyle = `rgba(68,136,255,${0.6 + Math.sin(enemy.age * 8) * 0.3})`;
+              ctx.lineWidth = 3;
+              ctx.shadowColor = "#4488ff";
+              ctx.shadowBlur = 15;
+              ctx.beginPath();
+              ctx.ellipse(0, 0, r * 1.6, r * 1.3, 0, 0, Math.PI * 2);
+              ctx.stroke();
+              // Inner shimmer
+              ctx.strokeStyle = `rgba(100,180,255,${0.3 + Math.sin(enemy.age * 12) * 0.2})`;
+              ctx.lineWidth = 1.5;
+              ctx.beginPath();
+              ctx.ellipse(0, 0, r * 1.45, r * 1.15, enemy.age * 0.5, 0, Math.PI * 2);
+              ctx.stroke();
+              ctx.restore();
+            }
+
+            // Beam charge warning
+            if (enemy.dreadBeamCharging && enemy.dreadBeamAngle !== undefined) {
+              ctx.save();
+              const beamAlpha = 0.3 + Math.sin(enemy.age * 20) * 0.2;
+              ctx.strokeStyle = `rgba(255,0,102,${beamAlpha})`;
+              ctx.lineWidth = 2;
+              ctx.setLineDash([8, 4]);
+              ctx.beginPath();
+              ctx.moveTo(0, 0);
+              const beamLen = 600;
+              ctx.lineTo(
+                Math.cos(enemy.dreadBeamAngle) * beamLen,
+                Math.sin(enemy.dreadBeamAngle) * beamLen
+              );
+              ctx.stroke();
+              ctx.setLineDash([]);
+              ctx.restore();
+            }
           } else if (enemy.pattern === "sniper") {
             // Sniper — thin elongated ship
             const grad = ctx.createLinearGradient(0, -r * 1.3, 0, r);

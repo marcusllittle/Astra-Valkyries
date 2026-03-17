@@ -97,6 +97,26 @@ export interface SaveData {
   selectedOutfitId: string | null;
   highScores: Record<string, number>; // trackId -> best score
   settings: GameSettings;
+  // Progression
+  pilotXp: Record<string, number>;
+  pilotLevel: Record<string, number>;
+  bestGrades: Record<string, string>;  // mapId -> best grade achieved
+  totalRuns: number;
+  totalKills: number;
+  totalBossKills: number;
+  // Missions
+  missionProgress: Record<string, number>;  // missionId -> progress
+  missionsClaimed: string[];                // claimed mission IDs
+  lastDailyReset: number;                   // day number of last daily reset
+  lastWeeklyReset: number;                  // week number of last weekly reset
+  // Meta
+  metaCurrency: number;                     // "stardust"
+  selectedModifiers: string[];              // active run modifier IDs
+  // Narrative / cutscene tracking
+  seenCutscenes: string[];                  // cutscene/dialogue IDs already viewed
+  zoneClears: Record<string, number>;       // mapId -> times boss defeated
+  // Skill tree
+  pilotSkills: Record<string, string[]>;    // pilotId -> unlocked skill node IDs
 }
 
 export interface GameSettings {

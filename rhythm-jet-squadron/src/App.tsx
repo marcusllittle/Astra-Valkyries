@@ -13,6 +13,10 @@ import ShopScreen from "./screens/ShopScreen";
 import CollectionScreen from "./screens/CollectionScreen";
 import SettingsScreen from "./screens/SettingsScreen";
 import LeaderboardScreen from "./screens/LeaderboardScreen";
+import BriefingScreen from "./screens/BriefingScreen";
+import CodexScreen from "./screens/CodexScreen";
+import SpaceportScreen from "./screens/SpaceportScreen";
+import MissionsScreen from "./screens/MissionsScreen";
 import AchievementToast from "./components/AchievementToast";
 
 function AchievementLayer() {
@@ -52,6 +56,10 @@ export default function App() {
             <Route path="/collection" element={<CollectionScreen />} />
             <Route path="/settings" element={<SettingsScreen />} />
             <Route path="/leaderboard" element={<LeaderboardScreen />} />
+            <Route path="/briefing" element={<BriefingScreen />} />
+            <Route path="/codex" element={<CodexScreen />} />
+            <Route path="/spaceport" element={<SpaceportScreen />} />
+            <Route path="/missions" element={<MissionsScreen />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           <AchievementLayer />

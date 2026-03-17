@@ -8,6 +8,8 @@ import {
   type ShmupRunResult,
 } from "../lib/shmupResults";
 import { astraReward } from "../lib/havnApi";
+import { getDialogueForMap } from "../data/dialogues";
+import DialogueBox from "../components/DialogueBox";
 
 const GRADE_COLORS: Record<string, string> = {
   S: "#ffd43b",
@@ -32,9 +34,17 @@ export default function ShmupResultsScreen() {
   const awardAppliedRef = useRef(false);
   const [sharedReward, setSharedReward] = useState<number | null>(null);
   const [rewardStatus, setRewardStatus] = useState<string | null>(null);
+  const [showDebrief, setShowDebrief] = useState(false);
+  const [debriefLineIdx, setDebriefLineIdx] = useState(0);
+
   const shmupResult = (location.state as { shmupResult?: ShmupRunResult } | undefined)?.shmupResult;
+  const mapId = (location.state as { mapId?: string } | undefined)?.mapId;
   const grade = shmupResult ? gradeShmupRun(shmupResult) : null;
   const creditsEarned = grade ? creditsForGrade(grade) : 0;
+
+  const debriefScript = mapId ? getDialogueForMap(mapId, "post_mission") : undefined;
+  const debriefNode = debriefScript?.nodes.find(n => n.id === debriefScript.startNodeId);
+  const debriefLines = debriefNode?.lines ?? [];
 
   const rewardKey = useMemo(() => {
     if (!shmupResult) return null;
@@ -90,6 +100,35 @@ export default function ShmupResultsScreen() {
         setRewardStatus("network_error");
       });
   }, [shmupResult, grade, wallet.address, wallet.status, rewardKey, wallet]);
+
+  // Show debrief dialogue after a short delay
+  useEffect(() => {
+    if (!debriefLines.length || !shmupResult) return;
+    const timer = setTimeout(() => setShowDebrief(true), 1500);
+    return () => clearTimeout(timer);
+  }, [debriefLines.length, shmupResult]);
+
+  if (showDebrief && debriefLines.length > 0 && debriefLineIdx < debriefLines.length) {
+    return (
+      <div className="screen results-screen debrief-overlay">
+        <div className="debrief-container">
+          <DialogueBox
+            line={debriefLines[debriefLineIdx]}
+            onNext={() => {
+              if (debriefLineIdx < debriefLines.length - 1) {
+                setDebriefLineIdx(i => i + 1);
+              } else {
+                setShowDebrief(false);
+              }
+            }}
+          />
+          <button className="btn btn-sm debrief-skip" onClick={() => setShowDebrief(false)}>
+            SKIP
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!shmupResult || !grade) {
     return (

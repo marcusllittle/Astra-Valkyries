@@ -157,3 +157,31 @@ export async function fetchLeaderboard(limit = 50): Promise<LeaderboardFetchResu
     return { entries: [], offline: true };
   }
 }
+
+// ─── Reward Images & Gallery ────────────────────────────────
+
+/** Generate a reward image for game context */
+export async function generateRewardImage(wallet: string, pilotId: string, context: string): Promise<{ imageUrl: string } | null> {
+  try {
+    const res = await fetch(`${API_BASE}/astra/generate-reward`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ wallet, pilotId, context }),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+/** Fetch player's earned game images */
+export async function fetchGalleryImages(wallet: string): Promise<{ images: Array<{ id: string; imageUrl: string; pilotId: string; context: string; createdAt: string }> }> {
+  try {
+    const res = await fetch(`${API_BASE}/astra/gallery?wallet=${encodeURIComponent(wallet)}`);
+    if (!res.ok) return { images: [] };
+    return await res.json();
+  } catch {
+    return { images: [] };
+  }
+}
