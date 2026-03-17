@@ -3,11 +3,13 @@
  * Sorted by pilot with filter tabs for easy browsing.
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGame } from "../context/GameContext";
+import { useWallet } from "../context/WalletContext";
 import { canUpgrade, SHARD_THRESHOLDS } from "../lib/gacha";
 import { summarizeOutfitKit } from "../lib/outfitKits";
+import { fetchGalleryImages } from "../lib/havnApi";
 import CardArt from "../components/CardArt";
 import type { Outfit, OwnedOutfit, Pilot } from "../types";
 import outfitsData from "../data/outfits.json";
@@ -28,12 +30,34 @@ const RARITY_ORDER: Record<string, number> = {
 };
 
 type FilterTab = "all" | string;
+type ViewTab = "collection" | "gallery";
+
+interface GalleryImage {
+  id: string;
+  imageUrl: string;
+  pilotId: string;
+  context: string;
+  createdAt: string;
+}
 
 export default function CollectionScreen() {
   const navigate = useNavigate();
   const { save, upgradeOutfit } = useGame();
+  const wallet = useWallet();
   const [previewOutfitId, setPreviewOutfitId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterTab>("all");
+  const [viewTab, setViewTab] = useState<ViewTab>("collection");
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+  const [galleryLoading, setGalleryLoading] = useState(false);
+
+  useEffect(() => {
+    if (viewTab === "gallery" && wallet.address) {
+      setGalleryLoading(true);
+      fetchGalleryImages(wallet.address)
+        .then((data) => setGalleryImages(data.images))
+        .finally(() => setGalleryLoading(false));
+    }
+  }, [viewTab, wallet.address]);
 
   const allOutfits = outfitsData as Outfit[];
   const pilots = pilotsData as Pilot[];
@@ -84,11 +108,61 @@ export default function CollectionScreen() {
       <div className="screen-header">
         <button className="btn btn-back" onClick={() => navigate("/")}>← Back</button>
         <div className="header-title-stack">
-          <h2>Collection ({ownedCount}/{allOutfits.length})</h2>
-          <p>Review wardrobe progression and upgrade owned pilot kits.</p>
+          <h2>{viewTab === "collection" ? `Collection (${ownedCount}/${allOutfits.length})` : "Gallery"}</h2>
+          <p>{viewTab === "collection" ? "Review wardrobe progression and upgrade owned pilot kits." : "Your earned reward images."}</p>
         </div>
       </div>
 
+      {/* Top-level view tabs */}
+      <div className="collection-filter-tabs" style={{ marginBottom: "4px" }}>
+        <button
+          className={`collection-tab ${viewTab === "collection" ? "active" : ""}`}
+          onClick={() => setViewTab("collection")}
+        >
+          COLLECTION
+        </button>
+        <button
+          className={`collection-tab ${viewTab === "gallery" ? "active" : ""}`}
+          onClick={() => setViewTab("gallery")}
+        >
+          GALLERY
+        </button>
+      </div>
+
+      {viewTab === "gallery" && (
+        <section className="collection-pilot-section">
+          {galleryLoading ? (
+            <p className="empty-msg">Loading gallery...</p>
+          ) : galleryImages.length === 0 ? (
+            <p className="empty-msg">No reward images yet. Earn images by completing missions!</p>
+          ) : (
+            <div className="collection-scroll-row">
+              {galleryImages.map((img) => (
+                <div key={img.id} className="card outfit-card" style={{ cursor: "pointer" }}>
+                  <div style={{ width: "100%", aspectRatio: "3/4", overflow: "hidden", borderRadius: "6px 6px 0 0" }}>
+                    <img
+                      src={img.imageUrl}
+                      alt={img.context}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  </div>
+                  <div className="card-info">
+                    <strong className="card-title">{img.context || "Reward Image"}</strong>
+                    <span className="rarity-text" style={{ color: "#66d9ef" }}>
+                      {img.pilotId}
+                    </span>
+                    <div className="perk-label">
+                      {new Date(img.createdAt).toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {viewTab === "collection" && <>
       <div className="collection-filter-tabs">
         {filterTabs.map((tab) => (
           <button
@@ -166,6 +240,7 @@ export default function CollectionScreen() {
       {ownedCount === 0 && (
         <p className="empty-msg">No outfits yet. Visit the Store to pull!</p>
       )}
+      </>}
 
       {previewOutfit && (
         <div className="card-preview-overlay" onClick={() => setPreviewOutfitId(null)}>

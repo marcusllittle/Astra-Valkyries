@@ -1,4 +1,4 @@
-export type EnemyPattern = "drifter" | "sine" | "zigzag" | "orbiter" | "charger" | "splitter" | "bomber" | "sniper" | "swarm";
+export type EnemyPattern = "drifter" | "sine" | "zigzag" | "orbiter" | "charger" | "splitter" | "bomber" | "sniper" | "swarm" | "dreadnought" | "tank" | "miniboss";
 
 export interface ShmupWaveEnemy {
   delayMs: number;
@@ -105,6 +105,7 @@ const NEBULA_WAVES: ShmupWave[] = [
       { delayMs: 480, x: 0.38, pattern: "sine", vy: 90, amplitude: 50, frequency: 2.3, hp: 3, scoreValue: 270 },
       { delayMs: 480, x: 0.62, pattern: "sine", vy: 90, amplitude: 50, frequency: 2.3, hp: 3, scoreValue: 270 },
       { delayMs: 640, x: 0.5, pattern: "sine", vy: 94, amplitude: 72, frequency: 2.25, hp: 4, scoreValue: 320, fireCooldown: 0.82 },
+      { delayMs: 800, x: 0.5, pattern: "miniboss", vy: 30, hp: 18, radius: 28, scoreValue: 1200 },
     ],
   },
   {
@@ -116,6 +117,7 @@ const NEBULA_WAVES: ShmupWave[] = [
       { delayMs: 140, x: 0.34, pattern: "sine", vy: 92, amplitude: 48, frequency: 2.3, hp: 3, scoreValue: 260 },
       { delayMs: 280, x: 0.5, pattern: "sniper", vy: 40, hp: 3, scoreValue: 380, fireCooldown: 2.0 },
       { delayMs: 420, x: 0.66, pattern: "sine", vy: 92, amplitude: 48, frequency: 2.3, hp: 3, scoreValue: 260 },
+      { delayMs: 500, x: 0.5, pattern: "tank", vy: 35, hp: 35, radius: 36, scoreValue: 800 },
       { delayMs: 560, x: 0.82, pattern: "charger", vy: 65, hp: 3, scoreValue: 300 },
       { delayMs: 700, x: 0.26, pattern: "drifter", vx: 38, vy: 128, hp: 2, scoreValue: 200 },
       { delayMs: 700, x: 0.74, pattern: "drifter", vx: -38, vy: 128, hp: 2, scoreValue: 200 },
@@ -134,8 +136,23 @@ const NEBULA_WAVES: ShmupWave[] = [
       { delayMs: 240, x: 0.75, pattern: "swarm", vx: -15, vy: 165, hp: 1, radius: 10, scoreValue: 80 },
       { delayMs: 300, x: 0.8, pattern: "swarm", vx: -10, vy: 175, hp: 1, radius: 10, scoreValue: 80 },
       { delayMs: 500, x: 0.5, pattern: "splitter", vy: 85, hp: 5, scoreValue: 380 },
+      { delayMs: 600, x: 0.5, pattern: "tank", vy: 35, hp: 35, radius: 36, scoreValue: 800 },
       { delayMs: 800, x: 0.35, pattern: "charger", vy: 60, hp: 3, scoreValue: 300 },
       { delayMs: 800, x: 0.65, pattern: "charger", vy: 60, hp: 3, scoreValue: 300 },
+    ],
+  },
+  {
+    id: "nebula-dreadnought",
+    label: "Dreadnought Assault",
+    durationMs: 8000,
+    enemies: [
+      { delayMs: 0, x: 0.5, pattern: "dreadnought", vy: 25, hp: 120, radius: 38, scoreValue: 2000 },
+      { delayMs: 1200, x: 0.2, pattern: "swarm", vx: 20, vy: 170, hp: 1, radius: 10, scoreValue: 80 },
+      { delayMs: 1300, x: 0.25, pattern: "swarm", vx: 15, vy: 165, hp: 1, radius: 10, scoreValue: 80 },
+      { delayMs: 1400, x: 0.75, pattern: "swarm", vx: -20, vy: 170, hp: 1, radius: 10, scoreValue: 80 },
+      { delayMs: 1500, x: 0.8, pattern: "swarm", vx: -15, vy: 165, hp: 1, radius: 10, scoreValue: 80 },
+      { delayMs: 3000, x: 0.2, pattern: "sine", vy: 90, amplitude: 48, frequency: 2.2, hp: 3, scoreValue: 260 },
+      { delayMs: 3000, x: 0.8, pattern: "sine", vy: 90, amplitude: 48, frequency: 2.2, hp: 3, scoreValue: 260 },
     ],
   },
 ];
@@ -182,9 +199,11 @@ const SOLAR_WAVES: ShmupWave[] = [
       { delayMs: 340, x: 0.5, pattern: "splitter", vy: 80, hp: 5, scoreValue: 380 },
       { delayMs: 500, x: 0.2, pattern: "zigzag", vy: 112, amplitude: 68, frequency: 4.4, hp: 3, scoreValue: 260 },
       { delayMs: 500, x: 0.8, pattern: "zigzag", vy: 112, amplitude: 68, frequency: 4.4, hp: 3, scoreValue: 260 },
+      { delayMs: 600, x: 0.5, pattern: "tank", vy: 35, hp: 35, radius: 36, scoreValue: 800 },
       { delayMs: 700, x: 0.36, pattern: "sine", vy: 92, amplitude: 52, frequency: 2.8, hp: 3, scoreValue: 270 },
       { delayMs: 700, x: 0.64, pattern: "bomber", vy: 50, hp: 6, radius: 24, scoreValue: 450 },
       { delayMs: 900, x: 0.5, pattern: "drifter", vy: 146, hp: 4, scoreValue: 300, fireCooldown: 0.92 },
+      { delayMs: 1000, x: 0.5, pattern: "miniboss", vy: 28, hp: 20, radius: 30, scoreValue: 1400 },
     ],
   },
   {
@@ -215,8 +234,23 @@ const SOLAR_WAVES: ShmupWave[] = [
       { delayMs: 200, x: 0.65, pattern: "swarm", vx: -20, vy: 175, hp: 1, radius: 10, scoreValue: 80 },
       { delayMs: 250, x: 0.7, pattern: "swarm", vx: -15, vy: 185, hp: 1, radius: 10, scoreValue: 80 },
       { delayMs: 500, x: 0.5, pattern: "bomber", vy: 52, hp: 6, radius: 24, scoreValue: 450 },
+      { delayMs: 600, x: 0.5, pattern: "tank", vy: 35, hp: 35, radius: 36, scoreValue: 800 },
       { delayMs: 700, x: 0.2, pattern: "sniper", vy: 35, hp: 3, scoreValue: 380, fireCooldown: 2.0 },
       { delayMs: 700, x: 0.8, pattern: "sniper", vy: 35, hp: 3, scoreValue: 380, fireCooldown: 2.0 },
+    ],
+  },
+  {
+    id: "solar-dreadnought",
+    label: "Dreadnought Siege",
+    durationMs: 8000,
+    enemies: [
+      { delayMs: 0, x: 0.5, pattern: "dreadnought", vy: 25, hp: 130, radius: 38, scoreValue: 2200 },
+      { delayMs: 1000, x: 0.15, pattern: "charger", vy: 65, hp: 3, scoreValue: 300 },
+      { delayMs: 1000, x: 0.85, pattern: "charger", vy: 65, hp: 3, scoreValue: 300 },
+      { delayMs: 2500, x: 0.3, pattern: "zigzag", vy: 110, amplitude: 56, frequency: 3.8, hp: 3, scoreValue: 250 },
+      { delayMs: 2500, x: 0.7, pattern: "zigzag", vy: 110, amplitude: 56, frequency: 3.8, hp: 3, scoreValue: 250 },
+      { delayMs: 4000, x: 0.2, pattern: "sniper", vy: 35, hp: 3, scoreValue: 380, fireCooldown: 1.8 },
+      { delayMs: 4000, x: 0.8, pattern: "sniper", vy: 35, hp: 3, scoreValue: 380, fireCooldown: 1.8 },
     ],
   },
 ];
@@ -249,6 +283,7 @@ const ABYSS_WAVES: ShmupWave[] = [
       { delayMs: 280, x: 0.6, pattern: "drifter", vx: 22, vy: 128, hp: 3, scoreValue: 220 },
       { delayMs: 420, x: 0.32, pattern: "zigzag", vy: 104, amplitude: 58, frequency: 4.6, hp: 3, scoreValue: 250 },
       { delayMs: 420, x: 0.68, pattern: "zigzag", vy: 104, amplitude: 58, frequency: 4.6, hp: 3, scoreValue: 250 },
+      { delayMs: 550, x: 0.5, pattern: "tank", vy: 35, hp: 35, radius: 36, scoreValue: 800 },
       { delayMs: 650, x: 0.22, pattern: "sine", vy: 88, amplitude: 42, frequency: 2.4, hp: 3, scoreValue: 260 },
       { delayMs: 650, x: 0.78, pattern: "sine", vy: 88, amplitude: 42, frequency: 2.4, hp: 3, scoreValue: 260 },
       { delayMs: 900, x: 0.5, pattern: "orbiter", vy: 80, amplitude: 68, frequency: 2.3, hp: 5, scoreValue: 350, fireCooldown: 0.72 },
@@ -269,6 +304,7 @@ const ABYSS_WAVES: ShmupWave[] = [
       { delayMs: 600, x: 0.24, pattern: "swarm", vx: 20, vy: 165, hp: 1, radius: 10, scoreValue: 80 },
       { delayMs: 740, x: 0.5, pattern: "orbiter", vy: 84, amplitude: 72, frequency: 2.7, hp: 5, scoreValue: 360, fireCooldown: 0.74 },
       { delayMs: 740, x: 0.34, pattern: "sniper", vy: 38, hp: 3, scoreValue: 380, fireCooldown: 2.0 },
+      { delayMs: 900, x: 0.5, pattern: "miniboss", vy: 26, hp: 22, radius: 30, scoreValue: 1600 },
     ],
   },
   {
@@ -283,6 +319,7 @@ const ABYSS_WAVES: ShmupWave[] = [
       { delayMs: 260, x: 0.72, pattern: "orbiter", vy: 86, amplitude: 48, frequency: 2.5, hp: 4, scoreValue: 310, fireCooldown: 0.82 },
       { delayMs: 500, x: 0.38, pattern: "charger", vy: 55, hp: 4, scoreValue: 320 },
       { delayMs: 500, x: 0.62, pattern: "charger", vy: 55, hp: 4, scoreValue: 320 },
+      { delayMs: 620, x: 0.5, pattern: "tank", vy: 35, hp: 35, radius: 36, scoreValue: 800 },
       { delayMs: 760, x: 0.5, pattern: "splitter", vy: 78, hp: 6, scoreValue: 420, elite: true },
       { delayMs: 760, x: 0.2, pattern: "drifter", vx: 62, vy: 132, hp: 3, scoreValue: 230 },
     ],
@@ -300,9 +337,25 @@ const ABYSS_WAVES: ShmupWave[] = [
       { delayMs: 200, x: 0.85, pattern: "swarm", vx: -20, vy: 195, hp: 1, radius: 10, scoreValue: 80 },
       { delayMs: 400, x: 0.3, pattern: "bomber", vy: 50, hp: 7, radius: 24, scoreValue: 500 },
       { delayMs: 400, x: 0.7, pattern: "sniper", vy: 36, hp: 4, scoreValue: 420, fireCooldown: 1.6, elite: true },
+      { delayMs: 550, x: 0.3, pattern: "tank", vy: 35, hp: 35, radius: 36, scoreValue: 800 },
+      { delayMs: 550, x: 0.7, pattern: "tank", vy: 35, hp: 35, radius: 36, scoreValue: 800 },
       { delayMs: 700, x: 0.5, pattern: "splitter", vy: 75, hp: 6, scoreValue: 420, elite: true },
       { delayMs: 900, x: 0.4, pattern: "charger", vy: 55, hp: 4, scoreValue: 320 },
       { delayMs: 900, x: 0.6, pattern: "charger", vy: 55, hp: 4, scoreValue: 320 },
+    ],
+  },
+  {
+    id: "abyss-dreadnought",
+    label: "Dreadnought Breach",
+    durationMs: 8000,
+    enemies: [
+      { delayMs: 0, x: 0.5, pattern: "dreadnought", vy: 25, hp: 140, radius: 40, scoreValue: 2400 },
+      { delayMs: 800, x: 0.2, pattern: "orbiter", vy: 82, amplitude: 50, frequency: 2.5, hp: 4, scoreValue: 310, fireCooldown: 0.82 },
+      { delayMs: 800, x: 0.8, pattern: "orbiter", vy: 82, amplitude: 50, frequency: 2.5, hp: 4, scoreValue: 310, fireCooldown: 0.82 },
+      { delayMs: 2000, x: 0.3, pattern: "bomber", vy: 50, hp: 6, radius: 24, scoreValue: 450 },
+      { delayMs: 2000, x: 0.7, pattern: "bomber", vy: 50, hp: 6, radius: 24, scoreValue: 450 },
+      { delayMs: 3500, x: 0.15, pattern: "charger", vy: 55, hp: 4, scoreValue: 320 },
+      { delayMs: 3500, x: 0.85, pattern: "charger", vy: 55, hp: 4, scoreValue: 320 },
     ],
   },
 ];

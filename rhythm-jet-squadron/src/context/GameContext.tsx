@@ -16,6 +16,8 @@ import {
   type Achievement,
   type UnlockedAchievements,
 } from "../lib/achievements";
+import { getLevelForXp, calculateRunXp } from "../lib/progression";
+import { getDailyMissions, getWeeklyMissions } from "../lib/missions";
 
 const STORAGE_KEY = "astra-valkyries-save";
 
@@ -63,6 +65,21 @@ function getDefaultSave(): SaveData {
     selectedOutfitId: starterOutfits[0]?.outfitId ?? null,
     highScores: {},
     settings: { ...DEFAULT_SETTINGS },
+    pilotXp: {},
+    pilotLevel: {},
+    bestGrades: {},
+    totalRuns: 0,
+    totalKills: 0,
+    totalBossKills: 0,
+    missionProgress: {},
+    missionsClaimed: [],
+    lastDailyReset: 0,
+    lastWeeklyReset: 0,
+    metaCurrency: 0,
+    selectedModifiers: [],
+    seenCutscenes: [],
+    zoneClears: {},
+    pilotSkills: {},
   };
 }
 
@@ -109,6 +126,16 @@ interface GameContextValue {
   submitResult: (result: GameResult) => void;
   // Settings
   updateSettings: (partial: Partial<GameSettings>) => void;
+  // Progression
+  addPilotXp: (pilotId: string, xp: number) => void;
+  submitRunStats: (stats: { pilotId: string; mapId: string; score: number; kills: number; grade: string; bossDefeated: boolean }) => void;
+  setSelectedModifiers: (modifiers: string[]) => void;
+  claimMission: (missionId: string) => { credits: number; xp: number } | null;
+  // Narrative
+  markCutsceneSeen: (id: string) => void;
+  recordZoneClear: (mapId: string) => void;
+  // Skill tree
+  unlockSkill: (pilotId: string, skillId: string) => void;
   // Reset
   resetSave: () => void;
   // Achievements
@@ -237,6 +264,89 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const addPilotXp = useCallback((pilotId: string, xp: number) => {
+    setSave((s) => {
+      const newXp = (s.pilotXp[pilotId] ?? 0) + xp;
+      const newLevel = getLevelForXp(newXp);
+      return {
+        ...s,
+        pilotXp: { ...s.pilotXp, [pilotId]: newXp },
+        pilotLevel: { ...s.pilotLevel, [pilotId]: newLevel },
+      };
+    });
+  }, []);
+
+  const submitRunStats = useCallback((stats: { pilotId: string; mapId: string; score: number; kills: number; grade: string; bossDefeated: boolean }) => {
+    const xpEarned = calculateRunXp(stats.score, stats.kills, stats.grade, stats.bossDefeated);
+    setSave((s) => {
+      const newXp = (s.pilotXp[stats.pilotId] ?? 0) + xpEarned;
+      const newLevel = getLevelForXp(newXp);
+      const currentBestGrade = s.bestGrades[stats.mapId];
+      const gradeOrder = ["S", "A", "B", "C", "D"];
+      const newGradeIdx = gradeOrder.indexOf(stats.grade);
+      const oldGradeIdx = currentBestGrade ? gradeOrder.indexOf(currentBestGrade) : 999;
+      const bestGrade = newGradeIdx <= oldGradeIdx ? stats.grade : (currentBestGrade ?? stats.grade);
+      return {
+        ...s,
+        pilotXp: { ...s.pilotXp, [stats.pilotId]: newXp },
+        pilotLevel: { ...s.pilotLevel, [stats.pilotId]: newLevel },
+        bestGrades: { ...s.bestGrades, [stats.mapId]: bestGrade },
+        totalRuns: s.totalRuns + 1,
+        totalKills: s.totalKills + stats.kills,
+        totalBossKills: s.totalBossKills + (stats.bossDefeated ? 1 : 0),
+      };
+    });
+  }, []);
+
+  const setSelectedModifiers = useCallback((modifiers: string[]) => {
+    setSave((s) => ({ ...s, selectedModifiers: modifiers }));
+  }, []);
+
+  const claimMission = useCallback((missionId: string): { credits: number; xp: number } | null => {
+    const allMissions = [...getDailyMissions(), ...getWeeklyMissions()];
+    const mission = allMissions.find(m => m.id === missionId);
+    if (!mission) return null;
+    let reward: { credits: number; xp: number } | null = null;
+    setSave((s) => {
+      if (s.missionsClaimed.includes(missionId)) return s;
+      const progress = s.missionProgress[missionId] ?? 0;
+      if (progress < mission.target) return s;
+      reward = mission.reward;
+      return {
+        ...s,
+        credits: s.credits + mission.reward.credits,
+        metaCurrency: s.metaCurrency + Math.floor(mission.reward.xp / 10),
+        missionsClaimed: [...s.missionsClaimed, missionId],
+      };
+    });
+    return reward;
+  }, []);
+
+  const markCutsceneSeen = useCallback((id: string) => {
+    setSave((s) => {
+      if (s.seenCutscenes.includes(id)) return s;
+      return { ...s, seenCutscenes: [...s.seenCutscenes, id] };
+    });
+  }, []);
+
+  const recordZoneClear = useCallback((mapId: string) => {
+    setSave((s) => ({
+      ...s,
+      zoneClears: { ...s.zoneClears, [mapId]: (s.zoneClears[mapId] ?? 0) + 1 },
+    }));
+  }, []);
+
+  const unlockSkill = useCallback((pilotId: string, skillId: string) => {
+    setSave((s) => {
+      const current = s.pilotSkills[pilotId] ?? [];
+      if (current.includes(skillId)) return s;
+      return {
+        ...s,
+        pilotSkills: { ...s.pilotSkills, [pilotId]: [...current, skillId] },
+      };
+    });
+  }, []);
+
   const resetSave = useCallback(() => {
     setSave(getDefaultSave());
   }, []);
@@ -255,6 +365,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
         upgradeOutfit,
         submitResult,
         updateSettings,
+        addPilotXp,
+        submitRunStats,
+        setSelectedModifiers,
+        claimMission,
+        markCutsceneSeen,
+        recordZoneClear,
+        unlockSkill,
         resetSave,
         unlockedAchievements,
         pendingAchievement,
