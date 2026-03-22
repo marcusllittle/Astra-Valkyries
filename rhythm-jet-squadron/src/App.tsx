@@ -17,6 +17,7 @@ import BriefingScreen from "./screens/BriefingScreen";
 import CodexScreen from "./screens/CodexScreen";
 import SpaceportScreen from "./screens/SpaceportScreen";
 import MissionsScreen from "./screens/MissionsScreen";
+import VideoCutsceneScreen from "./screens/VideoCutsceneScreen";
 import AchievementToast from "./components/AchievementToast";
 
 function AchievementLayer() {
@@ -57,6 +58,7 @@ export default function App() {
             <Route path="/settings" element={<SettingsScreen />} />
             <Route path="/leaderboard" element={<LeaderboardScreen />} />
             <Route path="/briefing" element={<BriefingScreen />} />
+            <Route path="/video-cutscene" element={<VideoCutsceneScreen />} />
             <Route path="/codex" element={<CodexScreen />} />
             <Route path="/spaceport" element={<SpaceportScreen />} />
             <Route path="/missions" element={<MissionsScreen />} />

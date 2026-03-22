@@ -24,6 +24,9 @@ export interface DialogueScript {
   mapId?: string;
   pilotId?: string;
   requiredCondition?: string;
+  videoUrl?: string;
+  nextVideoUrl?: string;
+  nextRoute?: string;
   nodes: DialogueNode[];
   startNodeId: string;
 }
@@ -33,6 +36,9 @@ export const DIALOGUE_SCRIPTS: DialogueScript[] = [
     id: "briefing-nebula-runway",
     trigger: "pre_mission",
     mapId: "nebula-runway",
+    videoUrl: "/assets/cutins/nova/nova_mission_briefing.mp4",
+    nextVideoUrl: "/assets/cutins/nova/nova_leaving_port.mp4",
+    nextRoute: "/shmup",
     nodes: [
       {
         id: "start",

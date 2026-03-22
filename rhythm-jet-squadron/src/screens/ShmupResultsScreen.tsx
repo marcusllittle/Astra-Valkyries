@@ -19,6 +19,8 @@ const GRADE_COLORS: Record<string, string> = {
   D: "#ff6b6b",
 };
 
+const RETURN_TO_PORT_VIDEO = "/assets/cutins/nova/nova_return_to_port.mp4";
+
 function formatTime(timeMs: number): string {
   const totalSeconds = Math.max(0, Math.floor(timeMs / 1000));
   const minutes = Math.floor(totalSeconds / 60);
@@ -45,6 +47,15 @@ export default function ShmupResultsScreen() {
   const debriefScript = mapId ? getDialogueForMap(mapId, "post_mission") : undefined;
   const debriefNode = debriefScript?.nodes.find(n => n.id === debriefScript.startNodeId);
   const debriefLines = debriefNode?.lines ?? [];
+
+  const handleReturnToPort = () => {
+    navigate("/video-cutscene", {
+      state: {
+        videoUrl: RETURN_TO_PORT_VIDEO,
+        returnTo: "/spaceport",
+      },
+    });
+  };
 
   const rewardKey = useMemo(() => {
     if (!shmupResult) return null;
@@ -205,8 +216,8 @@ export default function ShmupResultsScreen() {
         <button className="btn btn-primary" onClick={() => navigate("/shmup")}>
           Play Again
         </button>
-        <button className="btn btn-secondary" onClick={() => navigate("/")}>
-          Home
+        <button className="btn btn-secondary" onClick={handleReturnToPort}>
+          Return to Port
         </button>
       </div>
     </div>

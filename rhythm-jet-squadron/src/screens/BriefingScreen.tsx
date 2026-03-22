@@ -1,18 +1,62 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { DIALOGUE_SCRIPTS, type DialogueNode, type DialogueScript } from "../data/dialogues";
+import { DIALOGUE_SCRIPTS, getDialogueForMap } from "../data/dialogues";
 import DialogueBox from "../components/DialogueBox";
+import { useGame } from "../context/GameContext";
+import { resolveAssetUrl } from "../lib/assetUrl";
+
+interface BriefingLocationState {
+  scriptId?: string;
+  returnTo?: string;
+}
 
 export default function BriefingScreen() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { scriptId, returnTo } = (location.state as { scriptId?: string; returnTo?: string }) ?? {};
+  const { save } = useGame();
+  const { scriptId, returnTo } = (location.state as BriefingLocationState) ?? {};
 
-  const script = DIALOGUE_SCRIPTS.find(s => s.id === scriptId);
+  const script = useMemo(() => {
+    if (scriptId) return DIALOGUE_SCRIPTS.find((entry) => entry.id === scriptId);
+    if (save.selectedMapId) {
+      return getDialogueForMap(save.selectedMapId, "pre_mission");
+    }
+    return DIALOGUE_SCRIPTS.find((entry) => entry.trigger === "pre_mission");
+  }, [save.selectedMapId, scriptId]);
+
+  const resolvedVideoUrl = resolveAssetUrl(script?.videoUrl);
+  const directRoute = script?.nextRoute ?? returnTo ?? "/shmup";
+  const videoReturnTo = script?.nextRoute ?? "/shmup";
   const [currentNodeId, setCurrentNodeId] = useState(script?.startNodeId ?? "");
   const [lineIndex, setLineIndex] = useState(0);
 
   const currentNode = script?.nodes.find(n => n.id === currentNodeId);
+
+  useEffect(() => {
+    setCurrentNodeId(script?.startNodeId ?? "");
+    setLineIndex(0);
+  }, [script?.id]);
+
+  const navigateAfterDialogue = useCallback(() => {
+    if (script?.nextVideoUrl) {
+      navigate("/video-cutscene", {
+        replace: true,
+        state: {
+          videoUrl: script.nextVideoUrl,
+          returnTo: videoReturnTo,
+        },
+      });
+      return;
+    }
+
+    navigate(directRoute, { replace: true });
+  }, [directRoute, navigate, script?.nextVideoUrl, videoReturnTo]);
+
+  useEffect(() => {
+    if (!script) {
+      navigate(directRoute, { replace: true });
+    }
+  }, [directRoute, navigate, script]);
 
   const handleNext = useCallback(() => {
     if (!currentNode) return;
@@ -26,9 +70,9 @@ export default function BriefingScreen() {
       setLineIndex(0);
     } else {
       // End of dialogue
-      navigate(returnTo ?? "/shmup", { replace: true, state: location.state });
+      navigateAfterDialogue();
     }
-  }, [currentNode, lineIndex, navigate, returnTo, location.state]);
+  }, [currentNode, lineIndex, navigateAfterDialogue]);
 
   const handleChoice = useCallback((nextNodeId: string) => {
     setCurrentNodeId(nextNodeId);
@@ -36,12 +80,10 @@ export default function BriefingScreen() {
   }, []);
 
   const handleSkip = useCallback(() => {
-    navigate(returnTo ?? "/shmup", { replace: true, state: location.state });
-  }, [navigate, returnTo, location.state]);
+    navigateAfterDialogue();
+  }, [navigateAfterDialogue]);
 
   if (!script || !currentNode) {
-    // No script found, go to destination
-    navigate(returnTo ?? "/shmup", { replace: true, state: location.state });
     return null;
   }
 
@@ -54,6 +96,33 @@ export default function BriefingScreen() {
       position: "fixed", inset: 0, background: "#040612",
       display: "flex", flexDirection: "column", justifyContent: "flex-end",
     }}>
+      {resolvedVideoUrl && (
+        <video
+          key={resolvedVideoUrl}
+          src={resolvedVideoUrl}
+          autoPlay
+          muted
+          playsInline
+          loop
+          preload="auto"
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+          }}
+        />
+      )}
+
+      {resolvedVideoUrl && (
+        <div style={{
+          position: "absolute",
+          inset: 0,
+          background: "linear-gradient(180deg, rgba(2,4,12,0.28) 0%, rgba(2,4,12,0.52) 45%, rgba(2,4,12,0.82) 100%)",
+        }} />
+      )}
+
       {/* Background starfield effect */}
       <div style={{
         position: "absolute", inset: 0,
@@ -65,13 +134,15 @@ export default function BriefingScreen() {
         flex: 1, display: "flex", alignItems: "center",
         justifyContent: line?.position === "right" ? "flex-end" : "flex-start",
         padding: "0 40px",
+        position: "relative",
+        zIndex: 1,
       }}>
         {line?.portrait ? (
           <img src={line.portrait} alt={line.speaker} style={{
             maxHeight: "60%", objectFit: "contain", opacity: 0.9,
             filter: "drop-shadow(0 0 20px rgba(102,217,239,0.3))",
           }} />
-        ) : (
+        ) : !resolvedVideoUrl ? (
           <div style={{
             width: "180px", height: "240px", borderRadius: "8px",
             background: "rgba(102,217,239,0.1)", border: "1px solid rgba(102,217,239,0.2)",
@@ -81,7 +152,7 @@ export default function BriefingScreen() {
           }}>
             {line?.speaker ?? "???"}
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Skip button */}
