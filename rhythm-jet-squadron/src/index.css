@@ -2682,6 +2682,373 @@ body::after {
   text-transform: uppercase;
 }
 
+/* ─── Missions Screen ────────────────────────────────── */
+
+.missions-screen {
+  padding-top: 30px;
+  padding-bottom: 38px;
+  overflow: hidden;
+}
+
+.missions-atmosphere {
+  position: absolute;
+  inset: -8% -10% 10%;
+  pointer-events: none;
+  background:
+    radial-gradient(720px 420px at 8% 16%, rgba(86, 140, 255, 0.2), transparent 72%),
+    radial-gradient(780px 420px at 88% 8%, rgba(89, 218, 255, 0.12), transparent 76%),
+    radial-gradient(560px 360px at 84% 82%, rgba(255, 209, 102, 0.1), transparent 74%),
+    radial-gradient(480px 300px at 22% 82%, rgba(92, 66, 255, 0.14), transparent 74%);
+  filter: blur(14px);
+}
+
+.missions-shell {
+  position: relative;
+  padding: clamp(22px, 2.4vw, 30px);
+  overflow: hidden;
+  background:
+    linear-gradient(160deg, rgba(12, 20, 40, 0.94), rgba(8, 15, 31, 0.88)),
+    linear-gradient(120deg, rgba(79, 135, 255, 0.08), transparent 42%);
+  border: 1px solid rgba(152, 179, 255, 0.2);
+  border-radius: 28px;
+  box-shadow:
+    0 26px 70px rgba(1, 6, 18, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.missions-shell::before,
+.missions-shell::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.missions-shell::before {
+  inset: 0;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.03), transparent 34%),
+    radial-gradient(circle at top right, rgba(255, 209, 102, 0.1), transparent 24%);
+}
+
+.missions-shell::after {
+  inset: 18px;
+  border: 1px solid rgba(129, 157, 232, 0.08);
+  border-radius: 22px;
+}
+
+.missions-command-bar,
+.missions-panels,
+.missions-section {
+  position: relative;
+  z-index: 1;
+}
+
+.missions-command-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.92fr);
+  gap: 20px;
+  align-items: start;
+  margin-bottom: 22px;
+}
+
+.missions-command-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.missions-back-btn {
+  width: fit-content;
+}
+
+.missions-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.missions-kicker,
+.missions-section-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 209, 102, 0.86);
+}
+
+.missions-kicker::before,
+.missions-section-kicker::before {
+  content: "";
+  width: 34px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255, 209, 102, 0), rgba(255, 209, 102, 0.8));
+}
+
+.missions-title {
+  font-size: clamp(2.1rem, 4vw, 3.4rem);
+  line-height: 0.94;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.missions-subtitle {
+  max-width: 42rem;
+  font-size: 0.98rem;
+  line-height: 1.65;
+  color: var(--text-secondary);
+}
+
+.missions-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.missions-summary-card {
+  min-height: 116px;
+  padding: 16px 16px 18px;
+  border-radius: 18px;
+  background:
+    linear-gradient(160deg, rgba(18, 31, 61, 0.88), rgba(12, 22, 43, 0.7));
+  border: 1px solid rgba(146, 173, 246, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.missions-summary-label,
+.mission-rotation {
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.missions-summary-value {
+  font-size: 1.28rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.missions-summary-value-gold {
+  color: var(--gold);
+}
+
+.missions-summary-meta {
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.missions-panels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.missions-section {
+  padding: 22px;
+  border-radius: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  background:
+    linear-gradient(180deg, rgba(15, 26, 50, 0.82), rgba(10, 18, 35, 0.7));
+}
+
+.missions-section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.missions-section-title {
+  font-size: clamp(1.25rem, 2vw, 1.7rem);
+  line-height: 1.04;
+}
+
+.missions-section-note {
+  max-width: 20rem;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.missions-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.mission-card {
+  position: relative;
+  padding: 18px;
+  border-radius: 22px;
+  background:
+    linear-gradient(165deg, rgba(18, 32, 61, 0.9), rgba(10, 18, 35, 0.78));
+  border: 1px solid rgba(146, 173, 246, 0.18);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 16px 30px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
+}
+
+.mission-card::before {
+  content: "";
+  position: absolute;
+  inset: auto -18% -48% 22%;
+  height: 110px;
+  background: radial-gradient(circle, rgba(106, 141, 255, 0.22), transparent 72%);
+  opacity: 0.86;
+}
+
+.mission-card--complete {
+  border-color: rgba(106, 224, 160, 0.28);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 16px 30px rgba(0, 0, 0, 0.18),
+    0 0 0 1px rgba(106, 224, 160, 0.08);
+}
+
+.mission-card--claimed {
+  opacity: 0.82;
+  border-color: rgba(255, 209, 102, 0.22);
+}
+
+.mission-header,
+.mission-title-block {
+  position: relative;
+  z-index: 1;
+}
+
+.mission-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mission-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mission-name {
+  font-size: 1.06rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.mission-desc {
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.mission-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.mission-badge--claimed {
+  background: rgba(255, 209, 102, 0.16);
+  color: var(--gold);
+  border: 1px solid rgba(255, 209, 102, 0.28);
+}
+
+.mission-badge--complete {
+  background: rgba(106, 224, 160, 0.14);
+  color: var(--success);
+  border: 1px solid rgba(106, 224, 160, 0.26);
+}
+
+.mission-progress-meta {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.84rem;
+}
+
+.mission-progress-text {
+  color: var(--text-secondary);
+}
+
+.mission-progress-percent {
+  color: rgba(204, 218, 255, 0.8);
+  font-weight: 700;
+}
+
+.mission-progress-bar {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.mission-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #7fdcff);
+  box-shadow: 0 0 14px rgba(106, 141, 255, 0.32);
+}
+
+.mission-reward {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.mission-reward-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(17, 32, 64, 0.56);
+  border: 1px solid rgba(255, 209, 102, 0.18);
+  color: var(--gold);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.mission-reward-pill--xp {
+  border-color: rgba(106, 141, 255, 0.2);
+  color: var(--accent);
+}
+
+.mission-claim-btn {
+  width: fit-content;
+  margin-top: auto;
+}
+
 /* ─── Responsive ──────────────────────────────────────── */
 
 @media (max-width: 980px) {
@@ -2703,11 +3070,14 @@ body::after {
   }
 
   .spaceport-command-bar,
-  .spaceport-layout {
+  .spaceport-layout,
+  .missions-command-bar,
+  .missions-panels {
     grid-template-columns: 1fr;
   }
 
-  .spaceport-top-stats {
+  .spaceport-top-stats,
+  .missions-summary-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
@@ -2852,11 +3222,14 @@ body::after {
 
   .spaceport-top-stats,
   .spaceport-visual-metrics,
-  .spaceport-grid {
+  .spaceport-grid,
+  .missions-summary-grid,
+  .missions-panels {
     grid-template-columns: 1fr;
   }
 
-  .spaceport-section-head {
+  .spaceport-section-head,
+  .missions-section-head {
     flex-direction: column;
     align-items: flex-start;
   }
@@ -2864,7 +3237,9 @@ body::after {
   .spaceport-section-note,
   .spaceport-visual-copy,
   .spaceport-launch-desc,
-  .spaceport-subtitle {
+  .spaceport-subtitle,
+  .missions-subtitle,
+  .missions-section-note {
     max-width: none;
   }
 
@@ -2889,6 +3264,27 @@ body::after {
   .spaceport-core-ring-inner {
     width: 88px;
     height: 88px;
+  }
+
+  .missions-screen {
+    padding-top: 18px;
+  }
+
+  .missions-shell {
+    padding: 18px;
+    border-radius: 24px;
+  }
+
+  .missions-command-stack {
+    gap: 14px;
+  }
+
+  .missions-title {
+    letter-spacing: 0.05em;
+  }
+
+  .mission-header {
+    flex-direction: column;
   }
 }
 
