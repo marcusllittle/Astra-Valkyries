@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { resolveAssetUrl } from "../lib/assetUrl";
 
@@ -13,6 +13,8 @@ export default function VideoCutsceneScreen() {
   const { videoUrl, returnTo } = (location.state as VideoCutsceneLocationState) ?? {};
   const resolvedVideoUrl = resolveAssetUrl(videoUrl);
   const destination = returnTo ?? "/";
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [needsAudioUnlock, setNeedsAudioUnlock] = useState(false);
 
   const handleComplete = useCallback(() => {
     navigate(destination, { replace: true });
@@ -23,6 +25,54 @@ export default function VideoCutsceneScreen() {
       handleComplete();
     }
   }, [handleComplete, resolvedVideoUrl]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !resolvedVideoUrl) {
+      setNeedsAudioUnlock(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const startPlayback = async () => {
+      try {
+        video.currentTime = 0;
+        video.muted = false;
+        video.volume = 1;
+        await video.play();
+        if (!cancelled) {
+          setNeedsAudioUnlock(false);
+        }
+      } catch {
+        video.muted = true;
+        try {
+          await video.play();
+        } catch {
+          // User interaction fallback below.
+        }
+        if (!cancelled) {
+          setNeedsAudioUnlock(true);
+        }
+      }
+    };
+
+    void startPlayback();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [resolvedVideoUrl]);
+
+  const handleEnableSound = useCallback(async () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.muted = false;
+    video.volume = 1;
+    await video.play();
+    setNeedsAudioUnlock(false);
+  }, []);
 
   if (!resolvedVideoUrl) {
     return null;
@@ -38,10 +88,10 @@ export default function VideoCutsceneScreen() {
       }}
     >
       <video
+        ref={videoRef}
         key={resolvedVideoUrl}
         src={resolvedVideoUrl}
         autoPlay
-        muted
         playsInline
         preload="auto"
         onEnded={handleComplete}
@@ -51,7 +101,7 @@ export default function VideoCutsceneScreen() {
           inset: 0,
           width: "100%",
           height: "100%",
-          objectFit: "cover",
+          objectFit: "contain",
         }}
       />
 
@@ -83,6 +133,31 @@ export default function VideoCutsceneScreen() {
       >
         SKIP
       </button>
+
+      {needsAudioUnlock && (
+        <button
+          onClick={() => {
+            void handleEnableSound();
+          }}
+          style={{
+            position: "absolute",
+            top: "16px",
+            left: "16px",
+            zIndex: 1,
+            background: "rgba(0,0,0,0.45)",
+            border: "1px solid rgba(255,255,255,0.24)",
+            color: "rgba(255,255,255,0.88)",
+            padding: "6px 16px",
+            borderRadius: "4px",
+            cursor: "pointer",
+            fontFamily: "monospace",
+            fontSize: "12px",
+            letterSpacing: "0.08em",
+          }}
+        >
+          SOUND ON
+        </button>
+      )}
     </div>
   );
 }
