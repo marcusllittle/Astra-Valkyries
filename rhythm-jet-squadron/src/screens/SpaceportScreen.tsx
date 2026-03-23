@@ -17,7 +17,7 @@ export default function SpaceportScreen() {
   const navigate = useNavigate();
   const { save } = useGame();
   const [inboxOpen, setInboxOpen] = useState(false);
-  const unreadCount = getUnreadCount();
+  const unreadCount = getUnreadCount(save);
 
   const pilotName = save.selectedPilotId?.replace("pilot_", "").toUpperCase() ?? "PILOT";
   const pilotLevel = save.pilotLevel[save.selectedPilotId ?? ""] ?? 1;
