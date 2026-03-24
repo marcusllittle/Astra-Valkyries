@@ -60,12 +60,13 @@ import shipsData from "../data/ships.json";
 const WORLD_WIDTH = 960;
 const WORLD_HEIGHT = 540;
 const HUD_HEIGHT = 48;
-const BASE_SHIP_RADIUS = 14;
+const ENTITY_SCALE = 0.7;
+const BASE_SHIP_RADIUS = 10;
 const PLAYER_INVULNERABLE_MS = 900;
 const OVERDRIVE_MAX = 100;
 const SHMUP_TRACK_ID = "shmup_arcade";
 const MAX_WEAPON_LEVEL = 4;
-const BOMB_RADIUS = 190;
+const BOMB_RADIUS = 140;
 const BOMB_ENEMY_DAMAGE = 5;
 const BOMB_BOSS_DAMAGE = 22;
 const BOMB_PROJECTILE_SPEED = 430;
@@ -76,7 +77,7 @@ const BOMB_OVERFLOW_CHIPS = 3;
 const OVERDRIVE_EXTENSION_PER_KILL_MS = 180;
 const OVERDRIVE_EXTENSION_PER_BOSS_HIT_MS = 30;
 const OVERDRIVE_EXTENSION_CAP_MS = 5000;
-const TOUCH_PAD_RADIUS = 54;
+const TOUCH_PAD_RADIUS = 40;
 
 interface ShipState {
   x: number;
@@ -769,6 +770,29 @@ export default function ShmupPlayScreen() {
     };
   }, []);
 
+  // Lock to landscape orientation on mobile
+  useEffect(() => {
+    const lockOrientation = async () => {
+      try {
+        if (screen.orientation && typeof screen.orientation.lock === "function") {
+          await screen.orientation.lock("landscape");
+        }
+      } catch {
+        // Orientation lock not supported or not allowed — ignore
+      }
+    };
+    lockOrientation();
+    return () => {
+      try {
+        if (screen.orientation && typeof screen.orientation.unlock === "function") {
+          screen.orientation.unlock();
+        }
+      } catch {
+        // ignore
+      }
+    };
+  }, []);
+
   // Sync audio volumes from settings
   useEffect(() => {
     syncVolumes(save.settings.musicVolume, save.settings.sfxVolume);
@@ -1165,11 +1189,11 @@ export default function ShmupPlayScreen() {
           vy: shot.vy * bulletSpeedMultiplier,
           age: 0,
           maxLife: shot.maxLife,
-          radius: shot.radius,
+          radius: shot.radius * ENTITY_SCALE,
           damage: shot.damage * weaponDamageMultiplier,
           color: shot.color,
           coreColor: shot.coreColor,
-          length: shot.length,
+          length: shot.length * ENTITY_SCALE,
           spriteKey: undefined,
           pierce: shot.pierce ?? 0,
           driftVx: (shot.driftVx ?? 0) * spreadMultiplier,
@@ -1194,18 +1218,18 @@ export default function ShmupPlayScreen() {
       const xJitter = (Math.random() - 0.5) * 0.24;
       const spawnX = clamp((spawn.x + xJitter) * canvas.width, 28, canvas.width - 28);
       const DEFAULTS: Record<string, { radius: number; hp: number; score: number; fireCooldown: number }> = {
-        drifter:  { radius: 16, hp: 2, score: 180, fireCooldown: 1.15 },
-        sine:     { radius: 18, hp: 3, score: 260, fireCooldown: 0.95 },
-        zigzag:   { radius: 18, hp: 3, score: 260, fireCooldown: 0.95 },
-        orbiter:  { radius: 19, hp: 4, score: 310, fireCooldown: 0.82 },
-        charger:  { radius: 17, hp: 3, score: 300, fireCooldown: 1.5 },
-        splitter: { radius: 20, hp: 4, score: 350, fireCooldown: 1.1 },
-        bomber:   { radius: 22, hp: 5, score: 400, fireCooldown: 2.5 },
-        sniper:   { radius: 16, hp: 3, score: 380, fireCooldown: 2.0 },
-        swarm:    { radius: 10, hp: 1, score: 80,  fireCooldown: 3.0 },
-        dreadnought: { radius: 38, hp: 120, score: 2000, fireCooldown: 2.0 },
-        tank: { radius: 36, hp: 35, score: 800, fireCooldown: 1.8 },
-        miniboss: { radius: 28, hp: 18, score: 1200, fireCooldown: 1.2 },
+        drifter:  { radius: 11, hp: 2, score: 180, fireCooldown: 1.15 },
+        sine:     { radius: 13, hp: 3, score: 260, fireCooldown: 0.95 },
+        zigzag:   { radius: 13, hp: 3, score: 260, fireCooldown: 0.95 },
+        orbiter:  { radius: 13, hp: 4, score: 310, fireCooldown: 0.82 },
+        charger:  { radius: 12, hp: 3, score: 300, fireCooldown: 1.5 },
+        splitter: { radius: 14, hp: 4, score: 350, fireCooldown: 1.1 },
+        bomber:   { radius: 15, hp: 5, score: 400, fireCooldown: 2.5 },
+        sniper:   { radius: 11, hp: 3, score: 380, fireCooldown: 2.0 },
+        swarm:    { radius: 7, hp: 1, score: 80,  fireCooldown: 3.0 },
+        dreadnought: { radius: 27, hp: 120, score: 2000, fireCooldown: 2.0 },
+        tank: { radius: 25, hp: 35, score: 800, fireCooldown: 1.8 },
+        miniboss: { radius: 20, hp: 18, score: 1200, fireCooldown: 1.2 },
       };
       const def = DEFAULTS[pattern] ?? DEFAULTS.drifter;
 
@@ -1311,7 +1335,7 @@ export default function ShmupPlayScreen() {
         name: activeMap.bossName,
         x: canvas.width / 2,
         y: -96,
-        radius: 42,
+        radius: 30,
         hp: activeMap.bossMaxHp,
         maxHp: activeMap.bossMaxHp,
         age: 0,
@@ -1328,6 +1352,12 @@ export default function ShmupPlayScreen() {
       activeWaveLabelRef.current = activeMap.bossName;
     };
 
+    const pushEnemyBullet = (b: EnemyBullet) => {
+      b.radius *= ENTITY_SCALE;
+      b.length *= ENTITY_SCALE;
+      enemyBulletsRef.current.push(b);
+    };
+
     const shootEnemyBullets = (enemy: EnemyState) => {
       const enemyShotColor = activeMap.palette.enemyShotColor;
       const enemyShotCore = activeMap.palette.enemyShotCore;
@@ -1335,7 +1365,7 @@ export default function ShmupPlayScreen() {
       if (enemy.pattern === "swarm") return; // swarm doesn't shoot
 
       if (enemy.pattern === "drifter") {
-        enemyBulletsRef.current.push({
+        pushEnemyBullet({
           x: enemy.x,
           y: enemy.y + enemy.radius,
           vx: 0,
@@ -1351,7 +1381,7 @@ export default function ShmupPlayScreen() {
 
       if (enemy.pattern === "zigzag") {
         for (const spread of [-120, 0, 120]) {
-          enemyBulletsRef.current.push({
+          pushEnemyBullet({
             x: enemy.x,
             y: enemy.y + enemy.radius,
             vx: spread,
@@ -1370,7 +1400,7 @@ export default function ShmupPlayScreen() {
         const baseAngle = enemy.age * 1.5;
         for (let index = 0; index < 4; index++) {
           const angle = baseAngle + (Math.PI / 2) * index;
-          enemyBulletsRef.current.push({
+          pushEnemyBullet({
             x: enemy.x,
             y: enemy.y + enemy.radius * 0.25,
             vx: Math.cos(angle) * 165,
@@ -1391,7 +1421,7 @@ export default function ShmupPlayScreen() {
         const dx = ship.x - enemy.x;
         const dy = ship.y - enemy.y;
         const len = Math.hypot(dx, dy) || 1;
-        enemyBulletsRef.current.push({
+        pushEnemyBullet({
           x: enemy.x,
           y: enemy.y + enemy.radius,
           vx: (dx / len) * 200,
@@ -1411,7 +1441,7 @@ export default function ShmupPlayScreen() {
         const dy = ship.y - enemy.y;
         const len = Math.hypot(dx, dy) || 1;
         for (const offset of [-40, 40]) {
-          enemyBulletsRef.current.push({
+          pushEnemyBullet({
             x: enemy.x,
             y: enemy.y + enemy.radius,
             vx: (dx / len) * 180 + offset,
@@ -1428,7 +1458,7 @@ export default function ShmupPlayScreen() {
 
       if (enemy.pattern === "bomber") {
         // Bomber fires slow, large shots downward
-        enemyBulletsRef.current.push({
+        pushEnemyBullet({
           x: enemy.x,
           y: enemy.y + enemy.radius,
           vx: (Math.random() - 0.5) * 60,
@@ -1453,7 +1483,7 @@ export default function ShmupPlayScreen() {
         const baseAngle = Math.atan2(dy, dx);
         for (const offset of fanAngles) {
           const angle = baseAngle + offset;
-          enemyBulletsRef.current.push({
+          pushEnemyBullet({
             x: enemy.x,
             y: enemy.y + enemy.radius * 0.7,
             vx: Math.cos(angle) * 165,
@@ -1472,7 +1502,7 @@ export default function ShmupPlayScreen() {
         // Tank fires 8-bullet 360-degree burst plus area-denial shot aimed at player
         for (let i = 0; i < 8; i++) {
           const angle = (Math.PI * 2 / 8) * i + enemy.age * 0.3;
-          enemyBulletsRef.current.push({
+          pushEnemyBullet({
             x: enemy.x,
             y: enemy.y,
             vx: Math.cos(angle) * 130,
@@ -1488,7 +1518,7 @@ export default function ShmupPlayScreen() {
         const dx = ship.x - enemy.x;
         const dy = ship.y - enemy.y;
         const len = Math.hypot(dx, dy) || 1;
-        enemyBulletsRef.current.push({
+        pushEnemyBullet({
           x: enemy.x,
           y: enemy.y + enemy.radius,
           vx: (dx / len) * 100,
@@ -1511,7 +1541,7 @@ export default function ShmupPlayScreen() {
           // Enraged: 6-way spread + aimed shots
           for (let i = 0; i < 6; i++) {
             const angle = (Math.PI * 2 / 6) * i + enemy.age * 0.5;
-            enemyBulletsRef.current.push({
+            pushEnemyBullet({
               x: enemy.x, y: enemy.y + enemy.radius * 0.5,
               vx: Math.cos(angle) * 170, vy: Math.sin(angle) * 170,
               radius: 6, color: "#ff4466", coreColor: "#ffccdd",
@@ -1521,7 +1551,7 @@ export default function ShmupPlayScreen() {
           // Two aimed shots
           for (const offset of [-0.2, 0.2]) {
             const aimAngle = Math.atan2(dy, dx) + offset;
-            enemyBulletsRef.current.push({
+            pushEnemyBullet({
               x: enemy.x, y: enemy.y + enemy.radius * 0.5,
               vx: Math.cos(aimAngle) * 200, vy: Math.sin(aimAngle) * 200,
               radius: 5, color: "#ff4466", coreColor: "#ffccdd",
@@ -1532,7 +1562,7 @@ export default function ShmupPlayScreen() {
           // Normal: 3-way aimed fan
           for (const offset of [-0.25, 0, 0.25]) {
             const baseAngle = Math.atan2(dy, dx) + offset;
-            enemyBulletsRef.current.push({
+            pushEnemyBullet({
               x: enemy.x, y: enemy.y + enemy.radius * 0.5,
               vx: Math.cos(baseAngle) * 180, vy: Math.sin(baseAngle) * 180,
               radius: 6, color: "#e040a0", coreColor: "#ffd0e8",
@@ -1559,7 +1589,7 @@ export default function ShmupPlayScreen() {
         const dx = tx - enemy.x;
         const dy = ty - enemy.y;
         const len = Math.hypot(dx, dy) || 1;
-        enemyBulletsRef.current.push({
+        pushEnemyBullet({
           x: enemy.x,
           y: enemy.y + enemy.radius,
           vx: (dx / len) * 380,
@@ -1581,7 +1611,7 @@ export default function ShmupPlayScreen() {
       const baseVx = (dx / length) * 170;
       const baseVy = (dy / length) * 170;
 
-      enemyBulletsRef.current.push({
+      pushEnemyBullet({
         x: enemy.x,
         y: enemy.y + enemy.radius,
         vx: baseVx - 36,
@@ -1592,7 +1622,7 @@ export default function ShmupPlayScreen() {
         length: 12,
         spriteKey: "bulletEnemy",
       });
-      enemyBulletsRef.current.push({
+      pushEnemyBullet({
         x: enemy.x,
         y: enemy.y + enemy.radius,
         vx: baseVx + 36,
@@ -1627,7 +1657,7 @@ export default function ShmupPlayScreen() {
       const shotLength = boss.phase === 1 ? 14 : 16;
 
       for (const offset of fanOffsets) {
-        enemyBulletsRef.current.push({
+        pushEnemyBullet({
           x: boss.x,
           y: boss.y + boss.radius * 0.7,
           vx: baseVx + offset,
@@ -1643,7 +1673,7 @@ export default function ShmupPlayScreen() {
       // Phase 2+: flanking shots
       if (boss.phase >= 2) {
         for (const side of [-1, 1]) {
-          enemyBulletsRef.current.push({
+          pushEnemyBullet({
             x: boss.x + side * 30,
             y: boss.y + 12,
             vx: side * 150,
@@ -1661,7 +1691,7 @@ export default function ShmupPlayScreen() {
       if (boss.phase === 3) {
         for (let i = 0; i < 3; i++) {
           const angle = Math.PI * 0.2 + Math.random() * Math.PI * 0.6;
-          enemyBulletsRef.current.push({
+          pushEnemyBullet({
             x: boss.x + (Math.random() - 0.5) * 50,
             y: boss.y + boss.radius * 0.5,
             vx: Math.cos(angle) * 200,
@@ -1692,7 +1722,7 @@ export default function ShmupPlayScreen() {
         const ratio = index / (bulletCount - 1);
         const angle = startAngle + (endAngle - startAngle) * ratio;
         const speed = boss.phase === 3 ? 210 : 185;
-        enemyBulletsRef.current.push({
+        pushEnemyBullet({
           x: boss.x,
           y: boss.y + boss.radius * 0.55,
           vx: Math.cos(angle) * speed,
@@ -2321,11 +2351,11 @@ export default function ShmupPlayScreen() {
               vy: -SHMUP_BALANCE.effects.droneShotSpeed,
               age: 0,
               maxLife: 1.35,
-              radius: 3.2,
+              radius: 3.2 * ENTITY_SCALE,
               damage: SHMUP_BALANCE.effects.droneDamage,
               color: "#00e5ff",
               coreColor: "#b2fff9",
-              length: 12,
+              length: 12 * ENTITY_SCALE,
               spriteKey: undefined,
               pierce: 0,
               driftVx: 0,
@@ -2614,7 +2644,7 @@ export default function ShmupPlayScreen() {
               // Drop slow-moving mine bullets that linger
               for (let i = 0; i < 3; i++) {
                 const angle = Math.PI * 0.3 + Math.random() * Math.PI * 0.4;
-                enemyBulletsRef.current.push({
+                pushEnemyBullet({
                   x: enemy.x + (Math.random() - 0.5) * 40,
                   y: enemy.y + enemy.radius,
                   vx: Math.cos(angle) * 45,
@@ -2641,7 +2671,7 @@ export default function ShmupPlayScreen() {
                 // Fire beam as a line of fast bullets
                 const angle = enemy.dreadBeamAngle ?? Math.PI / 2;
                 for (let i = 0; i < 8; i++) {
-                  enemyBulletsRef.current.push({
+                  pushEnemyBullet({
                     x: enemy.x,
                     y: enemy.y + enemy.radius * 0.5,
                     vx: Math.cos(angle) * (300 + i * 40),
@@ -4360,6 +4390,12 @@ export default function ShmupPlayScreen() {
           onQuit={handlePauseQuit}
         />
       )}
+
+      {/* ── Rotate-device prompt (portrait fallback) ── */}
+      <div className="landscape-prompt">
+        <div className="landscape-prompt-icon">&#x1F4F1;</div>
+        <div>Rotate your device to landscape to play</div>
+      </div>
     </div>
   );
 }
