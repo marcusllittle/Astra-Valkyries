@@ -1133,6 +1133,11 @@ body::after {
   align-items: center;
 }
 
+.play-screen--landscape {
+  max-width: 100%;
+  width: 100%;
+}
+
 .play-hud {
   display: flex;
   align-items: center;
@@ -1141,6 +1146,39 @@ body::after {
   width: 100%;
   background: rgba(0,0,0,0.6);
   z-index: 10;
+}
+
+.play-hud--landscape {
+  padding: 4px 12px;
+  gap: 12px;
+  flex-wrap: nowrap;
+}
+
+.hud-stat-stack--row {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.shmup-hud-center--landscape {
+  flex-direction: row;
+  gap: 10px;
+}
+
+.fever-bar-container--landscape {
+  flex: 1;
+  min-width: 80px;
+  max-width: 200px;
+  height: 6px;
+  position: relative;
+}
+
+.boss-health--landscape {
+  padding: 4px 12px;
+}
+
+.secondary-compact--landscape {
+  top: 52px;
 }
 
 .hud-score {
@@ -1264,6 +1302,7 @@ body::after {
 
 .play-canvas {
   display: block;
+  max-width: 100%;
 }
 
 
@@ -1370,7 +1409,7 @@ body::after {
   align-items: flex-end;
   justify-content: space-between;
   gap: 14px;
-  padding: 18px 16px;
+  padding: 10px 12px;
   pointer-events: none;
   z-index: 20;
 }
@@ -1380,8 +1419,8 @@ body::after {
 }
 
 .shmup-touch-pad {
-  width: 140px;
-  height: 140px;
+  width: 100px;
+  height: 100px;
   border-radius: 999px;
   border: 2px solid rgba(116, 192, 252, 0.3);
   background: radial-gradient(circle at 35% 30%, rgba(71, 145, 255, 0.12), rgba(11, 21, 40, 0.25));
@@ -1428,8 +1467,8 @@ body::after {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 90px;
-  height: 90px;
+  width: 64px;
+  height: 64px;
   border-radius: 999px;
   border: 1px dashed rgba(166, 203, 255, 0.18);
   transform: translate(-50%, -50%);
@@ -1439,8 +1478,8 @@ body::after {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 44px;
-  height: 44px;
+  width: 34px;
+  height: 34px;
   border-radius: 999px;
   border: 1.5px solid rgba(215, 236, 255, 0.4);
   background: radial-gradient(circle at 32% 28%, rgba(208, 238, 255, 0.35), rgba(93, 180, 255, 0.2));
@@ -1452,22 +1491,55 @@ body::after {
 .shmup-touch-label {
   position: absolute;
   left: 50%;
-  bottom: 8px;
+  bottom: 6px;
   transform: translateX(-50%);
-  font-size: 0.64rem;
+  font-size: 0.58rem;
   text-transform: uppercase;
   letter-spacing: 0.09em;
   color: rgba(201, 220, 255, 0.45);
   pointer-events: none;
 }
 
+/* ─── Portrait warning: rotate device prompt ─── */
+.landscape-prompt {
+  display: none;
+}
+
+@media (orientation: portrait) and (max-width: 900px) {
+  .landscape-prompt {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(4, 8, 20, 0.95);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    color: #cdd9f5;
+    font-size: 1.1rem;
+    text-align: center;
+    padding: 24px;
+  }
+
+  .landscape-prompt-icon {
+    font-size: 3rem;
+    animation: rotateHint 2s ease-in-out infinite;
+  }
+
+  @keyframes rotateHint {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(90deg); }
+  }
+}
+
 .shmup-touch-secondary {
-  width: 130px;
-  height: 130px;
+  width: 90px;
+  height: 90px;
   border-radius: 999px;
   border: 2px solid rgba(255, 184, 107, 0.35);
   color: rgba(255, 244, 214, 0.6);
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -3155,28 +3227,40 @@ body::after {
     padding: 12px 10px;
   }
 
-  .shmup-touch-pad,
-  .shmup-touch-secondary {
-    width: 112px;
-    height: 112px;
+  .shmup-touch-pad {
+    width: 84px;
+    height: 84px;
   }
 
-  /* ─── Mobile shmup layout: minimize HUD, maximize game area ─── */
+  .shmup-touch-secondary {
+    width: 74px;
+    height: 74px;
+    font-size: 0.62rem;
+  }
+
+  /* ─── Mobile shmup layout (landscape): minimize HUD, maximize game area ─── */
   .play-screen .play-hud {
-    padding: 4px 8px;
-    gap: 4px;
+    padding: 3px 8px;
+    gap: 6px;
   }
 
   .play-screen .hud-score {
-    font-size: 1.1rem;
+    font-size: 1rem;
   }
 
-  .play-screen .shmup-hud-center {
-    display: none;
+  .play-screen .shmup-hud-center--landscape {
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
+  }
+
+  .play-screen .shmup-hud-center--landscape .shmup-subtitle {
+    font-size: 0.62rem;
+    white-space: nowrap;
   }
 
   .secondary-compact {
-    top: 64px;
+    top: 44px;
     right: 6px;
     padding: 3px 8px;
     font-size: 0.66rem;
