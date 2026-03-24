@@ -772,10 +772,14 @@ export default function ShmupPlayScreen() {
 
   // Lock to landscape orientation on mobile
   useEffect(() => {
+    const orientation = screen.orientation as ScreenOrientation & {
+      lock?: (dir: string) => Promise<void>;
+      unlock?: () => void;
+    };
     const lockOrientation = async () => {
       try {
-        if (screen.orientation && typeof screen.orientation.lock === "function") {
-          await screen.orientation.lock("landscape");
+        if (orientation && typeof orientation.lock === "function") {
+          await orientation.lock("landscape");
         }
       } catch {
         // Orientation lock not supported or not allowed — ignore
@@ -784,8 +788,8 @@ export default function ShmupPlayScreen() {
     lockOrientation();
     return () => {
       try {
-        if (screen.orientation && typeof screen.orientation.unlock === "function") {
-          screen.orientation.unlock();
+        if (orientation && typeof orientation.unlock === "function") {
+          orientation.unlock();
         }
       } catch {
         // ignore
