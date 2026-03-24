@@ -1133,6 +1133,11 @@ body::after {
   align-items: center;
 }
 
+.play-screen--landscape {
+  max-width: 100%;
+  width: 100%;
+}
+
 .play-hud {
   display: flex;
   align-items: center;
@@ -1141,6 +1146,39 @@ body::after {
   width: 100%;
   background: rgba(0,0,0,0.6);
   z-index: 10;
+}
+
+.play-hud--landscape {
+  padding: 4px 12px;
+  gap: 12px;
+  flex-wrap: nowrap;
+}
+
+.hud-stat-stack--row {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.shmup-hud-center--landscape {
+  flex-direction: row;
+  gap: 10px;
+}
+
+.fever-bar-container--landscape {
+  flex: 1;
+  min-width: 80px;
+  max-width: 200px;
+  height: 6px;
+  position: relative;
+}
+
+.boss-health--landscape {
+  padding: 4px 12px;
+}
+
+.secondary-compact--landscape {
+  top: 52px;
 }
 
 .hud-score {
@@ -1264,6 +1302,7 @@ body::after {
 
 .play-canvas {
   display: block;
+  max-width: 100%;
 }
 
 
@@ -3161,22 +3200,29 @@ body::after {
     height: 112px;
   }
 
-  /* ─── Mobile shmup layout: minimize HUD, maximize game area ─── */
+  /* ─── Mobile shmup layout (landscape): minimize HUD, maximize game area ─── */
   .play-screen .play-hud {
-    padding: 4px 8px;
-    gap: 4px;
+    padding: 3px 8px;
+    gap: 6px;
   }
 
   .play-screen .hud-score {
-    font-size: 1.1rem;
+    font-size: 1rem;
   }
 
-  .play-screen .shmup-hud-center {
-    display: none;
+  .play-screen .shmup-hud-center--landscape {
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
+  }
+
+  .play-screen .shmup-hud-center--landscape .shmup-subtitle {
+    font-size: 0.62rem;
+    white-space: nowrap;
   }
 
   .secondary-compact {
-    top: 64px;
+    top: 44px;
     right: 6px;
     padding: 3px 8px;
     font-size: 0.66rem;

@@ -57,9 +57,9 @@ import pilotsData from "../data/pilots.json";
 import outfitsData from "../data/outfits.json";
 import shipsData from "../data/ships.json";
 
-const WORLD_WIDTH = 480;
-const WORLD_HEIGHT = 720;
-const HUD_HEIGHT = 120;
+const WORLD_WIDTH = 960;
+const WORLD_HEIGHT = 540;
+const HUD_HEIGHT = 48;
 const BASE_SHIP_RADIUS = 14;
 const PLAYER_INVULNERABLE_MS = 900;
 const OVERDRIVE_MAX = 100;
@@ -561,7 +561,7 @@ export default function ShmupPlayScreen() {
   const animationRef = useRef(0);
   const shipRef = useRef<ShipState>({
     x: WORLD_WIDTH / 2,
-    y: WORLD_HEIGHT - 100,
+    y: WORLD_HEIGHT - 80,
     hp: BASE_SHMUP_HP,
     radius: BASE_SHIP_RADIUS,
     invulnerableUntil: 0,
@@ -4202,16 +4202,16 @@ export default function ShmupPlayScreen() {
   const highScore = save.highScores[SHMUP_TRACK_ID] ?? 0;
 
   return (
-    <div className="screen play-screen">
-      {/* ── Top HUD bar ─────────────────────────────── */}
-      <div className="play-hud">
-        <div className="hud-left hud-stat-stack">
+    <div className="screen play-screen play-screen--landscape">
+      {/* ── Compact top HUD bar (landscape) ──────────── */}
+      <div className="play-hud play-hud--landscape">
+        <div className="hud-left hud-stat-stack hud-stat-stack--row">
           <div className="hud-score">{hud.score.toLocaleString()}</div>
           <div className="hud-combo">
             <span className="combo-text">{hud.multiplier.toFixed(2)}x</span>
           </div>
         </div>
-        <div className="hud-center shmup-hud-center">
+        <div className="hud-center shmup-hud-center shmup-hud-center--landscape">
           <div className="hp-pips">
             {Array.from({ length: hud.maxHp }).map((_, index) => (
               <span
@@ -4224,7 +4224,30 @@ export default function ShmupPlayScreen() {
             Lv{hud.weaponLevel} {hud.weaponLabel} &middot; {hud.waveLabel}
           </div>
         </div>
-        <div className="hud-right hud-stat-stack hud-stat-stack-right">
+
+        {/* ── Overdrive meter (inline in HUD) ─────────── */}
+        <div className="fever-bar-container fever-bar-container--landscape">
+          <div
+            className={`fever-bar ${hud.overdriveActive ? "fever-active" : ""}`}
+            style={{
+              width: `${hud.overdriveActive ? 100 : hud.overdriveMeter}%`,
+              boxShadow: hud.overdriveActive
+                ? "0 0 12px rgba(255,212,59,0.8), 0 0 24px rgba(255,212,59,0.4)"
+                : hud.overdriveMeter >= 80
+                  ? "0 0 8px rgba(69,199,255,0.5)"
+                  : "none",
+              transition: "box-shadow 0.3s ease",
+            }}
+          />
+          <span className="fever-label" style={{
+            textShadow: hud.overdriveActive ? "0 0 8px rgba(255,212,59,0.8)" : "none",
+          }}>
+            {hud.overdriveActive ? "OVERDRIVE" : `OD ${Math.round(hud.overdriveMeter)}%`}
+          </span>
+        </div>
+
+        <div className="hud-right hud-stat-stack hud-stat-stack--row hud-stat-stack-right">
+          <div className="shmup-high-score">Best {highScore.toLocaleString()}</div>
           <div className="hud-top-actions">
             <button
               type="button"
@@ -4242,29 +4265,7 @@ export default function ShmupPlayScreen() {
               Exit
             </button>
           </div>
-          <div className="shmup-high-score">Best {highScore.toLocaleString()}</div>
         </div>
-      </div>
-
-      {/* ── Overdrive meter ─────────────────────────── */}
-      <div className="fever-bar-container">
-        <div
-          className={`fever-bar ${hud.overdriveActive ? "fever-active" : ""}`}
-          style={{
-            width: `${hud.overdriveActive ? 100 : hud.overdriveMeter}%`,
-            boxShadow: hud.overdriveActive
-              ? "0 0 12px rgba(255,212,59,0.8), 0 0 24px rgba(255,212,59,0.4)"
-              : hud.overdriveMeter >= 80
-                ? "0 0 8px rgba(69,199,255,0.5)"
-                : "none",
-            transition: "box-shadow 0.3s ease",
-          }}
-        />
-        <span className="fever-label" style={{
-          textShadow: hud.overdriveActive ? "0 0 8px rgba(255,212,59,0.8)" : "none",
-        }}>
-          {hud.overdriveActive ? "OVERDRIVE" : `OD ${Math.round(hud.overdriveMeter)}%`}
-        </span>
       </div>
 
       {/* ── Boss bar (only when boss active) ────────── */}
@@ -4273,7 +4274,7 @@ export default function ShmupPlayScreen() {
       ) : null}
 
       {hud.bossActive ? (
-        <div className="boss-health">
+        <div className="boss-health boss-health--landscape">
           <div className="boss-health-top">
             <span>{hud.bossLabel}</span>
             <span>{Math.round(hud.bossHpRatio * 100)}%</span>
@@ -4289,7 +4290,7 @@ export default function ShmupPlayScreen() {
 
       {/* ── Secondary cooldown (compact, only when relevant) ─ */}
       {hud.secondaryName !== "None" ? (
-        <div className="secondary-compact">
+        <div className="secondary-compact secondary-compact--landscape">
           <span className="secondary-compact-label">{hud.secondaryName}</span>
           {hud.secondaryUsesCharges ? (
             <span className="secondary-compact-status">{hud.secondaryCharges}/{hud.secondaryMaxCharges}</span>
