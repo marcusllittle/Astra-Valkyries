@@ -57,9 +57,7 @@ import pilotsData from "../data/pilots.json";
 import outfitsData from "../data/outfits.json";
 import shipsData from "../data/ships.json";
 
-const WORLD_WIDTH = 960;
-const WORLD_HEIGHT = 540;
-const HUD_HEIGHT = 48;
+const HUD_HEIGHT = 40;
 const ENTITY_SCALE = 0.7;
 const BASE_SHIP_RADIUS = 10;
 const PLAYER_INVULNERABLE_MS = 900;
@@ -557,12 +555,29 @@ export default function ShmupPlayScreen() {
   const navigate = useNavigate();
   const { save, submitResult } = useGame();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const toggleFullscreen = useCallback(() => {
+    if (!containerRef.current) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    } else {
+      containerRef.current.requestFullscreen().catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
+    const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onFsChange);
+    return () => document.removeEventListener("fullscreenchange", onFsChange);
+  }, []);
   const spritesRef = useRef<Record<SpriteKey, HTMLImageElement | null>>(createSpriteStore());
   const playerSpriteLoadedPathRef = useRef<string | null>(null);
   const animationRef = useRef(0);
   const shipRef = useRef<ShipState>({
-    x: WORLD_WIDTH / 2,
-    y: WORLD_HEIGHT - 80,
+    x: window.innerWidth / 2,
+    y: window.innerHeight - 80,
     hp: BASE_SHMUP_HP,
     radius: BASE_SHIP_RADIUS,
     invulnerableUntil: 0,
@@ -897,8 +912,8 @@ export default function ShmupPlayScreen() {
     }
 
     const resizeCanvas = () => {
-      canvas.width = Math.min(window.innerWidth, WORLD_WIDTH);
-      canvas.height = Math.min(window.innerHeight - HUD_HEIGHT, WORLD_HEIGHT);
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight - HUD_HEIGHT;
       ship.x = clamp(ship.x || canvas.width / 2, ship.radius + 8, canvas.width - ship.radius - 8);
       ship.y = clamp(ship.y || canvas.height - 80, ship.radius + 12, canvas.height - ship.radius - 12);
     };
@@ -1103,8 +1118,8 @@ export default function ShmupPlayScreen() {
     if (backgroundDebrisRef.current.length === 0) {
       for (let i = 0; i < 12; i++) {
         backgroundDebrisRef.current.push({
-          x: Math.random() * WORLD_WIDTH,
-          y: Math.random() * WORLD_HEIGHT,
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
           vy: 15 + Math.random() * 30,
           radius: 2 + Math.random() * 5,
           rotation: Math.random() * Math.PI * 2,
@@ -4236,7 +4251,7 @@ export default function ShmupPlayScreen() {
   const highScore = save.highScores[SHMUP_TRACK_ID] ?? 0;
 
   return (
-    <div className="screen play-screen play-screen--landscape">
+    <div ref={containerRef} className="screen play-screen play-screen--landscape">
       {/* ── Compact top HUD bar (landscape) ──────────── */}
       <div className="play-hud play-hud--landscape">
         <div className="hud-left hud-stat-stack hud-stat-stack--row">
@@ -4283,6 +4298,15 @@ export default function ShmupPlayScreen() {
         <div className="hud-right hud-stat-stack hud-stat-stack--row hud-stat-stack-right">
           <div className="shmup-high-score">Best {highScore.toLocaleString()}</div>
           <div className="hud-top-actions">
+            <button
+              type="button"
+              className="btn btn-icon"
+              onClick={toggleFullscreen}
+              aria-label={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+              title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+            >
+              {isFullscreen ? "⊡" : "⛶"}
+            </button>
             <button
               type="button"
               className="btn btn-icon"
