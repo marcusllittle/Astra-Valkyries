@@ -228,6 +228,13 @@ interface BombPickup {
   radius: number;
 }
 
+interface ViewportBounds {
+  width: number;
+  height: number;
+  top: number;
+  left: number;
+}
+
 interface BomberZone {
   x: number;
   y: number;
@@ -423,6 +430,28 @@ function createSpriteStore(): Record<SpriteKey, HTMLImageElement | null> {
   };
 }
 
+function getViewportBounds(): ViewportBounds {
+  if (typeof window === "undefined") {
+    return { width: 1280, height: 720, top: 0, left: 0 };
+  }
+
+  const viewport = window.visualViewport;
+  return {
+    width: viewport?.width ?? window.innerWidth,
+    height: viewport?.height ?? window.innerHeight,
+    top: viewport?.offsetTop ?? 0,
+    left: viewport?.offsetLeft ?? 0,
+  };
+}
+
+function isTouchGameplayDevice(): boolean {
+  if (typeof window === "undefined" || typeof navigator === "undefined") {
+    return false;
+  }
+
+  return window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
+}
+
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
@@ -569,21 +598,104 @@ export default function ShmupPlayScreen() {
   const { save, submitResult } = useGame();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [viewportBounds, setViewportBounds] = useState<ViewportBounds>(() => getViewportBounds());
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isMobileDevice, setIsMobileDevice] = useState(() => isTouchGameplayDevice());
+  const [mobileLaunchAccepted, setMobileLaunchAccepted] = useState(() => !isTouchGameplayDevice());
+  const gateWasVisibleRef = useRef(false);
+  const gateRestorePausedRef = useRef(false);
+  const mobileGateVisibleRef = useRef(false);
 
-  const toggleFullscreen = useCallback(() => {
-    if (!containerRef.current) return;
-    if (document.fullscreenElement) {
-      document.exitFullscreen().catch(() => {});
-    } else {
-      containerRef.current.requestFullscreen().catch(() => {});
+  const lockLandscapeOrientation = useCallback(async () => {
+    const orientation = screen.orientation as ScreenOrientation & {
+      lock?: (dir: string) => Promise<void>;
+    };
+
+    try {
+      if (orientation && typeof orientation.lock === "function") {
+        await orientation.lock("landscape");
+      }
+    } catch {
+      // Orientation lock is optional on mobile browsers.
     }
   }, []);
 
+  const unlockLandscapeOrientation = useCallback(() => {
+    const orientation = screen.orientation as ScreenOrientation & {
+      unlock?: () => void;
+    };
+
+    try {
+      if (orientation && typeof orientation.unlock === "function") {
+        orientation.unlock();
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const requestGameplayFullscreen = useCallback(async () => {
+    const fullscreenDocument = document as Document & {
+      webkitFullscreenElement?: Element | null;
+    };
+
+    if (!containerRef.current || document.fullscreenElement || fullscreenDocument.webkitFullscreenElement) {
+      return;
+    }
+
+    const fullscreenTarget = containerRef.current as HTMLDivElement & {
+      webkitRequestFullscreen?: () => Promise<void> | void;
+    };
+
+    try {
+      if (typeof containerRef.current.requestFullscreen === "function") {
+        try {
+          await containerRef.current.requestFullscreen({ navigationUI: "hide" } as FullscreenOptions);
+        } catch {
+          await containerRef.current.requestFullscreen();
+        }
+        return;
+      }
+
+      if (typeof fullscreenTarget.webkitRequestFullscreen === "function") {
+        await Promise.resolve(fullscreenTarget.webkitRequestFullscreen());
+      }
+    } catch {
+      // Fullscreen is best-effort on mobile browsers.
+    }
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    const fullscreenDocument = document as Document & {
+      webkitFullscreenElement?: Element | null;
+      webkitExitFullscreen?: () => Promise<void> | void;
+    };
+
+    if (!containerRef.current) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    } else if (typeof fullscreenDocument.webkitExitFullscreen === "function" && fullscreenDocument.webkitFullscreenElement) {
+      Promise.resolve(fullscreenDocument.webkitExitFullscreen()).catch(() => {});
+    } else {
+      void requestGameplayFullscreen();
+    }
+  }, [requestGameplayFullscreen]);
+
   useEffect(() => {
-    const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+    const onFsChange = () => {
+      const doc = document as Document & {
+        webkitFullscreenElement?: Element | null;
+      };
+      setIsFullscreen(!!(document.fullscreenElement || doc.webkitFullscreenElement));
+    };
+
+    onFsChange();
     document.addEventListener("fullscreenchange", onFsChange);
-    return () => document.removeEventListener("fullscreenchange", onFsChange);
+    document.addEventListener("webkitfullscreenchange", onFsChange as EventListener);
+    return () => {
+      document.removeEventListener("fullscreenchange", onFsChange);
+      document.removeEventListener("webkitfullscreenchange", onFsChange as EventListener);
+    };
   }, []);
   const spritesRef = useRef<Record<SpriteKey, HTMLImageElement | null>>(createSpriteStore());
   const playerSpriteLoadedPathRef = useRef<string | null>(null);
@@ -746,10 +858,10 @@ export default function ShmupPlayScreen() {
     setTouchKnob({ active: true, x: clampedX, y: clampedY });
   };
 
-  const clearTouchVector = () => {
+  const clearTouchVector = useCallback(() => {
     touchMoveRef.current = { active: false, pointerId: null, x: 0, y: 0 };
     setTouchKnob({ active: false, x: 0, y: 0 });
-  };
+  }, []);
 
   const handleTouchPadDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
@@ -791,6 +903,11 @@ export default function ShmupPlayScreen() {
     const media = window.matchMedia("(pointer: coarse)");
     const update = () => {
       setShowTouchControls(media.matches || window.innerWidth <= 900);
+      const mobileDevice = isTouchGameplayDevice();
+      setIsMobileDevice(mobileDevice);
+      if (!mobileDevice) {
+        setMobileLaunchAccepted(true);
+      }
     };
     update();
     if (typeof media.addEventListener === "function") {
@@ -809,32 +926,85 @@ export default function ShmupPlayScreen() {
     };
   }, []);
 
-  // Lock to landscape orientation on mobile
   useEffect(() => {
-    const orientation = screen.orientation as ScreenOrientation & {
-      lock?: (dir: string) => Promise<void>;
-      unlock?: () => void;
+    if (typeof window === "undefined") return;
+
+    const syncViewport = () => {
+      setViewportBounds(getViewportBounds());
     };
-    const lockOrientation = async () => {
-      try {
-        if (orientation && typeof orientation.lock === "function") {
-          await orientation.lock("landscape");
-        }
-      } catch {
-        // Orientation lock not supported or not allowed — ignore
-      }
-    };
-    lockOrientation();
+
+    syncViewport();
+    window.addEventListener("resize", syncViewport);
+    window.addEventListener("orientationchange", syncViewport);
+    window.visualViewport?.addEventListener("resize", syncViewport);
+    window.visualViewport?.addEventListener("scroll", syncViewport);
+
     return () => {
-      try {
-        if (orientation && typeof orientation.unlock === "function") {
-          orientation.unlock();
-        }
-      } catch {
-        // ignore
-      }
+      window.removeEventListener("resize", syncViewport);
+      window.removeEventListener("orientationchange", syncViewport);
+      window.visualViewport?.removeEventListener("resize", syncViewport);
+      window.visualViewport?.removeEventListener("scroll", syncViewport);
     };
   }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.add("shmup-active");
+    document.body.classList.add("shmup-active");
+
+    return () => {
+      document.documentElement.classList.remove("shmup-active");
+      document.body.classList.remove("shmup-active");
+      unlockLandscapeOrientation();
+    };
+  }, [unlockLandscapeOrientation]);
+
+  const isPortraitViewport = viewportBounds.height > viewportBounds.width;
+  const showMobileRotateGate = isMobileDevice && isPortraitViewport;
+  const showMobileLaunchGate = isMobileDevice && !mobileLaunchAccepted && !isPortraitViewport;
+  const mobileGateVisible = showMobileLaunchGate || showMobileRotateGate;
+
+  useEffect(() => {
+    mobileGateVisibleRef.current = mobileGateVisible;
+  }, [mobileGateVisible]);
+
+  useEffect(() => {
+    let frameId = 0;
+
+    if (!mobileGateVisible) {
+      if (!gateWasVisibleRef.current) return;
+      gateWasVisibleRef.current = false;
+      touchMoveRef.current = { active: false, pointerId: null, x: 0, y: 0 };
+
+      if (!gateRestorePausedRef.current && !showTutorial) {
+        pausedRef.current = false;
+        frameId = window.requestAnimationFrame(() => setPaused(false));
+      }
+      return () => {
+        if (frameId) {
+          window.cancelAnimationFrame(frameId);
+        }
+      };
+    }
+
+    if (!gateWasVisibleRef.current) {
+      gateWasVisibleRef.current = true;
+      gateRestorePausedRef.current = pausedRef.current;
+
+      if (!pausedRef.current) {
+        pauseTimeRef.current = performance.now();
+      }
+    }
+
+    pausedRef.current = true;
+    frameId = window.requestAnimationFrame(() => setPaused(true));
+    touchMoveRef.current = { active: false, pointerId: null, x: 0, y: 0 };
+
+    return () => {
+      if (frameId) {
+        window.cancelAnimationFrame(frameId);
+      }
+    };
+  }, [mobileGateVisible, showTutorial]);
 
   // Sync audio volumes from settings
   useEffect(() => {
@@ -952,11 +1122,12 @@ export default function ShmupPlayScreen() {
       // Read actual HUD height from DOM (CSS media queries may change it)
       const hudEl = canvas.parentElement?.querySelector(".play-hud") as HTMLElement | null;
       const actualHudH = hudEl ? hudEl.offsetHeight : HUD_HEIGHT;
-      // Use visualViewport for accurate mobile sizing (accounts for browser chrome, keyboard, etc.)
-      const vw = window.visualViewport?.width ?? window.innerWidth;
-      const vh = window.visualViewport?.height ?? window.innerHeight;
-      canvas.width = vw;
-      canvas.height = vh - actualHudH;
+      const viewportWidth =
+        containerRef.current?.clientWidth ?? window.visualViewport?.width ?? window.innerWidth;
+      const viewportHeight =
+        containerRef.current?.clientHeight ?? window.visualViewport?.height ?? window.innerHeight;
+      canvas.width = viewportWidth;
+      canvas.height = Math.max(0, viewportHeight - actualHudH);
       displayScale = Math.min(1, canvas.height / REFERENCE_HEIGHT);
       ship.x = clamp(ship.x || canvas.width / 2, ship.radius + 8, canvas.width - ship.radius - 8);
       ship.y = clamp(ship.y || canvas.height - 80, ship.radius + 12, canvas.height - ship.radius - 12);
@@ -4691,15 +4862,18 @@ export default function ShmupPlayScreen() {
 
   const handleTutorialComplete = useCallback(() => {
     setShowTutorial(false);
-    // Resume the game loop now that the tutorial is dismissed
+    if (mobileGateVisibleRef.current) {
+      pausedRef.current = true;
+      setPaused(true);
+      return;
+    }
+
     pausedRef.current = false;
-    pauseTimeRef.current = performance.now();
     setPaused(false);
   }, []);
 
   const handlePauseResume = useCallback(() => {
     pausedRef.current = false;
-    pauseTimeRef.current = performance.now();
     setPaused(false);
   }, []);
 
@@ -4718,6 +4892,12 @@ export default function ShmupPlayScreen() {
     navigate("/");
   }, [navigate]);
 
+  const handleMobileLaunch = useCallback(async () => {
+    await requestGameplayFullscreen();
+    await lockLandscapeOrientation();
+    setMobileLaunchAccepted(true);
+  }, [lockLandscapeOrientation, requestGameplayFullscreen]);
+
   if (!pilot) {
     return (
       <div className="screen">
@@ -4730,7 +4910,16 @@ export default function ShmupPlayScreen() {
   const highScore = save.highScores[SHMUP_TRACK_ID] ?? 0;
 
   return (
-    <div ref={containerRef} className="screen play-screen play-screen--landscape">
+    <div
+      ref={containerRef}
+      className="screen play-screen play-screen--landscape"
+      style={{
+        top: `${viewportBounds.top}px`,
+        left: `${viewportBounds.left}px`,
+        width: `${viewportBounds.width}px`,
+        height: `${viewportBounds.height}px`,
+      }}
+    >
       {/* ── Compact top HUD bar (landscape) ──────────── */}
       <div className="play-hud play-hud--landscape">
         <div className="hud-left hud-stat-stack hud-stat-stack--row">
@@ -4885,8 +5074,37 @@ export default function ShmupPlayScreen() {
         <TutorialOverlay onComplete={handleTutorialComplete} />
       )}
 
+      {mobileGateVisible ? (
+        <div className="mobile-play-gate" role="dialog" aria-modal="true">
+          <div className="mobile-play-gate-card">
+            <div className="mobile-play-gate-icon" aria-hidden="true">
+              {showMobileRotateGate ? "\u{1F4F1}" : "\u26F6"}
+            </div>
+            <div className="mobile-play-gate-title">
+              {showMobileRotateGate ? "Rotate to landscape" : "Play fullscreen"}
+            </div>
+            <p className="mobile-play-gate-copy">
+              {showMobileRotateGate
+                ? "The run is paused while the phone is upright. Enemies stay frozen until you rotate back."
+                : "Start from here so the game can claim the full mobile viewport before enemies spawn."}
+            </p>
+            {!showMobileRotateGate ? (
+              <button
+                type="button"
+                className="btn btn-primary btn-large mobile-play-gate-button"
+                onClick={() => {
+                  void handleMobileLaunch();
+                }}
+              >
+                Enter and Play
+              </button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
       {/* ── Pause menu ──────────────────────────────── */}
-      {paused && !showTutorial && (
+      {paused && !showTutorial && !mobileGateVisible && (
         <PauseMenu
           score={hud.score}
           kills={hud.kills}
@@ -4898,11 +5116,6 @@ export default function ShmupPlayScreen() {
         />
       )}
 
-      {/* ── Rotate-device prompt (portrait fallback) ── */}
-      <div className="landscape-prompt">
-        <div className="landscape-prompt-icon">&#x1F4F1;</div>
-        <div>Rotate your device to landscape to play</div>
-      </div>
     </div>
   );
 }

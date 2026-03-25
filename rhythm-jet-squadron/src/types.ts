@@ -42,6 +42,7 @@ export interface Outfit {
   rarity: "Common" | "Rare" | "SR" | "SSR";
   artPlaceholder: string;
   artUrl?: string;
+  cutsceneArtUrl?: string;
   cutinUrl?: string;
   pilotId?: "pilot_nova" | "pilot_rex" | "pilot_yuki";
   shmupKit?: ShmupKit;

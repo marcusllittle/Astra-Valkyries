@@ -179,7 +179,7 @@ export default function ShopScreen() {
           <div className="shop-featured-content">
             <CardArt
               title={featured.name}
-              artUrl={featured.artUrl}
+              artUrl={featured.cutsceneArtUrl ?? featured.artUrl}
               artPlaceholder={featured.artPlaceholder}
               rarity={featured.rarity}
               className="shop-featured-art"
@@ -278,7 +278,7 @@ export default function ShopScreen() {
                 >
                   <CardArt
                     title={r.outfit.name}
-                    artUrl={r.outfit.artUrl}
+                    artUrl={r.outfit.cutsceneArtUrl ?? r.outfit.artUrl}
                     artPlaceholder={r.outfit.artPlaceholder}
                     rarity={r.outfit.rarity}
                     className="card-art-small"
@@ -312,7 +312,7 @@ export default function ShopScreen() {
             <div className={`card outfit-card card-preview-card rarity-${previewResult.outfit.rarity.toLowerCase()}`}>
               <CardArt
                 title={previewResult.outfit.name}
-                artUrl={previewResult.outfit.artUrl}
+                artUrl={previewResult.outfit.cutsceneArtUrl ?? previewResult.outfit.artUrl}
                 artPlaceholder={previewResult.outfit.artPlaceholder}
                 rarity={previewResult.outfit.rarity}
                 className="card-preview-art"
