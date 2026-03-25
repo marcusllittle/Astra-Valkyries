@@ -182,9 +182,10 @@ function AttachmentImage({ attachment }: { attachment: InboxAttachment }) {
       }}
       style={{
         width: "100%",
-        maxHeight: "340px",
+        maxHeight: "60vh",
         display: "block",
-        objectFit: "cover",
+        objectFit: "contain",
+        objectPosition: "center top",
       }}
     />
   );
@@ -195,10 +196,21 @@ interface InboxOverlayProps {
   onClose: () => void;
 }
 
+function useIsMobile(breakpoint = 600) {
+  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth <= breakpoint);
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= breakpoint);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [breakpoint]);
+  return isMobile;
+}
+
 export default function InboxOverlay({ isOpen, onClose }: InboxOverlayProps) {
   const { save } = useGame();
   const [readState, setReadState] = useState(loadInboxState);
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
+  const isMobile = useIsMobile();
 
   const messages = useMemo(
     () =>
@@ -298,9 +310,11 @@ export default function InboxOverlay({ isOpen, onClose }: InboxOverlayProps) {
       alignItems: "center", justifyContent: "center",
     }}>
       <div style={{
-        width: "min(92vw, 840px)", height: "min(84vh, 620px)",
+        width: isMobile ? "100vw" : "min(92vw, 840px)",
+        height: isMobile ? "100vh" : "min(84vh, 620px)",
         background: "linear-gradient(180deg, #0a1628 0%, #040612 100%)",
-        border: "1px solid rgba(102,217,239,0.3)", borderRadius: "16px",
+        border: isMobile ? "none" : "1px solid rgba(102,217,239,0.3)",
+        borderRadius: isMobile ? 0 : "16px",
         display: "flex", flexDirection: "column", overflow: "hidden",
         boxShadow: "0 28px 80px rgba(0,0,0,0.45)",
       }}>
@@ -331,10 +345,13 @@ export default function InboxOverlay({ isOpen, onClose }: InboxOverlayProps) {
         </div>
 
         {/* Content */}
-        <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-          {/* Message list */}
+        <div style={{ flex: 1, display: "flex", flexDirection: isMobile ? "column" : "row", overflow: "hidden" }}>
+          {/* Message list - show when no message selected on mobile, always on desktop */}
+          {(!isMobile || !selectedMessageId) && (
           <div style={{
-            width: "260px", borderRight: "1px solid rgba(102,217,239,0.1)",
+            width: isMobile ? "100%" : "260px",
+            flex: isMobile ? 1 : undefined,
+            borderRight: isMobile ? "none" : "1px solid rgba(102,217,239,0.1)",
             overflowY: "auto",
             background: "linear-gradient(180deg, rgba(8,16,30,0.94) 0%, rgba(5,10,20,0.88) 100%)",
           }}>
@@ -364,19 +381,35 @@ export default function InboxOverlay({ isOpen, onClose }: InboxOverlayProps) {
                   fontSize: "11px",
                   color: "rgba(255,255,255,0.38)",
                   lineHeight: 1.5,
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
                 }}>
                   {msg.preview ?? msg.body}
                 </div>
               </button>
             ))}
           </div>
+          )}
 
-          {/* Message detail */}
-          <div style={{ flex: 1, padding: "22px", overflowY: "auto" }}>
+          {/* Message detail - show when message selected on mobile, always on desktop */}
+          {(!isMobile || selectedMessageId) && (
+          <div style={{ flex: 1, padding: isMobile ? "14px" : "22px", overflowY: "auto" }}>
             {selectedMessage ? (
               <>
+                {isMobile && (
+                  <button onClick={() => setSelectedMessageId(null)} style={{
+                    background: "none", border: "1px solid rgba(102,217,239,0.3)",
+                    color: "#66d9ef", padding: "6px 14px", borderRadius: "8px",
+                    cursor: "pointer", fontFamily: "monospace", fontSize: "12px",
+                    marginBottom: "14px",
+                  }}>
+                    ← Back to messages
+                  </button>
+                )}
                 <div style={{ marginBottom: "16px" }}>
-                  <h3 style={{ color: "#66d9ef", fontSize: "18px", margin: "0 0 6px", fontFamily: "monospace" }}>
+                  <h3 style={{ color: "#66d9ef", fontSize: isMobile ? "16px" : "18px", margin: "0 0 6px", fontFamily: "monospace" }}>
                     {selectedMessage.subject}
                   </h3>
                   <div style={{
@@ -410,6 +443,7 @@ export default function InboxOverlay({ isOpen, onClose }: InboxOverlayProps) {
               </div>
             )}
           </div>
+          )}
         </div>
       </div>
     </div>
