@@ -182,10 +182,9 @@ function AttachmentImage({ attachment }: { attachment: InboxAttachment }) {
       }}
       style={{
         width: "100%",
-        maxHeight: "60vh",
         display: "block",
         objectFit: "contain",
-        objectPosition: "center top",
+        borderRadius: "6px",
       }}
     />
   );
