@@ -162,17 +162,27 @@ function getInboxMessages(save: SaveData): InboxMessage[] {
     }));
 }
 
-function AttachmentImage({ attachment }: { attachment: InboxAttachment }) {
+function AttachmentImage({ attachment, onHoldStart, onHoldEnd }: { attachment: InboxAttachment; onHoldStart?: (src: string) => void; onHoldEnd?: () => void }) {
   const [src, setSrc] = useState(() => resolveAssetUrl(attachment.url) ?? attachment.url);
 
   useEffect(() => {
     setSrc(resolveAssetUrl(attachment.url) ?? attachment.url);
   }, [attachment.url]);
 
+  const handlePointerDown = (e: React.PointerEvent) => {
+    e.preventDefault();
+    onHoldStart?.(src);
+  };
+
+  const handlePointerUp = () => {
+    onHoldEnd?.();
+  };
+
   return (
     <img
       src={src}
       alt={attachment.alt ?? attachment.label ?? ""}
+      draggable={false}
       onError={() => {
         if (!attachment.fallbackUrl) return;
         const fallbackSrc = resolveAssetUrl(attachment.fallbackUrl) ?? attachment.fallbackUrl;
@@ -180,13 +190,64 @@ function AttachmentImage({ attachment }: { attachment: InboxAttachment }) {
           setSrc(fallbackSrc);
         }
       }}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      onContextMenu={(e) => e.preventDefault()}
       style={{
         width: "100%",
         display: "block",
         objectFit: "contain",
         borderRadius: "6px",
+        cursor: "pointer",
+        userSelect: "none",
+        WebkitUserSelect: "none",
+        touchAction: "none",
       }}
     />
+  );
+}
+
+function ImageLightbox({ src, onRelease }: { src: string; onRelease: () => void }) {
+  useEffect(() => {
+    const handleUp = () => onRelease();
+    window.addEventListener("pointerup", handleUp);
+    window.addEventListener("pointercancel", handleUp);
+    return () => {
+      window.removeEventListener("pointerup", handleUp);
+      window.removeEventListener("pointercancel", handleUp);
+    };
+  }, [onRelease]);
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 2000,
+        background: "rgba(0, 0, 0, 0.92)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "16px",
+        touchAction: "none",
+      }}
+    >
+      <img
+        src={src}
+        alt=""
+        draggable={false}
+        style={{
+          maxWidth: "100%",
+          maxHeight: "100%",
+          objectFit: "contain",
+          borderRadius: "8px",
+          boxShadow: "0 0 60px rgba(102, 217, 239, 0.15)",
+          userSelect: "none",
+          WebkitUserSelect: "none",
+        }}
+      />
+    </div>
   );
 }
 
@@ -209,6 +270,7 @@ export default function InboxOverlay({ isOpen, onClose }: InboxOverlayProps) {
   const { save } = useGame();
   const [readState, setReadState] = useState(loadInboxState);
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const isMobile = useIsMobile();
 
   const messages = useMemo(
@@ -295,7 +357,7 @@ export default function InboxOverlay({ isOpen, onClose }: InboxOverlayProps) {
 
     return (
       <div key={attachment.id} style={mediaFrameStyle}>
-        <AttachmentImage attachment={attachment} />
+        <AttachmentImage attachment={attachment} onHoldStart={setLightboxSrc} onHoldEnd={() => setLightboxSrc(null)} />
       </div>
     );
   };
@@ -303,6 +365,8 @@ export default function InboxOverlay({ isOpen, onClose }: InboxOverlayProps) {
   if (!isOpen) return null;
 
   return (
+    <>
+    {lightboxSrc && <ImageLightbox src={lightboxSrc} onRelease={() => setLightboxSrc(null)} />}
     <div style={{
       position: "fixed", inset: 0, zIndex: 1000,
       background: "rgba(0,0,0,0.85)", display: "flex",
@@ -446,6 +510,7 @@ export default function InboxOverlay({ isOpen, onClose }: InboxOverlayProps) {
         </div>
       </div>
     </div>
+    </>
   );
 }
 
