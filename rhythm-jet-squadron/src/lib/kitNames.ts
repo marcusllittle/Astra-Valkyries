@@ -19,6 +19,11 @@ const SECONDARY_NAMES: Record<string, string> = {
   emp: "EMP Burst",
   drones: "Support Drones",
   crystalBomb: "Crystal Bomb",
+  barrelRoll: "Barrel Roll",
+  phaseShift: "Phase Shift",
+  vortex: "Gravity Vortex",
+  mirrorShield: "Mirror Shield",
+  overcharge: "Overcharge",
 };
 
 const PASSIVE_NAMES: Record<string, string> = {

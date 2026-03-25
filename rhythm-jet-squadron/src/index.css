@@ -1345,17 +1345,17 @@ body::after {
 /* ─── Compact secondary cooldown strip ─── */
 .secondary-compact {
   position: absolute;
-  top: 96px;
+  top: 44px;
   right: 10px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 10px;
-  border-radius: 8px;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 6px;
   background: rgba(12, 22, 44, 0.7);
   border: 1px solid rgba(153, 181, 248, 0.2);
   z-index: 15;
-  font-size: 0.72rem;
+  font-size: 0.62rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #cdd9f5;
@@ -3248,28 +3248,67 @@ body::after {
   }
 
   .shmup-touch-controls {
-    padding: 12px 10px;
+    padding: 8px 8px;
   }
 
   .shmup-touch-pad {
-    width: 84px;
-    height: 84px;
+    width: 70px;
+    height: 70px;
   }
 
   .shmup-touch-secondary {
-    width: 74px;
-    height: 74px;
-    font-size: 0.62rem;
+    width: 60px;
+    height: 60px;
+    font-size: 0.55rem;
   }
 
   /* ─── Mobile shmup layout (landscape): minimize HUD, maximize game area ─── */
   .play-screen .play-hud {
-    padding: 3px 8px;
-    gap: 6px;
+    padding: 2px 6px;
+    gap: 4px;
+    height: 34px;
+    min-height: 34px;
+    max-height: 34px;
   }
 
   .play-screen .hud-score {
-    font-size: 1rem;
+    font-size: 0.85rem;
+  }
+
+  .play-screen .shmup-high-score {
+    font-size: 0.55rem;
+  }
+
+  .play-screen .hud-combo .combo-text {
+    font-size: 0.6rem;
+  }
+
+  .play-screen .hp-pips {
+    gap: 3px;
+  }
+
+  .play-screen .hp-pip {
+    width: 7px;
+    height: 7px;
+  }
+
+  .play-screen .btn-icon {
+    width: 22px;
+    height: 22px;
+    font-size: 0.5rem;
+  }
+
+  .play-screen .btn-small {
+    padding: 2px 6px;
+    font-size: 0.55rem;
+  }
+
+  .secondary-compact {
+    top: 36px;
+    right: 6px;
+    padding: 2px 6px;
+    font-size: 0.55rem;
+    gap: 4px;
   }
 
   .play-screen .shmup-hud-center--landscape {
@@ -3299,8 +3338,27 @@ body::after {
   }
 
   .shmup-touch-knob {
-    width: 38px;
-    height: 38px;
+    width: 28px;
+    height: 28px;
+  }
+
+  .shmup-touch-ring {
+    width: 48px;
+    height: 48px;
+  }
+
+  .shmup-touch-label {
+    font-size: 0.48rem;
+    bottom: 4px;
+  }
+
+  .fever-bar-container--landscape {
+    max-width: 120px;
+    height: 4px;
+  }
+
+  .fever-label {
+    font-size: 0.5rem;
   }
 
   .card-grid {
@@ -3393,6 +3451,99 @@ body::after {
 
   .mission-header {
     flex-direction: column;
+  }
+}
+
+/* ─── Landscape mobile: height-constrained screens ─── */
+@media (max-height: 500px) and (orientation: landscape) {
+  .play-screen .play-hud {
+    padding: 2px 6px;
+    gap: 4px;
+    height: 32px;
+    min-height: 32px;
+    max-height: 32px;
+  }
+
+  .play-screen .hud-score {
+    font-size: 0.8rem;
+  }
+
+  .play-screen .shmup-high-score {
+    font-size: 0.5rem;
+  }
+
+  .play-screen .hud-combo .combo-text {
+    font-size: 0.55rem;
+  }
+
+  .play-screen .hp-pips {
+    gap: 2px;
+  }
+
+  .play-screen .hp-pip {
+    width: 6px;
+    height: 6px;
+  }
+
+  .play-screen .btn-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 0.45rem;
+  }
+
+  .play-screen .btn-small {
+    padding: 2px 5px;
+    font-size: 0.5rem;
+  }
+
+  .play-screen .shmup-subtitle {
+    font-size: 0.5rem;
+  }
+
+  .fever-bar-container--landscape {
+    max-width: 100px;
+    height: 4px;
+  }
+
+  .fever-label {
+    font-size: 0.45rem;
+  }
+
+  .secondary-compact {
+    top: 34px;
+    right: 4px;
+    padding: 2px 5px;
+    font-size: 0.5rem;
+  }
+
+  .shmup-touch-controls {
+    padding: 6px 6px;
+  }
+
+  .shmup-touch-pad {
+    width: 64px;
+    height: 64px;
+  }
+
+  .shmup-touch-secondary {
+    width: 54px;
+    height: 54px;
+    font-size: 0.5rem;
+  }
+
+  .shmup-touch-knob {
+    width: 24px;
+    height: 24px;
+  }
+
+  .shmup-touch-ring {
+    width: 42px;
+    height: 42px;
+  }
+
+  .shmup-touch-label {
+    font-size: 0.42rem;
+    bottom: 3px;
   }
 }
 
