@@ -179,10 +179,12 @@ export default function ShopScreen() {
           <div className="shop-featured-content">
             <CardArt
               title={featured.name}
-              artUrl={featured.cutsceneArtUrl ?? featured.artUrl}
+              artUrl={featured.artUrl}
+              motionArtUrl={featured.cutsceneArtUrl}
               artPlaceholder={featured.artPlaceholder}
               rarity={featured.rarity}
               className="shop-featured-art"
+              motionMode="hold"
             />
             <div className="shop-featured-info">
               <strong className="shop-featured-name">{featured.name}</strong>
@@ -278,10 +280,12 @@ export default function ShopScreen() {
                 >
                   <CardArt
                     title={r.outfit.name}
-                    artUrl={r.outfit.cutsceneArtUrl ?? r.outfit.artUrl}
+                    artUrl={r.outfit.artUrl}
+                    motionArtUrl={r.outfit.cutsceneArtUrl}
                     artPlaceholder={r.outfit.artPlaceholder}
                     rarity={r.outfit.rarity}
                     className="card-art-small"
+                    motionMode="hold"
                   />
                   <div className="gacha-result-info">
                     <span
@@ -312,10 +316,12 @@ export default function ShopScreen() {
             <div className={`card outfit-card card-preview-card rarity-${previewResult.outfit.rarity.toLowerCase()}`}>
               <CardArt
                 title={previewResult.outfit.name}
-                artUrl={previewResult.outfit.cutsceneArtUrl ?? previewResult.outfit.artUrl}
+                artUrl={previewResult.outfit.artUrl}
+                motionArtUrl={previewResult.outfit.cutsceneArtUrl}
                 artPlaceholder={previewResult.outfit.artPlaceholder}
                 rarity={previewResult.outfit.rarity}
                 className="card-preview-art"
+                motionMode="hold"
               />
               <div className="card-info">
                 <strong className="card-title">{previewResult.outfit.name}</strong>
