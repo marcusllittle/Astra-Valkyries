@@ -952,8 +952,11 @@ export default function ShmupPlayScreen() {
       // Read actual HUD height from DOM (CSS media queries may change it)
       const hudEl = canvas.parentElement?.querySelector(".play-hud") as HTMLElement | null;
       const actualHudH = hudEl ? hudEl.offsetHeight : HUD_HEIGHT;
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight - actualHudH;
+      // Use visualViewport for accurate mobile sizing (accounts for browser chrome, keyboard, etc.)
+      const vw = window.visualViewport?.width ?? window.innerWidth;
+      const vh = window.visualViewport?.height ?? window.innerHeight;
+      canvas.width = vw;
+      canvas.height = vh - actualHudH;
       displayScale = Math.min(1, canvas.height / REFERENCE_HEIGHT);
       ship.x = clamp(ship.x || canvas.width / 2, ship.radius + 8, canvas.width - ship.radius - 8);
       ship.y = clamp(ship.y || canvas.height - 80, ship.radius + 12, canvas.height - ship.radius - 12);
@@ -4637,6 +4640,7 @@ export default function ShmupPlayScreen() {
     ship.y = canvas.height - 72;
 
     window.addEventListener("resize", resizeCanvas);
+    window.visualViewport?.addEventListener("resize", resizeCanvas);
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
     animationRef.current = requestAnimationFrame(drawLoop);
@@ -4644,6 +4648,7 @@ export default function ShmupPlayScreen() {
     return () => {
       cancelAnimationFrame(animationRef.current);
       window.removeEventListener("resize", resizeCanvas);
+      window.visualViewport?.removeEventListener("resize", resizeCanvas);
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
       activeKeys.clear();
