@@ -60,6 +60,7 @@ import shipsData from "../data/ships.json";
 const HUD_HEIGHT = 40;
 const ENTITY_SCALE = 0.7;
 const BASE_SHIP_RADIUS = 10;
+const REFERENCE_HEIGHT = 540; // design reference resolution
 const PLAYER_INVULNERABLE_MS = 900;
 const OVERDRIVE_MAX = 100;
 const SHMUP_TRACK_ID = "shmup_arcade";
@@ -911,9 +912,17 @@ export default function ShmupPlayScreen() {
       spriteStore[key] = image;
     }
 
+    // Scale factor: entities render at design-reference size on 540px+ screens,
+    // proportionally smaller on mobile so they don't overwhelm the viewport.
+    let displayScale = 1;
+
     const resizeCanvas = () => {
+      // Read actual HUD height from DOM (CSS media queries may change it)
+      const hudEl = canvas.parentElement?.querySelector(".play-hud") as HTMLElement | null;
+      const actualHudH = hudEl ? hudEl.offsetHeight : HUD_HEIGHT;
       canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight - HUD_HEIGHT;
+      canvas.height = window.innerHeight - actualHudH;
+      displayScale = Math.min(1, canvas.height / REFERENCE_HEIGHT);
       ship.x = clamp(ship.x || canvas.width / 2, ship.radius + 8, canvas.width - ship.radius - 8);
       ship.y = clamp(ship.y || canvas.height - 80, ship.radius + 12, canvas.height - ship.radius - 12);
     };
@@ -1145,11 +1154,13 @@ export default function ShmupPlayScreen() {
       rotation: number = 0,
       alpha: number = 1
     ) => {
+      const w = width * displayScale;
+      const h = height * displayScale;
       ctx.save();
       ctx.globalAlpha = alpha;
       ctx.translate(x, y);
       ctx.rotate(rotation);
-      ctx.drawImage(sprite, -width / 2, -height / 2, width, height);
+      ctx.drawImage(sprite, -w / 2, -h / 2, w, h);
       ctx.restore();
     };
 
@@ -2199,12 +2210,13 @@ export default function ShmupPlayScreen() {
       if (sprite) {
         ctx.save();
         ctx.globalAlpha = overdriveUntilRef.current > elapsedMs ? 0.95 : 0.85;
-        const glow = ctx.createRadialGradient(ship.x, ship.y + 8, 8, ship.x, ship.y + 8, ship.radius * 3.8);
+        const glowR = ship.radius * 3.8 * displayScale;
+        const glow = ctx.createRadialGradient(ship.x, ship.y + 8, 8 * displayScale, ship.x, ship.y + 8, glowR);
         glow.addColorStop(0, overdriveUntilRef.current > elapsedMs ? "rgba(255, 212, 59, 0.42)" : "rgba(69, 199, 255, 0.28)");
         glow.addColorStop(1, "rgba(69, 199, 255, 0)");
         ctx.fillStyle = glow;
         ctx.beginPath();
-        ctx.arc(ship.x, ship.y + 8, ship.radius * 3.8, 0, Math.PI * 2);
+        ctx.arc(ship.x, ship.y + 8, glowR, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
 
@@ -2221,7 +2233,7 @@ export default function ShmupPlayScreen() {
         ctx.strokeStyle = "rgba(167, 231, 255, 0.8)";
         ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.arc(ship.x, ship.y + 3, ship.radius, 0, Math.PI * 2);
+        ctx.arc(ship.x, ship.y + 3, ship.radius * displayScale, 0, Math.PI * 2);
         ctx.stroke();
         ctx.restore();
         return;
@@ -2229,6 +2241,7 @@ export default function ShmupPlayScreen() {
 
       ctx.save();
       ctx.translate(ship.x, ship.y);
+      ctx.scale(displayScale, displayScale);
       ctx.fillStyle = overdriveUntilRef.current > elapsedMs ? "#ffd43b" : "#e8ecff";
       ctx.beginPath();
       ctx.moveTo(0, -18);
@@ -3210,6 +3223,7 @@ export default function ShmupPlayScreen() {
         ctx.save();
         ctx.translate(bullet.x, bullet.y);
         ctx.rotate(angle);
+        ctx.scale(displayScale, displayScale);
         ctx.shadowColor = bullet.color;
         ctx.shadowBlur = 14;
         ctx.fillStyle = bullet.color;
@@ -3250,6 +3264,7 @@ export default function ShmupPlayScreen() {
         ctx.save();
         ctx.translate(bullet.x, bullet.y);
         ctx.rotate(angle);
+        ctx.scale(displayScale, displayScale);
         ctx.shadowColor = bullet.color;
         ctx.shadowBlur = 12;
         ctx.fillStyle = bullet.color;
@@ -3306,12 +3321,13 @@ export default function ShmupPlayScreen() {
         const enemyCoreDark = enemy.elite ? "#b8860b" : (ENEMY_CORE_DARK[enemy.pattern] ?? "#5030a0");
         if (sprite) {
           ctx.save();
-          const glow = ctx.createRadialGradient(enemy.x, enemy.y, 4, enemy.x, enemy.y, enemy.radius * 2.4);
+          const eGlowR = enemy.radius * 2.4 * displayScale;
+          const glow = ctx.createRadialGradient(enemy.x, enemy.y, 4 * displayScale, enemy.x, enemy.y, eGlowR);
           glow.addColorStop(0, `${enemyColor}33`);
           glow.addColorStop(1, "rgba(151, 117, 250, 0)");
           ctx.fillStyle = glow;
           ctx.beginPath();
-          ctx.arc(enemy.x, enemy.y, enemy.radius * 2.4, 0, Math.PI * 2);
+          ctx.arc(enemy.x, enemy.y, eGlowR, 0, Math.PI * 2);
           ctx.fill();
           ctx.restore();
           drawSpriteCentered(sprite, enemy.x, enemy.y, enemy.radius * 3.5, enemy.radius * 3.5);
@@ -3320,6 +3336,7 @@ export default function ShmupPlayScreen() {
           const pulse = 0.92 + Math.sin(enemy.age * 4.5) * 0.08;
           ctx.save();
           ctx.translate(enemy.x, enemy.y);
+          ctx.scale(displayScale, displayScale);
 
           // Outer glow
           ctx.shadowColor = enemyColor;
@@ -3776,7 +3793,8 @@ export default function ShmupPlayScreen() {
 
         if (sprite) {
           ctx.save();
-          const glow = ctx.createRadialGradient(boss.x, boss.y + 12, 12, boss.x, boss.y + 12, boss.radius * 3.4);
+          const bGlowR = boss.radius * 3.4 * displayScale;
+          const glow = ctx.createRadialGradient(boss.x, boss.y + 12, 12 * displayScale, boss.x, boss.y + 12, bGlowR);
           glow.addColorStop(
             0,
             boss.phase === 1 ? `${activeMap.palette.bossPrimary}33` : `${activeMap.palette.bossSecondary}3d`
@@ -3784,7 +3802,7 @@ export default function ShmupPlayScreen() {
           glow.addColorStop(1, "rgba(255, 146, 43, 0)");
           ctx.fillStyle = glow;
           ctx.beginPath();
-          ctx.arc(boss.x, boss.y + 10, boss.radius * 3.4, 0, Math.PI * 2);
+          ctx.arc(boss.x, boss.y + 10, bGlowR, 0, Math.PI * 2);
           ctx.fill();
           ctx.restore();
           drawSpriteCentered(
@@ -3805,6 +3823,7 @@ export default function ShmupPlayScreen() {
           const bPulse = 0.88 + Math.sin(boss.age * 2.5) * 0.12;
           ctx.save();
           ctx.translate(boss.x, boss.y);
+          ctx.scale(displayScale, displayScale);
 
           // Outer glow aura
           ctx.shadowColor = bossColor;
@@ -3962,6 +3981,7 @@ export default function ShmupPlayScreen() {
         } else {
           ctx.save();
           ctx.translate(chip.x, chip.y);
+          ctx.scale(displayScale, displayScale);
           ctx.fillStyle = "#ffd43b";
           ctx.rotate(Math.PI / 4);
           ctx.fillRect(-chip.radius, -chip.radius, chip.radius * 2, chip.radius * 2);
@@ -3972,6 +3992,7 @@ export default function ShmupPlayScreen() {
       for (const pickup of bombPickupsRef.current) {
         ctx.save();
         ctx.translate(pickup.x, pickup.y);
+        ctx.scale(displayScale, displayScale);
         ctx.fillStyle = "#ffec99";
         ctx.beginPath();
         ctx.moveTo(0, -pickup.radius);
