@@ -17,7 +17,12 @@ export type ShmupSecondaryKey =
   | "barrier"
   | "emp"
   | "drones"
-  | "crystalBomb";
+  | "crystalBomb"
+  | "barrelRoll"
+  | "phaseShift"
+  | "vortex"
+  | "mirrorShield"
+  | "overcharge";
 
 export type ShmupPassiveKey =
   | "smallerHitbox"
@@ -83,6 +88,24 @@ export const SHMUP_BALANCE: {
     crystalShatterRadius: number;
     crystalShatterEnemyDamage: number;
     crystalShatterBossDamage: number;
+    barrelRollDurationMs: number;
+    barrelRollDeflectRadius: number;
+    barrelRollDeflectDamage: number;
+    phaseShiftDistance: number;
+    phaseShiftGhostDamage: number;
+    phaseShiftGhostBossDamage: number;
+    phaseShiftGhostRadius: number;
+    vortexRadius: number;
+    vortexPullStrength: number;
+    vortexDurationMs: number;
+    vortexDetonateDamage: number;
+    vortexDetonateBossDamage: number;
+    mirrorShieldLayers: number;
+    mirrorShieldReflectDamage: number;
+    mirrorShieldReflectBossDamage: number;
+    overchargeFireRateMult: number;
+    overchargeDamageMult: number;
+    overchargeShotCountBonus: number;
   };
 } = {
   primaries: {
@@ -235,6 +258,31 @@ export const SHMUP_BALANCE: {
       ssrBonusCharges: 2,
       bonusMaxCharges: 1,
     },
+    barrelRoll: {
+      cooldownMs: 2400,
+      durationMs: 320,
+      usesCharges: false,
+    },
+    phaseShift: {
+      cooldownMs: 3800,
+      durationMs: 180,
+      usesCharges: false,
+    },
+    vortex: {
+      cooldownMs: 8500,
+      durationMs: 3200,
+      usesCharges: false,
+    },
+    mirrorShield: {
+      cooldownMs: 7200,
+      durationMs: 4500,
+      usesCharges: false,
+    },
+    overcharge: {
+      cooldownMs: 10000,
+      durationMs: 4000,
+      usesCharges: false,
+    },
   },
   passives: {
     overdriveLoopDurationMult: 1.2,
@@ -268,6 +316,29 @@ export const SHMUP_BALANCE: {
     crystalShatterRadius: 172,
     crystalShatterEnemyDamage: 6,
     crystalShatterBossDamage: 25,
+    // Barrel Roll: quick invincible dodge that deflects bullets back at enemies
+    barrelRollDurationMs: 320,
+    barrelRollDeflectRadius: 80,
+    barrelRollDeflectDamage: 2.5,
+    // Phase Shift: teleport forward leaving a damaging afterimage trail
+    phaseShiftDistance: 180,
+    phaseShiftGhostDamage: 4,
+    phaseShiftGhostBossDamage: 15,
+    phaseShiftGhostRadius: 110,
+    // Vortex: black hole that pulls enemies/bullets inward then detonates
+    vortexRadius: 160,
+    vortexPullStrength: 280,
+    vortexDurationMs: 3200,
+    vortexDetonateDamage: 8,
+    vortexDetonateBossDamage: 30,
+    // Mirror Shield: multi-layer reflective barrier, reflects bullets back
+    mirrorShieldLayers: 4,
+    mirrorShieldReflectDamage: 1.8,
+    mirrorShieldReflectBossDamage: 6,
+    // Overcharge: supercharges primary weapon fire rate + damage
+    overchargeFireRateMult: 0.45,
+    overchargeDamageMult: 1.8,
+    overchargeShotCountBonus: 2,
   },
 };
 

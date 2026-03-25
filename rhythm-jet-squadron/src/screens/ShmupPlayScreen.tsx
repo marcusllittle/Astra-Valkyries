@@ -317,6 +317,12 @@ interface HudState {
   barrierActive: boolean;
   empActive: boolean;
   dronesActive: boolean;
+  barrelRollActive: boolean;
+  vortexActive: boolean;
+  mirrorShieldActive: boolean;
+  mirrorShieldLayers: number;
+  overchargeActive: boolean;
+  barrierLayers: number;
   activePassives: string[];
   kitLabel: string;
 }
@@ -547,6 +553,12 @@ function createHudState(modifiers: ShmupModifiers, activeMap: ShmupMap): HudStat
     barrierActive: false,
     empActive: false,
     dronesActive: false,
+    barrelRollActive: false,
+    vortexActive: false,
+    mirrorShieldActive: false,
+    mirrorShieldLayers: 0,
+    overchargeActive: false,
+    barrierLayers: 0,
     activePassives: modifiers.passiveKeys.map((passive) => passiveName(passive)),
     kitLabel: primaryName(modifiers.primaryKey),
   };
@@ -621,6 +633,17 @@ export default function ShmupPlayScreen() {
   const freezeUntilRef = useRef(0);
   const freezeShatterRef = useRef<{ x: number; y: number; triggerAtMs: number } | null>(null);
   const statusFlashUntilRef = useRef(0);
+  // New secondaries
+  const barrelRollUntilRef = useRef(0);
+  const barrelRollDirRef = useRef({ x: 0, y: 0 });
+  const phaseShiftUntilRef = useRef(0);
+  const phaseShiftGhostRef = useRef<{ x: number; y: number; triggerAtMs: number } | null>(null);
+  const vortexRef = useRef<{ x: number; y: number; startMs: number; endMs: number } | null>(null);
+  const mirrorShieldUntilRef = useRef(0);
+  const mirrorShieldLayersRef = useRef(0);
+  const overchargeUntilRef = useRef(0);
+  const barrierLayersRef = useRef(0);
+  const lastMoveRef = useRef({ x: 0, y: -1 });
   const lastHitMsRef = useRef(0);
   const regenPoolRef = useRef(0);
   const weaponLevelRef = useRef(1);
@@ -876,6 +899,15 @@ export default function ShmupPlayScreen() {
     freezeUntilRef.current = 0;
     freezeShatterRef.current = null;
     statusFlashUntilRef.current = 0;
+    barrelRollUntilRef.current = 0;
+    barrelRollDirRef.current = { x: 0, y: 0 };
+    phaseShiftUntilRef.current = 0;
+    phaseShiftGhostRef.current = null;
+    vortexRef.current = null;
+    mirrorShieldUntilRef.current = 0;
+    mirrorShieldLayersRef.current = 0;
+    overchargeUntilRef.current = 0;
+    barrierLayersRef.current = 0;
     lastHitMsRef.current = 0;
     regenPoolRef.current = 0;
     weaponLevelRef.current = 1;
@@ -970,6 +1002,12 @@ export default function ShmupPlayScreen() {
         barrierActive: barrierUntilRef.current > elapsedMs,
         empActive: empUntilRef.current > elapsedMs || freezeUntilRef.current > elapsedMs,
         dronesActive: dronesUntilRef.current > elapsedMs,
+        barrelRollActive: barrelRollUntilRef.current > elapsedMs,
+        vortexActive: vortexRef.current !== null && elapsedMs < vortexRef.current.endMs,
+        mirrorShieldActive: mirrorShieldUntilRef.current > elapsedMs && mirrorShieldLayersRef.current > 0,
+        mirrorShieldLayers: mirrorShieldLayersRef.current,
+        overchargeActive: overchargeUntilRef.current > elapsedMs,
+        barrierLayers: barrierLayersRef.current,
         activePassives: activePassives.map((passive) => passiveName(passive)),
         kitLabel: primaryName(primaryKey),
       });
@@ -1220,7 +1258,7 @@ export default function ShmupPlayScreen() {
           age: 0,
           maxLife: shot.maxLife,
           radius: shot.radius * ENTITY_SCALE,
-          damage: shot.damage * weaponDamageMultiplier,
+          damage: shot.damage * weaponDamageMultiplier * (overchargeUntilRef.current > elapsedMs ? SHMUP_BALANCE.effects.overchargeDamageMult : 1),
           color: shot.color,
           coreColor: shot.coreColor,
           length: shot.length * ENTITY_SCALE,
@@ -2103,6 +2141,7 @@ export default function ShmupPlayScreen() {
         case "barrier":
           sfxShield();
           barrierUntilRef.current = elapsedMs + secondaryDurationMs;
+          barrierLayersRef.current = 3;
           startSecondaryCooldown(elapsedMs);
           addPulse(ship.x, ship.y, "#8ce99a", 12, 140, 0.12, 2.2);
           return;
@@ -2119,6 +2158,68 @@ export default function ShmupPlayScreen() {
           dronesFireTimerRef.current = 0;
           startSecondaryCooldown(elapsedMs);
           addPulse(ship.x, ship.y, "#00e5ff", 11, 120, 0.14, 2.2);
+          return;
+        case "barrelRoll": {
+          sfxShield();
+          const rollDir = { ...lastMoveRef.current };
+          const mag = Math.sqrt(rollDir.x * rollDir.x + rollDir.y * rollDir.y);
+          if (mag > 0.1) { rollDir.x /= mag; rollDir.y /= mag; }
+          else { rollDir.x = 0; rollDir.y = -1; }
+          barrelRollUntilRef.current = elapsedMs + SHMUP_BALANCE.effects.barrelRollDurationMs;
+          barrelRollDirRef.current = rollDir;
+          ship.invulnerableUntil = Math.max(ship.invulnerableUntil, elapsedMs + SHMUP_BALANCE.effects.barrelRollDurationMs);
+          startSecondaryCooldown(elapsedMs);
+          addPulse(ship.x, ship.y, "#74c0fc", 8, 80, 0.1, 1.8);
+          return;
+        }
+        case "phaseShift": {
+          sfxEmp();
+          const ghostOrigin = { x: ship.x, y: ship.y };
+          const dir = { ...lastMoveRef.current };
+          const dirMag = Math.sqrt(dir.x * dir.x + dir.y * dir.y);
+          if (dirMag > 0.1) { dir.x /= dirMag; dir.y /= dirMag; }
+          else { dir.x = 0; dir.y = -1; }
+          const dist = SHMUP_BALANCE.effects.phaseShiftDistance;
+          ship.x = clamp(ship.x + dir.x * dist, ship.radius + 8, canvas.width - ship.radius - 8);
+          ship.y = clamp(ship.y + dir.y * dist, ship.radius + 8, canvas.height - ship.radius - 8);
+          ship.invulnerableUntil = Math.max(ship.invulnerableUntil, elapsedMs + 300);
+          phaseShiftUntilRef.current = elapsedMs + 180;
+          phaseShiftGhostRef.current = { x: ghostOrigin.x, y: ghostOrigin.y, triggerAtMs: elapsedMs + 120 };
+          startSecondaryCooldown(elapsedMs);
+          addPulse(ghostOrigin.x, ghostOrigin.y, "#d0bfff", 14, 100, 0.15, 2);
+          addPulse(ship.x, ship.y, "#b494ff", 10, 80, 0.12, 1.6);
+          addScreenShake(1.5, 0.08);
+          return;
+        }
+        case "vortex": {
+          sfxBomb();
+          const vx = ship.x;
+          const vy = ship.y - 120;
+          vortexRef.current = {
+            x: vx,
+            y: Math.max(40, vy),
+            startMs: elapsedMs,
+            endMs: elapsedMs + SHMUP_BALANCE.effects.vortexDurationMs,
+          };
+          startSecondaryCooldown(elapsedMs);
+          addPulse(vx, vy, "#9775fa", 6, 60, 0.2, 2);
+          addScreenShake(1.8, 0.1);
+          return;
+        }
+        case "mirrorShield":
+          sfxShield();
+          mirrorShieldUntilRef.current = elapsedMs + secondaryDurationMs;
+          mirrorShieldLayersRef.current = SHMUP_BALANCE.effects.mirrorShieldLayers;
+          startSecondaryCooldown(elapsedMs);
+          addPulse(ship.x, ship.y, "#4dabf7", 14, 120, 0.14, 2.4);
+          return;
+        case "overcharge":
+          sfxDrones();
+          overchargeUntilRef.current = elapsedMs + secondaryDurationMs;
+          statusFlashUntilRef.current = elapsedMs + 300;
+          startSecondaryCooldown(elapsedMs);
+          addPulse(ship.x, ship.y, "#ffd43b", 12, 140, 0.16, 2.6);
+          addScreenShake(1.0, 0.08);
           return;
         case "none":
         default:
@@ -2346,22 +2447,41 @@ export default function ShmupPlayScreen() {
         (keysRef.current.has("arrowup") || keysRef.current.has("w") ? 1 : 0);
       const touchMoveX = touchMoveRef.current.active ? touchMoveRef.current.x : 0;
       const touchMoveY = touchMoveRef.current.active ? touchMoveRef.current.y : 0;
-      const moveX = clamp(keyboardMoveX + touchMoveX, -1, 1);
-      const moveY = clamp(keyboardMoveY + touchMoveY, -1, 1);
-      const moveLength = Math.hypot(moveX, moveY) || 1;
-      const velocityScale =
-        moveX !== 0 || moveY !== 0 ? shipSpeed * deltaSeconds / moveLength : 0;
+      let moveX = clamp(keyboardMoveX + touchMoveX, -1, 1);
+      let moveY = clamp(keyboardMoveY + touchMoveY, -1, 1);
 
-      ship.x = clamp(ship.x + moveX * velocityScale, ship.radius + 8, canvas.width - ship.radius - 8);
-      ship.y = clamp(ship.y + moveY * velocityScale, ship.radius + 8, canvas.height - ship.radius - 8);
-      shipTiltRef.current = shipTiltRef.current * 0.82 + moveX * 0.08;
+      // Track last nonzero input direction for barrel roll / phase shift
+      if (moveX !== 0 || moveY !== 0) {
+        const ml = Math.hypot(moveX, moveY);
+        lastMoveRef.current = { x: moveX / ml, y: moveY / ml };
+      }
+
+      // Barrel roll override: dash in roll direction at high speed
+      if (barrelRollUntilRef.current > elapsedMs) {
+        const rollSpeed = shipSpeed * 3.2;
+        const rd = barrelRollDirRef.current;
+        ship.x = clamp(ship.x + rd.x * rollSpeed * deltaSeconds, ship.radius + 8, canvas.width - ship.radius - 8);
+        ship.y = clamp(ship.y + rd.y * rollSpeed * deltaSeconds, ship.radius + 8, canvas.height - ship.radius - 8);
+        shipTiltRef.current = rd.x * 0.5;
+      } else {
+        const moveLength = Math.hypot(moveX, moveY) || 1;
+        const velocityScale =
+          moveX !== 0 || moveY !== 0 ? shipSpeed * deltaSeconds / moveLength : 0;
+        ship.x = clamp(ship.x + moveX * velocityScale, ship.radius + 8, canvas.width - ship.radius - 8);
+        ship.y = clamp(ship.y + moveY * velocityScale, ship.radius + 8, canvas.height - ship.radius - 8);
+        shipTiltRef.current = shipTiltRef.current * 0.82 + moveX * 0.08;
+      }
 
       fireTimerRef.current -= deltaSeconds;
-      const fireInterval = getPrimaryFireInterval(
+      let fireInterval = getPrimaryFireInterval(
         primaryKey,
         overdriveUntilRef.current > elapsedMs,
         aggressiveRouteActive
       );
+      // Overcharge: dramatically faster fire rate
+      if (overchargeUntilRef.current > elapsedMs) {
+        fireInterval *= SHMUP_BALANCE.effects.overchargeFireRateMult;
+      }
       while (fireTimerRef.current <= 0) {
         spawnPlayerBullets(elapsedMs);
         sfxShoot();
@@ -2400,6 +2520,77 @@ export default function ShmupPlayScreen() {
               homingTurnRate: 0,
               homingRange: 0,
             });
+          }
+        }
+      }
+
+      // Phase shift ghost detonation
+      if (phaseShiftGhostRef.current && elapsedMs >= phaseShiftGhostRef.current.triggerAtMs) {
+        const ghost = phaseShiftGhostRef.current;
+        phaseShiftGhostRef.current = null;
+        addExplosion(ghost.x, ghost.y, "#b494ff", 28, 3.2);
+        applyAreaBlast(
+          ghost.x, ghost.y,
+          SHMUP_BALANCE.effects.phaseShiftGhostRadius,
+          SHMUP_BALANCE.effects.phaseShiftGhostDamage,
+          SHMUP_BALANCE.effects.phaseShiftGhostBossDamage,
+          elapsedMs,
+          "#d0bfff"
+        );
+        addOverdrive(10, elapsedMs);
+        addScreenShake(2.0, 0.1);
+      }
+
+      // Vortex: pull enemies and bullets toward center, then detonate
+      if (vortexRef.current) {
+        const vt = vortexRef.current;
+        if (elapsedMs >= vt.endMs) {
+          // Detonate!
+          addExplosion(vt.x, vt.y, "#9775fa", 40, 5);
+          addExplosion(vt.x, vt.y, "#845ef7", 28, 3.5);
+          applyAreaBlast(
+            vt.x, vt.y,
+            SHMUP_BALANCE.effects.vortexRadius * 1.3,
+            SHMUP_BALANCE.effects.vortexDetonateDamage,
+            SHMUP_BALANCE.effects.vortexDetonateBossDamage,
+            elapsedMs,
+            "#9775fa"
+          );
+          addOverdrive(14, elapsedMs);
+          addScreenShake(3.5, 0.15);
+          vortexRef.current = null;
+        } else {
+          // Pull enemies toward vortex center
+          const pullR = SHMUP_BALANCE.effects.vortexRadius;
+          const pullStr = SHMUP_BALANCE.effects.vortexPullStrength * deltaSeconds;
+          for (const enemy of enemiesRef.current) {
+            const dx = vt.x - enemy.x;
+            const dy = vt.y - enemy.y;
+            const dist = Math.hypot(dx, dy);
+            if (dist < pullR && dist > 5) {
+              const force = pullStr * (1 - dist / pullR);
+              enemy.x += (dx / dist) * force;
+              enemy.y += (dy / dist) * force;
+            }
+          }
+          // Pull enemy bullets toward vortex
+          for (const bullet of enemyBulletsRef.current) {
+            const dx = vt.x - bullet.x;
+            const dy = vt.y - bullet.y;
+            const dist = Math.hypot(dx, dy);
+            if (dist < pullR * 1.2 && dist > 5) {
+              const force = pullStr * 0.6 * (1 - dist / (pullR * 1.2));
+              bullet.vx += (dx / dist) * force * 8;
+              bullet.vy += (dy / dist) * force * 8;
+            }
+          }
+          // Absorb enemy bullets that reach vortex center
+          for (let i = enemyBulletsRef.current.length - 1; i >= 0; i--) {
+            const b = enemyBulletsRef.current[i];
+            if (distanceSquared(vt.x, vt.y, b.x, b.y) <= 20 * 20) {
+              enemyBulletsRef.current.splice(i, 1);
+              addSparkBurst(b.x, b.y, "#9775fa", 2, 60);
+            }
           }
         }
       }
@@ -3065,23 +3256,125 @@ export default function ShmupPlayScreen() {
 
       for (let bulletIndex = enemyBulletsRef.current.length - 1; bulletIndex >= 0; bulletIndex--) {
         const bullet = enemyBulletsRef.current[bulletIndex];
-        if (barrierUntilRef.current > elapsedMs) {
+        const distSq = distanceSquared(ship.x, ship.y, bullet.x, bullet.y);
+
+        // Barrel roll: deflect nearby bullets back at enemies
+        if (barrelRollUntilRef.current > elapsedMs) {
+          const deflectR = SHMUP_BALANCE.effects.barrelRollDeflectRadius;
+          if (distSq <= (deflectR + bullet.radius) * (deflectR + bullet.radius)) {
+            bullet.vx *= -1.5;
+            bullet.vy *= -1.5;
+            (bullet as unknown as { deflected?: boolean }).deflected = true;
+            playerBulletsRef.current.push({
+              x: bullet.x, y: bullet.y,
+              vx: bullet.vx, vy: bullet.vy,
+              age: 0,
+              radius: bullet.radius, length: bullet.length ?? bullet.radius * 2,
+              damage: SHMUP_BALANCE.effects.barrelRollDeflectDamage,
+              color: "#74c0fc", coreColor: "#e8f4ff",
+              maxLife: 1.5,
+              spriteKey: bullet.spriteKey,
+              pierce: 0, driftVx: 0,
+              oscillateAmp: 0, oscillateFreq: 0, oscillatePhase: 0,
+              boomerangTurnAt: 0, boomerangReturnVy: 0, boomerangReturning: false,
+              homingTurnRate: 0, homingRange: 0,
+            });
+            enemyBulletsRef.current.splice(bulletIndex, 1);
+            addSparkBurst(bullet.x, bullet.y, "#74c0fc", 4, 100);
+            continue;
+          }
+        }
+
+        // Mirror shield: reflect bullets back as damage projectiles, consume layers on side hits
+        if (mirrorShieldUntilRef.current > elapsedMs && mirrorShieldLayersRef.current > 0) {
+          const mirrorR = ship.radius * 3.2;
+          if (distSq <= (mirrorR + bullet.radius) * (mirrorR + bullet.radius)) {
+            const dx = bullet.x - ship.x;
+            const dy = bullet.y - ship.y;
+            const isFront = dy <= ship.radius * 0.5;
+            if (isFront) {
+              // Front hit: reflect bullet back toward nearest enemy
+              const speed = Math.hypot(bullet.vx, bullet.vy) * 1.3;
+              let targetAngle = Math.atan2(-bullet.vy, -bullet.vx);
+              const nearestEnemy = enemiesRef.current[0];
+              if (nearestEnemy) {
+                targetAngle = Math.atan2(nearestEnemy.y - bullet.y, nearestEnemy.x - bullet.x);
+              }
+              playerBulletsRef.current.push({
+                x: bullet.x, y: bullet.y,
+                vx: Math.cos(targetAngle) * speed,
+                vy: Math.sin(targetAngle) * speed,
+                age: 0,
+                radius: bullet.radius * 1.2, length: (bullet.length ?? bullet.radius * 2) * 1.2,
+                damage: SHMUP_BALANCE.effects.mirrorShieldReflectDamage,
+                color: "#4dabf7", coreColor: "#d0ebff",
+                maxLife: 1.8,
+                spriteKey: bullet.spriteKey,
+                pierce: 0, driftVx: 0,
+                oscillateAmp: 0, oscillateFreq: 0, oscillatePhase: 0,
+                boomerangTurnAt: 0, boomerangReturnVy: 0, boomerangReturning: false,
+                homingTurnRate: 0, homingRange: 0,
+              });
+              enemyBulletsRef.current.splice(bulletIndex, 1);
+              addSparkBurst(bullet.x, bullet.y, "#4dabf7", 5, 120);
+              continue;
+            } else {
+              // Side/back hit: absorb but lose a layer
+              mirrorShieldLayersRef.current -= 1;
+              enemyBulletsRef.current.splice(bulletIndex, 1);
+              addSparkBurst(bullet.x, bullet.y, "#ff6b6b", 4, 90);
+              addScreenShake(0.8, 0.06);
+              if (mirrorShieldLayersRef.current <= 0) {
+                mirrorShieldUntilRef.current = 0;
+                addPulse(ship.x, ship.y, "#ff6b6b", 18, 160, 0.15, 2);
+              }
+              continue;
+            }
+          }
+        }
+
+        // Barrier with layers: front arc blocks, side hits break layers
+        if (barrierUntilRef.current > elapsedMs && barrierLayersRef.current > 0) {
+          const dx = bullet.x - ship.x;
+          const dy = bullet.y - ship.y;
+          const barrierRadius = ship.radius * 2.8;
+          if (distSq <= (barrierRadius + bullet.radius) * (barrierRadius + bullet.radius)) {
+            const inFrontArc = dy <= ship.radius * 0.7 && Math.abs(dx) <= barrierRadius;
+            if (inFrontArc) {
+              enemyBulletsRef.current.splice(bulletIndex, 1);
+              addSparkBurst(bullet.x, bullet.y, "#8ce99a", 3, 80);
+              continue;
+            } else {
+              // Side hit: break a layer
+              barrierLayersRef.current -= 1;
+              enemyBulletsRef.current.splice(bulletIndex, 1);
+              addSparkBurst(bullet.x, bullet.y, "#ff922b", 4, 90);
+              addScreenShake(0.6, 0.05);
+              if (barrierLayersRef.current <= 0) {
+                barrierUntilRef.current = 0;
+                addPulse(ship.x, ship.y, "#ff922b", 16, 140, 0.14, 2);
+              }
+              continue;
+            }
+          }
+        } else if (barrierUntilRef.current > elapsedMs) {
+          // Legacy: no layers but barrier still active (shouldn't happen, but safe fallback)
           const dx = bullet.x - ship.x;
           const dy = bullet.y - ship.y;
           const barrierRadius = ship.radius * 2.8;
           const inFrontArc = dy <= ship.radius * 0.7 && Math.abs(dx) <= barrierRadius;
           if (
             inFrontArc &&
-            distanceSquared(ship.x, ship.y, bullet.x, bullet.y) <=
-              (barrierRadius + bullet.radius) * (barrierRadius + bullet.radius)
+            distSq <= (barrierRadius + bullet.radius) * (barrierRadius + bullet.radius)
           ) {
             enemyBulletsRef.current.splice(bulletIndex, 1);
             addSparkBurst(bullet.x, bullet.y, "#8ce99a", 3, 80);
             continue;
           }
         }
+
         const hitDistance = ship.radius + bullet.radius;
-        if (distanceSquared(ship.x, ship.y, bullet.x, bullet.y) <= hitDistance * hitDistance) {
+        if (distSq <= hitDistance * hitDistance) {
           enemyBulletsRef.current.splice(bulletIndex, 1);
           handleShipHit(elapsedMs);
         }
@@ -4095,14 +4388,174 @@ export default function ShmupPlayScreen() {
       }
 
       drawShip(elapsedMs);
-      if (barrierUntilRef.current > elapsedMs) {
+      // Barrier with layer rings
+      if (barrierUntilRef.current > elapsedMs && barrierLayersRef.current > 0) {
+        const layers = barrierLayersRef.current;
+        for (let i = 0; i < layers; i++) {
+          ctx.save();
+          const pulse = 1 + Math.sin(elapsedMs / 120 + i * 0.5) * 0.06;
+          const r = (ship.radius * 2.4 + i * 6) * pulse * displayScale;
+          const alpha = 0.5 + i * 0.15;
+          ctx.strokeStyle = `rgba(140, 233, 154, ${alpha})`;
+          ctx.lineWidth = 2.5 - i * 0.4;
+          ctx.beginPath();
+          ctx.arc(ship.x, ship.y, r, Math.PI * 1.12, Math.PI * 1.9);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      // Barrel roll: spinning motion blur
+      if (barrelRollUntilRef.current > elapsedMs) {
+        const rollProgress = 1 - (barrelRollUntilRef.current - elapsedMs) / SHMUP_BALANCE.effects.barrelRollDurationMs;
         ctx.save();
-        const barrierPulse = 1 + Math.sin(elapsedMs / 120) * 0.08;
-        ctx.strokeStyle = "rgba(140, 233, 154, 0.8)";
+        ctx.translate(ship.x, ship.y);
+        ctx.globalAlpha = 0.4;
+        ctx.strokeStyle = "#74c0fc";
         ctx.lineWidth = 2;
+        for (let i = 0; i < 3; i++) {
+          const angle = rollProgress * Math.PI * 4 + i * (Math.PI * 2 / 3);
+          const trailR = ship.radius * 2 * displayScale;
+          ctx.beginPath();
+          ctx.arc(0, 0, trailR, angle, angle + 0.8);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      // Phase shift: afterimage ghost
+      if (phaseShiftGhostRef.current && elapsedMs < phaseShiftGhostRef.current.triggerAtMs) {
+        const ghost = phaseShiftGhostRef.current;
+        const ghostAlpha = 0.6 * (1 - (elapsedMs - (ghost.triggerAtMs - 120)) / 120);
+        if (ghostAlpha > 0) {
+          ctx.save();
+          ctx.globalAlpha = clamp(ghostAlpha, 0, 0.6);
+          const ghostGlow = ctx.createRadialGradient(ghost.x, ghost.y, 4, ghost.x, ghost.y, SHMUP_BALANCE.effects.phaseShiftGhostRadius * 0.5 * displayScale);
+          ghostGlow.addColorStop(0, "rgba(180, 148, 255, 0.5)");
+          ghostGlow.addColorStop(1, "rgba(180, 148, 255, 0)");
+          ctx.fillStyle = ghostGlow;
+          ctx.beginPath();
+          ctx.arc(ghost.x, ghost.y, SHMUP_BALANCE.effects.phaseShiftGhostRadius * 0.5 * displayScale, 0, Math.PI * 2);
+          ctx.fill();
+          // Ghost ship silhouette
+          ctx.fillStyle = "#d0bfff";
+          ctx.beginPath();
+          ctx.moveTo(ghost.x, ghost.y - 14 * displayScale);
+          ctx.lineTo(ghost.x + 10 * displayScale, ghost.y + 12 * displayScale);
+          ctx.lineTo(ghost.x, ghost.y + 7 * displayScale);
+          ctx.lineTo(ghost.x - 10 * displayScale, ghost.y + 12 * displayScale);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      // Vortex: swirling black hole
+      if (vortexRef.current && elapsedMs < vortexRef.current.endMs) {
+        const vt = vortexRef.current;
+        const vtProgress = (elapsedMs - vt.startMs) / (vt.endMs - vt.startMs);
+        const vtR = SHMUP_BALANCE.effects.vortexRadius * displayScale;
+        // Dark core
+        ctx.save();
+        const coreGrad = ctx.createRadialGradient(vt.x, vt.y, 4, vt.x, vt.y, vtR * 0.4);
+        coreGrad.addColorStop(0, "rgba(20, 0, 40, 0.9)");
+        coreGrad.addColorStop(0.6, "rgba(50, 20, 80, 0.4)");
+        coreGrad.addColorStop(1, "rgba(151, 117, 250, 0)");
+        ctx.fillStyle = coreGrad;
         ctx.beginPath();
-        ctx.arc(ship.x, ship.y, ship.radius * 2.8 * barrierPulse, Math.PI * 1.12, Math.PI * 1.9);
+        ctx.arc(vt.x, vt.y, vtR * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        // Spiral arms
+        ctx.save();
+        ctx.globalAlpha = 0.6 + vtProgress * 0.3;
+        for (let arm = 0; arm < 4; arm++) {
+          const baseAngle = elapsedMs / 200 + arm * Math.PI / 2;
+          ctx.strokeStyle = arm % 2 === 0 ? "#9775fa" : "#845ef7";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          for (let t = 0; t < 30; t++) {
+            const a = baseAngle + t * 0.22;
+            const r = 8 + t * (vtR * 0.7 / 30);
+            const px = vt.x + Math.cos(a) * r;
+            const py = vt.y + Math.sin(a) * r;
+            if (t === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+          }
+          ctx.stroke();
+        }
+        ctx.restore();
+        // Outer pull ring
+        ctx.save();
+        ctx.globalAlpha = 0.3;
+        ctx.strokeStyle = "#9775fa";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 6]);
+        ctx.beginPath();
+        ctx.arc(vt.x, vt.y, vtR, 0, Math.PI * 2);
         ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+
+      // Mirror shield: layered hexagonal barrier
+      if (mirrorShieldUntilRef.current > elapsedMs && mirrorShieldLayersRef.current > 0) {
+        const layers = mirrorShieldLayersRef.current;
+        ctx.save();
+        ctx.translate(ship.x, ship.y);
+        for (let i = 0; i < layers; i++) {
+          const r = (ship.radius * 2.6 + i * 7) * displayScale;
+          const pulse = 1 + Math.sin(elapsedMs / 100 + i * 0.7) * 0.05;
+          const a = 0.4 + i * 0.15;
+          ctx.strokeStyle = `rgba(77, 171, 247, ${a})`;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          for (let s = 0; s < 6; s++) {
+            const angle = s * Math.PI / 3 - Math.PI / 2 + elapsedMs * 0.0003;
+            const px = Math.cos(angle) * r * pulse;
+            const py = Math.sin(angle) * r * pulse;
+            if (s === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+          }
+          ctx.closePath();
+          ctx.stroke();
+          // Fill with subtle glow
+          ctx.fillStyle = `rgba(77, 171, 247, ${a * 0.08})`;
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      // Overcharge: pulsing golden aura
+      if (overchargeUntilRef.current > elapsedMs) {
+        ctx.save();
+        const ocPulse = 1 + Math.sin(elapsedMs / 60) * 0.15;
+        const ocR = ship.radius * 3 * displayScale * ocPulse;
+        const ocGlow = ctx.createRadialGradient(ship.x, ship.y, ship.radius * displayScale, ship.x, ship.y, ocR);
+        ocGlow.addColorStop(0, "rgba(255, 212, 59, 0.35)");
+        ocGlow.addColorStop(0.6, "rgba(255, 146, 43, 0.15)");
+        ocGlow.addColorStop(1, "rgba(255, 212, 59, 0)");
+        ctx.fillStyle = ocGlow;
+        ctx.beginPath();
+        ctx.arc(ship.x, ship.y, ocR, 0, Math.PI * 2);
+        ctx.fill();
+        // Electric arcs
+        ctx.strokeStyle = "rgba(255, 212, 59, 0.6)";
+        ctx.lineWidth = 1.5;
+        for (let arc = 0; arc < 4; arc++) {
+          const a = elapsedMs / 80 + arc * Math.PI / 2;
+          const startR = ship.radius * 1.2 * displayScale;
+          const endR = ship.radius * 2.5 * displayScale;
+          ctx.beginPath();
+          ctx.moveTo(ship.x + Math.cos(a) * startR, ship.y + Math.sin(a) * startR);
+          const midA = a + (Math.sin(elapsedMs / 30 + arc) * 0.4);
+          const midR = (startR + endR) / 2;
+          ctx.quadraticCurveTo(
+            ship.x + Math.cos(midA) * midR,
+            ship.y + Math.sin(midA) * midR,
+            ship.x + Math.cos(a + 0.3) * endR,
+            ship.y + Math.sin(a + 0.3) * endR
+          );
+          ctx.stroke();
+        }
         ctx.restore();
       }
 
