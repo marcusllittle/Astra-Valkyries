@@ -16,6 +16,7 @@ import {
   summarizeOutfitKit,
 } from "../lib/outfitKits";
 import CardArt from "../components/CardArt";
+import CutinOverlay from "../components/CutinOverlay";
 import type { Pilot, Outfit, OwnedOutfit, Ship } from "../types";
 import pilotsData from "../data/pilots.json";
 import outfitsData from "../data/outfits.json";
@@ -28,6 +29,7 @@ export default function HangarScreen() {
   const { save, selectPilot, selectShip, selectMap, selectOutfit } = useGame();
   const [kitWarning, setKitWarning] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [deployCutsceneUrl, setDeployCutsceneUrl] = useState<string | null>(null);
   const [showAllOutfits, setShowAllOutfits] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem(SHOW_ALL_OUTFITS_STORAGE_KEY) === "1";
@@ -117,9 +119,11 @@ export default function HangarScreen() {
       >
         <CardArt
           title={outfit.name}
-          artUrl={outfit.cutsceneArtUrl ?? outfit.artUrl}
+          artUrl={outfit.artUrl}
+          motionArtUrl={outfit.cutsceneArtUrl}
           artPlaceholder={outfit.artPlaceholder}
           rarity={outfit.rarity}
+          motionMode="hold"
         />
         <div className="card-info">
           <strong className="card-title">{outfit.name}</strong>
@@ -309,8 +313,15 @@ export default function HangarScreen() {
           </button>
           <button
             className="btn btn-primary deploy-btn"
-            onClick={() => navigate("/shmup")}
-            disabled={!save.selectedPilotId || !save.selectedShipId}
+            onClick={() => {
+              if (deployCutsceneUrl) return;
+              if (selectedOutfit?.cutsceneArtUrl) {
+                setDeployCutsceneUrl(selectedOutfit.cutsceneArtUrl);
+                return;
+              }
+              navigate("/shmup");
+            }}
+            disabled={!save.selectedPilotId || !save.selectedShipId || Boolean(deployCutsceneUrl)}
           >
             Deploy Ship
           </button>
@@ -340,6 +351,16 @@ export default function HangarScreen() {
           </div>
         )}
       </div>
+
+      {deployCutsceneUrl && (
+        <CutinOverlay
+          src={deployCutsceneUrl}
+          onComplete={() => {
+            setDeployCutsceneUrl(null);
+            navigate("/shmup");
+          }}
+        />
+      )}
     </div>
   );
 }
