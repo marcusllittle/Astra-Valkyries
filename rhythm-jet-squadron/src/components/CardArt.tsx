@@ -9,6 +9,10 @@ interface CardArtProps {
   className?: string;
 }
 
+function isVideoUrl(url: string): boolean {
+  return /\.mp4$/i.test(url);
+}
+
 export default function CardArt({
   title,
   artUrl,
@@ -18,7 +22,8 @@ export default function CardArt({
 }: CardArtProps) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const resolvedArtUrl = resolveAssetUrl(artUrl);
-  const showImage = Boolean(resolvedArtUrl) && failedUrl !== resolvedArtUrl;
+  const showMedia = Boolean(resolvedArtUrl) && failedUrl !== resolvedArtUrl;
+  const isVideo = resolvedArtUrl ? isVideoUrl(resolvedArtUrl) : false;
 
   return (
     <div
@@ -26,14 +31,26 @@ export default function CardArt({
       style={{ background: artPlaceholder }}
       data-rarity={rarity?.toLowerCase()}
     >
-      {showImage ? (
-        <img
-          src={resolvedArtUrl}
-          alt={title}
-          className="card-art-img"
-          loading="lazy"
-          onError={() => setFailedUrl(resolvedArtUrl ?? null)}
-        />
+      {showMedia ? (
+        isVideo ? (
+          <video
+            src={resolvedArtUrl}
+            className="card-art-img"
+            autoPlay
+            loop
+            muted
+            playsInline
+            onError={() => setFailedUrl(resolvedArtUrl ?? null)}
+          />
+        ) : (
+          <img
+            src={resolvedArtUrl}
+            alt={title}
+            className="card-art-img"
+            loading="lazy"
+            onError={() => setFailedUrl(resolvedArtUrl ?? null)}
+          />
+        )
       ) : (
         <span className="card-art-label">{title}</span>
       )}
