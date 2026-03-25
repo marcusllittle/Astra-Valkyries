@@ -1128,11 +1128,14 @@ body::after {
 
 .play-screen {
   padding: 0;
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   max-width: 100vw;
   overflow: hidden;
   align-items: center;
@@ -1140,6 +1143,7 @@ body::after {
   background: #0a0e1a;
   margin: 0;
   gap: 0;
+  box-sizing: border-box;
 }
 
 .play-screen--landscape {
@@ -1433,7 +1437,10 @@ body::after {
   align-items: flex-end;
   justify-content: space-between;
   gap: 14px;
-  padding: 10px 12px;
+  padding: 14px 16px;
+  padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  padding-left: calc(16px + env(safe-area-inset-left, 0px));
+  padding-right: calc(16px + env(safe-area-inset-right, 0px));
   pointer-events: none;
   z-index: 20;
 }
@@ -1446,9 +1453,9 @@ body::after {
   width: 100px;
   height: 100px;
   border-radius: 999px;
-  border: 2px solid rgba(116, 192, 252, 0.3);
-  background: radial-gradient(circle at 35% 30%, rgba(71, 145, 255, 0.12), rgba(11, 21, 40, 0.25));
-  box-shadow: inset 0 0 16px rgba(98, 164, 255, 0.08), 0 0 24px rgba(71, 145, 255, 0.06);
+  border: 2.5px solid rgba(116, 192, 252, 0.5);
+  background: radial-gradient(circle at 35% 30%, rgba(71, 145, 255, 0.22), rgba(11, 21, 40, 0.45));
+  box-shadow: inset 0 0 16px rgba(98, 164, 255, 0.15), 0 0 28px rgba(71, 145, 255, 0.12);
   position: relative;
   touch-action: none;
   user-select: none;
@@ -1470,7 +1477,7 @@ body::after {
   top: 50%;
   width: 60%;
   height: 2px;
-  background: rgba(166, 203, 255, 0.08);
+  background: rgba(166, 203, 255, 0.18);
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
@@ -1482,7 +1489,7 @@ body::after {
   top: 50%;
   width: 2px;
   height: 60%;
-  background: rgba(166, 203, 255, 0.08);
+  background: rgba(166, 203, 255, 0.18);
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
@@ -1494,7 +1501,7 @@ body::after {
   width: 64px;
   height: 64px;
   border-radius: 999px;
-  border: 1px dashed rgba(166, 203, 255, 0.18);
+  border: 1.5px dashed rgba(166, 203, 255, 0.3);
   transform: translate(-50%, -50%);
 }
 
@@ -1505,9 +1512,9 @@ body::after {
   width: 34px;
   height: 34px;
   border-radius: 999px;
-  border: 1.5px solid rgba(215, 236, 255, 0.4);
-  background: radial-gradient(circle at 32% 28%, rgba(208, 238, 255, 0.35), rgba(93, 180, 255, 0.2));
-  box-shadow: 0 2px 8px rgba(77, 171, 247, 0.15);
+  border: 2px solid rgba(215, 236, 255, 0.6);
+  background: radial-gradient(circle at 32% 28%, rgba(208, 238, 255, 0.5), rgba(93, 180, 255, 0.35));
+  box-shadow: 0 2px 10px rgba(77, 171, 247, 0.3);
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
@@ -1561,14 +1568,14 @@ body::after {
   width: 90px;
   height: 90px;
   border-radius: 999px;
-  border: 2px solid rgba(255, 184, 107, 0.35);
-  color: rgba(255, 244, 214, 0.6);
+  border: 2.5px solid rgba(255, 184, 107, 0.55);
+  color: rgba(255, 244, 214, 0.85);
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  background: radial-gradient(circle at 30% 24%, rgba(255, 211, 135, 0.15), rgba(80, 45, 11, 0.25));
-  box-shadow: 0 2px 12px rgba(255, 146, 43, 0.12), 0 0 24px rgba(255, 146, 43, 0.06);
+  background: radial-gradient(circle at 30% 24%, rgba(255, 211, 135, 0.25), rgba(80, 45, 11, 0.4));
+  box-shadow: 0 2px 12px rgba(255, 146, 43, 0.2), 0 0 28px rgba(255, 146, 43, 0.1);
   touch-action: manipulation;
   transition: transform 0.1s, border-color 0.15s, box-shadow 0.15s;
 }
@@ -3287,18 +3294,21 @@ body::after {
   }
 
   .shmup-touch-controls {
-    padding: 8px 8px;
+    padding: 10px 12px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    padding-left: calc(12px + env(safe-area-inset-left, 0px));
+    padding-right: calc(12px + env(safe-area-inset-right, 0px));
   }
 
   .shmup-touch-pad {
-    width: 70px;
-    height: 70px;
+    width: 88px;
+    height: 88px;
   }
 
   .shmup-touch-secondary {
-    width: 60px;
-    height: 60px;
-    font-size: 0.55rem;
+    width: 76px;
+    height: 76px;
+    font-size: 0.6rem;
   }
 
   /* ─── Mobile shmup layout (landscape): minimize HUD, maximize game area ─── */
@@ -3556,32 +3566,35 @@ body::after {
   }
 
   .shmup-touch-controls {
-    padding: 6px 6px;
+    padding: 10px 14px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    padding-left: calc(14px + env(safe-area-inset-left, 0px));
+    padding-right: calc(14px + env(safe-area-inset-right, 0px));
   }
 
   .shmup-touch-pad {
-    width: 64px;
-    height: 64px;
+    width: 80px;
+    height: 80px;
   }
 
   .shmup-touch-secondary {
-    width: 54px;
-    height: 54px;
-    font-size: 0.5rem;
+    width: 68px;
+    height: 68px;
+    font-size: 0.55rem;
   }
 
   .shmup-touch-knob {
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
   }
 
   .shmup-touch-ring {
-    width: 42px;
-    height: 42px;
+    width: 52px;
+    height: 52px;
   }
 
   .shmup-touch-label {
-    font-size: 0.42rem;
+    font-size: 0.45rem;
     bottom: 3px;
   }
 }
