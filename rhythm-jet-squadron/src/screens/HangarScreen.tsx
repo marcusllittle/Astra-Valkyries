@@ -117,7 +117,7 @@ export default function HangarScreen() {
       >
         <CardArt
           title={outfit.name}
-          artUrl={outfit.artUrl}
+          artUrl={outfit.cutsceneArtUrl ?? outfit.artUrl}
           artPlaceholder={outfit.artPlaceholder}
           rarity={outfit.rarity}
         />

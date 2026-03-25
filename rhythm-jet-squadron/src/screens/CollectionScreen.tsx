@@ -195,7 +195,7 @@ export default function CollectionScreen() {
                 >
                   <CardArt
                     title={outfit.name}
-                    artUrl={outfit.artUrl}
+                    artUrl={outfit.cutsceneArtUrl ?? outfit.artUrl}
                     artPlaceholder={outfit.artPlaceholder}
                     rarity={outfit.rarity}
                   />
@@ -250,7 +250,7 @@ export default function CollectionScreen() {
             >
               <CardArt
                 title={previewOutfit.name}
-                artUrl={previewOutfit.artUrl}
+                artUrl={previewOutfit.cutsceneArtUrl ?? previewOutfit.artUrl}
                 artPlaceholder={previewOutfit.artPlaceholder}
                 rarity={previewOutfit.rarity}
                 className="card-preview-art"
