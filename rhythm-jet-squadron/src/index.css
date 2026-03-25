@@ -2041,10 +2041,13 @@ body::after {
 
 .card-preview-modal {
   width: min(430px, 100%);
+  max-height: calc(100vh - 32px);
   padding: 14px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .card-preview-card {
@@ -2058,6 +2061,10 @@ body::after {
 
 .card-preview-art {
   height: 348px;
+}
+
+.card-preview-card .perk-label {
+  word-break: break-word;
 }
 
 /* ─── Settings Screen ─────────────────────────────────── */
@@ -2276,8 +2283,12 @@ body::after {
 
 .collection-scroll-row .perk-label {
   color: #9ab4ff;
-  max-height: 3.2em;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
   overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
 }
 
 .collection-scroll-row .card.card-locked .card-title,
@@ -3232,6 +3243,34 @@ body::after {
 
   .deploy-bar-selections {
     font-size: 0.66rem;
+  }
+
+  /* Mobile collection: wrap cards in a grid instead of only horizontal scroll */
+  .collection-scroll-row {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    scroll-snap-type: none;
+  }
+
+  .collection-scroll-row > .card {
+    flex: 0 0 calc(50% - 6px);
+    min-width: 0;
+  }
+
+  /* Mobile preview modal: fit within viewport */
+  .card-preview-overlay {
+    padding: 12px;
+    align-items: flex-start;
+    overflow-y: auto;
+  }
+
+  .card-preview-modal {
+    width: 100%;
+    max-height: none;
+  }
+
+  .card-preview-art {
+    height: 240px;
   }
 
   .retro-menu {
