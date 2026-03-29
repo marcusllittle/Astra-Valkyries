@@ -735,6 +735,12 @@ body::after {
   display: block;
 }
 
+video.card-art-img {
+  object-fit: contain;
+  object-position: center;
+  background: #000;
+}
+
 .card-art.card-art-small .card-art-img {
   object-position: center;
 }
