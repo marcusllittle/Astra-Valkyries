@@ -184,7 +184,7 @@ export default function ShopScreen() {
               artPlaceholder={featured.artPlaceholder}
               rarity={featured.rarity}
               className="shop-featured-art"
-              motionMode="hold"
+              motionMode="auto"
             />
             <div className="shop-featured-info">
               <strong className="shop-featured-name">{featured.name}</strong>
@@ -285,7 +285,7 @@ export default function ShopScreen() {
                     artPlaceholder={r.outfit.artPlaceholder}
                     rarity={r.outfit.rarity}
                     className="card-art-small"
-                    motionMode="hold"
+                    motionMode="auto"
                   />
                   <div className="gacha-result-info">
                     <span
@@ -321,7 +321,7 @@ export default function ShopScreen() {
                 artPlaceholder={previewResult.outfit.artPlaceholder}
                 rarity={previewResult.outfit.rarity}
                 className="card-preview-art"
-                motionMode="hold"
+                motionMode="auto"
               />
               <div className="card-info">
                 <strong className="card-title">{previewResult.outfit.name}</strong>
