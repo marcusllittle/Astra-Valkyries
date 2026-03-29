@@ -737,8 +737,7 @@ body::after {
 
 video.card-art-img {
   object-fit: contain;
-  object-position: center;
-  background: #000;
+  object-position: center center;
 }
 
 .card-art.card-art-small .card-art-img {
@@ -1730,9 +1729,11 @@ video.card-art-img {
 }
 
 .cutin-video {
-  width: 100vw;
+  max-width: 100vw;
+  max-height: 100vh;
+  width: auto;
   height: 100vh;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
 
