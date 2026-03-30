@@ -735,6 +735,11 @@ body::after {
   display: block;
 }
 
+video.card-art-img {
+  object-fit: contain;
+  object-position: center center;
+}
+
 .card-art.card-art-small .card-art-img {
   object-position: center;
 }
@@ -1724,9 +1729,11 @@ body::after {
 }
 
 .cutin-video {
-  width: 100vw;
+  max-width: 100vw;
+  max-height: 100vh;
+  width: auto;
   height: 100vh;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
 

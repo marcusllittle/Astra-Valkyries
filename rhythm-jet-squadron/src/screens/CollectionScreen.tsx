@@ -199,7 +199,7 @@ export default function CollectionScreen() {
                     motionArtUrl={outfit.cutsceneArtUrl}
                     artPlaceholder={outfit.artPlaceholder}
                     rarity={outfit.rarity}
-                    motionMode="hold"
+                    motionMode="auto"
                   />
                   <div className="card-info">
                     <strong className="card-title">{outfit.name}</strong>
@@ -257,7 +257,7 @@ export default function CollectionScreen() {
                 artPlaceholder={previewOutfit.artPlaceholder}
                 rarity={previewOutfit.rarity}
                 className="card-preview-art"
-                motionMode="hold"
+                motionMode="auto"
               />
               <div className="card-info">
                 <strong className="card-title">{previewOutfit.name}</strong>

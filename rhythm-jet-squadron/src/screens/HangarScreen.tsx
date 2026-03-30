@@ -123,7 +123,7 @@ export default function HangarScreen() {
           motionArtUrl={outfit.cutsceneArtUrl}
           artPlaceholder={outfit.artPlaceholder}
           rarity={outfit.rarity}
-          motionMode="hold"
+          motionMode="auto"
         />
         <div className="card-info">
           <strong className="card-title">{outfit.name}</strong>
