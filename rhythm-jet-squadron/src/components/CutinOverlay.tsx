@@ -34,7 +34,6 @@ export default function CutinOverlay({
         className="cutin-video"
         src={resolvedSrc}
         autoPlay
-        muted
         playsInline
         preload="auto"
         onEnded={onComplete}
