@@ -315,8 +315,8 @@ export default function HangarScreen() {
             className="btn btn-primary deploy-btn"
             onClick={() => {
               if (deployCutsceneUrl) return;
-              if (selectedOutfit?.cutsceneArtUrl) {
-                setDeployCutsceneUrl(selectedOutfit.cutsceneArtUrl);
+              if (selectedOutfit?.cutinUrl ?? selectedOutfit?.cutsceneArtUrl) {
+                setDeployCutsceneUrl((selectedOutfit?.cutinUrl ?? selectedOutfit?.cutsceneArtUrl)!);
                 return;
               }
               navigate("/shmup");

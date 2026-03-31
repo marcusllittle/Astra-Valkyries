@@ -1457,57 +1457,46 @@ video.card-art-img {
   border-radius: 6px;
 }
 
-.shmup-touch-controls {
+/* ─── Floating joystick move zone (left half of screen) ─── */
+.shmup-move-zone {
   position: absolute;
   left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 14px 16px;
-  padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-  padding-left: calc(16px + env(safe-area-inset-left, 0px));
-  padding-right: calc(16px + env(safe-area-inset-right, 0px));
-  pointer-events: none;
+  top: 0;
+  width: 55%;
+  height: 100%;
   z-index: 20;
-  max-width: 100%;
-}
-
-.shmup-touch-controls > * {
-  pointer-events: auto;
-}
-
-.shmup-touch-pad {
-  width: 100px;
-  height: 100px;
-  border-radius: 999px;
-  border: 2.5px solid rgba(116, 192, 252, 0.5);
-  background: radial-gradient(circle at 35% 30%, rgba(71, 145, 255, 0.22), rgba(11, 21, 40, 0.45));
-  box-shadow: inset 0 0 16px rgba(98, 164, 255, 0.15), 0 0 28px rgba(71, 145, 255, 0.12);
-  position: relative;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+/* Floating joystick pad — appears at touch origin */
+.shmup-touch-pad {
+  width: 120px;
+  height: 120px;
+  border-radius: 999px;
+  border: 2px solid rgba(116, 192, 252, 0.35);
+  background: radial-gradient(circle at 35% 30%, rgba(71, 145, 255, 0.15), rgba(11, 21, 40, 0.3));
+  box-shadow: inset 0 0 20px rgba(98, 164, 255, 0.1), 0 0 32px rgba(71, 145, 255, 0.08);
+  position: relative;
+  pointer-events: none;
 }
 
 .shmup-touch-pad.active {
-  border-color: rgba(106, 230, 255, 0.6);
-  background: radial-gradient(circle at 35% 30%, rgba(71, 145, 255, 0.2), rgba(11, 21, 40, 0.3));
-  box-shadow: 0 0 20px rgba(99, 230, 190, 0.2), inset 0 0 20px rgba(98, 164, 255, 0.15);
+  border-color: rgba(106, 230, 255, 0.5);
+  background: radial-gradient(circle at 35% 30%, rgba(71, 145, 255, 0.18), rgba(11, 21, 40, 0.25));
+  box-shadow: 0 0 24px rgba(99, 230, 190, 0.15), inset 0 0 24px rgba(98, 164, 255, 0.1);
 }
 
-/* D-pad cross hint inside the touch pad */
+/* D-pad cross hint */
 .shmup-touch-pad::before {
   content: "";
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 60%;
-  height: 2px;
-  background: rgba(166, 203, 255, 0.18);
+  width: 55%;
+  height: 1.5px;
+  background: rgba(166, 203, 255, 0.12);
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
@@ -1517,9 +1506,9 @@ video.card-art-img {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 2px;
-  height: 60%;
-  background: rgba(166, 203, 255, 0.18);
+  width: 1.5px;
+  height: 55%;
+  background: rgba(166, 203, 255, 0.12);
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
@@ -1528,10 +1517,10 @@ video.card-art-img {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 64px;
-  height: 64px;
+  width: 80px;
+  height: 80px;
   border-radius: 999px;
-  border: 1.5px dashed rgba(166, 203, 255, 0.3);
+  border: 1px dashed rgba(166, 203, 255, 0.2);
   transform: translate(-50%, -50%);
 }
 
@@ -1539,25 +1528,13 @@ video.card-art-img {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 34px;
-  height: 34px;
+  width: 42px;
+  height: 42px;
   border-radius: 999px;
-  border: 2px solid rgba(215, 236, 255, 0.6);
-  background: radial-gradient(circle at 32% 28%, rgba(208, 238, 255, 0.5), rgba(93, 180, 255, 0.35));
-  box-shadow: 0 2px 10px rgba(77, 171, 247, 0.3);
+  border: 2px solid rgba(215, 236, 255, 0.55);
+  background: radial-gradient(circle at 32% 28%, rgba(208, 238, 255, 0.45), rgba(93, 180, 255, 0.3));
+  box-shadow: 0 2px 12px rgba(77, 171, 247, 0.25);
   transform: translate(-50%, -50%);
-  pointer-events: none;
-}
-
-.shmup-touch-label {
-  position: absolute;
-  left: 50%;
-  bottom: 6px;
-  transform: translateX(-50%);
-  font-size: 0.58rem;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
-  color: rgba(201, 220, 255, 0.45);
   pointer-events: none;
 }
 
@@ -1595,26 +1572,32 @@ video.card-art-img {
 }
 
 .shmup-touch-secondary {
-  width: 90px;
-  height: 90px;
+  position: absolute;
+  right: calc(24px + env(safe-area-inset-right, 0px));
+  bottom: calc(25%);
+  z-index: 20;
+  width: 100px;
+  height: 100px;
   border-radius: 999px;
-  border: 2.5px solid rgba(255, 184, 107, 0.55);
-  color: rgba(255, 244, 214, 0.85);
-  font-size: 0.75rem;
+  border: 2px solid rgba(255, 184, 107, 0.45);
+  color: rgba(255, 244, 214, 0.9);
+  font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  background: radial-gradient(circle at 30% 24%, rgba(255, 211, 135, 0.25), rgba(80, 45, 11, 0.4));
-  box-shadow: 0 2px 12px rgba(255, 146, 43, 0.2), 0 0 28px rgba(255, 146, 43, 0.1);
+  letter-spacing: 0.1em;
+  background: radial-gradient(circle at 30% 24%, rgba(255, 211, 135, 0.2), rgba(80, 45, 11, 0.35));
+  box-shadow: 0 2px 16px rgba(255, 146, 43, 0.15), 0 0 32px rgba(255, 146, 43, 0.08);
   touch-action: manipulation;
-  transition: transform 0.1s, border-color 0.15s, box-shadow 0.15s;
+  transition: transform 0.08s, border-color 0.12s, box-shadow 0.12s;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .shmup-touch-secondary:active {
-  transform: scale(0.92);
+  transform: scale(0.9);
   border-color: rgba(255, 212, 59, 0.7);
-  background: radial-gradient(circle at 30% 24%, rgba(255, 211, 135, 0.3), rgba(80, 45, 11, 0.4));
-  box-shadow: 0 0 20px rgba(255, 178, 74, 0.35), inset 0 0 12px rgba(255, 212, 59, 0.15);
+  background: radial-gradient(circle at 30% 24%, rgba(255, 211, 135, 0.35), rgba(80, 45, 11, 0.45));
+  box-shadow: 0 0 24px rgba(255, 178, 74, 0.4), inset 0 0 16px rgba(255, 212, 59, 0.2);
 }
 
 .mobile-play-gate {
@@ -3376,21 +3359,15 @@ video.card-art-img {
     transform: translateY(-10vh);
   }
 
-  .shmup-touch-controls {
-    padding: 10px 12px;
-    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-    padding-left: calc(12px + env(safe-area-inset-left, 0px));
-    padding-right: calc(12px + env(safe-area-inset-right, 0px));
-  }
-
   .shmup-touch-pad {
-    width: 88px;
-    height: 88px;
+    width: 110px;
+    height: 110px;
   }
 
   .shmup-touch-secondary {
-    width: 76px;
-    height: 76px;
+    width: 88px;
+    height: 88px;
+    right: calc(16px + env(safe-area-inset-right, 0px));
     font-size: 0.6rem;
   }
 
@@ -3648,37 +3625,27 @@ video.card-art-img {
     font-size: 0.5rem;
   }
 
-  .shmup-touch-controls {
-    padding: 10px 14px;
-    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-    padding-left: calc(14px + env(safe-area-inset-left, 0px));
-    padding-right: calc(14px + env(safe-area-inset-right, 0px));
-  }
-
   .shmup-touch-pad {
-    width: 80px;
-    height: 80px;
+    width: 100px;
+    height: 100px;
   }
 
   .shmup-touch-secondary {
-    width: 68px;
-    height: 68px;
+    width: 80px;
+    height: 80px;
+    right: calc(14px + env(safe-area-inset-right, 0px));
+    bottom: 22%;
     font-size: 0.55rem;
   }
 
   .shmup-touch-knob {
-    width: 28px;
-    height: 28px;
+    width: 36px;
+    height: 36px;
   }
 
   .shmup-touch-ring {
-    width: 52px;
-    height: 52px;
-  }
-
-  .shmup-touch-label {
-    font-size: 0.45rem;
-    bottom: 3px;
+    width: 66px;
+    height: 66px;
   }
 }
 
