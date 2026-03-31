@@ -817,6 +817,8 @@ export default function ShmupPlayScreen() {
   const [hud, setHud] = useState<HudState>(() => createHudState(modifiers, activeMap));
   const [showTouchControls, setShowTouchControls] = useState(false);
   const [touchKnob, setTouchKnob] = useState({ active: false, x: 0, y: 0 });
+  const [floatingOrigin, setFloatingOrigin] = useState<{ x: number; y: number } | null>(null);
+  const floatingOriginRef = useRef<{ x: number; y: number } | null>(null);
   const [showTutorial, setShowTutorial] = useState(() => !hasTutorialBeenSeen());
   const tutorialActive = !hasTutorialBeenSeen();
   const [paused, setPaused] = useState(tutorialActive);
@@ -863,34 +865,35 @@ export default function ShmupPlayScreen() {
     setTouchKnob({ active: false, x: 0, y: 0 });
   }, []);
 
-  const handleTouchPadDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+  const handleMoveZoneDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
     event.preventDefault();
-    const rect = event.currentTarget.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
+    const origin = { x: event.clientX, y: event.clientY };
+    floatingOriginRef.current = origin;
+    setFloatingOrigin(origin);
     touchMoveRef.current.active = true;
     touchMoveRef.current.pointerId = event.pointerId;
-    updateTouchVector(event.clientX - centerX, event.clientY - centerY);
+    updateTouchVector(0, 0);
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
-  const handleTouchPadMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+  const handleMoveZoneMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!touchMoveRef.current.active) return;
     if (touchMoveRef.current.pointerId !== event.pointerId) return;
     event.preventDefault();
-    const rect = event.currentTarget.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    updateTouchVector(event.clientX - centerX, event.clientY - centerY);
+    const origin = floatingOriginRef.current;
+    if (!origin) return;
+    updateTouchVector(event.clientX - origin.x, event.clientY - origin.y);
   };
 
-  const handleTouchPadUp = (event: ReactPointerEvent<HTMLDivElement>) => {
+  const handleMoveZoneUp = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (touchMoveRef.current.pointerId !== event.pointerId) return;
     event.preventDefault();
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
+    floatingOriginRef.current = null;
+    setFloatingOrigin(null);
     clearTouchVector();
   };
 
@@ -5039,23 +5042,37 @@ export default function ShmupPlayScreen() {
 
       {/* ── Touch controls (mobile only) ────────────── */}
       {showTouchControls ? (
-        <div className="shmup-touch-controls">
+        <>
+          {/* Left half: move zone — joystick floats where thumb lands */}
           <div
-            className={`shmup-touch-pad ${touchKnob.active ? "active" : ""}`}
-            onPointerDown={handleTouchPadDown}
-            onPointerMove={handleTouchPadMove}
-            onPointerUp={handleTouchPadUp}
-            onPointerCancel={handleTouchPadUp}
+            className="shmup-move-zone"
+            onPointerDown={handleMoveZoneDown}
+            onPointerMove={handleMoveZoneMove}
+            onPointerUp={handleMoveZoneUp}
+            onPointerCancel={handleMoveZoneUp}
           >
-            <div className="shmup-touch-ring" />
-            <div
-              className="shmup-touch-knob"
-              style={{
-                transform: `translate(calc(-50% + ${touchKnob.x}px), calc(-50% + ${touchKnob.y}px))`,
-              }}
-            />
-            <span className="shmup-touch-label">Move</span>
+            {floatingOrigin && (
+              <div
+                className={`shmup-touch-pad active`}
+                style={{
+                  position: "absolute",
+                  left: floatingOrigin.x,
+                  top: floatingOrigin.y,
+                  transform: "translate(-50%, -50%)",
+                  pointerEvents: "none",
+                }}
+              >
+                <div className="shmup-touch-ring" />
+                <div
+                  className="shmup-touch-knob"
+                  style={{
+                    transform: `translate(calc(-50% + ${touchKnob.x}px), calc(-50% + ${touchKnob.y}px))`,
+                  }}
+                />
+              </div>
+            )}
           </div>
+          {/* Right side: ability button */}
           <button
             type="button"
             className="shmup-touch-secondary"
@@ -5064,9 +5081,9 @@ export default function ShmupPlayScreen() {
               queueSecondary();
             }}
           >
-            Secondary
+            ABILITY
           </button>
-        </div>
+        </>
       ) : null}
 
       {/* ── Tutorial (pauses game until dismissed) ──── */}
