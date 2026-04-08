@@ -76,7 +76,7 @@ const BOMB_OVERFLOW_CHIPS = 3;
 const OVERDRIVE_EXTENSION_PER_KILL_MS = 180;
 const OVERDRIVE_EXTENSION_PER_BOSS_HIT_MS = 30;
 const OVERDRIVE_EXTENSION_CAP_MS = 5000;
-const TOUCH_PAD_RADIUS = 40;
+const TOUCH_PAD_RADIUS = 56;
 
 interface ShipState {
   x: number;
@@ -831,17 +831,18 @@ export default function ShmupPlayScreen() {
     y: 0,
   });
   const secondaryQueuedRef = useRef(false);
+  const touchPadRadius = TOUCH_PAD_RADIUS;
 
   const updateTouchVector = (dx: number, dy: number) => {
     const distance = Math.hypot(dx, dy);
-    const scale = distance > TOUCH_PAD_RADIUS ? TOUCH_PAD_RADIUS / distance : 1;
+    const scale = distance > touchPadRadius ? touchPadRadius / distance : 1;
     const clampedX = dx * scale;
     const clampedY = dy * scale;
 
     // Normalize to -1..1 with deadzone and sensitivity curve
     const DEADZONE = 0.12;
-    let normX = clampedX / TOUCH_PAD_RADIUS;
-    let normY = clampedY / TOUCH_PAD_RADIUS;
+    let normX = clampedX / touchPadRadius;
+    let normY = clampedY / touchPadRadius;
     const normDist = Math.hypot(normX, normY);
     if (normDist < DEADZONE) {
       normX = 0;
@@ -5058,6 +5059,8 @@ export default function ShmupPlayScreen() {
                   position: "absolute",
                   left: floatingOrigin.x,
                   top: floatingOrigin.y,
+                  width: touchPadRadius * 2,
+                  height: touchPadRadius * 2,
                   transform: "translate(-50%, -50%)",
                   pointerEvents: "none",
                 }}
