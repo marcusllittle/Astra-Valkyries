@@ -676,6 +676,20 @@ body::after {
   text-align: center;
 }
 
+.hangar-first-run-tip,
+.missions-first-run-tip {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 214, 102, 0.28);
+  background: rgba(24, 18, 10, 0.7);
+  color: #ffe7aa;
+}
+
+.deploy-detail-line--tip {
+  align-items: flex-start;
+}
+
 /* ─── Shared cards ────────────────────────────────────── */
 
 .card-grid {
