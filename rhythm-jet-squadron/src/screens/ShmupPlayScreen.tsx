@@ -4798,6 +4798,17 @@ export default function ShmupPlayScreen() {
         syncHud(elapsedMs);
       }
 
+      if (introReadyBlink) {
+        ctx.save();
+        ctx.font = "bold 32px Orbitron, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillStyle = "rgba(220, 245, 255, 0.96)";
+        ctx.shadowColor = "rgba(102, 217, 239, 0.55)";
+        ctx.shadowBlur = 18;
+        ctx.fillText("READY", canvas.width / 2, canvas.height * 0.34);
+        ctx.restore();
+      }
+
       animationRef.current = requestAnimationFrame(drawLoop);
     };
 
