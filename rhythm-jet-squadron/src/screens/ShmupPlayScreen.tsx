@@ -81,6 +81,8 @@ const TOUCH_PAD_EDGE_GUTTER = 72;
 const TOUCH_PAD_TOP_GUTTER = 96;
 const TOUCH_PAD_BOTTOM_GUTTER = 112;
 const PLAYER_BOTTOM_MARGIN = 132;
+const PLAYER_MOBILE_START_RATIO = 0.72;
+const PLAYER_DESKTOP_START_RATIO = 0.82;
 
 interface ShipState {
   x: number;
@@ -1146,7 +1148,9 @@ export default function ShmupPlayScreen() {
       canvas.height = Math.max(0, viewportHeight - actualHudH);
       displayScale = Math.min(1, canvas.height / REFERENCE_HEIGHT);
       ship.x = clamp(ship.x || canvas.width / 2, ship.radius + 8, canvas.width - ship.radius - 8);
-      const preferredBottomY = Math.max(ship.radius + 12, canvas.height - PLAYER_BOTTOM_MARGIN);
+      const startRatio = isMobileDevice ? PLAYER_MOBILE_START_RATIO : PLAYER_DESKTOP_START_RATIO;
+      const preferredStartY = canvas.height * startRatio;
+      const preferredBottomY = Math.min(preferredStartY, canvas.height - PLAYER_BOTTOM_MARGIN);
       ship.y = clamp(ship.y || preferredBottomY, ship.radius + 12, canvas.height - ship.radius - 12);
     };
 
@@ -4825,7 +4829,8 @@ export default function ShmupPlayScreen() {
 
     resizeCanvas();
     ship.x = canvas.width / 2;
-    ship.y = Math.max(ship.radius + 12, canvas.height - PLAYER_BOTTOM_MARGIN);
+    const startRatio = isMobileDevice ? PLAYER_MOBILE_START_RATIO : PLAYER_DESKTOP_START_RATIO;
+    ship.y = clamp(canvas.height * startRatio, ship.radius + 12, canvas.height - ship.radius - 12);
 
     window.addEventListener("resize", resizeCanvas);
     window.visualViewport?.addEventListener("resize", resizeCanvas);
