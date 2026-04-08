@@ -83,6 +83,7 @@ const TOUCH_PAD_BOTTOM_GUTTER = 112;
 const PLAYER_BOTTOM_MARGIN = 132;
 const PLAYER_MOBILE_START_RATIO = 0.72;
 const PLAYER_DESKTOP_START_RATIO = 0.82;
+const MOBILE_CONTROL_SPACE = 116;
 
 interface ShipState {
   x: number;
@@ -1140,12 +1141,15 @@ export default function ShmupPlayScreen() {
       // Read actual HUD height from DOM (CSS media queries may change it)
       const hudEl = canvas.parentElement?.querySelector(".play-hud") as HTMLElement | null;
       const actualHudH = hudEl ? hudEl.offsetHeight : HUD_HEIGHT;
-      const viewportWidth =
-        containerRef.current?.clientWidth ?? window.visualViewport?.width ?? window.innerWidth;
-      const viewportHeight =
-        containerRef.current?.clientHeight ?? window.visualViewport?.height ?? window.innerHeight;
+      const viewportWidth = window.visualViewport?.width
+        ?? containerRef.current?.clientWidth
+        ?? window.innerWidth;
+      const rawViewportHeight = window.visualViewport?.height ?? window.innerHeight;
+      const containerHeight = containerRef.current?.clientHeight ?? rawViewportHeight;
+      const mobileReservedSpace = showTouchControls ? MOBILE_CONTROL_SPACE : 0;
+      const usableViewportHeight = Math.min(containerHeight, rawViewportHeight) - actualHudH - mobileReservedSpace;
       canvas.width = viewportWidth;
-      canvas.height = Math.max(0, viewportHeight - actualHudH);
+      canvas.height = Math.max(0, usableViewportHeight);
       displayScale = Math.min(1, canvas.height / REFERENCE_HEIGHT);
       ship.x = clamp(ship.x || canvas.width / 2, ship.radius + 8, canvas.width - ship.radius - 8);
       const startRatio = isMobileDevice ? PLAYER_MOBILE_START_RATIO : PLAYER_DESKTOP_START_RATIO;
