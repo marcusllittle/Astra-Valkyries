@@ -73,6 +73,9 @@ const BOMB_PROJECTILE_LIFE = 1.15;
 const BOMB_PICKUP_SPEED = 108;
 const BOMB_PICKUP_CHANCE = 0.1;
 const BOMB_OVERFLOW_CHIPS = 3;
+const INTRO_FLY_IN_MS = 900;
+const INTRO_READY_MS = 900;
+const INTRO_TOTAL_MS = INTRO_FLY_IN_MS + INTRO_READY_MS;
 const OVERDRIVE_EXTENSION_PER_KILL_MS = 180;
 const OVERDRIVE_EXTENSION_PER_BOSS_HIT_MS = 30;
 const OVERDRIVE_EXTENSION_CAP_MS = 5000;
@@ -2642,6 +2645,8 @@ export default function ShmupPlayScreen() {
         }
       }
 
+      const introActive = elapsedMs < INTRO_TOTAL_MS;
+      const introFlyProgress = Math.min(1, elapsedMs / INTRO_FLY_IN_MS);
       const keyboardMoveX =
         (keysRef.current.has("arrowright") || keysRef.current.has("d") ? 1 : 0) -
         (keysRef.current.has("arrowleft") || keysRef.current.has("a") ? 1 : 0);
@@ -2650,8 +2655,8 @@ export default function ShmupPlayScreen() {
         (keysRef.current.has("arrowup") || keysRef.current.has("w") ? 1 : 0);
       const touchMoveX = touchMoveRef.current.active ? touchMoveRef.current.x : 0;
       const touchMoveY = touchMoveRef.current.active ? touchMoveRef.current.y : 0;
-      let moveX = clamp(keyboardMoveX + touchMoveX, -1, 1);
-      let moveY = clamp(keyboardMoveY + touchMoveY, -1, 1);
+      let moveX = introActive ? 0 : clamp(keyboardMoveX + touchMoveX, -1, 1);
+      let moveY = introActive ? 0 : clamp(keyboardMoveY + touchMoveY, -1, 1);
 
       // Track last nonzero input direction for barrel roll / phase shift
       if (moveX !== 0 || moveY !== 0) {
@@ -2675,20 +2680,27 @@ export default function ShmupPlayScreen() {
         shipTiltRef.current = shipTiltRef.current * 0.82 + moveX * 0.08;
       }
 
-      fireTimerRef.current -= deltaSeconds;
-      let fireInterval = getPrimaryFireInterval(
-        primaryKey,
-        overdriveUntilRef.current > elapsedMs,
-        aggressiveRouteActive
-      );
-      // Overcharge: dramatically faster fire rate
-      if (overchargeUntilRef.current > elapsedMs) {
-        fireInterval *= SHMUP_BALANCE.effects.overchargeFireRateMult;
-      }
-      while (fireTimerRef.current <= 0) {
-        spawnPlayerBullets(elapsedMs);
-        sfxShoot();
-        fireTimerRef.current += fireInterval;
+      const introTargetX = canvas.width / 2;
+      const introTargetY = clamp(canvas.height * (isMobileDevice ? 0.58 : 0.68), ship.radius + 8, canvas.height - ship.radius - 8);
+      const introStartY = canvas.height + ship.radius * 4;
+      if (introActive) {
+        ship.x = introTargetX;
+        ship.y = introStartY + (introTargetY - introStartY) * introFlyProgress;
+      } else {
+        fireTimerRef.current -= deltaSeconds;
+        let fireInterval = getPrimaryFireInterval(
+          primaryKey,
+          overdriveUntilRef.current > elapsedMs,
+          aggressiveRouteActive
+        );
+        if (overchargeUntilRef.current > elapsedMs) {
+          fireInterval *= SHMUP_BALANCE.effects.overchargeFireRateMult;
+        }
+        while (fireTimerRef.current <= 0) {
+          spawnPlayerBullets(elapsedMs);
+          sfxShoot();
+          fireTimerRef.current += fireInterval;
+        }
       }
 
       if (dronesUntilRef.current > elapsedMs) {
@@ -2798,16 +2810,18 @@ export default function ShmupPlayScreen() {
         }
       }
 
-      if (!bossIntroStartedRef.current && elapsedMs >= activeMap.bossTriggerMs) {
-        startBossIntro(elapsedMs);
-      }
+      if (!introActive) {
+        if (!bossIntroStartedRef.current && elapsedMs >= activeMap.bossTriggerMs) {
+          startBossIntro(elapsedMs);
+        }
 
-      while (!bossIntroStartedRef.current && elapsedMs + 2200 >= nextWaveStartMsRef.current) {
-        queueNextWave();
+        while (!bossIntroStartedRef.current && elapsedMs + 2200 >= nextWaveStartMsRef.current) {
+          queueNextWave();
+        }
       }
 
       while (
-        queuedWaveSpawnsRef.current.length > 0 &&
+        !introActive && queuedWaveSpawnsRef.current.length > 0 &&
         queuedWaveSpawnsRef.current[0].spawnAtMs <= elapsedMs
       ) {
         const spawn = queuedWaveSpawnsRef.current.shift();
