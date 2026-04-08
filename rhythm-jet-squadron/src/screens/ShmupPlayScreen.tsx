@@ -1151,7 +1151,11 @@ export default function ShmupPlayScreen() {
       canvas.width = viewportWidth;
       canvas.height = Math.max(0, usableViewportHeight);
       displayScale = Math.min(1, canvas.height / REFERENCE_HEIGHT);
-      ship.x = clamp(ship.x || canvas.width / 2, ship.radius + 8, canvas.width - ship.radius - 8);
+      if (showTouchControls) {
+        ship.x = canvas.width / 2;
+      } else {
+        ship.x = clamp(ship.x || canvas.width / 2, ship.radius + 8, canvas.width - ship.radius - 8);
+      }
       const startRatio = isMobileDevice ? PLAYER_MOBILE_START_RATIO : PLAYER_DESKTOP_START_RATIO;
       const preferredStartY = canvas.height * startRatio;
       const preferredBottomY = Math.min(preferredStartY, canvas.height - PLAYER_BOTTOM_MARGIN);
