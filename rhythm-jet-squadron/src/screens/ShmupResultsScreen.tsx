@@ -162,6 +162,16 @@ export default function ShmupResultsScreen() {
         {grade}
       </div>
 
+      <div className="results-victory-copy">
+        {grade === "S"
+          ? "That was a command-level sortie."
+          : grade === "A"
+            ? "Strong clear, strong momentum."
+            : grade === "B"
+              ? "Solid run, room to sharpen the build."
+              : "You cleared it. Tighten one thing and go again."}
+      </div>
+
       <div className="results-grid">
         <div className="result-item">
           <span className="result-label">Score</span>
@@ -198,6 +208,11 @@ export default function ShmupResultsScreen() {
           <span className="shared-icon">&#x26A1;</span> +{sharedReward} HavnAI Credits
         </div>
       )}
+
+      <div className="results-focus-pill">
+        <span className="result-label">Next Focus</span>
+        <strong>{isFirstRun ? "Tune one loadout piece" : "Push a cleaner grade"}</strong>
+      </div>
       {wallet.status !== "connected" && (
         <div className="reward-status-note">Connect wallet to earn HavnAI credits</div>
       )}
