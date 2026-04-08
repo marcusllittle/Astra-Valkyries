@@ -27,6 +27,7 @@ const SHOW_ALL_OUTFITS_STORAGE_KEY = "astra.showAllPilotOutfits";
 export default function HangarScreen() {
   const navigate = useNavigate();
   const { save, selectPilot, selectShip, selectMap, selectOutfit } = useGame();
+  const isFirstRun = save.totalRuns === 0;
   const [kitWarning, setKitWarning] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [deployCutsceneUrl, setDeployCutsceneUrl] = useState<string | null>(null);
@@ -290,6 +291,11 @@ export default function HangarScreen() {
       </section>
 
       {/* ── Compact sticky deploy bar ─── */}
+      {isFirstRun ? (
+        <div className="hangar-first-run-tip">
+          <strong>Starter recommendation:</strong> keep the default pilot, ship, and map for your first sortie, then tweak one thing at a time after the run.
+        </div>
+      ) : null}
       <div className="hangar-deploy-bar">
         <div className="deploy-bar-selections">
           <span className="deploy-chip">{selectedPilot?.name ?? "Pilot?"}</span>
@@ -323,7 +329,7 @@ export default function HangarScreen() {
             }}
             disabled={!save.selectedPilotId || !save.selectedShipId || Boolean(deployCutsceneUrl)}
           >
-            Deploy Ship
+            {isFirstRun ? "Launch First Sortie" : "Deploy Ship"}
           </button>
         </div>
         {showDetails && (
@@ -336,6 +342,12 @@ export default function HangarScreen() {
               <span className="deploy-detail-label">Kit</span>
               <span>{kitSummary}</span>
             </div>
+            {isFirstRun ? (
+              <div className="deploy-detail-line deploy-detail-line--tip">
+                <span className="deploy-detail-label">Tip</span>
+                <span>Take the starter setup out once before making major changes, so you can feel what each swap actually does.</span>
+              </div>
+            ) : null}
             <div className="deploy-detail-line">
               <span className="deploy-detail-label">Scoring</span>
               <span>{loadout.multiplierLine}</span>

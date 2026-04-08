@@ -5,6 +5,7 @@ import { getDailyMissions, getWeeklyMissions, checkMissionProgress } from "../li
 export default function MissionsScreen() {
   const navigate = useNavigate();
   const { save, claimMission } = useGame();
+  const isEarlyGame = save.totalRuns <= 1;
 
   const dailyMissions = getDailyMissions();
   const weeklyMissions = getWeeklyMissions();
@@ -103,6 +104,12 @@ export default function MissionsScreen() {
             </div>
           </div>
         </header>
+
+        {isEarlyGame ? (
+          <div className="missions-first-run-tip">
+            <strong>Early game tip:</strong> treat missions as nudges, not homework. Get another clean run in first, then come back to claim the easy progress.
+          </div>
+        ) : null}
 
         <div className="missions-panels">
           <section className="missions-section panel-surface">

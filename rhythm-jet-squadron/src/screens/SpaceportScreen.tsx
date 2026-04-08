@@ -17,6 +17,7 @@ export default function SpaceportScreen() {
   const navigate = useNavigate();
   const { save } = useGame();
   const [inboxOpen, setInboxOpen] = useState(false);
+  const isEarlyGame = save.totalRuns <= 1;
   const unreadCount = getUnreadCount(save);
 
   const pilotName = save.selectedPilotId?.replace("pilot_", "").toUpperCase() ?? "PILOT";
@@ -42,6 +43,11 @@ export default function SpaceportScreen() {
               <p className="spaceport-subtitle">
                 Your premium command hub for deployment, intel, logistics, and squad readiness.
               </p>
+              {isEarlyGame ? (
+                <div className="spaceport-first-run-tip">
+                  <strong>Start simple:</strong> Hangar gets you into the next sortie, Missions shows easy goals, and Inbox/Codex can wait until you have a couple runs behind you.
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -106,7 +112,13 @@ export default function SpaceportScreen() {
                   </div>
 
                   <span className="spaceport-area-meta">
-                    {area.label === "INBOX" ? inboxStatus : "Open terminal"}
+                    {area.label === "INBOX"
+                      ? inboxStatus
+                      : isEarlyGame && area.label === "HANGAR"
+                        ? "Recommended next step"
+                        : isEarlyGame && area.label === "MISSIONS"
+                          ? "Good after a fresh run"
+                          : "Open terminal"}
                   </span>
 
                   {area.label === "INBOX" && unreadCount > 0 && (
@@ -146,11 +158,18 @@ export default function SpaceportScreen() {
             </section>
 
             <section className="spaceport-launch-panel">
+              {isEarlyGame ? (
+                <div className="spaceport-launch-tip">
+                  New pilot flow: adjust one thing in Hangar, launch, then return here once the core loop feels familiar.
+                </div>
+              ) : null}
               <div className="spaceport-launch-copy">
                 <span className="spaceport-section-kicker">Primary Flight Path</span>
                 <h2 className="spaceport-launch-title">Launch Mission</h2>
                 <p className="spaceport-launch-desc">
-                  Depart the port, enter the briefing channel, and roll directly into the next operation.
+                  {isEarlyGame
+                    ? "Use the Hangar to confirm your starter setup, then launch the next operation."
+                    : "Depart the port, enter the briefing channel, and roll directly into the next operation."}
                 </p>
               </div>
 

@@ -76,7 +76,10 @@ const BOMB_OVERFLOW_CHIPS = 3;
 const OVERDRIVE_EXTENSION_PER_KILL_MS = 180;
 const OVERDRIVE_EXTENSION_PER_BOSS_HIT_MS = 30;
 const OVERDRIVE_EXTENSION_CAP_MS = 5000;
-const TOUCH_PAD_RADIUS = 56;
+const TOUCH_PAD_RADIUS = 60;
+const TOUCH_PAD_EDGE_GUTTER = 72;
+const TOUCH_PAD_TOP_GUTTER = 96;
+const TOUCH_PAD_BOTTOM_GUTTER = 112;
 
 interface ShipState {
   x: number;
@@ -869,7 +872,15 @@ export default function ShmupPlayScreen() {
   const handleMoveZoneDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
     event.preventDefault();
-    const origin = { x: event.clientX, y: event.clientY };
+    const rect = event.currentTarget.getBoundingClientRect();
+    const minX = TOUCH_PAD_EDGE_GUTTER;
+    const maxX = Math.max(minX, rect.width - TOUCH_PAD_EDGE_GUTTER);
+    const minY = TOUCH_PAD_TOP_GUTTER;
+    const maxY = Math.max(minY, rect.height - TOUCH_PAD_BOTTOM_GUTTER);
+    const origin = {
+      x: Math.min(Math.max(event.clientX, rect.left + minX), rect.left + maxX),
+      y: Math.min(Math.max(event.clientY, rect.top + minY), rect.top + maxY),
+    };
     floatingOriginRef.current = origin;
     setFloatingOrigin(origin);
     touchMoveRef.current.active = true;

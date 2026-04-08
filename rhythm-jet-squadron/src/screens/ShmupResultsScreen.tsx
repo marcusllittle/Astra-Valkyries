@@ -31,8 +31,9 @@ function formatTime(timeMs: number): string {
 export default function ShmupResultsScreen() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { addCredits } = useGame();
+  const { addCredits, save } = useGame();
   const wallet = useWallet();
+  const isFirstRun = save.totalRuns <= 1;
   const awardAppliedRef = useRef(false);
   const [sharedReward, setSharedReward] = useState<number | null>(null);
   const [rewardStatus, setRewardStatus] = useState<string | null>(null);
@@ -161,6 +162,16 @@ export default function ShmupResultsScreen() {
         {grade}
       </div>
 
+      <div className="results-victory-copy">
+        {grade === "S"
+          ? "That was a command-level sortie."
+          : grade === "A"
+            ? "Strong clear, strong momentum."
+            : grade === "B"
+              ? "Solid run, room to sharpen the build."
+              : "You cleared it. Tighten one thing and go again."}
+      </div>
+
       <div className="results-grid">
         <div className="result-item">
           <span className="result-label">Score</span>
@@ -197,6 +208,11 @@ export default function ShmupResultsScreen() {
           <span className="shared-icon">&#x26A1;</span> +{sharedReward} HavnAI Credits
         </div>
       )}
+
+      <div className="results-focus-pill">
+        <span className="result-label">Next Focus</span>
+        <strong>{isFirstRun ? "Tune one loadout piece" : "Push a cleaner grade"}</strong>
+      </div>
       {wallet.status !== "connected" && (
         <div className="reward-status-note">Connect wallet to earn HavnAI credits</div>
       )}
@@ -212,12 +228,18 @@ export default function ShmupResultsScreen() {
         </div>
       )}
 
+      {isFirstRun ? (
+        <div className="results-next-step-callout">
+          <strong>Nice first run.</strong> Tune your loadout next, then check Missions for easy early goals.
+        </div>
+      ) : null}
+
       <div className="results-buttons">
-        <button className="btn btn-primary" onClick={() => navigate("/shmup")}>
-          Play Again
+        <button className="btn btn-primary" onClick={() => navigate(isFirstRun ? "/hangar" : "/shmup")}>
+          {isFirstRun ? "Tune Loadout" : "Play Again"}
         </button>
-        <button className="btn btn-secondary" onClick={handleReturnToPort}>
-          Return to Port
+        <button className="btn btn-secondary" onClick={isFirstRun ? () => navigate("/missions") : handleReturnToPort}>
+          {isFirstRun ? "View Missions" : "Return to Port"}
         </button>
       </div>
     </div>

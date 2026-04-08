@@ -646,6 +646,77 @@ body::after {
   display: inline-block;
 }
 
+.retro-menu-helper {
+  margin-left: auto;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 220, 120, 0.9);
+}
+
+.home-first-run-callout {
+  margin: 0 auto 14px;
+  width: min(92vw, 560px);
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 214, 102, 0.35);
+  border-radius: 12px;
+  background: rgba(20, 16, 8, 0.72);
+  color: #ffe7aa;
+  text-align: center;
+  box-shadow: 0 0 18px rgba(255, 200, 87, 0.08);
+}
+
+.results-next-step-callout {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(102, 217, 239, 0.25);
+  background: rgba(8, 18, 30, 0.72);
+  color: #d8f7ff;
+  text-align: center;
+}
+
+.hangar-first-run-tip,
+.missions-first-run-tip,
+.spaceport-first-run-tip,
+.spaceport-launch-tip {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 214, 102, 0.28);
+  background: rgba(24, 18, 10, 0.7);
+  color: #ffe7aa;
+}
+
+.deploy-detail-line--tip {
+  align-items: flex-start;
+}
+
+.results-victory-copy {
+  margin-top: 10px;
+  color: rgba(224, 239, 255, 0.88);
+  font-size: 0.95rem;
+}
+
+.results-focus-pill {
+  margin-top: 12px;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(102, 217, 239, 0.26);
+  background: rgba(8, 18, 30, 0.7);
+  color: #d8f7ff;
+}
+
+.results-focus-pill .result-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(170, 222, 255, 0.78);
+}
+
 /* ─── Shared cards ────────────────────────────────────── */
 
 .card-grid {
@@ -1462,12 +1533,18 @@ video.card-art-img {
   position: absolute;
   left: 0;
   top: 0;
-  width: 58%;
+  width: 60%;
   height: 100%;
   z-index: 20;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
+  padding:
+    calc(10px + env(safe-area-inset-top, 0px))
+    0
+    calc(30px + env(safe-area-inset-bottom, 0px))
+    calc(10px + env(safe-area-inset-left, 0px));
+  box-sizing: border-box;
 }
 
 /* Floating joystick pad — appears at touch origin */
@@ -1575,11 +1652,11 @@ video.card-art-img {
 
 .shmup-touch-secondary {
   position: absolute;
-  right: calc(24px + env(safe-area-inset-right, 0px));
-  bottom: calc(20% + env(safe-area-inset-bottom, 0px));
+  right: calc(20px + env(safe-area-inset-right, 0px));
+  bottom: calc(16% + env(safe-area-inset-bottom, 0px));
   z-index: 20;
-  width: 112px;
-  height: 112px;
+  width: 118px;
+  height: 118px;
   border-radius: 999px;
   border: 2px solid rgba(255, 184, 107, 0.45);
   color: rgba(255, 244, 214, 0.9);
@@ -3361,17 +3438,26 @@ video.card-art-img {
     transform: translateY(-10vh);
   }
 
+  .shmup-move-zone {
+    width: 62%;
+    padding:
+      calc(8px + env(safe-area-inset-top, 0px))
+      0
+      calc(26px + env(safe-area-inset-bottom, 0px))
+      calc(8px + env(safe-area-inset-left, 0px));
+  }
+
   .shmup-touch-pad {
-    width: 116px;
-    height: 116px;
+    width: 122px;
+    height: 122px;
   }
 
   .shmup-touch-secondary {
-    width: 96px;
-    height: 96px;
-    right: calc(16px + env(safe-area-inset-right, 0px));
-    bottom: calc(18% + env(safe-area-inset-bottom, 0px));
-    font-size: 0.62rem;
+    width: 102px;
+    height: 102px;
+    right: calc(14px + env(safe-area-inset-right, 0px));
+    bottom: calc(14% + env(safe-area-inset-bottom, 0px));
+    font-size: 0.64rem;
   }
 
   /* ─── Mobile shmup layout (landscape): minimize HUD, maximize game area ─── */
@@ -3630,17 +3716,26 @@ video.card-art-img {
     font-size: 0.5rem;
   }
 
+  .shmup-move-zone {
+    width: 64%;
+    padding:
+      calc(6px + env(safe-area-inset-top, 0px))
+      0
+      calc(20px + env(safe-area-inset-bottom, 0px))
+      calc(6px + env(safe-area-inset-left, 0px));
+  }
+
   .shmup-touch-pad {
-    width: 108px;
-    height: 108px;
+    width: 114px;
+    height: 114px;
   }
 
   .shmup-touch-secondary {
-    width: 88px;
-    height: 88px;
-    right: calc(14px + env(safe-area-inset-right, 0px));
-    bottom: calc(18% + env(safe-area-inset-bottom, 0px));
-    font-size: 0.58rem;
+    width: 92px;
+    height: 92px;
+    right: calc(12px + env(safe-area-inset-right, 0px));
+    bottom: calc(12% + env(safe-area-inset-bottom, 0px));
+    font-size: 0.6rem;
   }
 
   .shmup-touch-knob {
