@@ -2647,7 +2647,6 @@ export default function ShmupPlayScreen() {
 
       const introActive = elapsedMs < INTRO_TOTAL_MS;
       const introFlyProgress = Math.min(1, elapsedMs / INTRO_FLY_IN_MS);
-      const introReadyBlink = elapsedMs >= INTRO_FLY_IN_MS && Math.floor((elapsedMs - INTRO_FLY_IN_MS) / 180) % 2 === 0;
       const keyboardMoveX =
         (keysRef.current.has("arrowright") || keysRef.current.has("d") ? 1 : 0) -
         (keysRef.current.has("arrowleft") || keysRef.current.has("a") ? 1 : 0);
@@ -4811,17 +4810,6 @@ export default function ShmupPlayScreen() {
       if (elapsedMs - hudSyncRef.current >= 75) {
         hudSyncRef.current = elapsedMs;
         syncHud(elapsedMs);
-      }
-
-      if (introReadyBlink) {
-        ctx.save();
-        ctx.font = "bold 32px Orbitron, sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillStyle = "rgba(220, 245, 255, 0.96)";
-        ctx.shadowColor = "rgba(102, 217, 239, 0.55)";
-        ctx.shadowBlur = 18;
-        ctx.fillText("READY", canvas.width / 2, canvas.height * 0.34);
-        ctx.restore();
       }
 
       animationRef.current = requestAnimationFrame(drawLoop);
