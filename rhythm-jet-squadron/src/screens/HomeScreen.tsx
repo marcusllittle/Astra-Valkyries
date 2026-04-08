@@ -29,6 +29,10 @@ const MENU_ITEMS = [
   { label: "SETTINGS", route: "/settings" },
 ] as const;
 
+const FIRST_RUN_ROUTE_OVERRIDES: Record<string, string> = {
+  "/shmup": "/hangar",
+};
+
 // ─── Starfield types ────────────────────────────────────
 
 interface Star {
@@ -46,6 +50,7 @@ export default function HomeScreen() {
   const navigate = useNavigate();
   const { save, updateSettings } = useGame();
   const wallet = useWallet();
+  const isFirstRun = save.totalRuns === 0;
 
   const [phase, setPhase] = useState<"title" | "menu">("title");
   const [cursorIdx, setCursorIdx] = useState(0);
@@ -235,17 +240,19 @@ export default function HomeScreen() {
           });
           break;
         case "Enter":
-        case " ":
+        case " ": {
           e.preventDefault();
           menuConfirm();
-          navigate(MENU_ITEMS[cursorIdx].route);
+          const targetRoute = MENU_ITEMS[cursorIdx].route;
+          navigate(isFirstRun ? (FIRST_RUN_ROUTE_OVERRIDES[targetRoute] ?? targetRoute) : targetRoute);
           break;
+        }
       }
     };
 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [phase, cursorIdx, enterMenu, navigate]);
+  }, [phase, cursorIdx, enterMenu, navigate, isFirstRun]);
 
   // ─── Render ───────────────────────────────────────────
 
@@ -328,27 +335,47 @@ export default function HomeScreen() {
 
         {/* Vertical menu — only in menu phase */}
         {phase === "menu" && menuVisible && (
-          <nav className="retro-menu">
-            {MENU_ITEMS.map((item, i) => (
-              <button
-                key={item.route}
-                className={`retro-menu-item ${cursorIdx === i ? "active" : ""}`}
-                style={{ "--i": i } as React.CSSProperties}
-                onClick={() => { menuConfirm(); navigate(item.route); }}
-                onMouseEnter={() => {
-                  if (cursorIdx !== i) {
-                    cursorMove();
-                    setCursorIdx(i);
-                  }
-                }}
-              >
-                <span className="retro-menu-cursor" aria-hidden>
-                  {cursorIdx === i ? "▶" : "\u00A0\u00A0"}
-                </span>
-                <span className="retro-menu-label">{item.label}</span>
-              </button>
-            ))}
-          </nav>
+          <>
+            {isFirstRun ? (
+              <div className="home-first-run-callout home-fade-in">
+                First sortie: start with <strong>PLAY</strong>, confirm your loadout, then launch.
+              </div>
+            ) : null}
+            <nav className="retro-menu">
+              {MENU_ITEMS.map((item, i) => {
+                const targetRoute = isFirstRun ? (FIRST_RUN_ROUTE_OVERRIDES[item.route] ?? item.route) : item.route;
+                const helperText = isFirstRun
+                  ? item.label === "PLAY"
+                    ? "Start here"
+                    : item.label === "LOADOUT"
+                      ? "Pick your starter build"
+                      : item.label === "MISSIONS"
+                        ? "Best after your first run"
+                        : null
+                  : null;
+                return (
+                  <button
+                    key={item.route}
+                    className={`retro-menu-item ${cursorIdx === i ? "active" : ""}`}
+                    style={{ "--i": i } as React.CSSProperties}
+                    onClick={() => { menuConfirm(); navigate(targetRoute); }}
+                    onMouseEnter={() => {
+                      if (cursorIdx !== i) {
+                        cursorMove();
+                        setCursorIdx(i);
+                      }
+                    }}
+                  >
+                    <span className="retro-menu-cursor" aria-hidden>
+                      {cursorIdx === i ? "▶" : "\u00A0\u00A0"}
+                    </span>
+                    <span className="retro-menu-label">{item.label}</span>
+                    {helperText ? <span className="retro-menu-helper">{helperText}</span> : null}
+                  </button>
+                );
+              })}
+            </nav>
+          </>
         )}
       </div>
     </div>

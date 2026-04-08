@@ -31,8 +31,9 @@ function formatTime(timeMs: number): string {
 export default function ShmupResultsScreen() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { addCredits } = useGame();
+  const { addCredits, save } = useGame();
   const wallet = useWallet();
+  const isFirstRun = save.totalRuns <= 1;
   const awardAppliedRef = useRef(false);
   const [sharedReward, setSharedReward] = useState<number | null>(null);
   const [rewardStatus, setRewardStatus] = useState<string | null>(null);
@@ -212,12 +213,18 @@ export default function ShmupResultsScreen() {
         </div>
       )}
 
+      {isFirstRun ? (
+        <div className="results-next-step-callout">
+          <strong>Nice first run.</strong> Tune your loadout next, then check Missions for easy early goals.
+        </div>
+      ) : null}
+
       <div className="results-buttons">
-        <button className="btn btn-primary" onClick={() => navigate("/shmup")}>
-          Play Again
+        <button className="btn btn-primary" onClick={() => navigate(isFirstRun ? "/hangar" : "/shmup")}>
+          {isFirstRun ? "Tune Loadout" : "Play Again"}
         </button>
-        <button className="btn btn-secondary" onClick={handleReturnToPort}>
-          Return to Port
+        <button className="btn btn-secondary" onClick={isFirstRun ? () => navigate("/missions") : handleReturnToPort}>
+          {isFirstRun ? "View Missions" : "Return to Port"}
         </button>
       </div>
     </div>
