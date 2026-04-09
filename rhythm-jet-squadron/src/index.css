@@ -4709,7 +4709,7 @@ video.card-art-img {
 
   .dialogue-box-shell {
     padding: 0;
-    inset: auto 10px 10px 10px;
+    inset: auto 10px 24px 10px;
   }
 
   .dialogue-box-panel {
@@ -4786,7 +4786,7 @@ video.card-art-img {
     min-height: 58vh;
     border-radius: 22px;
     overflow: hidden;
-    padding-bottom: 190px;
+    padding-bottom: 214px;
   }
 
   .briefing-stage-backdrop {
