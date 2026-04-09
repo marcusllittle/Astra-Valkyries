@@ -73,13 +73,13 @@ const BOMB_PROJECTILE_LIFE = 1.15;
 const BOMB_PICKUP_SPEED = 108;
 const BOMB_PICKUP_CHANCE = 0.1;
 const BOMB_OVERFLOW_CHIPS = 3;
-const INTRO_FLY_IN_MS = 900;
-const INTRO_READY_MS = 900;
+const INTRO_FLY_IN_MS = 360;
+const INTRO_READY_MS = 240;
 const INTRO_TOTAL_MS = INTRO_FLY_IN_MS + INTRO_READY_MS;
 const OVERDRIVE_EXTENSION_PER_KILL_MS = 180;
 const OVERDRIVE_EXTENSION_PER_BOSS_HIT_MS = 30;
 const OVERDRIVE_EXTENSION_CAP_MS = 5000;
-const TOUCH_PAD_RADIUS = 68;
+const TOUCH_PAD_RADIUS = 52;
 const TOUCH_PAD_EDGE_GUTTER = 52;
 const TOUCH_PAD_TOP_GUTTER = 86;
 const TOUCH_PAD_BOTTOM_GUTTER = 108;
@@ -91,7 +91,7 @@ const MOBILE_PLAYER_BOTTOM_MARGIN = 112;
 const PLAYER_BOTTOM_MARGIN = 132;
 const PLAYER_MOBILE_START_RATIO = 0.72;
 const PLAYER_DESKTOP_START_RATIO = 0.82;
-const MOBILE_CONTROL_SPACE = 116;
+const MOBILE_CONTROL_SPACE = 88;
 
 interface ShipState {
   x: number;
@@ -634,7 +634,7 @@ export default function ShmupPlayScreen() {
   const [viewportBounds, setViewportBounds] = useState<ViewportBounds>(() => getViewportBounds());
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMobileDevice, setIsMobileDevice] = useState(() => isTouchGameplayDevice());
-  const [mobileLaunchAccepted, setMobileLaunchAccepted] = useState(() => !isTouchGameplayDevice());
+  const [mobileLaunchAccepted, setMobileLaunchAccepted] = useState(true);
   const gateWasVisibleRef = useRef(false);
   const gateRestorePausedRef = useRef(false);
   const mobileGateVisibleRef = useRef(false);
@@ -1005,7 +1005,7 @@ export default function ShmupPlayScreen() {
 
   const isPortraitViewport = viewportBounds.height > viewportBounds.width;
   const showMobileRotateGate = isMobileDevice && isPortraitViewport;
-  const showMobileLaunchGate = isMobileDevice && !mobileLaunchAccepted && !isPortraitViewport;
+  const showMobileLaunchGate = false;
   const mobileGateVisible = showMobileLaunchGate || showMobileRotateGate;
 
   useEffect(() => {
