@@ -487,7 +487,7 @@ body::after {
 }
 
 .home-menu-phase .home-title-area {
-  transform: translateY(-18vh);
+  transform: translateY(-12vh);
 }
 
 .game-title {
@@ -662,28 +662,6 @@ body::after {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: rgba(255, 220, 120, 0.9);
-}
-
-.home-first-run-callout {
-  margin: 0 auto 14px;
-  width: min(92vw, 560px);
-  padding: 10px 14px;
-  border: 1px solid rgba(255, 214, 102, 0.35);
-  border-radius: 12px;
-  background: rgba(20, 16, 8, 0.72);
-  color: #ffe7aa;
-  text-align: center;
-  box-shadow: 0 0 18px rgba(255, 200, 87, 0.08);
-}
-
-.results-next-step-callout {
-  margin-top: 16px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid rgba(102, 217, 239, 0.25);
-  background: rgba(8, 18, 30, 0.72);
-  color: #d8f7ff;
-  text-align: center;
 }
 
 .hangar-first-run-tip,
@@ -3437,6 +3415,23 @@ video.card-art-img {
 
   .retro-menu {
     min-width: 260px;
+  }
+
+  .home-menu-phase .home-title-area {
+    transform: translateY(-8vh);
+  }
+
+  .game-title {
+    transform: scale(0.9);
+    transform-origin: center top;
+  }
+
+  .title-astra {
+    letter-spacing: 4px;
+  }
+
+  .title-valkyries {
+    letter-spacing: 2px;
   }
 
   .retro-menu-item {

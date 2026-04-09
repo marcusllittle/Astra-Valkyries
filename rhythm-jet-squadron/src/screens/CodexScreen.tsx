@@ -1,108 +1,136 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LORE_ENTRIES, type LoreEntry } from "../data/lore";
 
 const CATEGORIES = [
-  { key: "pilot", label: "PILOTS" },
-  { key: "zone", label: "ZONES" },
-  { key: "boss", label: "BOSSES" },
-  { key: "enemy", label: "ENEMIES" },
-  { key: "faction", label: "FACTIONS" },
+  { key: "pilot", label: "PILOTS", icon: "✦" },
+  { key: "zone", label: "ZONES", icon: "◎" },
+  { key: "boss", label: "BOSSES", icon: "⚠" },
+  { key: "enemy", label: "ENEMIES", icon: "◈" },
+  { key: "faction", label: "FACTIONS", icon: "⬢" },
 ] as const;
+
+function getCategoryTone(category: LoreEntry["category"]) {
+  switch (category) {
+    case "pilot":
+      return { glow: "rgba(102,217,239,0.24)", accent: "#66d9ef", kicker: "Pilot dossier" };
+    case "zone":
+      return { glow: "rgba(166,140,255,0.24)", accent: "#a78bfa", kicker: "Sector file" };
+    case "boss":
+      return { glow: "rgba(255,122,143,0.24)", accent: "#ff7a8f", kicker: "Threat record" };
+    case "enemy":
+      return { glow: "rgba(255,209,102,0.24)", accent: "#ffd166", kicker: "Contact report" };
+    case "faction":
+    default:
+      return { glow: "rgba(106,224,160,0.24)", accent: "#6ae0a0", kicker: "Faction brief" };
+  }
+}
+
+function summarizeEntry(entry: LoreEntry): string {
+  const firstSentence = entry.content.split(/(?<=[.!?])\s+/)[0]?.trim();
+  return firstSentence || entry.content;
+}
 
 export default function CodexScreen() {
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState<string>("pilot");
-  const [selectedEntry, setSelectedEntry] = useState<LoreEntry | null>(null);
+  const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
 
-  const entries = LORE_ENTRIES.filter(e => e.category === activeCategory);
+  const entries = useMemo(
+    () => LORE_ENTRIES.filter((entry) => entry.category === activeCategory),
+    [activeCategory],
+  );
+
+  const selectedEntry = entries.find((entry) => entry.id === selectedEntryId) ?? entries[0] ?? null;
+  const categoryInfo = CATEGORIES.find((category) => category.key === activeCategory) ?? CATEGORIES[0];
+  const tone = getCategoryTone((selectedEntry?.category as LoreEntry["category"]) ?? "pilot");
 
   return (
-    <div style={{
-      position: "fixed", inset: 0, background: "linear-gradient(180deg, #040612 0%, #0a1628 100%)",
-      color: "#e0e0e0", fontFamily: "monospace", overflow: "hidden",
-      display: "flex", flexDirection: "column",
-    }}>
-      {/* Header */}
-      <div style={{
-        display: "flex", alignItems: "center", padding: "16px 20px",
-        borderBottom: "1px solid rgba(102,217,239,0.2)",
-      }}>
-        <button onClick={() => navigate("/")} style={{
-          background: "none", border: "none", color: "#66d9ef",
-          cursor: "pointer", fontSize: "16px", fontFamily: "monospace", marginRight: "16px",
-        }}>
-          &#x25C0; BACK
-        </button>
-        <h1 style={{ fontSize: "18px", color: "#66d9ef", letterSpacing: "3px", margin: 0 }}>
-          CODEX
-        </h1>
-      </div>
-
-      {/* Category tabs */}
-      <div style={{
-        display: "flex", gap: "4px", padding: "12px 20px",
-        borderBottom: "1px solid rgba(102,217,239,0.1)",
-      }}>
-        {CATEGORIES.map(cat => (
-          <button key={cat.key} onClick={() => { setActiveCategory(cat.key); setSelectedEntry(null); }} style={{
-            background: activeCategory === cat.key ? "rgba(102,217,239,0.2)" : "rgba(255,255,255,0.05)",
-            border: activeCategory === cat.key ? "1px solid rgba(102,217,239,0.4)" : "1px solid rgba(255,255,255,0.1)",
-            color: activeCategory === cat.key ? "#66d9ef" : "rgba(255,255,255,0.5)",
-            padding: "6px 14px", borderRadius: "4px", cursor: "pointer",
-            fontFamily: "monospace", fontSize: "11px", letterSpacing: "1px",
-          }}>
-            {cat.label}
+    <div className="screen codex-screen">
+      <div className="codex-shell panel-surface" style={{ boxShadow: `0 0 40px ${tone.glow}` }}>
+        <header className="codex-header">
+          <button className="btn btn-back" onClick={() => navigate("/spaceport")}>
+            ← Back
           </button>
-        ))}
-      </div>
+          <div className="codex-header-copy">
+            <span className="codex-kicker">Archive Terminal</span>
+            <h1 className="codex-title">Codex</h1>
+            <p className="codex-subtitle">Squad intel, sector dossiers, and threat records.</p>
+          </div>
+        </header>
 
-      {/* Content area */}
-      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        {/* Entry list */}
-        <div style={{
-          width: "240px", borderRight: "1px solid rgba(102,217,239,0.1)",
-          overflowY: "auto", padding: "8px 0",
-        }}>
-          {entries.map(entry => (
-            <button key={entry.id} onClick={() => setSelectedEntry(entry)} style={{
-              display: "block", width: "100%", textAlign: "left", padding: "10px 16px",
-              background: selectedEntry?.id === entry.id ? "rgba(102,217,239,0.15)" : "transparent",
-              border: "none", color: selectedEntry?.id === entry.id ? "#66d9ef" : "rgba(255,255,255,0.7)",
-              cursor: "pointer", fontFamily: "monospace", fontSize: "13px",
-              borderLeft: selectedEntry?.id === entry.id ? "2px solid #66d9ef" : "2px solid transparent",
-            }}>
-              {entry.title}
+        <div className="codex-category-row">
+          {CATEGORIES.map((category) => (
+            <button
+              key={category.key}
+              type="button"
+              className={`codex-category-chip ${activeCategory === category.key ? "active" : ""}`}
+              onClick={() => {
+                setActiveCategory(category.key);
+                setSelectedEntryId(null);
+              }}
+            >
+              <span aria-hidden="true">{category.icon}</span>
+              <span>{category.label}</span>
             </button>
           ))}
         </div>
 
-        {/* Entry detail */}
-        <div style={{ flex: 1, padding: "24px 32px", overflowY: "auto" }}>
-          {selectedEntry ? (
-            <>
-              <h2 style={{ color: "#66d9ef", fontSize: "20px", marginBottom: "16px", letterSpacing: "1px" }}>
-                {selectedEntry.title}
-              </h2>
-              {selectedEntry.imageUrl && (
-                <img src={selectedEntry.imageUrl} alt={selectedEntry.title} style={{
-                  maxWidth: "100%", maxHeight: "300px", objectFit: "contain",
-                  marginBottom: "16px", borderRadius: "4px",
-                  border: "1px solid rgba(102,217,239,0.2)",
-                }} />
-              )}
-              <p style={{ lineHeight: "1.8", fontSize: "14px", color: "rgba(255,255,255,0.8)" }}>
-                {selectedEntry.content}
-              </p>
-            </>
-          ) : (
-            <div style={{
-              display: "flex", alignItems: "center", justifyContent: "center", height: "100%",
-              color: "rgba(255,255,255,0.3)", fontSize: "14px",
-            }}>
-              Select an entry to read
+        <div className="codex-layout">
+          <aside className="codex-list-panel">
+            <div className="codex-section-head">
+              <span className="codex-section-kicker">Category</span>
+              <h2 className="codex-section-title">{categoryInfo.label}</h2>
             </div>
-          )}
+            <div className="codex-entry-list">
+              {entries.map((entry) => {
+                const active = selectedEntry?.id === entry.id;
+                return (
+                  <button
+                    key={entry.id}
+                    type="button"
+                    className={`codex-entry-card ${active ? "active" : ""}`}
+                    onClick={() => setSelectedEntryId(entry.id)}
+                  >
+                    <span className="codex-entry-title">{entry.title}</span>
+                    <span className="codex-entry-summary">{summarizeEntry(entry)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
+
+          <section className="codex-detail-panel">
+            {selectedEntry ? (
+              <>
+                <div className="codex-detail-hero" style={{ borderColor: tone.glow }}>
+                  <div>
+                    <span className="codex-detail-kicker" style={{ color: tone.accent }}>{tone.kicker}</span>
+                    <h2 className="codex-detail-title">{selectedEntry.title}</h2>
+                  </div>
+                  <span className="codex-detail-badge" style={{ borderColor: tone.glow, color: tone.accent }}>
+                    {categoryInfo.label.slice(0, -1) || categoryInfo.label}
+                  </span>
+                </div>
+
+                {selectedEntry.imageUrl ? (
+                  <img
+                    src={selectedEntry.imageUrl}
+                    alt={selectedEntry.title}
+                    className="codex-detail-image"
+                  />
+                ) : (
+                  <div className="codex-detail-placeholder" style={{ boxShadow: `inset 0 0 40px ${tone.glow}` }}>
+                    <span>{categoryInfo.icon}</span>
+                  </div>
+                )}
+
+                <p className="codex-detail-body">{selectedEntry.content}</p>
+              </>
+            ) : (
+              <div className="codex-empty">No entries available.</div>
+            )}
+          </section>
         </div>
       </div>
     </div>

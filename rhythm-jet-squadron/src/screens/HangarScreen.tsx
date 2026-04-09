@@ -288,11 +288,6 @@ export default function HangarScreen() {
       </section>
 
       {/* ── Compact sticky deploy bar ─── */}
-      {isFirstRun ? (
-        <div className="hangar-first-run-tip">
-          <strong>Starter recommendation:</strong> keep the default pilot, ship, and map for your first sortie, then tweak one thing at a time after the run.
-        </div>
-      ) : null}
       <div className="hangar-deploy-bar">
         <div className="deploy-bar-selections">
           <span className="deploy-chip">{selectedPilot?.name ?? "Pilot?"}</span>
@@ -321,7 +316,7 @@ export default function HangarScreen() {
             }}
             disabled={!save.selectedPilotId || !save.selectedShipId}
           >
-            {isFirstRun ? "Launch First Sortie" : "Deploy Ship"}
+            Deploy
           </button>
         </div>
         {showDetails && (

@@ -336,11 +336,6 @@ export default function HomeScreen() {
         {/* Vertical menu — only in menu phase */}
         {phase === "menu" && menuVisible && (
           <>
-            {isFirstRun ? (
-              <div className="home-first-run-callout home-fade-in">
-                First sortie
-              </div>
-            ) : null}
             <nav className="retro-menu">
               {MENU_ITEMS.map((item, i) => {
                 const targetRoute = isFirstRun ? (FIRST_RUN_ROUTE_OVERRIDES[item.route] ?? item.route) : item.route;
