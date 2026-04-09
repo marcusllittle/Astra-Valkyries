@@ -152,8 +152,8 @@ export default function SpaceportScreen() {
                 <h2 className="spaceport-launch-title">Launch Mission</h2>
                 <p className="spaceport-launch-desc">
                   {isEarlyGame
-                    ? "Launch the next operation."
-                    : "Depart the port and roll into the next operation."}
+                    ? "Begin the next sortie."
+                    : "Depart the port and begin the next sortie."}
                 </p>
               </div>
 

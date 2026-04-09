@@ -231,6 +231,7 @@ export default function HangarScreen() {
               />
               <div className="map-card-info">
                 <strong className="map-card-title">{map.name}</strong>
+                <span className="map-card-meta">{map.tagline}</span>
                 <span className="map-card-meta">Boss: {map.bossName}</span>
               </div>
             </button>
@@ -283,7 +284,7 @@ export default function HangarScreen() {
         )}
         {kitWarning && <p className="kit-warning">{kitWarning}</p>}
         {ownedOutfits.length === 0 && (
-          <p className="empty-msg">No outfits owned. Visit the Store!</p>
+          <p className="empty-msg">No outfits owned yet.</p>
         )}
       </section>
 
@@ -312,7 +313,7 @@ export default function HangarScreen() {
           <button
             className="btn btn-primary deploy-btn"
             onClick={() => {
-              navigate("/shmup");
+              navigate("/briefing");
             }}
             disabled={!save.selectedPilotId || !save.selectedShipId}
           >

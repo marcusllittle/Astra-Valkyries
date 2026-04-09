@@ -10,6 +10,7 @@ import {
 import { astraReward } from "../lib/havnApi";
 import { getDialogueForMap } from "../data/dialogues";
 import DialogueBox from "../components/DialogueBox";
+import { getShmupMapById } from "../lib/shmupWaves";
 
 const GRADE_COLORS: Record<string, string> = {
   S: "#ffd43b",
@@ -19,7 +20,11 @@ const GRADE_COLORS: Record<string, string> = {
   D: "#ff6b6b",
 };
 
-const RETURN_TO_PORT_VIDEO = "/assets/cutins/nova/nova_return_to_port.mp4";
+const DEBRIEF_BACKDROPS: Record<string, string> = {
+  "nebula-runway": "/assets/pilots/nova_starling.png",
+  "solar-rift": "/assets/pilots/rex_thunderbolt.png",
+  "abyss-crown": "/assets/pilots/yuki_frostweaver.png",
+};
 
 function formatTime(timeMs: number): string {
   const totalSeconds = Math.max(0, Math.floor(timeMs / 1000));
@@ -46,16 +51,13 @@ export default function ShmupResultsScreen() {
   const creditsEarned = grade ? creditsForGrade(grade) : 0;
 
   const debriefScript = mapId ? getDialogueForMap(mapId, "post_mission") : undefined;
-  const debriefNode = debriefScript?.nodes.find(n => n.id === debriefScript.startNodeId);
+  const debriefNode = debriefScript?.nodes.find((n) => n.id === debriefScript.startNodeId);
   const debriefLines = debriefNode?.lines ?? [];
+  const debriefBackdrop = mapId ? DEBRIEF_BACKDROPS[mapId] : undefined;
+  const activeMap = getShmupMapById(mapId);
 
   const handleReturnToPort = () => {
-    navigate("/video-cutscene", {
-      state: {
-        videoUrl: RETURN_TO_PORT_VIDEO,
-        returnTo: "/spaceport",
-      },
-    });
+    navigate("/spaceport");
   };
 
   const rewardKey = useMemo(() => {
@@ -71,7 +73,6 @@ export default function ShmupResultsScreen() {
     ].join(":");
   }, [shmupResult]);
 
-  // ── Local credits (always awarded) ──────────────────────
   useEffect(() => {
     if (!shmupResult || !rewardKey || awardAppliedRef.current) return;
 
@@ -85,7 +86,6 @@ export default function ShmupResultsScreen() {
     awardAppliedRef.current = true;
   }, [addCredits, creditsEarned, rewardKey, shmupResult]);
 
-  // ── Shared credits reward (when wallet connected) ───────
   useEffect(() => {
     if (!shmupResult || !grade || !wallet.address || wallet.status !== "connected") return;
     if (sessionStorage.getItem(`${rewardKey}:shared`) === "1") return;
@@ -101,34 +101,46 @@ export default function ShmupResultsScreen() {
           wallet.refreshBalance();
         } else if (!res.ok) {
           setRewardStatus(res.reason ?? "not_eligible");
-          // Only mark as "done" for permanent rejections, not transient ones
           if (res.reason === "duplicate_run" || res.reason === "daily_cap_reached") {
             sessionStorage.setItem(`${rewardKey}:shared`, "1");
           }
         }
       })
       .catch(() => {
-        // Don't set sessionStorage on network error — allow retry on next visit
         setRewardStatus("network_error");
       });
   }, [shmupResult, grade, wallet.address, wallet.status, rewardKey, wallet]);
 
-  // Show debrief dialogue after a short delay
   useEffect(() => {
     if (!debriefLines.length || !shmupResult) return;
-    const timer = setTimeout(() => setShowDebrief(true), 1500);
+    const timer = setTimeout(() => setShowDebrief(true), 900);
     return () => clearTimeout(timer);
   }, [debriefLines.length, shmupResult]);
 
   if (showDebrief && debriefLines.length > 0 && debriefLineIdx < debriefLines.length) {
     return (
       <div className="screen results-screen debrief-overlay">
-        <div className="debrief-container">
+        <div className="debrief-backdrop-shell">
+          {debriefBackdrop ? (
+            <img className="debrief-backdrop-image" src={debriefBackdrop} alt="Debrief portrait" />
+          ) : (
+            <div className="debrief-backdrop-placeholder" aria-hidden="true">✦</div>
+          )}
+          <div className="debrief-backdrop-wash" />
+        </div>
+        <div className="debrief-container debrief-container-polished">
+          <div className="debrief-header-band">
+            <span className="debrief-kicker">After Action Debrief</span>
+            <strong className="debrief-map-label">{activeMap?.name ?? mapId?.replace(/-/g, " ") ?? "Mission"}</strong>
+          </div>
+          {activeMap?.debrief ? (
+            <div className="debrief-arc-note">{activeMap.debrief}</div>
+          ) : null}
           <DialogueBox
             line={debriefLines[debriefLineIdx]}
             onNext={() => {
               if (debriefLineIdx < debriefLines.length - 1) {
-                setDebriefLineIdx(i => i + 1);
+                setDebriefLineIdx((i) => i + 1);
               } else {
                 setShowDebrief(false);
               }
@@ -211,10 +223,10 @@ export default function ShmupResultsScreen() {
 
       <div className="results-focus-pill">
         <span className="result-label">Next Focus</span>
-        <strong>{isFirstRun ? "Tune one loadout piece" : "Push a cleaner grade"}</strong>
+        <strong>{isFirstRun ? "Refine loadout" : "Push a cleaner grade"}</strong>
       </div>
       {wallet.status !== "connected" && (
-        <div className="reward-status-note">Connect wallet to earn HavnAI credits</div>
+        <div className="reward-status-note">Wallet rewards available when connected</div>
       )}
       {rewardStatus && (
         <div className="reward-status-note">
@@ -224,22 +236,22 @@ export default function ShmupResultsScreen() {
           {rewardStatus === "run_too_short" && "Run too short — survive longer to earn credits"}
           {rewardStatus === "duplicate_run" && "Duplicate run detected"}
           {rewardStatus === "network_error" && "Could not reach HavnAI server — credits will sync next run"}
-          {!["daily_cap_reached", "cooldown", "score_too_low", "run_too_short", "duplicate_run", "network_error"].includes(rewardStatus) && `HavnAI: ${rewardStatus}`}
+          {!['daily_cap_reached', 'cooldown', 'score_too_low', 'run_too_short', 'duplicate_run', 'network_error'].includes(rewardStatus) && `HavnAI: ${rewardStatus}`}
         </div>
       )}
 
       {isFirstRun ? (
         <div className="results-next-step-callout">
-          <strong>Nice first run.</strong> Tune your loadout next, then check Missions for easy early goals.
+          <strong>Loadout updated.</strong> Choose your next route from the port.
         </div>
       ) : null}
 
       <div className="results-buttons">
         <button className="btn btn-primary" onClick={() => navigate(isFirstRun ? "/hangar" : "/shmup")}>
-          {isFirstRun ? "Tune Loadout" : "Play Again"}
+          {isFirstRun ? "Open Loadout" : "Play Again"}
         </button>
-        <button className="btn btn-secondary" onClick={isFirstRun ? () => navigate("/missions") : handleReturnToPort}>
-          {isFirstRun ? "View Missions" : "Return to Port"}
+        <button className="btn btn-secondary" onClick={handleReturnToPort}>
+          Return to Port
         </button>
       </div>
     </div>
