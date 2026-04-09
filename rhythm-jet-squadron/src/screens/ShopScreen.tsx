@@ -180,11 +180,10 @@ export default function ShopScreen() {
             <CardArt
               title={featured.name}
               artUrl={featured.artUrl}
-              motionArtUrl={featured.cutsceneArtUrl}
-              artPlaceholder={featured.artPlaceholder}
+                            artPlaceholder={featured.artPlaceholder}
               rarity={featured.rarity}
               className="shop-featured-art"
-              motionMode="auto"
+              motionMode="never"
             />
             <div className="shop-featured-info">
               <strong className="shop-featured-name">{featured.name}</strong>
@@ -239,7 +238,7 @@ export default function ShopScreen() {
             <span style={{ color: RARITY_COLORS.SR }}>SR: 9%</span>
             <span style={{ color: RARITY_COLORS.SSR }}>SSR: 1%</span>
           </div>
-          <p className="shop-note">SSR reveals can trigger dedicated cut-in videos.</p>
+          <p className="shop-note">SSR reveals are currently shown with static art.</p>
         </section>
       </div>
 
@@ -281,11 +280,10 @@ export default function ShopScreen() {
                   <CardArt
                     title={r.outfit.name}
                     artUrl={r.outfit.artUrl}
-                    motionArtUrl={r.outfit.cutsceneArtUrl}
-                    artPlaceholder={r.outfit.artPlaceholder}
+                                        artPlaceholder={r.outfit.artPlaceholder}
                     rarity={r.outfit.rarity}
                     className="card-art-small"
-                    motionMode="auto"
+                    motionMode="never"
                   />
                   <div className="gacha-result-info">
                     <span
@@ -317,11 +315,10 @@ export default function ShopScreen() {
               <CardArt
                 title={previewResult.outfit.name}
                 artUrl={previewResult.outfit.artUrl}
-                motionArtUrl={previewResult.outfit.cutsceneArtUrl}
-                artPlaceholder={previewResult.outfit.artPlaceholder}
+                                artPlaceholder={previewResult.outfit.artPlaceholder}
                 rarity={previewResult.outfit.rarity}
                 className="card-preview-art"
-                motionMode="auto"
+                motionMode="never"
               />
               <div className="card-info">
                 <strong className="card-title">{previewResult.outfit.name}</strong>
