@@ -79,10 +79,15 @@ const INTRO_TOTAL_MS = INTRO_FLY_IN_MS + INTRO_READY_MS;
 const OVERDRIVE_EXTENSION_PER_KILL_MS = 180;
 const OVERDRIVE_EXTENSION_PER_BOSS_HIT_MS = 30;
 const OVERDRIVE_EXTENSION_CAP_MS = 5000;
-const TOUCH_PAD_RADIUS = 60;
-const TOUCH_PAD_EDGE_GUTTER = 72;
-const TOUCH_PAD_TOP_GUTTER = 96;
-const TOUCH_PAD_BOTTOM_GUTTER = 112;
+const TOUCH_PAD_RADIUS = 68;
+const TOUCH_PAD_EDGE_GUTTER = 52;
+const TOUCH_PAD_TOP_GUTTER = 86;
+const TOUCH_PAD_BOTTOM_GUTTER = 108;
+const TOUCH_MOVE_DEADZONE = 0.09;
+const TOUCH_MOVE_LINEAR_BLEND = 0.35;
+const MOBILE_PLAYER_HORIZONTAL_MARGIN = 34;
+const MOBILE_PLAYER_TOP_MARGIN = 28;
+const MOBILE_PLAYER_BOTTOM_MARGIN = 112;
 const PLAYER_BOTTOM_MARGIN = 132;
 const PLAYER_MOBILE_START_RATIO = 0.72;
 const PLAYER_DESKTOP_START_RATIO = 0.82;
@@ -460,6 +465,24 @@ function isTouchGameplayDevice(): boolean {
   }
 
   return window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
+}
+
+function getPlayerBounds(canvasWidth: number, canvasHeight: number, radius: number, mobile: boolean) {
+  const desktopBounds = {
+    minX: radius + 8,
+    maxX: canvasWidth - radius - 8,
+    minY: radius + 8,
+    maxY: canvasHeight - radius - 8,
+  };
+
+  if (!mobile) return desktopBounds;
+
+  return {
+    minX: radius + MOBILE_PLAYER_HORIZONTAL_MARGIN,
+    maxX: canvasWidth - radius - MOBILE_PLAYER_HORIZONTAL_MARGIN,
+    minY: radius + MOBILE_PLAYER_TOP_MARGIN,
+    maxY: canvasHeight - radius - MOBILE_PLAYER_BOTTOM_MARGIN,
+  };
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -849,21 +872,21 @@ export default function ShmupPlayScreen() {
     const clampedX = dx * scale;
     const clampedY = dy * scale;
 
-    // Normalize to -1..1 with deadzone and sensitivity curve
-    const DEADZONE = 0.12;
+    // Normalize to -1..1 with a smaller deadzone and a blended response curve.
+    // Pure quadratic felt too sluggish for thumb drags on mobile.
     let normX = clampedX / touchPadRadius;
     let normY = clampedY / touchPadRadius;
     const normDist = Math.hypot(normX, normY);
-    if (normDist < DEADZONE) {
+    if (normDist < TOUCH_MOVE_DEADZONE) {
       normX = 0;
       normY = 0;
     } else {
-      // Remap outside deadzone to 0..1 range with quadratic curve for fine control
-      const remapped = ((normDist - DEADZONE) / (1 - DEADZONE));
-      const curved = remapped * remapped; // quadratic: gentle at start, fast at edge
+      const remapped = (normDist - TOUCH_MOVE_DEADZONE) / (1 - TOUCH_MOVE_DEADZONE);
+      const curved = remapped * remapped;
+      const blended = TOUCH_MOVE_LINEAR_BLEND * remapped + (1 - TOUCH_MOVE_LINEAR_BLEND) * curved;
       const angle = Math.atan2(normY, normX);
-      normX = Math.cos(angle) * curved;
-      normY = Math.sin(angle) * curved;
+      normX = Math.cos(angle) * blended;
+      normY = Math.sin(angle) * blended;
     }
 
     touchMoveRef.current.x = normX;
@@ -1154,15 +1177,16 @@ export default function ShmupPlayScreen() {
       canvas.width = viewportWidth;
       canvas.height = Math.max(0, usableViewportHeight);
       displayScale = Math.min(1, canvas.height / REFERENCE_HEIGHT);
+      const playerBounds = getPlayerBounds(canvas.width, canvas.height, ship.radius, isMobileDevice);
       if (showTouchControls) {
         ship.x = canvas.width / 2;
       } else {
-        ship.x = clamp(ship.x || canvas.width / 2, ship.radius + 8, canvas.width - ship.radius - 8);
+        ship.x = clamp(ship.x || canvas.width / 2, playerBounds.minX, playerBounds.maxX);
       }
       const startRatio = isMobileDevice ? PLAYER_MOBILE_START_RATIO : PLAYER_DESKTOP_START_RATIO;
       const preferredStartY = canvas.height * startRatio;
       const preferredBottomY = Math.min(preferredStartY, canvas.height - PLAYER_BOTTOM_MARGIN);
-      ship.y = clamp(ship.y || preferredBottomY, ship.radius + 12, canvas.height - ship.radius - 12);
+      ship.y = clamp(ship.y || preferredBottomY, playerBounds.minY, playerBounds.maxY);
     };
 
     const syncHud = (elapsedMs: number) => {
@@ -2664,24 +2688,26 @@ export default function ShmupPlayScreen() {
         lastMoveRef.current = { x: moveX / ml, y: moveY / ml };
       }
 
+      const playerBounds = getPlayerBounds(canvas.width, canvas.height, ship.radius, isMobileDevice);
+
       // Barrel roll override: dash in roll direction at high speed
       if (barrelRollUntilRef.current > elapsedMs) {
         const rollSpeed = shipSpeed * 3.2;
         const rd = barrelRollDirRef.current;
-        ship.x = clamp(ship.x + rd.x * rollSpeed * deltaSeconds, ship.radius + 8, canvas.width - ship.radius - 8);
-        ship.y = clamp(ship.y + rd.y * rollSpeed * deltaSeconds, ship.radius + 8, canvas.height - ship.radius - 8);
+        ship.x = clamp(ship.x + rd.x * rollSpeed * deltaSeconds, playerBounds.minX, playerBounds.maxX);
+        ship.y = clamp(ship.y + rd.y * rollSpeed * deltaSeconds, playerBounds.minY, playerBounds.maxY);
         shipTiltRef.current = rd.x * 0.5;
       } else {
         const moveLength = Math.hypot(moveX, moveY) || 1;
         const velocityScale =
           moveX !== 0 || moveY !== 0 ? shipSpeed * deltaSeconds / moveLength : 0;
-        ship.x = clamp(ship.x + moveX * velocityScale, ship.radius + 8, canvas.width - ship.radius - 8);
-        ship.y = clamp(ship.y + moveY * velocityScale, ship.radius + 8, canvas.height - ship.radius - 8);
+        ship.x = clamp(ship.x + moveX * velocityScale, playerBounds.minX, playerBounds.maxX);
+        ship.y = clamp(ship.y + moveY * velocityScale, playerBounds.minY, playerBounds.maxY);
         shipTiltRef.current = shipTiltRef.current * 0.82 + moveX * 0.08;
       }
 
       const introTargetX = canvas.width / 2;
-      const introTargetY = clamp(canvas.height * (isMobileDevice ? 0.58 : 0.68), ship.radius + 8, canvas.height - ship.radius - 8);
+      const introTargetY = clamp(canvas.height * (isMobileDevice ? 0.58 : 0.68), playerBounds.minY, playerBounds.maxY);
       const introStartY = canvas.height + ship.radius * 4;
       if (introActive) {
         ship.x = introTargetX;
@@ -5119,6 +5145,7 @@ export default function ShmupPlayScreen() {
           <button
             type="button"
             className="shmup-touch-secondary"
+            aria-label="Trigger ability"
             onPointerDown={(event) => {
               event.preventDefault();
               queueSecondary();
