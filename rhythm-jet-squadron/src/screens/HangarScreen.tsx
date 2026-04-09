@@ -16,7 +16,6 @@ import {
   summarizeOutfitKit,
 } from "../lib/outfitKits";
 import CardArt from "../components/CardArt";
-import CutinOverlay from "../components/CutinOverlay";
 import type { Pilot, Outfit, OwnedOutfit, Ship } from "../types";
 import pilotsData from "../data/pilots.json";
 import outfitsData from "../data/outfits.json";
@@ -30,7 +29,6 @@ export default function HangarScreen() {
   const isFirstRun = save.totalRuns === 0;
   const [kitWarning, setKitWarning] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
-  const [deployCutsceneUrl, setDeployCutsceneUrl] = useState<string | null>(null);
   const [showAllOutfits, setShowAllOutfits] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem(SHOW_ALL_OUTFITS_STORAGE_KEY) === "1";
@@ -121,10 +119,9 @@ export default function HangarScreen() {
         <CardArt
           title={outfit.name}
           artUrl={outfit.artUrl}
-          motionArtUrl={outfit.cutsceneArtUrl}
           artPlaceholder={outfit.artPlaceholder}
           rarity={outfit.rarity}
-          motionMode="auto"
+          motionMode="never"
         />
         <div className="card-info">
           <strong className="card-title">{outfit.name}</strong>
@@ -320,14 +317,9 @@ export default function HangarScreen() {
           <button
             className="btn btn-primary deploy-btn"
             onClick={() => {
-              if (deployCutsceneUrl) return;
-              if (selectedOutfit?.cutinUrl ?? selectedOutfit?.cutsceneArtUrl) {
-                setDeployCutsceneUrl((selectedOutfit?.cutinUrl ?? selectedOutfit?.cutsceneArtUrl)!);
-                return;
-              }
               navigate("/shmup");
             }}
-            disabled={!save.selectedPilotId || !save.selectedShipId || Boolean(deployCutsceneUrl)}
+            disabled={!save.selectedPilotId || !save.selectedShipId}
           >
             {isFirstRun ? "Launch First Sortie" : "Deploy Ship"}
           </button>
@@ -342,12 +334,6 @@ export default function HangarScreen() {
               <span className="deploy-detail-label">Kit</span>
               <span>{kitSummary}</span>
             </div>
-            {isFirstRun ? (
-              <div className="deploy-detail-line deploy-detail-line--tip">
-                <span className="deploy-detail-label">Tip</span>
-                <span>Take the starter setup out once before making major changes, so you can feel what each swap actually does.</span>
-              </div>
-            ) : null}
             <div className="deploy-detail-line">
               <span className="deploy-detail-label">Scoring</span>
               <span>{loadout.multiplierLine}</span>
@@ -364,15 +350,6 @@ export default function HangarScreen() {
         )}
       </div>
 
-      {deployCutsceneUrl && (
-        <CutinOverlay
-          src={deployCutsceneUrl}
-          onComplete={() => {
-            setDeployCutsceneUrl(null);
-            navigate("/shmup");
-          }}
-        />
-      )}
     </div>
   );
 }
