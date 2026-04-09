@@ -338,21 +338,13 @@ export default function HomeScreen() {
           <>
             {isFirstRun ? (
               <div className="home-first-run-callout home-fade-in">
-                First sortie: start with <strong>PLAY</strong>, confirm your loadout, then launch.
+                First sortie
               </div>
             ) : null}
             <nav className="retro-menu">
               {MENU_ITEMS.map((item, i) => {
                 const targetRoute = isFirstRun ? (FIRST_RUN_ROUTE_OVERRIDES[item.route] ?? item.route) : item.route;
-                const helperText = isFirstRun
-                  ? item.label === "PLAY"
-                    ? "Start here"
-                    : item.label === "LOADOUT"
-                      ? "Pick your starter build"
-                      : item.label === "MISSIONS"
-                        ? "Best after your first run"
-                        : null
-                  : null;
+                const helperText = null;
                 return (
                   <button
                     key={item.route}

@@ -342,12 +342,6 @@ export default function HangarScreen() {
               <span className="deploy-detail-label">Kit</span>
               <span>{kitSummary}</span>
             </div>
-            {isFirstRun ? (
-              <div className="deploy-detail-line deploy-detail-line--tip">
-                <span className="deploy-detail-label">Tip</span>
-                <span>Take the starter setup out once before making major changes, so you can feel what each swap actually does.</span>
-              </div>
-            ) : null}
             <div className="deploy-detail-line">
               <span className="deploy-detail-label">Scoring</span>
               <span>{loadout.multiplierLine}</span>

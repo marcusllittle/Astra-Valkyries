@@ -37,7 +37,7 @@ const STEPS: TutorialStep[] = [
     ],
     keys: [
       { label: "WASD / Arrows", desc: "Move your ship" },
-      { label: "Touch Pad", desc: "Drag to move (mobile)" },
+      { label: "Touch Pad", desc: "Move" },
     ],
   },
   {
@@ -48,7 +48,7 @@ const STEPS: TutorialStep[] = [
     ],
     keys: [
       { label: "Shift", desc: "Fire secondary" },
-      { label: "Touch Button", desc: "Fire secondary (mobile)" },
+      { label: "Touch Button", desc: "Secondary" },
     ],
   },
   {
@@ -124,7 +124,7 @@ export default function TutorialOverlay({ onComplete }: TutorialOverlayProps) {
             Skip
           </button>
           <button className="btn btn-primary tutorial-next" onClick={advance}>
-            {isLast ? "Launch!" : "Next"}
+            {isLast ? "Play" : "Next"}
           </button>
         </div>
       </div>

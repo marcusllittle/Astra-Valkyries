@@ -5170,11 +5170,6 @@ export default function ShmupPlayScreen() {
             <div className="mobile-play-gate-title">
               {showMobileRotateGate ? "Rotate to landscape" : "Play fullscreen"}
             </div>
-            <p className="mobile-play-gate-copy">
-              {showMobileRotateGate
-                ? "The run is paused while the phone is upright. Enemies stay frozen until you rotate back."
-                : "Start from here so the game can claim the full mobile viewport before enemies spawn."}
-            </p>
             {!showMobileRotateGate ? (
               <button
                 type="button"
@@ -5183,7 +5178,7 @@ export default function ShmupPlayScreen() {
                   void handleMobileLaunch();
                 }}
               >
-                Enter and Play
+                Play
               </button>
             ) : null}
           </div>
