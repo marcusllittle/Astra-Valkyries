@@ -239,7 +239,7 @@ export default function CollectionScreen() {
       ))}
 
       {ownedCount === 0 && (
-        <p className="empty-msg">No outfits yet. Visit the Store to pull!</p>
+        <p className="empty-msg">No outfits yet.</p>
       )}
       </>}
 

@@ -283,7 +283,7 @@ export default function HangarScreen() {
         )}
         {kitWarning && <p className="kit-warning">{kitWarning}</p>}
         {ownedOutfits.length === 0 && (
-          <p className="empty-msg">No outfits owned. Visit the Store!</p>
+          <p className="empty-msg">No outfits owned yet.</p>
         )}
       </section>
 
@@ -312,7 +312,7 @@ export default function HangarScreen() {
           <button
             className="btn btn-primary deploy-btn"
             onClick={() => {
-              navigate("/shmup");
+              navigate("/briefing");
             }}
             disabled={!save.selectedPilotId || !save.selectedShipId}
           >

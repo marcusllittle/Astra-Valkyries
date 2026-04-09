@@ -218,10 +218,10 @@ export default function ShmupResultsScreen() {
 
       <div className="results-focus-pill">
         <span className="result-label">Next Focus</span>
-        <strong>{isFirstRun ? "Tune one loadout piece" : "Push a cleaner grade"}</strong>
+        <strong>{isFirstRun ? "Refine loadout" : "Push a cleaner grade"}</strong>
       </div>
       {wallet.status !== "connected" && (
-        <div className="reward-status-note">Connect wallet to earn HavnAI credits</div>
+        <div className="reward-status-note">Wallet rewards available when connected</div>
       )}
       {rewardStatus && (
         <div className="reward-status-note">
@@ -237,16 +237,16 @@ export default function ShmupResultsScreen() {
 
       {isFirstRun ? (
         <div className="results-next-step-callout">
-          <strong>Nice first run.</strong> Tune your loadout next, then check Missions for easy early goals.
+          <strong>Loadout updated.</strong> Choose your next route from the port.
         </div>
       ) : null}
 
       <div className="results-buttons">
         <button className="btn btn-primary" onClick={() => navigate(isFirstRun ? "/hangar" : "/shmup")}>
-          {isFirstRun ? "Tune Loadout" : "Play Again"}
+          {isFirstRun ? "Open Loadout" : "Play Again"}
         </button>
-        <button className="btn btn-secondary" onClick={isFirstRun ? () => navigate("/missions") : handleReturnToPort}>
-          {isFirstRun ? "View Missions" : "Return to Port"}
+        <button className="btn btn-secondary" onClick={handleReturnToPort}>
+          Return to Port
         </button>
       </div>
     </div>
