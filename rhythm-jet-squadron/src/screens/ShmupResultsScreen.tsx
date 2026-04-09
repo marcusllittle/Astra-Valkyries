@@ -10,6 +10,7 @@ import {
 import { astraReward } from "../lib/havnApi";
 import { getDialogueForMap } from "../data/dialogues";
 import DialogueBox from "../components/DialogueBox";
+import { getShmupMapById } from "../lib/shmupWaves";
 
 const GRADE_COLORS: Record<string, string> = {
   S: "#ffd43b",
@@ -53,6 +54,7 @@ export default function ShmupResultsScreen() {
   const debriefNode = debriefScript?.nodes.find((n) => n.id === debriefScript.startNodeId);
   const debriefLines = debriefNode?.lines ?? [];
   const debriefBackdrop = mapId ? DEBRIEF_BACKDROPS[mapId] : undefined;
+  const activeMap = getShmupMapById(mapId);
 
   const handleReturnToPort = () => {
     navigate("/spaceport");
@@ -129,8 +131,11 @@ export default function ShmupResultsScreen() {
         <div className="debrief-container debrief-container-polished">
           <div className="debrief-header-band">
             <span className="debrief-kicker">After Action Debrief</span>
-            <strong className="debrief-map-label">{mapId?.replace(/-/g, " ") ?? "Mission"}</strong>
+            <strong className="debrief-map-label">{activeMap?.name ?? mapId?.replace(/-/g, " ") ?? "Mission"}</strong>
           </div>
+          {activeMap?.debrief ? (
+            <div className="debrief-arc-note">{activeMap.debrief}</div>
+          ) : null}
           <DialogueBox
             line={debriefLines[debriefLineIdx]}
             onNext={() => {

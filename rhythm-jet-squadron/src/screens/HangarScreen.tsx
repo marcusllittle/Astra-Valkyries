@@ -231,6 +231,7 @@ export default function HangarScreen() {
               />
               <div className="map-card-info">
                 <strong className="map-card-title">{map.name}</strong>
+                <span className="map-card-meta">{map.tagline}</span>
                 <span className="map-card-meta">Boss: {map.bossName}</span>
               </div>
             </button>
