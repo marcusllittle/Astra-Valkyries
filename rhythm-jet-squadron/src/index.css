@@ -4399,9 +4399,14 @@ video.card-art-img {
 .codex-detail-placeholder {
   width: 100%;
   max-height: 320px;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 18px;
   border: 1px solid rgba(255,255,255,0.08);
+  background: radial-gradient(circle at top, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+}
+
+.codex-detail-image {
+  padding: 14px;
 }
 
 .codex-detail-placeholder {
@@ -4636,10 +4641,10 @@ video.card-art-img {
 }
 
 .briefing-hero-panel {
-  padding: 24px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
 }
 
 .briefing-kicker {
@@ -4650,8 +4655,9 @@ video.card-art-img {
 }
 
 .briefing-title {
-  margin: 6px 0;
+  margin: 4px 0;
   text-transform: uppercase;
+  font-size: clamp(1.6rem, 3vw, 2.5rem);
 }
 
 .briefing-subtitle {
@@ -4662,7 +4668,7 @@ video.card-art-img {
 
 .briefing-art-frame {
   position: relative;
-  min-height: 340px;
+  min-height: 280px;
   border-radius: 22px;
   border: 1px solid rgba(255,255,255,0.08);
   background: radial-gradient(circle at top, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
@@ -4673,7 +4679,19 @@ video.card-art-img {
 .briefing-art-placeholder {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+}
+
+.briefing-loadout-tag {
+  align-self: flex-start;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(102,217,239,0.22);
+  background: rgba(102,217,239,0.08);
+  color: rgba(230,245,255,0.88);
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .briefing-art-placeholder {
@@ -4773,20 +4791,30 @@ video.card-art-img {
   }
 
   .briefing-hero-panel {
-    padding: 16px;
-    gap: 12px;
+    padding: 14px;
+    gap: 10px;
   }
 
   .briefing-title {
-    font-size: 1.75rem;
+    font-size: 1.3rem;
+  }
+
+  .briefing-subtitle {
+    font-size: 0.92rem;
+    line-height: 1.45;
+  }
+
+  .briefing-loadout-tag {
+    font-size: 0.68rem;
+    padding: 5px 8px;
   }
 
   .briefing-art-frame {
-    min-height: 240px;
+    min-height: 180px;
   }
 
   .briefing-dialogue-stage {
-    min-height: 460px;
+    min-height: 420px;
   }
 
   .briefing-skip-btn {
