@@ -58,21 +58,21 @@ export const LORE_ENTRIES: LoreEntry[] = [
     category: "boss",
     title: "Aegis Dreadnought",
     content: "A massive capital ship bristling with weapons, the Aegis Dreadnought is the enemy's primary patrol vessel. Its layered shield system makes it nearly impervious to conventional attacks.",
-    imageUrl: "/assets/shmup/boss_dreadnought.svg",
+    imageUrl: "/assets/cutins/scenes/nebula_runway_briefing.png",
   },
   {
     id: "lore-helios",
     category: "boss",
     title: "Helios Tyrant",
     content: "An experimental weapons platform that harnesses solar energy to power devastating beam weapons. The Helios Tyrant can redirect solar flares as offensive weapons.",
-    imageUrl: "/assets/outfits/solar_flare.png",
+    imageUrl: "/assets/cutins/scenes/solar_rift_briefing.png",
   },
   {
     id: "lore-cryo",
     category: "boss",
     title: "Cryo Leviathan",
     content: "The most feared entity in known space. This biomechanical horror freezes everything in its path, and its crystalline armor regenerates from ambient cold energy.",
-    imageUrl: "/assets/outfits/lunar_eclipse.png",
+    imageUrl: "/assets/cutins/scenes/abyss_crown_briefing.png",
   },
   // Enemy types
   {
@@ -87,7 +87,7 @@ export const LORE_ENTRIES: LoreEntry[] = [
     category: "enemy",
     title: "Tank Fortress",
     content: "Heavily armored mobile platforms with regenerating shield generators. Taking one down requires sustained firepower and careful timing around its shield cycles.",
-    imageUrl: "/assets/outfits/iron_hawk.png",
+    imageUrl: "/assets/cutins/scenes/abyss_crown_briefing.png",
   },
   {
     id: "lore-dreadnought-enemy",
@@ -109,6 +109,6 @@ export const LORE_ENTRIES: LoreEntry[] = [
     category: "faction",
     title: "The Void Collective",
     content: "A mysterious enemy force that emerged from deep space. Their ships appear to be partially organic, and their tactics suggest a hive-mind intelligence.",
-    imageUrl: "/assets/outfits/void_reaper.png",
+    imageUrl: "/assets/cutins/scenes/abyss_crown_briefing.png",
   },
 ];
