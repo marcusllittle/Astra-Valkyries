@@ -48,6 +48,11 @@ body.shmup-active {
   overflow: hidden;
   overscroll-behavior: none;
   touch-action: none;
+  -ms-touch-action: none;
+}
+
+html.shmup-active {
+  -webkit-text-size-adjust: 100%;
 }
 
 body::before,
@@ -83,6 +88,11 @@ body::after {
   min-height: 100vh;
   position: relative;
   z-index: 1;
+}
+
+#root.shmup-active {
+  touch-action: none;
+  overscroll-behavior: none;
 }
 
 /* ─── App container ───────────────────────────────────── */
