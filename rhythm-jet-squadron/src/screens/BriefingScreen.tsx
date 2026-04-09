@@ -103,20 +103,21 @@ export default function BriefingScreen() {
             <p className="briefing-subtitle">{note.tone}</p>
             {loadoutLabel ? <span className="briefing-loadout-tag">{loadoutLabel}</span> : null}
           </div>
-          <div className="briefing-art-frame briefing-art-frame-scene" style={{ boxShadow: `0 0 60px ${note.accent}22` }}>
-            {artwork ? (
-              <img className="briefing-art-image" src={artwork} alt="Mission briefing art" />
-            ) : (
-              <div className="briefing-art-placeholder">✦</div>
-            )}
-          </div>
           <div className="briefing-map-note" style={{ borderColor: `${note.accent}44` }}>
             <span className="briefing-map-note-label">Zone Read</span>
             <strong style={{ color: note.accent }}>{note.label}</strong>
           </div>
         </section>
 
-        <section className="briefing-dialogue-stage">
+        <section className="briefing-dialogue-stage briefing-dialogue-stage-art">
+          <div className="briefing-stage-backdrop" style={{ boxShadow: `0 0 60px ${note.accent}22` }}>
+            {artwork ? (
+              <img className="briefing-art-image" src={artwork} alt="Mission briefing art" />
+            ) : (
+              <div className="briefing-art-placeholder">✦</div>
+            )}
+            <div className="briefing-stage-wash" />
+          </div>
           <button className="btn btn-secondary briefing-skip-btn" onClick={handleSkip}>
             Skip
           </button>

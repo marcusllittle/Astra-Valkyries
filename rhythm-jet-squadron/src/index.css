@@ -4666,17 +4666,27 @@ video.card-art-img {
   line-height: 1.6;
 }
 
-.briefing-art-frame {
-  position: relative;
-  min-height: 280px;
-  border-radius: 22px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: radial-gradient(circle at top, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+.briefing-stage-backdrop {
+  position: absolute;
+  inset: 0;
+  border-radius: 28px;
   overflow: hidden;
+  background: #050814;
 }
 
-.briefing-art-frame-scene {
-  background: #050814;
+.briefing-stage-backdrop .briefing-art-image,
+.briefing-stage-backdrop .briefing-art-placeholder {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.briefing-stage-wash {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(4, 8, 18, 0.18) 0%, rgba(4, 8, 18, 0.52) 58%, rgba(4, 8, 18, 0.9) 100%),
+    linear-gradient(90deg, rgba(4, 8, 18, 0.12) 0%, rgba(4, 8, 18, 0.04) 35%, rgba(4, 8, 18, 0.28) 100%);
 }
 
 .briefing-art-image,
@@ -4684,10 +4694,6 @@ video.card-art-img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-}
-
-.briefing-art-frame-scene .briefing-art-image {
-  object-fit: cover;
 }
 
 .briefing-loadout-tag {
@@ -4732,6 +4738,10 @@ video.card-art-img {
   background:
     linear-gradient(180deg, rgba(2,4,12,0.12), rgba(2,4,12,0.72)),
     radial-gradient(circle at center, rgba(54,138,255,0.08), transparent 55%);
+}
+
+.briefing-dialogue-stage-art {
+  overflow: hidden;
 }
 
 .briefing-skip-btn {
@@ -4828,9 +4838,8 @@ video.card-art-img {
     padding: 4px 7px;
   }
 
-  .briefing-art-frame {
-    min-height: 132px;
-    border-radius: 16px;
+  .briefing-stage-backdrop {
+    border-radius: 18px;
   }
 
   .briefing-map-note {

@@ -1,6 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LORE_ENTRIES, type LoreEntry } from "../data/lore";
+import { getCodexRenderOverride } from "../data/codexRenderMap";
+import { assetExists } from "../lib/assetExists";
 
 const CATEGORIES = [
   { key: "pilot", label: "PILOTS", icon: "✦" },
@@ -69,6 +71,29 @@ export default function CodexScreen() {
   const selectedEntry = entries.find((entry) => entry.id === selectedEntryId) ?? entries[0] ?? null;
   const categoryInfo = CATEGORIES.find((category) => category.key === activeCategory) ?? CATEGORIES[0];
   const tone = getCategoryTone((selectedEntry?.category as LoreEntry["category"]) ?? "pilot");
+  const [resolvedImageUrl, setResolvedImageUrl] = useState<string | undefined>(selectedEntry?.imageUrl);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function resolveImage() {
+      if (!selectedEntry) {
+        setResolvedImageUrl(undefined);
+        return;
+      }
+      const override = getCodexRenderOverride(selectedEntry.id);
+      if (override && await assetExists(override)) {
+        if (!cancelled) setResolvedImageUrl(override);
+        return;
+      }
+      if (!cancelled) setResolvedImageUrl(selectedEntry.imageUrl);
+    }
+
+    void resolveImage();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedEntry]);
 
   return (
     <div className="screen codex-screen">
@@ -149,9 +174,9 @@ export default function CodexScreen() {
                   </span>
                 </div>
 
-                {selectedEntry.imageUrl ? (
+                {resolvedImageUrl ? (
                   <img
-                    src={selectedEntry.imageUrl}
+                    src={resolvedImageUrl}
                     alt={selectedEntry.title}
                     className="codex-detail-image"
                   />

@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "basePath": "/assets/codex/renders",
+  "entries": [
+    {
+      "loreId": "lore-aegis",
+      "title": "Aegis Dreadnought",
+      "category": "boss",
+      "filename": "aegis_dreadnought_codex.png",
+      "promptRef": "docs/codex-render-prompts.md#aegis-dreadnought"
+    },
+    {
+      "loreId": "lore-helios",
+      "title": "Helios Tyrant",
+      "category": "boss",
+      "filename": "helios_tyrant_codex.png",
+      "promptRef": "docs/codex-render-prompts.md#helios-tyrant"
+    },
+    {
+      "loreId": "lore-cryo",
+      "title": "Cryo Leviathan",
+      "category": "boss",
+      "filename": "cryo_leviathan_codex.png",
+      "promptRef": "docs/codex-render-prompts.md#cryo-leviathan"
+    },
+    {
+      "loreId": "lore-tank",
+      "title": "Tank Fortress",
+      "category": "enemy",
+      "filename": "tank_fortress_codex.png",
+      "promptRef": "docs/codex-render-prompts.md#tank-fortress"
+    },
+    {
+      "loreId": "lore-valkyrie",
+      "title": "Valkyrie Squadron",
+      "category": "faction",
+      "filename": "valkyrie_squadron_codex.png",
+      "promptRef": "docs/codex-render-prompts.md#valkyrie-squadron"
+    },
+    {
+      "loreId": "lore-void-collective",
+      "title": "The Void Collective",
+      "category": "faction",
+      "filename": "void_collective_codex.png",
+      "promptRef": "docs/codex-render-prompts.md#void-collective"
+    }
+  ]
+}
