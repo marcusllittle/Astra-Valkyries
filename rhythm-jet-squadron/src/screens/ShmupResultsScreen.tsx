@@ -26,6 +26,12 @@ const DEBRIEF_BACKDROPS: Record<string, string> = {
   "abyss-crown": "/assets/cutins/scenes/abyss_crown_briefing.png",
 };
 
+const DEBRIEF_NOTES: Record<string, { label: string; accent: string }> = {
+  "nebula-runway": { label: "Nebula corridor secured", accent: "#66d9ef" },
+  "solar-rift": { label: "Thermal front survived", accent: "#ff9f43" },
+  "abyss-crown": { label: "Void breach contained", accent: "#74c0fc" },
+};
+
 function formatTime(timeMs: number): string {
   const totalSeconds = Math.max(0, Math.floor(timeMs / 1000));
   const minutes = Math.floor(totalSeconds / 60);
@@ -55,6 +61,7 @@ export default function ShmupResultsScreen() {
   const debriefLines = debriefNode?.lines ?? [];
   const debriefBackdrop = mapId ? DEBRIEF_BACKDROPS[mapId] : undefined;
   const activeMap = getShmupMapById(mapId);
+  const debriefNote = mapId ? DEBRIEF_NOTES[mapId] : undefined;
 
   const handleReturnToPort = () => {
     navigate("/spaceport");
@@ -119,36 +126,46 @@ export default function ShmupResultsScreen() {
 
   if (showDebrief && debriefLines.length > 0 && debriefLineIdx < debriefLines.length) {
     return (
-      <div className="screen results-screen debrief-overlay">
-        <div className="debrief-backdrop-shell">
-          {debriefBackdrop ? (
-            <img className="debrief-backdrop-image" src={debriefBackdrop} alt="Debrief portrait" />
-          ) : (
-            <div className="debrief-backdrop-placeholder" aria-hidden="true">✦</div>
-          )}
-          <div className="debrief-backdrop-wash" />
-        </div>
-        <div className="debrief-container debrief-container-polished">
-          <div className="debrief-header-band">
-            <span className="debrief-kicker">After Action Debrief</span>
-            <strong className="debrief-map-label">{activeMap?.name ?? mapId?.replace(/-/g, " ") ?? "Mission"}</strong>
-          </div>
-          {activeMap?.debrief ? (
-            <div className="debrief-arc-note">{activeMap.debrief}</div>
-          ) : null}
-          <DialogueBox
-            line={debriefLines[debriefLineIdx]}
-            onNext={() => {
-              if (debriefLineIdx < debriefLines.length - 1) {
-                setDebriefLineIdx((i) => i + 1);
-              } else {
-                setShowDebrief(false);
-              }
-            }}
-          />
-          <button className="btn btn-sm debrief-skip" onClick={() => setShowDebrief(false)}>
-            SKIP
-          </button>
+      <div className="briefing-screen-shell debrief-screen-shell">
+        <div className="briefing-screen-atmosphere" aria-hidden="true" />
+        <div className="briefing-screen-grid debrief-screen-grid">
+          <section className="briefing-hero-panel debrief-hero-panel">
+            <div className="briefing-hero-copy">
+              <span className="briefing-kicker">After Action Debrief</span>
+              <h1 className="briefing-title">{activeMap?.name ?? mapId?.replace(/-/g, " ") ?? "Mission"}</h1>
+              {activeMap?.debrief ? <p className="briefing-subtitle">{activeMap.debrief}</p> : null}
+            </div>
+            {debriefNote ? (
+              <div className="briefing-map-note" style={{ borderColor: `${debriefNote.accent}44` }}>
+                <span className="briefing-map-note-label">Status</span>
+                <strong style={{ color: debriefNote.accent }}>{debriefNote.label}</strong>
+              </div>
+            ) : null}
+          </section>
+
+          <section className="briefing-dialogue-stage briefing-dialogue-stage-art debrief-dialogue-stage">
+            <div className="briefing-stage-backdrop">
+              {debriefBackdrop ? (
+                <img className="briefing-art-image" src={debriefBackdrop} alt="Mission debrief art" />
+              ) : (
+                <div className="briefing-art-placeholder">✦</div>
+              )}
+              <div className="briefing-stage-wash" />
+            </div>
+            <button className="btn btn-secondary briefing-skip-btn" onClick={() => setShowDebrief(false)}>
+              Skip
+            </button>
+            <DialogueBox
+              line={debriefLines[debriefLineIdx]}
+              onNext={() => {
+                if (debriefLineIdx < debriefLines.length - 1) {
+                  setDebriefLineIdx((i) => i + 1);
+                } else {
+                  setShowDebrief(false);
+                }
+              }}
+            />
+          </section>
         </div>
       </div>
     );

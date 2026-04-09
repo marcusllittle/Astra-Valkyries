@@ -4451,95 +4451,21 @@ video.card-art-img {
 }
 
 
-.debrief-backdrop-shell {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
+.debrief-screen-shell {
+  z-index: 30;
 }
 
-.debrief-backdrop-image,
-.debrief-backdrop-placeholder {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.debrief-screen-grid {
+  min-height: 100vh;
 }
 
-.debrief-backdrop-image {
-  opacity: 0.22;
-  filter: saturate(0.9) blur(1px);
-}
-
-.debrief-backdrop-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 8rem;
-  color: rgba(255,255,255,0.08);
-  background: radial-gradient(circle at center, rgba(102,217,239,0.12), transparent 55%);
-}
-
-.debrief-backdrop-wash {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(3,8,20,0.62), rgba(3,8,20,0.88));
-}
-
-.debrief-container-polished {
-  position: relative;
-  width: min(100%, 980px);
-  min-height: 560px;
-  border-radius: 24px;
-  overflow: hidden;
-  border: 1px solid rgba(102,217,239,0.16);
-  box-shadow: 0 24px 80px rgba(0,0,0,0.45);
-  background: linear-gradient(160deg, rgba(10,18,33,0.9), rgba(5,10,20,0.92));
-}
-
-.debrief-header-band {
-  position: absolute;
-  top: 20px;
-  left: 24px;
-  right: 24px;
-  z-index: 3;
-  display: flex;
+.debrief-hero-panel {
   justify-content: space-between;
-  align-items: center;
-  gap: 12px;
 }
 
-.debrief-kicker,
-.debrief-map-label {
-  padding: 8px 12px;
-  border-radius: 999px;
-  background: rgba(6, 15, 29, 0.68);
-  border: 1px solid rgba(102,217,239,0.18);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-size: 0.72rem;
+.debrief-dialogue-stage {
+  min-height: 680px;
 }
-
-.debrief-kicker {
-  color: rgba(255,255,255,0.74);
-}
-
-.debrief-map-label {
-  color: #66d9ef;
-}
-
-@media (max-width: 720px) {
-  .debrief-container-polished {
-    min-height: 520px;
-    border-radius: 18px;
-  }
-
-  .debrief-header-band {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-}
-
 
 .dialogue-box-shell {
   position: absolute;
@@ -4847,7 +4773,8 @@ video.card-art-img {
     border-radius: 14px;
   }
 
-  .briefing-dialogue-stage {
+  .briefing-dialogue-stage,
+  .debrief-dialogue-stage {
     min-height: 360px;
   }
 
@@ -4856,19 +4783,6 @@ video.card-art-img {
     right: 10px;
     padding: 7px 10px;
     font-size: 0.7rem;
-  }
-
-  .debrief-arc-note {
-    top: 82px;
-    left: 12px;
-    right: 12px;
-    max-width: none;
-    font-size: 0.84rem;
-    line-height: 1.4;
-  }
-
-  .debrief-container-polished {
-    min-height: 470px;
   }
 
   .codex-detail-image,
