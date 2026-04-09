@@ -4767,78 +4767,108 @@ video.card-art-img {
 
 @media (max-width: 720px) {
   .dialogue-box-shell {
-    padding: 12px;
+    padding: 10px;
   }
 
   .dialogue-box-panel {
-    min-height: 180px;
-    border-radius: 18px;
-    padding: 18px 16px 28px;
+    min-height: 156px;
+    border-radius: 16px;
+    padding: 14px 14px 24px;
+  }
+
+  .dialogue-box-speaker {
+    font-size: 0.68rem;
+    margin-bottom: 8px;
   }
 
   .dialogue-box-text {
-    font-size: 0.95rem;
-    line-height: 1.6;
-    min-height: 88px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    min-height: 72px;
   }
 
   .dialogue-box-continue {
-    right: 16px;
-    bottom: 10px;
-    font-size: 0.68rem;
+    right: 14px;
+    bottom: 8px;
+    font-size: 0.64rem;
   }
 
   .briefing-screen-grid {
-    padding: 12px;
-    gap: 12px;
+    padding: 10px;
+    gap: 10px;
   }
 
   .briefing-hero-panel,
   .briefing-dialogue-stage {
-    border-radius: 20px;
+    border-radius: 18px;
   }
 
   .briefing-hero-panel {
-    padding: 14px;
-    gap: 10px;
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .briefing-kicker,
+  .briefing-map-note-label {
+    font-size: 0.64rem;
   }
 
   .briefing-title {
-    font-size: 1.3rem;
+    font-size: 1.08rem;
+    line-height: 1.15;
   }
 
   .briefing-subtitle {
-    font-size: 0.92rem;
-    line-height: 1.45;
+    font-size: 0.84rem;
+    line-height: 1.35;
   }
 
   .briefing-loadout-tag {
-    font-size: 0.68rem;
-    padding: 5px 8px;
+    font-size: 0.64rem;
+    padding: 4px 7px;
   }
 
   .briefing-art-frame {
-    min-height: 160px;
+    min-height: 132px;
+    border-radius: 16px;
+  }
+
+  .briefing-map-note {
+    padding: 10px 12px;
+    border-radius: 14px;
   }
 
   .briefing-dialogue-stage {
-    min-height: 420px;
+    min-height: 360px;
   }
 
   .briefing-skip-btn {
-    top: 12px;
-    right: 12px;
+    top: 10px;
+    right: 10px;
+    padding: 7px 10px;
+    font-size: 0.7rem;
   }
 
   .debrief-arc-note {
-    top: 88px;
-    left: 14px;
-    right: 14px;
+    top: 82px;
+    left: 12px;
+    right: 12px;
     max-width: none;
-    font-size: 0.9rem;
+    font-size: 0.84rem;
+    line-height: 1.4;
   }
 
   .debrief-container-polished {
-    min-height: 500px;
+    min-height: 470px;
+  }
+
+  .codex-detail-image,
+  .codex-detail-placeholder {
+    max-height: 220px;
+    border-radius: 16px;
+  }
+
+  .codex-detail-image {
+    padding: 10px;
   }
 }
