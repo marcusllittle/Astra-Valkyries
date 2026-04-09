@@ -4738,3 +4738,71 @@ video.card-art-img {
     min-height: 560px;
   }
 }
+
+@media (max-width: 720px) {
+  .dialogue-box-shell {
+    padding: 12px;
+  }
+
+  .dialogue-box-panel {
+    min-height: 180px;
+    border-radius: 18px;
+    padding: 18px 16px 28px;
+  }
+
+  .dialogue-box-text {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    min-height: 88px;
+  }
+
+  .dialogue-box-continue {
+    right: 16px;
+    bottom: 10px;
+    font-size: 0.68rem;
+  }
+
+  .briefing-screen-grid {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .briefing-hero-panel,
+  .briefing-dialogue-stage {
+    border-radius: 20px;
+  }
+
+  .briefing-hero-panel {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .briefing-title {
+    font-size: 1.75rem;
+  }
+
+  .briefing-art-frame {
+    min-height: 240px;
+  }
+
+  .briefing-dialogue-stage {
+    min-height: 460px;
+  }
+
+  .briefing-skip-btn {
+    top: 12px;
+    right: 12px;
+  }
+
+  .debrief-arc-note {
+    top: 88px;
+    left: 14px;
+    right: 14px;
+    max-width: none;
+    font-size: 0.9rem;
+  }
+
+  .debrief-container-polished {
+    min-height: 500px;
+  }
+}

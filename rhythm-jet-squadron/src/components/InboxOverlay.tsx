@@ -3,7 +3,7 @@ import { resolveAssetUrl } from "../lib/assetUrl";
 import { useGame } from "../context/GameContext";
 import type { SaveData } from "../types";
 
-type InboxAttachmentType = "image" | "video";
+type InboxAttachmentType = "image";
 
 interface InboxAttachment {
   id: string;
@@ -12,7 +12,6 @@ interface InboxAttachment {
   fallbackUrl?: string;
   label?: string;
   alt?: string;
-  posterUrl?: string;
 }
 
 interface InboxMessageTemplate {
@@ -123,24 +122,6 @@ const PLACEHOLDER_MESSAGES: InboxMessageTemplate[] = [
     ],
     timestamp: Date.now() - 2100000,
     isUnlocked: (save) => Boolean(save.bestGrades["solar-rift"]),
-  },
-  {
-    id: "msg-nova-video",
-    sender: "Nova",
-    subject: "Replay this when you miss me",
-    preview: "Video attachment • Nova",
-    body: "Cockpit lights, open channel, no witnesses. Seemed unfair not to use the moment.\n\nIf you watch this more than once, I want honesty about why.\n\nActually, no. I already know why.\n\n- Nova",
-    attachments: [
-      {
-        id: "nova-video",
-        type: "video",
-        url: "/assets/cutins/nova_fever.mp4",
-        posterUrl: `${CUSTOM_INBOX_DIR}/nova_after_hours.png`,
-        label: "Nova cockpit video",
-      },
-    ],
-    timestamp: Date.now() - 900000,
-    isUnlocked: (save) => Boolean(save.bestGrades["nebula-runway"]) && save.totalRuns >= 2,
   },
   {
     id: "msg-command-after-abyss",
@@ -322,38 +303,6 @@ export default function InboxOverlay({ isOpen, onClose }: InboxOverlayProps) {
       background: "rgba(2, 8, 18, 0.88)",
       boxShadow: "0 14px 28px rgba(0, 0, 0, 0.22)",
     };
-
-    if (attachment.type === "video") {
-      return (
-        <div key={attachment.id} style={mediaFrameStyle}>
-          <div style={{
-            padding: "10px 12px",
-            borderBottom: "1px solid rgba(102,217,239,0.12)",
-            color: "rgba(102,217,239,0.8)",
-            fontSize: "11px",
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            fontFamily: "monospace",
-          }}>
-            {attachment.label ?? "Video attachment"}
-          </div>
-          <video
-            src={resolvedUrl}
-            poster={resolveAssetUrl(attachment.posterUrl)}
-            controls
-            playsInline
-            preload="metadata"
-            style={{
-              width: "100%",
-              maxHeight: "320px",
-              display: "block",
-              background: "#000",
-              objectFit: "contain",
-            }}
-          />
-        </div>
-      );
-    }
 
     return (
       <div key={attachment.id} style={mediaFrameStyle}>
