@@ -13,16 +13,41 @@ const CATEGORIES = [
 function getCategoryTone(category: LoreEntry["category"]) {
   switch (category) {
     case "pilot":
-      return { glow: "rgba(102,217,239,0.24)", accent: "#66d9ef", kicker: "Pilot dossier" };
+      return {
+        glow: "rgba(102,217,239,0.24)",
+        accent: "#66d9ef",
+        kicker: "Pilot dossier",
+        panel: "linear-gradient(160deg, rgba(11,30,46,0.96), rgba(7,16,30,0.92))",
+      };
     case "zone":
-      return { glow: "rgba(166,140,255,0.24)", accent: "#a78bfa", kicker: "Sector file" };
+      return {
+        glow: "rgba(166,140,255,0.24)",
+        accent: "#a78bfa",
+        kicker: "Sector file",
+        panel: "linear-gradient(160deg, rgba(24,15,47,0.96), rgba(12,10,30,0.92))",
+      };
     case "boss":
-      return { glow: "rgba(255,122,143,0.24)", accent: "#ff7a8f", kicker: "Threat record" };
+      return {
+        glow: "rgba(255,122,143,0.24)",
+        accent: "#ff7a8f",
+        kicker: "Threat record",
+        panel: "linear-gradient(160deg, rgba(46,14,24,0.96), rgba(22,8,14,0.92))",
+      };
     case "enemy":
-      return { glow: "rgba(255,209,102,0.24)", accent: "#ffd166", kicker: "Contact report" };
+      return {
+        glow: "rgba(255,209,102,0.24)",
+        accent: "#ffd166",
+        kicker: "Contact report",
+        panel: "linear-gradient(160deg, rgba(45,30,11,0.96), rgba(22,16,8,0.92))",
+      };
     case "faction":
     default:
-      return { glow: "rgba(106,224,160,0.24)", accent: "#6ae0a0", kicker: "Faction brief" };
+      return {
+        glow: "rgba(106,224,160,0.24)",
+        accent: "#6ae0a0",
+        kicker: "Faction brief",
+        panel: "linear-gradient(160deg, rgba(12,39,30,0.96), rgba(8,20,16,0.92))",
+      };
   }
 }
 
@@ -47,15 +72,26 @@ export default function CodexScreen() {
 
   return (
     <div className="screen codex-screen">
+      <div className="codex-atmosphere" aria-hidden="true" />
       <div className="codex-shell panel-surface" style={{ boxShadow: `0 0 40px ${tone.glow}` }}>
-        <header className="codex-header">
-          <button className="btn btn-back" onClick={() => navigate("/spaceport")}>
-            ← Back
-          </button>
-          <div className="codex-header-copy">
-            <span className="codex-kicker">Archive Terminal</span>
-            <h1 className="codex-title">Codex</h1>
-            <p className="codex-subtitle">Squad intel, sector dossiers, and threat records.</p>
+        <header className="codex-header codex-command-bar">
+          <div className="codex-command-stack">
+            <button className="btn btn-back" onClick={() => navigate("/spaceport")}>
+              ← Back
+            </button>
+            <div className="codex-header-copy">
+              <span className="codex-kicker">Archive Terminal</span>
+              <h1 className="codex-title">CODEX</h1>
+              <p className="codex-subtitle">Squad intel, sector dossiers, and threat records.</p>
+            </div>
+          </div>
+
+          <div className="codex-hero-card" style={{ background: tone.panel, borderColor: tone.glow }}>
+            <span className="codex-hero-kicker" style={{ color: tone.accent }}>{tone.kicker}</span>
+            <strong className="codex-hero-title">{selectedEntry?.title ?? categoryInfo.label}</strong>
+            <span className="codex-hero-meta">
+              {entries.length} archived {categoryInfo.label.toLowerCase()}
+            </span>
           </div>
         </header>
 
@@ -100,7 +136,7 @@ export default function CodexScreen() {
             </div>
           </aside>
 
-          <section className="codex-detail-panel">
+          <section className="codex-detail-panel" style={{ background: tone.panel, borderColor: tone.glow }}>
             {selectedEntry ? (
               <>
                 <div className="codex-detail-hero" style={{ borderColor: tone.glow }}>
