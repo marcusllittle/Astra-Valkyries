@@ -4708,8 +4708,10 @@ video.card-art-img {
   }
 
   .dialogue-box-shell {
+    position: relative;
+    inset: auto;
     padding: 0;
-    inset: auto 10px 24px 10px;
+    margin: 10px 10px 0;
   }
 
   .dialogue-box-panel {
@@ -4783,13 +4785,18 @@ video.card-art-img {
   .briefing-dialogue-stage,
   .debrief-dialogue-stage {
     order: 2;
-    min-height: 58vh;
+    min-height: 0;
     border-radius: 22px;
-    overflow: hidden;
-    padding-bottom: 214px;
+    overflow: visible;
+    padding-bottom: 0;
+    display: flex;
+    flex-direction: column;
   }
 
   .briefing-stage-backdrop {
+    position: relative;
+    inset: auto;
+    min-height: 320px;
     border-radius: 22px;
   }
 
