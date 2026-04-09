@@ -4399,9 +4399,14 @@ video.card-art-img {
 .codex-detail-placeholder {
   width: 100%;
   max-height: 320px;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 18px;
   border: 1px solid rgba(255,255,255,0.08);
+  background: radial-gradient(circle at top, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+}
+
+.codex-detail-image {
+  padding: 14px;
 }
 
 .codex-detail-placeholder {
@@ -4636,10 +4641,10 @@ video.card-art-img {
 }
 
 .briefing-hero-panel {
-  padding: 24px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
 }
 
 .briefing-kicker {
@@ -4650,8 +4655,9 @@ video.card-art-img {
 }
 
 .briefing-title {
-  margin: 6px 0;
+  margin: 4px 0;
   text-transform: uppercase;
+  font-size: clamp(1.6rem, 3vw, 2.5rem);
 }
 
 .briefing-subtitle {
@@ -4662,18 +4668,38 @@ video.card-art-img {
 
 .briefing-art-frame {
   position: relative;
-  min-height: 340px;
+  min-height: 280px;
   border-radius: 22px;
   border: 1px solid rgba(255,255,255,0.08);
   background: radial-gradient(circle at top, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
   overflow: hidden;
 }
 
+.briefing-art-frame-scene {
+  background: #050814;
+}
+
 .briefing-art-image,
 .briefing-art-placeholder {
   width: 100%;
   height: 100%;
+  object-fit: contain;
+}
+
+.briefing-art-frame-scene .briefing-art-image {
   object-fit: cover;
+}
+
+.briefing-loadout-tag {
+  align-self: flex-start;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(102,217,239,0.22);
+  background: rgba(102,217,239,0.08);
+  color: rgba(230,245,255,0.88);
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .briefing-art-placeholder {
@@ -4741,68 +4767,108 @@ video.card-art-img {
 
 @media (max-width: 720px) {
   .dialogue-box-shell {
-    padding: 12px;
+    padding: 10px;
   }
 
   .dialogue-box-panel {
-    min-height: 180px;
-    border-radius: 18px;
-    padding: 18px 16px 28px;
+    min-height: 156px;
+    border-radius: 16px;
+    padding: 14px 14px 24px;
+  }
+
+  .dialogue-box-speaker {
+    font-size: 0.68rem;
+    margin-bottom: 8px;
   }
 
   .dialogue-box-text {
-    font-size: 0.95rem;
-    line-height: 1.6;
-    min-height: 88px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    min-height: 72px;
   }
 
   .dialogue-box-continue {
-    right: 16px;
-    bottom: 10px;
-    font-size: 0.68rem;
+    right: 14px;
+    bottom: 8px;
+    font-size: 0.64rem;
   }
 
   .briefing-screen-grid {
-    padding: 12px;
-    gap: 12px;
+    padding: 10px;
+    gap: 10px;
   }
 
   .briefing-hero-panel,
   .briefing-dialogue-stage {
-    border-radius: 20px;
+    border-radius: 18px;
   }
 
   .briefing-hero-panel {
-    padding: 16px;
-    gap: 12px;
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .briefing-kicker,
+  .briefing-map-note-label {
+    font-size: 0.64rem;
   }
 
   .briefing-title {
-    font-size: 1.75rem;
+    font-size: 1.08rem;
+    line-height: 1.15;
+  }
+
+  .briefing-subtitle {
+    font-size: 0.84rem;
+    line-height: 1.35;
+  }
+
+  .briefing-loadout-tag {
+    font-size: 0.64rem;
+    padding: 4px 7px;
   }
 
   .briefing-art-frame {
-    min-height: 240px;
+    min-height: 132px;
+    border-radius: 16px;
+  }
+
+  .briefing-map-note {
+    padding: 10px 12px;
+    border-radius: 14px;
   }
 
   .briefing-dialogue-stage {
-    min-height: 460px;
+    min-height: 360px;
   }
 
   .briefing-skip-btn {
-    top: 12px;
-    right: 12px;
+    top: 10px;
+    right: 10px;
+    padding: 7px 10px;
+    font-size: 0.7rem;
   }
 
   .debrief-arc-note {
-    top: 88px;
-    left: 14px;
-    right: 14px;
+    top: 82px;
+    left: 12px;
+    right: 12px;
     max-width: none;
-    font-size: 0.9rem;
+    font-size: 0.84rem;
+    line-height: 1.4;
   }
 
   .debrief-container-polished {
-    min-height: 500px;
+    min-height: 470px;
+  }
+
+  .codex-detail-image,
+  .codex-detail-placeholder {
+    max-height: 220px;
+    border-radius: 16px;
+  }
+
+  .codex-detail-image {
+    padding: 10px;
   }
 }

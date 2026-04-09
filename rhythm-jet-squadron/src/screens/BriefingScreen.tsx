@@ -3,16 +3,19 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { DIALOGUE_SCRIPTS, getDialogueForMap } from "../data/dialogues";
 import DialogueBox from "../components/DialogueBox";
 import { useGame } from "../context/GameContext";
+import pilotsData from "../data/pilots.json";
+import outfitsData from "../data/outfits.json";
 
 interface BriefingLocationState {
   scriptId?: string;
   returnTo?: string;
 }
 
-const MAP_BRIEFING_ART: Record<string, string> = {
-  "nebula-runway": "/assets/pilots/nova_starling.png",
-  "solar-rift": "/assets/pilots/rex_thunderbolt.png",
-  "abyss-crown": "/assets/pilots/yuki_frostweaver.png",
+
+const MAP_BRIEFING_SCENE_ART: Record<string, string> = {
+  "nebula-runway": "/assets/cutins/scenes/nebula_runway_briefing.png",
+  "solar-rift": "/assets/cutins/scenes/solar_rift_briefing.png",
+  "abyss-crown": "/assets/cutins/scenes/abyss_crown_briefing.png",
 };
 
 const MAP_BRIEFING_NOTES: Record<string, { label: string; tone: string; accent: string }> = {
@@ -39,8 +42,11 @@ export default function BriefingScreen() {
 
   const currentNode = script?.nodes.find((n) => n.id === currentNodeId);
   const mapId = script?.mapId ?? save.selectedMapId ?? "nebula-runway";
-  const artwork = MAP_BRIEFING_ART[mapId];
   const note = MAP_BRIEFING_NOTES[mapId] ?? MAP_BRIEFING_NOTES["nebula-runway"];
+  const selectedPilot = pilotsData.find((pilot) => pilot.id === save.selectedPilotId) ?? null;
+  const selectedOutfit = outfitsData.find((outfit) => outfit.id === save.selectedOutfitId) ?? null;
+  const artwork = MAP_BRIEFING_SCENE_ART[mapId] ?? selectedOutfit?.artUrl ?? selectedPilot?.artUrl ?? "/assets/pilots/nova_starling.png";
+  const loadoutLabel = [selectedPilot?.name, selectedOutfit?.name].filter(Boolean).join(" • ");
 
   useEffect(() => {
     setCurrentNodeId(script?.startNodeId ?? "");
@@ -95,8 +101,9 @@ export default function BriefingScreen() {
             <span className="briefing-kicker">Mission Briefing</span>
             <h1 className="briefing-title">{script.mapId?.replace(/-/g, " ") ?? "Launch"}</h1>
             <p className="briefing-subtitle">{note.tone}</p>
+            {loadoutLabel ? <span className="briefing-loadout-tag">{loadoutLabel}</span> : null}
           </div>
-          <div className="briefing-art-frame" style={{ boxShadow: `0 0 60px ${note.accent}22` }}>
+          <div className="briefing-art-frame briefing-art-frame-scene" style={{ boxShadow: `0 0 60px ${note.accent}22` }}>
             {artwork ? (
               <img className="briefing-art-image" src={artwork} alt="Mission briefing art" />
             ) : (

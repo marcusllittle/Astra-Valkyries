@@ -36,21 +36,21 @@ export const LORE_ENTRIES: LoreEntry[] = [
     category: "zone",
     title: "Nebula Runway",
     content: "A vast corridor of ionized gas clouds that serves as the primary shipping lane between core worlds. Since the invasion, it has become a gauntlet of enemy patrols and automated defense drones.",
-    imageUrl: "/assets/ships/astra_interceptor.png",
+    imageUrl: "/assets/cutins/scenes/nebula_runway_briefing.png",
   },
   {
     id: "lore-solar",
     category: "zone",
     title: "Solar Rift",
     content: "A region of space dangerously close to the binary star system Helios Prime. The intense radiation and solar flares make conventional shields unreliable, but the enemy has established a major fortress here.",
-    imageUrl: "/assets/outfits/solar_flare.png",
+    imageUrl: "/assets/cutins/scenes/solar_rift_briefing.png",
   },
   {
     id: "lore-abyss",
     category: "zone",
     title: "Abyss Crown",
     content: "The deepest region of charted space, where temperatures plunge to near absolute zero. Ancient alien structures dot the void, and the terrifying Cryo Leviathan guards the sector's secrets.",
-    imageUrl: "/assets/outfits/lunar_eclipse.png",
+    imageUrl: "/assets/cutins/scenes/abyss_crown_briefing.png",
   },
   // Bosses
   {
@@ -72,7 +72,7 @@ export const LORE_ENTRIES: LoreEntry[] = [
     category: "boss",
     title: "Cryo Leviathan",
     content: "The most feared entity in known space. This biomechanical horror freezes everything in its path, and its crystalline armor regenerates from ambient cold energy.",
-    imageUrl: "/assets/outfits/frost_nova.png",
+    imageUrl: "/assets/outfits/lunar_eclipse.png",
   },
   // Enemy types
   {
@@ -102,7 +102,7 @@ export const LORE_ENTRIES: LoreEntry[] = [
     category: "faction",
     title: "Valkyrie Squadron",
     content: "An elite rapid-response unit tasked with breaking through enemy lines. Each pilot flies a custom-modified fighter craft with unique weapon loadouts.",
-    imageUrl: "/assets/ships/valkyrie_lancer.png",
+    imageUrl: "/assets/cutins/scenes/nebula_runway_briefing.png",
   },
   {
     id: "lore-void-collective",
