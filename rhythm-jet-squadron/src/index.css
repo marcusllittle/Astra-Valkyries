@@ -4814,6 +4814,25 @@ video.card-art-img {
     border-radius: 16px;
   }
 
+  .briefing-hero-panel,
+  .debrief-hero-panel {
+    position: relative;
+    padding-right: 108px;
+  }
+
+  .briefing-hero-panel .briefing-skip-btn,
+  .debrief-hero-panel .briefing-skip-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 6;
+  }
+
+  .briefing-dialogue-stage .briefing-skip-btn,
+  .debrief-dialogue-stage .briefing-skip-btn {
+    display: none;
+  }
+
   .codex-detail-image,
   .codex-detail-placeholder {
     max-height: 220px;

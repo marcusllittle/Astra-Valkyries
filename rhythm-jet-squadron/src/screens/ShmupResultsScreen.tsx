@@ -130,6 +130,9 @@ export default function ShmupResultsScreen() {
         <div className="briefing-screen-atmosphere" aria-hidden="true" />
         <div className="briefing-screen-grid debrief-screen-grid">
           <section className="briefing-hero-panel debrief-hero-panel">
+            <button className="btn btn-secondary briefing-skip-btn" onClick={() => setShowDebrief(false)}>
+              Skip
+            </button>
             <div className="briefing-hero-copy">
               <span className="briefing-kicker">After Action Debrief</span>
               <h1 className="briefing-title">{activeMap?.name ?? mapId?.replace(/-/g, " ") ?? "Mission"}</h1>
@@ -152,9 +155,6 @@ export default function ShmupResultsScreen() {
               )}
               <div className="briefing-stage-wash" />
             </div>
-            <button className="btn btn-secondary briefing-skip-btn" onClick={() => setShowDebrief(false)}>
-              Skip
-            </button>
             <DialogueBox
               line={debriefLines[debriefLineIdx]}
               onNext={() => {

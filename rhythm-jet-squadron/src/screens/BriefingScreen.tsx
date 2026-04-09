@@ -97,6 +97,9 @@ export default function BriefingScreen() {
       <div className="briefing-screen-atmosphere" aria-hidden="true" />
       <div className="briefing-screen-grid">
         <section className="briefing-hero-panel">
+          <button className="btn btn-secondary briefing-skip-btn" onClick={handleSkip}>
+            Skip
+          </button>
           <div className="briefing-hero-copy">
             <span className="briefing-kicker">Mission Briefing</span>
             <h1 className="briefing-title">{script.mapId?.replace(/-/g, " ") ?? "Launch"}</h1>
@@ -118,9 +121,6 @@ export default function BriefingScreen() {
             )}
             <div className="briefing-stage-wash" />
           </div>
-          <button className="btn btn-secondary briefing-skip-btn" onClick={handleSkip}>
-            Skip
-          </button>
           <DialogueBox
             line={line}
             onNext={handleNext}
