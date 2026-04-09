@@ -21,9 +21,9 @@ const GRADE_COLORS: Record<string, string> = {
 };
 
 const DEBRIEF_BACKDROPS: Record<string, string> = {
-  "nebula-runway": "/assets/pilots/nova_starling.png",
-  "solar-rift": "/assets/pilots/rex_thunderbolt.png",
-  "abyss-crown": "/assets/pilots/yuki_frostweaver.png",
+  "nebula-runway": "/assets/cutins/scenes/nebula_runway_debrief.png",
+  "solar-rift": "/assets/cutins/scenes/solar_rift_briefing.png",
+  "abyss-crown": "/assets/cutins/scenes/abyss_crown_briefing.png",
 };
 
 function formatTime(timeMs: number): string {

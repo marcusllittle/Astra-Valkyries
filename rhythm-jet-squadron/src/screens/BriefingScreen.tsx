@@ -11,6 +11,13 @@ interface BriefingLocationState {
   returnTo?: string;
 }
 
+
+const MAP_BRIEFING_SCENE_ART: Record<string, string> = {
+  "nebula-runway": "/assets/cutins/scenes/nebula_runway_briefing.png",
+  "solar-rift": "/assets/cutins/scenes/solar_rift_briefing.png",
+  "abyss-crown": "/assets/cutins/scenes/abyss_crown_briefing.png",
+};
+
 const MAP_BRIEFING_NOTES: Record<string, { label: string; tone: string; accent: string }> = {
   "nebula-runway": { label: "Slipstream corridor", tone: "Fast patrol lane with layered drone pressure.", accent: "#66d9ef" },
   "solar-rift": { label: "Thermal surge zone", tone: "High heat, aggressive siege patterns, low breathing room.", accent: "#ff9f43" },
@@ -38,7 +45,7 @@ export default function BriefingScreen() {
   const note = MAP_BRIEFING_NOTES[mapId] ?? MAP_BRIEFING_NOTES["nebula-runway"];
   const selectedPilot = pilotsData.find((pilot) => pilot.id === save.selectedPilotId) ?? null;
   const selectedOutfit = outfitsData.find((outfit) => outfit.id === save.selectedOutfitId) ?? null;
-  const artwork = selectedOutfit?.artUrl ?? selectedPilot?.artUrl ?? "/assets/pilots/nova_starling.png";
+  const artwork = MAP_BRIEFING_SCENE_ART[mapId] ?? selectedOutfit?.artUrl ?? selectedPilot?.artUrl ?? "/assets/pilots/nova_starling.png";
   const loadoutLabel = [selectedPilot?.name, selectedOutfit?.name].filter(Boolean).join(" • ");
 
   useEffect(() => {
@@ -96,7 +103,7 @@ export default function BriefingScreen() {
             <p className="briefing-subtitle">{note.tone}</p>
             {loadoutLabel ? <span className="briefing-loadout-tag">{loadoutLabel}</span> : null}
           </div>
-          <div className="briefing-art-frame" style={{ boxShadow: `0 0 60px ${note.accent}22` }}>
+          <div className="briefing-art-frame briefing-art-frame-scene" style={{ boxShadow: `0 0 60px ${note.accent}22` }}>
             {artwork ? (
               <img className="briefing-art-image" src={artwork} alt="Mission briefing art" />
             ) : (
