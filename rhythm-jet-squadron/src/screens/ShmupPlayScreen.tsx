@@ -79,10 +79,12 @@ const INTRO_TOTAL_MS = INTRO_FLY_IN_MS + INTRO_READY_MS;
 const OVERDRIVE_EXTENSION_PER_KILL_MS = 180;
 const OVERDRIVE_EXTENSION_PER_BOSS_HIT_MS = 30;
 const OVERDRIVE_EXTENSION_CAP_MS = 5000;
-const TOUCH_PAD_RADIUS = 60;
-const TOUCH_PAD_EDGE_GUTTER = 72;
-const TOUCH_PAD_TOP_GUTTER = 96;
-const TOUCH_PAD_BOTTOM_GUTTER = 112;
+const TOUCH_PAD_RADIUS = 68;
+const TOUCH_PAD_EDGE_GUTTER = 52;
+const TOUCH_PAD_TOP_GUTTER = 86;
+const TOUCH_PAD_BOTTOM_GUTTER = 108;
+const TOUCH_MOVE_DEADZONE = 0.09;
+const TOUCH_MOVE_LINEAR_BLEND = 0.35;
 const PLAYER_BOTTOM_MARGIN = 132;
 const PLAYER_MOBILE_START_RATIO = 0.72;
 const PLAYER_DESKTOP_START_RATIO = 0.82;
@@ -849,21 +851,21 @@ export default function ShmupPlayScreen() {
     const clampedX = dx * scale;
     const clampedY = dy * scale;
 
-    // Normalize to -1..1 with deadzone and sensitivity curve
-    const DEADZONE = 0.12;
+    // Normalize to -1..1 with a smaller deadzone and a blended response curve.
+    // Pure quadratic felt too sluggish for thumb drags on mobile.
     let normX = clampedX / touchPadRadius;
     let normY = clampedY / touchPadRadius;
     const normDist = Math.hypot(normX, normY);
-    if (normDist < DEADZONE) {
+    if (normDist < TOUCH_MOVE_DEADZONE) {
       normX = 0;
       normY = 0;
     } else {
-      // Remap outside deadzone to 0..1 range with quadratic curve for fine control
-      const remapped = ((normDist - DEADZONE) / (1 - DEADZONE));
-      const curved = remapped * remapped; // quadratic: gentle at start, fast at edge
+      const remapped = (normDist - TOUCH_MOVE_DEADZONE) / (1 - TOUCH_MOVE_DEADZONE);
+      const curved = remapped * remapped;
+      const blended = TOUCH_MOVE_LINEAR_BLEND * remapped + (1 - TOUCH_MOVE_LINEAR_BLEND) * curved;
       const angle = Math.atan2(normY, normX);
-      normX = Math.cos(angle) * curved;
-      normY = Math.sin(angle) * curved;
+      normX = Math.cos(angle) * blended;
+      normY = Math.sin(angle) * blended;
     }
 
     touchMoveRef.current.x = normX;
@@ -5119,6 +5121,7 @@ export default function ShmupPlayScreen() {
           <button
             type="button"
             className="shmup-touch-secondary"
+            aria-label="Trigger ability"
             onPointerDown={(event) => {
               event.preventDefault();
               queueSecondary();
