@@ -32,7 +32,167 @@ interface InboxMessage extends Omit<InboxMessageTemplate, "isUnlocked"> {
 
 const INBOX_STORAGE_KEY = "astra-inbox-state";
 const CUSTOM_INBOX_DIR = "/assets/inbox";
+const PILOT_INBOX_DIR = `${CUSTOM_INBOX_DIR}/pilot`;
 const FORCE_UNLOCK_ALL_MESSAGES = true;
+
+const PILOT_INBOX_IMAGE_FILES = [
+  "job-0293e3f9670d.png",
+  "job-0feff59650c1.png",
+  "job-1580c67cba0f.png",
+  "job-1687718dedbf.png",
+  "job-18b83f002d3b.png",
+  "job-2317c2a76cdc.png",
+  "job-237ac4c28a05.png",
+  "job-258f5069a9e4.png",
+  "job-25f9ce72f4e2.png",
+  "job-299abd761385.png",
+  "job-34ef4ae85ab8.png",
+  "job-37591a4dc553.png",
+  "job-3aa7dfe3dfa3.png",
+  "job-40de6c7f66cc.png",
+  "job-4224aad1302c.png",
+  "job-5428198ab8a5.png",
+  "job-579cef10eb54.png",
+  "job-59925ccb90b1.png",
+  "job-59c948a2dbc7.png",
+  "job-5f6b4a3883cb.png",
+  "job-61d20b642ea6.png",
+  "job-662b0357b0b1.png",
+  "job-6e32a6cafbc4.png",
+  "job-6e47ae953da7.png",
+  "job-7497ff27a6a8.png",
+  "job-79e2f2901e2a.png",
+  "job-7fb136e70f43.png",
+  "job-86907f0b405c.png",
+  "job-8dfef186deab.png",
+  "job-8ef63e85efd5.png",
+  "job-936676db1aef.png",
+  "job-96defc2175e0.png",
+  "job-9d45b881640c.png",
+  "job-a7472bd3f2ad.png",
+  "job-ab584110f2bc.png",
+  "job-b07dad412efa.png",
+  "job-b69d7cf835ba.png",
+  "job-b7976885127b.png",
+  "job-c3365d5992bb.png",
+  "job-c4ef8033e72a.png",
+  "job-cd0d5fbdbe10.png",
+  "job-cf915b36f797.png",
+  "job-db91ab3c40d9.png",
+  "job-e00bddb9cd48.png",
+  "job-e2befefa71c4.png",
+  "job-e44077260ed9.png",
+  "job-e9f257f7c4ca.png",
+  "job-ed54caae2fec.png",
+  "job-efe967b1cac5.png",
+  "job-ff6ef5ead0f2.png",
+  "nova_after_hours.png",
+  "rex_afterburn.png",
+  "yuki_midnight_archive.png",
+] as const;
+
+const PILOT_SENDERS = ["Nova", "Rex", "Yuki"] as const;
+type PilotSender = (typeof PILOT_SENDERS)[number];
+
+const PILOT_MESSAGE_POOLS: Record<PilotSender, Array<{ subject: string; body: string }>> = {
+  Nova: [
+    {
+      subject: "Caught you looking",
+      body: "You flew well. I felt generous. Enjoy the view and try not to get weird about it.\n\n- Nova",
+    },
+    {
+      subject: "After-hours channel",
+      body: "Off-duty transmission. No briefing language, no squad chatter, no excuses. Just me.\n\n- Nova",
+    },
+    {
+      subject: "Private send",
+      body: "Before you ask, yes, this was meant for you. Don’t make me regret having good taste.\n\n- Nova",
+    },
+    {
+      subject: "Keep this one close",
+      body: "Thought you’d want something better than telemetry and mission logs for once.\n\n- Nova",
+    },
+  ],
+  Rex: [
+    {
+      subject: "Still focused?",
+      body: "Consider this a stress test for your concentration. If it fails, that’s not my problem.\n\n- Rex",
+    },
+    {
+      subject: "Afterburn drop",
+      body: "You cleared the run, so I sent something with a little more heat behind it. Don’t waste it.\n\n- Rex",
+    },
+    {
+      subject: "You can handle this",
+      body: "If this scrambles your thoughts, maybe you needed the practice.\n\n- Rex",
+    },
+    {
+      subject: "Off-channel",
+      body: "Not for command, not for the squad, not for the archive. Just your inbox.\n\n- Rex",
+    },
+  ],
+  Yuki: [
+    {
+      subject: "Archive access",
+      body: "This transmission is quieter than my mission logs, but probably more useful to you.\n\n- Yuki",
+    },
+    {
+      subject: "For your eyes only",
+      body: "You get the formal reports already. I thought you deserved the version with less distance in it.\n\n- Yuki",
+    },
+    {
+      subject: "Midnight transmission",
+      body: "No tactical value. No strategic importance. I sent it anyway.\n\n- Yuki",
+    },
+    {
+      subject: "Closer than usual",
+      body: "If this feels more personal than my normal messages, that was intentional.\n\n- Yuki",
+    },
+  ],
+};
+
+function inferPilotSender(filename: string): PilotSender {
+  const lower = filename.toLowerCase();
+  if (lower.includes("nova")) return "Nova";
+  if (lower.includes("rex")) return "Rex";
+  if (lower.includes("yuki")) return "Yuki";
+
+  let hash = 0;
+  for (let index = 0; index < filename.length; index += 1) {
+    hash = (hash + filename.charCodeAt(index)) % PILOT_SENDERS.length;
+  }
+
+  return PILOT_SENDERS[hash];
+}
+
+function buildPilotInboxMessages(): InboxMessageTemplate[] {
+  const now = Date.now();
+  return PILOT_INBOX_IMAGE_FILES.map((filename, index) => {
+    const sender = inferPilotSender(filename);
+    const sequence = String(index + 1).padStart(2, "0");
+    const pool = PILOT_MESSAGE_POOLS[sender];
+    const variant = pool[index % pool.length];
+    return {
+      id: `msg-pilot-image-${filename.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`,
+      sender,
+      subject: variant.subject,
+      preview: `Image attachment • ${sender}`,
+      body: variant.body,
+      attachments: [
+        {
+          id: `pilot-image-${sequence}`,
+          type: "image",
+          url: `${PILOT_INBOX_DIR}/${filename}`,
+          fallbackUrl: `/assets/outfits/${sender === "Nova" ? "cosmic_surge" : sender === "Rex" ? "solar_flare" : "lunar_eclipse"}.png`,
+          alt: `${sender} inbox portrait`,
+          label: `${sender} transmission`,
+        },
+      ],
+      timestamp: now - index * 90000,
+      isUnlocked: () => true,
+    };
+  });
+}
 
 function loadInboxState(): Record<string, boolean> {
   try {
@@ -48,7 +208,7 @@ function saveInboxState(state: Record<string, boolean>) {
 }
 
 // Placeholder messages - in production these come from the server
-const PLACEHOLDER_MESSAGES: InboxMessageTemplate[] = [
+const BASE_MESSAGES: InboxMessageTemplate[] = [
   {
     id: "msg-welcome",
     sender: "HQ Command",
@@ -77,7 +237,7 @@ const PLACEHOLDER_MESSAGES: InboxMessageTemplate[] = [
       {
         id: "nova-photo",
         type: "image",
-        url: `${CUSTOM_INBOX_DIR}/nova_after_hours.png`,
+        url: `${PILOT_INBOX_DIR}/nova_after_hours.png`,
         fallbackUrl: "/assets/outfits/cosmic_surge.png",
         alt: "Nova off-duty portrait",
         label: "Nova portrait",
@@ -96,7 +256,7 @@ const PLACEHOLDER_MESSAGES: InboxMessageTemplate[] = [
       {
         id: "rex-photo",
         type: "image",
-        url: `${CUSTOM_INBOX_DIR}/rex_afterburn.png`,
+        url: `${PILOT_INBOX_DIR}/rex_afterburn.png`,
         fallbackUrl: "/assets/outfits/solar_flare.png",
         alt: "Rex portrait in Solar Flare outfit",
         label: "Rex portrait",
@@ -115,7 +275,7 @@ const PLACEHOLDER_MESSAGES: InboxMessageTemplate[] = [
       {
         id: "yuki-photo",
         type: "image",
-        url: `${CUSTOM_INBOX_DIR}/yuki_midnight_archive.png`,
+        url: `${PILOT_INBOX_DIR}/yuki_midnight_archive.png`,
         fallbackUrl: "/assets/outfits/lunar_eclipse.png",
         alt: "Yuki portrait in Lunar Eclipse outfit",
         label: "Yuki portrait",
@@ -135,7 +295,7 @@ const PLACEHOLDER_MESSAGES: InboxMessageTemplate[] = [
         id: "nova-video",
         type: "video",
         url: "/assets/cutins/nova_fever.mp4",
-        posterUrl: `${CUSTOM_INBOX_DIR}/nova_after_hours.png`,
+        posterUrl: `${PILOT_INBOX_DIR}/nova_after_hours.png`,
         label: "Nova cockpit video",
       },
     ],
@@ -152,6 +312,8 @@ const PLACEHOLDER_MESSAGES: InboxMessageTemplate[] = [
     isUnlocked: (save) => Boolean(save.bestGrades["abyss-crown"]),
   },
 ];
+
+const PLACEHOLDER_MESSAGES: InboxMessageTemplate[] = [...buildPilotInboxMessages(), ...BASE_MESSAGES];
 
 function getInboxMessages(save: SaveData): InboxMessage[] {
   return PLACEHOLDER_MESSAGES
