@@ -915,6 +915,10 @@ export default function ShmupPlayScreen() {
   const shipVelocityRef = useRef(0);
   const grazePulseUntilRef = useRef(0);
   const grazePulseStrengthRef = useRef(0);
+  // Pass 2 refs — multi-graze kinetic time reward
+  const grazeCountRef = useRef(0);
+  const grazeWindowStartRef = useRef(0);
+  const grazeRewardUntilRef = useRef(0);
 
   const pilots = pilotsData as Pilot[];
   const ships = shipsData as Ship[];
@@ -1256,6 +1260,9 @@ export default function ShmupPlayScreen() {
     shipVelocityRef.current = 0;
     grazePulseUntilRef.current = 0;
     grazePulseStrengthRef.current = 0;
+    grazeCountRef.current = 0;
+    grazeWindowStartRef.current = 0;
+    grazeRewardUntilRef.current = 0;
     secondaryQueuedRef.current = false;
     touchMoveRef.current = { active: false, pointerId: null, x: 0, y: 0 };
     setTouchKnob({ active: false, x: 0, y: 0 });
@@ -3893,6 +3900,28 @@ export default function ShmupPlayScreen() {
             bulletFlagged._grazed = true;
             grazePulseUntilRef.current = elapsedMs + 260;
             grazePulseStrengthRef.current = 1;
+            // Pass 2: multi-graze rewards kinetic time. Three grazes within
+            // a 520ms window trigger a short slow-mo + white pulse, cooling
+            // down before the next reward can fire.
+            const GRAZE_WINDOW = 520;
+            const GRAZE_THRESHOLD = 3;
+            const GRAZE_COOLDOWN = 1200;
+            if (elapsedMs - grazeWindowStartRef.current > GRAZE_WINDOW) {
+              grazeCountRef.current = 1;
+              grazeWindowStartRef.current = elapsedMs;
+            } else {
+              grazeCountRef.current += 1;
+            }
+            if (
+              grazeCountRef.current >= GRAZE_THRESHOLD &&
+              elapsedMs >= grazeRewardUntilRef.current
+            ) {
+              triggerSlowMo(180, elapsedMs);
+              grazeRewardUntilRef.current = elapsedMs + GRAZE_COOLDOWN;
+              grazeCountRef.current = 0;
+              addPulse(ship.x, ship.y, "#ffffff", 10, 140, 0.12, 2.2);
+              addScreenShake(1.2, 0.08);
+            }
           }
         }
       }
@@ -4565,16 +4594,41 @@ export default function ShmupPlayScreen() {
           ctx.restore();
         }
 
-        // Sniper warning line (drawn outside transform)
+        // Sniper warning line — pulses and thickens as fire approaches.
+        // Pass 2: the old 0.3-alpha dashed line was easy to miss. Now the
+        // line breathes, ramps width/alpha near fire, and has a hot core.
         if (enemy.pattern === "sniper" && enemy.sniperLocked) {
+          // Fire cooldown during lock runs down to 0, so progress ramps 0→1
+          const lockProgress = clamp(1 - enemy.fireCooldown / 2.0, 0, 1);
+          const pulse = 0.55 + Math.sin(elapsedMs / 60) * 0.45;
+          const alpha = 0.25 + lockProgress * 0.45 + pulse * 0.15;
+          const width = 1.4 + lockProgress * 2.2;
+          const dashOffset = (elapsedMs / 18) % 20;
+          const tx = enemy.sniperLockX ?? ship.x;
+          const ty = enemy.sniperLockY ?? ship.y;
           ctx.save();
-          ctx.strokeStyle = "rgba(255,0,0,0.3)";
-          ctx.lineWidth = 1.5;
-          ctx.setLineDash([6, 4]);
+          // Outer red glow line
+          ctx.strokeStyle = `rgba(255, 60, 60, ${alpha})`;
+          ctx.lineWidth = width;
+          ctx.setLineDash([10, 6]);
+          ctx.lineDashOffset = -dashOffset;
+          ctx.shadowColor = "rgba(255, 40, 40, 0.8)";
+          ctx.shadowBlur = 6 + lockProgress * 10;
           ctx.beginPath();
           ctx.moveTo(enemy.x, enemy.y + enemy.radius);
-          ctx.lineTo(enemy.sniperLockX ?? ship.x, enemy.sniperLockY ?? ship.y);
+          ctx.lineTo(tx, ty);
           ctx.stroke();
+          // Hot core near full lock
+          if (lockProgress > 0.65) {
+            ctx.shadowBlur = 0;
+            ctx.setLineDash([]);
+            ctx.strokeStyle = `rgba(255, 220, 220, ${(lockProgress - 0.65) * 1.6})`;
+            ctx.lineWidth = 0.8;
+            ctx.beginPath();
+            ctx.moveTo(enemy.x, enemy.y + enemy.radius);
+            ctx.lineTo(tx, ty);
+            ctx.stroke();
+          }
           ctx.setLineDash([]);
           ctx.restore();
         }
@@ -4595,6 +4649,38 @@ export default function ShmupPlayScreen() {
         grad.addColorStop(0, "rgba(255,255,255,1)");
         grad.addColorStop(0.55, "rgba(255,255,255,0.55)");
         grad.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(enemy.x, enemy.y, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Pass 2: pre-fire windup glow. Any shooter whose fireCooldown drops
+      // below the windup window gets a growing radial pulse so the player
+      // sees the shot coming. Derived purely from cooldown, no new state.
+      const WINDUP_WINDOW = 0.32; // seconds
+      for (const enemy of enemiesRef.current) {
+        if (enemy.pattern === "swarm") continue;
+        if (enemy.pattern === "charger" && enemy.chargeState === "charge") continue;
+        if (enemy.pattern === "dreadnought" && !enemy.dreadAnchored) continue;
+        const cd = enemy.fireCooldown;
+        if (cd <= 0 || cd >= WINDUP_WINDOW) continue;
+        const progress = 1 - cd / WINDUP_WINDOW; // 0 → 1 as fire approaches
+        const pulse = 0.6 + Math.sin(elapsedMs / 34) * 0.25;
+        const r = enemy.radius * (1.15 + progress * 0.9) * displayScale;
+        const tint =
+          enemy.pattern === "sniper" ? "255,80,80" :
+          enemy.pattern === "bomber" ? "255,170,80" :
+          enemy.pattern === "dreadnought" ? "255,120,255" :
+          "255,240,180";
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.globalAlpha = 0.38 * progress * pulse;
+        const grad = ctx.createRadialGradient(enemy.x, enemy.y, 0, enemy.x, enemy.y, r);
+        grad.addColorStop(0, `rgba(${tint},0.95)`);
+        grad.addColorStop(0.55, `rgba(${tint},0.35)`);
+        grad.addColorStop(1, `rgba(${tint},0)`);
         ctx.fillStyle = grad;
         ctx.beginPath();
         ctx.arc(enemy.x, enemy.y, r, 0, Math.PI * 2);
