@@ -2778,6 +2778,16 @@ export default function ShmupPlayScreen() {
 
       const overdriveActive = overdriveUntilRef.current > elapsedMs;
 
+      // Ship pass secondary: stationary hover idle. When the ship is
+      // basically not moving, add a tiny render-only vertical bob so it
+      // feels alive between strafes. Collision position is untouched.
+      const idleStrength = clamp(1 - shipVelocityRef.current / 0.22, 0, 1);
+      const hoverOffset = idleStrength > 0.05
+        ? Math.sin(elapsedMs / 520) * 1.6 * idleStrength * displayScale
+        : 0;
+      ctx.save();
+      if (hoverOffset !== 0) ctx.translate(0, hoverOffset);
+
       // Ship pass: directional thruster flame behind the ship. Length tied
       // to actual velocity, color from the ship's visual table, rotated
       // with the current tilt so the flame always points "back".
@@ -2869,6 +2879,7 @@ export default function ShmupPlayScreen() {
             ctx.restore();
           }
         }
+        ctx.restore();
         return;
       }
 
@@ -2889,6 +2900,7 @@ export default function ShmupPlayScreen() {
       ctx.beginPath();
       ctx.arc(0, 2, ship.radius, 0, Math.PI * 2);
       ctx.stroke();
+      ctx.restore();
       ctx.restore();
     };
 
@@ -3313,6 +3325,24 @@ export default function ShmupPlayScreen() {
       if (shipVelocityRef.current > 0.15 && Math.random() < 0.45 + shipVelocityRef.current * 0.25) {
         const trailColor = overdriveUntilRef.current > elapsedMs ? "#ffd43b" : shipVisual.trail;
         addTrailParticle(ship.x, ship.y, trailColor);
+      }
+
+      // Ship pass secondary: low-HP smoke trail. Kicks in below 60% HP and
+      // intensifies as HP approaches zero so the player *sees* the damage
+      // state on the ship itself. Dark wide puffs rendered as trail
+      // particles so the existing trail pipeline handles fade/cleanup.
+      const hpRatio = maxHp > 0 ? clamp(ship.hp / maxHp, 0, 1) : 1;
+      const critical = clamp((0.6 - hpRatio) / 0.6, 0, 1); // 0 → 1
+      if (critical > 0 && Math.random() < 0.22 + critical * 0.55) {
+        const smokeColor = critical > 0.7 ? "#4a2a2a" : critical > 0.35 ? "#3a3438" : "#2f2f36";
+        trailParticlesRef.current.push({
+          x: ship.x + (Math.random() - 0.5) * 12,
+          y: ship.y + ship.radius * 0.6 + Math.random() * 6,
+          life: 0.45 + Math.random() * 0.35 + critical * 0.4,
+          maxLife: 1.1,
+          radius: 3.2 + Math.random() * 2.8 + critical * 2,
+          color: smokeColor,
+        });
       }
 
       // Update streak display timer
