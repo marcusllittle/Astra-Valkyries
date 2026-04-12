@@ -432,6 +432,102 @@ function getPlayerShipSpritePath(
   return SPRITE_PATHS.player;
 }
 
+// Ship gameplay pass — per-ship identity tokens. All in-play palette/motion
+// differences go through this table so the three ships feel like three ships.
+// Do NOT touch the underlying sprite assets.
+type ShipVisual = {
+  glow: string;
+  glowOverdrive: string;
+  trail: string;
+  hitboxRing: string;
+  muzzleColor: string;
+  muzzleCore: string;
+  exhaustCore: string;
+  exhaustShell: string;
+  damageColor: string;
+  bankStiffness: number; // tilt gain per frame on input
+  bankDecay: number; // tilt decay per frame (closer to 1 = more persistent lean)
+  bankMax: number; // radians
+  exhaustLength: number; // px at full velocity
+  exhaustWidth: number; // px (half width)
+};
+
+const SHIP_VISUAL_DEFAULT: ShipVisual = {
+  glow: "rgba(69, 199, 255, 0.28)",
+  glowOverdrive: "rgba(255, 212, 59, 0.42)",
+  trail: "#74c0fc",
+  hitboxRing: "rgba(167, 231, 255, 0.9)",
+  muzzleColor: "#a7e7ff",
+  muzzleCore: "#ffffff",
+  exhaustCore: "#e6f7ff",
+  exhaustShell: "#4dabf7",
+  damageColor: "#ff8787",
+  bankStiffness: 0.09,
+  bankDecay: 0.82,
+  bankMax: 0.46,
+  exhaustLength: 26,
+  exhaustWidth: 5,
+};
+
+const SHIP_VISUALS: Record<string, ShipVisual> = {
+  // Blue — agile, elegant, precision. Sharpest bank, tightest thruster.
+  ship_astra_interceptor: {
+    glow: "rgba(77, 171, 247, 0.32)",
+    glowOverdrive: "rgba(255, 230, 120, 0.45)",
+    trail: "#4dabf7",
+    hitboxRing: "rgba(165, 224, 255, 0.95)",
+    muzzleColor: "#a5e8ff",
+    muzzleCore: "#ffffff",
+    exhaustCore: "#e3f8ff",
+    exhaustShell: "#4dabf7",
+    damageColor: "#74c0fc",
+    bankStiffness: 0.12,
+    bankDecay: 0.78,
+    bankMax: 0.54,
+    exhaustLength: 32,
+    exhaustWidth: 4,
+  },
+  // Red — aggressive, assault, power. Heaviest bank, fat ember exhaust.
+  ship_valkyrie_lancer: {
+    glow: "rgba(255, 107, 107, 0.32)",
+    glowOverdrive: "rgba(255, 160, 60, 0.5)",
+    trail: "#ff8787",
+    hitboxRing: "rgba(255, 180, 140, 0.9)",
+    muzzleColor: "#ffb080",
+    muzzleCore: "#fff0c2",
+    exhaustCore: "#ffe8b0",
+    exhaustShell: "#ff6b3d",
+    damageColor: "#ff6b6b",
+    bankStiffness: 0.07,
+    bankDecay: 0.86,
+    bankMax: 0.42,
+    exhaustLength: 22,
+    exhaustWidth: 7,
+  },
+  // White — elite, premium, balanced. Planted bank, steady gold-lined flame.
+  ship_seraph_guard: {
+    glow: "rgba(230, 230, 235, 0.3)",
+    glowOverdrive: "rgba(255, 215, 120, 0.48)",
+    trail: "#e6e6ef",
+    hitboxRing: "rgba(255, 243, 200, 0.95)",
+    muzzleColor: "#fff4d6",
+    muzzleCore: "#ffffff",
+    exhaustCore: "#ffffff",
+    exhaustShell: "#ffd77a",
+    damageColor: "#f4e7c1",
+    bankStiffness: 0.06,
+    bankDecay: 0.9,
+    bankMax: 0.36,
+    exhaustLength: 28,
+    exhaustWidth: 6,
+  },
+};
+
+function getShipVisual(id: string | undefined): ShipVisual {
+  if (!id) return SHIP_VISUAL_DEFAULT;
+  return SHIP_VISUALS[id] ?? SHIP_VISUAL_DEFAULT;
+}
+
 function createSpriteStore(): Record<SpriteKey, HTMLImageElement | null> {
   return {
     backgroundFar: null,
@@ -815,12 +911,17 @@ export default function ShmupPlayScreen() {
   const slowMoUntilRef = useRef(0);
   const damageFlashUntilRef = useRef(0);
   const overdriveFlashUntilRef = useRef(0);
+  // Ship pass refs — velocity for thruster length, grazing pulse trigger
+  const shipVelocityRef = useRef(0);
+  const grazePulseUntilRef = useRef(0);
+  const grazePulseStrengthRef = useRef(0);
 
   const pilots = pilotsData as Pilot[];
   const ships = shipsData as Ship[];
   const outfits = outfitsData as Outfit[];
   const pilot = pilots.find((item) => item.id === save.selectedPilotId);
   const selectedShip = ships.find((item) => item.id === save.selectedShipId);
+  const shipVisual = getShipVisual(selectedShip?.id);
   const activeMap =
     getShmupMapById(save.selectedMapId) ?? getShmupMapForShip(save.selectedShipId);
   const outfit = outfits.find((item) => item.id === save.selectedOutfitId);
@@ -1152,6 +1253,9 @@ export default function ShmupPlayScreen() {
     slowMoUntilRef.current = 0;
     damageFlashUntilRef.current = 0;
     overdriveFlashUntilRef.current = 0;
+    shipVelocityRef.current = 0;
+    grazePulseUntilRef.current = 0;
+    grazePulseStrengthRef.current = 0;
     secondaryQueuedRef.current = false;
     touchMoveRef.current = { active: false, pointerId: null, x: 0, y: 0 };
     setTouchKnob({ active: false, x: 0, y: 0 });
@@ -1498,15 +1602,26 @@ export default function ShmupPlayScreen() {
       );
       if (spawned.length === 0) return;
 
-      const leadColor = spawned[0].color;
+      // Per-ship muzzle flash: hot white core + ship-tinted shell
+      const muzzleX = ship.x;
+      const muzzleY = ship.y - ship.radius - 10;
       addPulse(
-        ship.x,
-        ship.y - ship.radius - 10,
-        leadColor,
-        5 + weaponLevel * 1.1,
-        58 + weaponLevel * 22,
-        0.08,
-        1.5
+        muzzleX,
+        muzzleY,
+        shipVisual.muzzleColor,
+        7 + weaponLevel * 1.4,
+        68 + weaponLevel * 24,
+        0.09,
+        1.8
+      );
+      addPulse(
+        muzzleX,
+        muzzleY,
+        shipVisual.muzzleCore,
+        3 + weaponLevel * 0.6,
+        32 + weaponLevel * 10,
+        0.06,
+        1.2
       );
       addScreenShake(overdriveActive ? 0.86 + weaponLevel * 0.18 : 0.28 + weaponLevel * 0.14, 0.045);
 
@@ -2579,7 +2694,9 @@ export default function ShmupPlayScreen() {
       lastHitMsRef.current = elapsedMs;
       regenPoolRef.current = 0;
       ship.invulnerableUntil = elapsedMs + PLAYER_INVULNERABLE_MS;
-      addExplosion(ship.x, ship.y, "#ff8787", 18, 2.4);
+      // Ship pass: damage explosion pulls away from ship center so the
+      // player doesn't lose sight of their frame during the flash window.
+      addExplosion(ship.x, ship.y + ship.radius * 1.1, shipVisual.damageColor, 18, 2.4);
       // Pass 1: getting hit should feel like a real problem.
       damageFlashUntilRef.current = elapsedMs + 320;
       addScreenShake(4.2, 0.22);
@@ -2602,14 +2719,63 @@ export default function ShmupPlayScreen() {
       const blink = elapsedMs < ship.invulnerableUntil && Math.floor(elapsedMs / 80) % 2 === 0;
       if (blink) return;
 
+      const overdriveActive = overdriveUntilRef.current > elapsedMs;
+
+      // Ship pass: directional thruster flame behind the ship. Length tied
+      // to actual velocity, color from the ship's visual table, rotated
+      // with the current tilt so the flame always points "back".
+      if (shipVelocityRef.current > 0.04) {
+        const velocityFactor = clamp(shipVelocityRef.current, 0, 1);
+        const tilt = shipTiltRef.current;
+        // Flame base sits just behind the ship, opposite the forward nose.
+        const baseX = ship.x + Math.sin(tilt) * 6 * displayScale;
+        const baseY = ship.y + ship.radius * 1.1 * displayScale;
+        const flameLen = shipVisual.exhaustLength * displayScale * (0.55 + velocityFactor * 0.9);
+        const flameHalf = shipVisual.exhaustWidth * displayScale;
+        const flicker = 0.88 + Math.sin(elapsedMs / 28) * 0.08 + Math.random() * 0.04;
+        const dirX = Math.sin(tilt);
+        const dirY = Math.cos(tilt);
+        const tipX = baseX + dirX * flameLen * flicker;
+        const tipY = baseY + dirY * flameLen * flicker;
+        // Perpendicular for the outer hull shell.
+        const perpX = Math.cos(tilt);
+        const perpY = -Math.sin(tilt);
+
+        ctx.save();
+        ctx.globalAlpha = 0.82;
+        ctx.shadowColor = shipVisual.exhaustShell;
+        ctx.shadowBlur = 14;
+        ctx.fillStyle = shipVisual.exhaustShell;
+        ctx.beginPath();
+        ctx.moveTo(baseX + perpX * flameHalf, baseY + perpY * flameHalf);
+        ctx.lineTo(tipX, tipY);
+        ctx.lineTo(baseX - perpX * flameHalf, baseY - perpY * flameHalf);
+        ctx.closePath();
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        // Inner hot core, overdrive-tinted.
+        ctx.globalAlpha = 0.95;
+        ctx.fillStyle = overdriveActive ? "#fff3bf" : shipVisual.exhaustCore;
+        const coreHalf = flameHalf * 0.5;
+        const coreTipX = baseX + dirX * flameLen * flicker * 0.78;
+        const coreTipY = baseY + dirY * flameLen * flicker * 0.78;
+        ctx.beginPath();
+        ctx.moveTo(baseX + perpX * coreHalf, baseY + perpY * coreHalf);
+        ctx.lineTo(coreTipX, coreTipY);
+        ctx.lineTo(baseX - perpX * coreHalf, baseY - perpY * coreHalf);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
       const sprite = getSprite("player");
       if (sprite) {
         ctx.save();
-        ctx.globalAlpha = overdriveUntilRef.current > elapsedMs ? 0.95 : 0.85;
+        ctx.globalAlpha = overdriveActive ? 0.95 : 0.85;
         const glowR = ship.radius * 3.8 * displayScale;
         const glow = ctx.createRadialGradient(ship.x, ship.y + 8, 8 * displayScale, ship.x, ship.y + 8, glowR);
-        glow.addColorStop(0, overdriveUntilRef.current > elapsedMs ? "rgba(255, 212, 59, 0.42)" : "rgba(69, 199, 255, 0.28)");
-        glow.addColorStop(1, "rgba(69, 199, 255, 0)");
+        glow.addColorStop(0, overdriveActive ? shipVisual.glowOverdrive : shipVisual.glow);
+        glow.addColorStop(1, "rgba(0, 0, 0, 0)");
         ctx.fillStyle = glow;
         ctx.beginPath();
         ctx.arc(ship.x, ship.y + 8, glowR, 0, Math.PI * 2);
@@ -2625,13 +2791,27 @@ export default function ShmupPlayScreen() {
           shipTiltRef.current
         );
 
-        ctx.save();
-        ctx.strokeStyle = "rgba(167, 231, 255, 0.8)";
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.arc(ship.x, ship.y + 3, ship.radius * displayScale, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.restore();
+        // Ship pass: grazing pulse replaces the permanent hitbox ring. Only
+        // visible when an enemy round passed close to the hitbox recently,
+        // so the ring means "that was close" instead of "here is a debug
+        // circle for all eternity".
+        if (grazePulseUntilRef.current > elapsedMs) {
+          const remaining = grazePulseUntilRef.current - elapsedMs;
+          const strength = clamp(remaining / 260, 0, 1) * grazePulseStrengthRef.current;
+          if (strength > 0.02) {
+            const ringR = ship.radius * (1 + (1 - strength) * 0.45) * displayScale;
+            ctx.save();
+            ctx.globalAlpha = 0.55 * strength + 0.2;
+            ctx.strokeStyle = shipVisual.hitboxRing;
+            ctx.lineWidth = 1.4;
+            ctx.shadowColor = shipVisual.hitboxRing;
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.arc(ship.x, ship.y + 3, ringR, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
         return;
       }
 
@@ -2769,13 +2949,20 @@ export default function ShmupPlayScreen() {
         ship.x = clamp(ship.x + rd.x * rollSpeed * deltaSeconds, playerBounds.minX, playerBounds.maxX);
         ship.y = clamp(ship.y + rd.y * rollSpeed * deltaSeconds, playerBounds.minY, playerBounds.maxY);
         shipTiltRef.current = rd.x * 0.5;
+        shipVelocityRef.current = 1;
       } else {
         const moveLength = Math.hypot(moveX, moveY) || 1;
         const velocityScale =
           moveX !== 0 || moveY !== 0 ? shipSpeed * deltaSeconds / moveLength : 0;
         ship.x = clamp(ship.x + moveX * velocityScale, playerBounds.minX, playerBounds.maxX);
         ship.y = clamp(ship.y + moveY * velocityScale, playerBounds.minY, playerBounds.maxY);
-        shipTiltRef.current = shipTiltRef.current * 0.82 + moveX * 0.08;
+        const targetVel = Math.min(1, Math.hypot(moveX, moveY));
+        shipVelocityRef.current = shipVelocityRef.current * 0.72 + targetVel * 0.28;
+        shipTiltRef.current = clamp(
+          shipTiltRef.current * shipVisual.bankDecay + moveX * shipVisual.bankStiffness,
+          -shipVisual.bankMax,
+          shipVisual.bankMax
+        );
       }
 
       const introTargetX = canvas.width / 2;
@@ -3065,9 +3252,9 @@ export default function ShmupPlayScreen() {
       }
       trailParticlesRef.current = trailParticlesRef.current.filter((t) => t.life > 0);
 
-      // Spawn trail particles behind player
-      if (Math.random() < 0.6) {
-        const trailColor = overdriveUntilRef.current > elapsedMs ? "#ffd43b" : "#74c0fc";
+      // Spawn trail particles behind player — only when actually moving, colored by ship identity
+      if (shipVelocityRef.current > 0.15 && Math.random() < 0.45 + shipVelocityRef.current * 0.25) {
+        const trailColor = overdriveUntilRef.current > elapsedMs ? "#ffd43b" : shipVisual.trail;
         addTrailParticle(ship.x, ship.y, trailColor);
       }
 
@@ -3698,6 +3885,15 @@ export default function ShmupPlayScreen() {
         if (distSq <= hitDistance * hitDistance) {
           enemyBulletsRef.current.splice(bulletIndex, 1);
           handleShipHit(elapsedMs);
+        } else {
+          // Grazing: bullet passed within a narrow band beyond the hitbox without striking
+          const grazeR = hitDistance + 22;
+          const bulletFlagged = bullet as unknown as { _grazed?: boolean };
+          if (!bulletFlagged._grazed && distSq <= grazeR * grazeR) {
+            bulletFlagged._grazed = true;
+            grazePulseUntilRef.current = elapsedMs + 260;
+            grazePulseStrengthRef.current = 1;
+          }
         }
       }
 
@@ -5130,6 +5326,7 @@ export default function ShmupPlayScreen() {
     shotColor,
     submitResult,
     playerSpritePath,
+    shipVisual,
   ]);
 
   const handleTutorialComplete = useCallback(() => {
