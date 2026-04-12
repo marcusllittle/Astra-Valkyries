@@ -33,7 +33,6 @@ interface InboxMessage extends Omit<InboxMessageTemplate, "isUnlocked"> {
 const INBOX_STORAGE_KEY = "astra-inbox-state";
 const CUSTOM_INBOX_DIR = "/assets/inbox";
 const PILOT_INBOX_DIR = `${CUSTOM_INBOX_DIR}/pilot`;
-const FORCE_UNLOCK_ALL_MESSAGES = true;
 
 const PILOT_INBOX_IMAGE_FILES = [
   "job-0293e3f9670d.png",
@@ -151,27 +150,35 @@ const PILOT_MESSAGE_POOLS: Record<PilotSender, Array<{ subject: string; body: st
   ],
 };
 
-function inferPilotSender(filename: string): PilotSender {
-  const lower = filename.toLowerCase();
-  if (lower.includes("nova")) return "Nova";
-  if (lower.includes("rex")) return "Rex";
-  if (lower.includes("yuki")) return "Yuki";
+// Pilot image flow: run-count gated so images arrive over the course of
+// play instead of all showing up at once. The 3 named pilot portraits
+// (nova_after_hours, rex_afterburn, yuki_midnight_archive) are excluded
+// here because BASE_MESSAGES below already has hand-written entries for
+// them gated by specific mission grades — including them in the batch
+// would duplicate the image under a canned subject line.
+const PILOT_BATCH_IMAGE_FILES = PILOT_INBOX_IMAGE_FILES.filter((name) =>
+  name.startsWith("job-")
+);
 
-  let hash = 0;
-  for (let index = 0; index < filename.length; index += 1) {
-    hash = (hash + filename.charCodeAt(index)) % PILOT_SENDERS.length;
-  }
-
-  return PILOT_SENDERS[hash];
+// Linear unlock curve: image N unlocks at run N+1. First image after
+// first completed run, last job image after ~50 runs. Feels earned,
+// keeps the drip going for players who commit to the game.
+function unlocksAtRun(index: number): number {
+  return index + 1;
 }
 
 function buildPilotInboxMessages(): InboxMessageTemplate[] {
+  // Base timestamp pinned so the spread across messages stays deterministic
+  // for the session. Newer (lower index) messages appear most recent.
   const now = Date.now();
-  return PILOT_INBOX_IMAGE_FILES.map((filename, index) => {
-    const sender = inferPilotSender(filename);
+  return PILOT_BATCH_IMAGE_FILES.map((filename, index) => {
+    // Round-robin pilot assignment so each pilot gets an even share of the
+    // batch instead of filename-hash bias. index 0 → Nova, 1 → Rex, 2 → Yuki…
+    const sender = PILOT_SENDERS[index % PILOT_SENDERS.length];
     const sequence = String(index + 1).padStart(2, "0");
     const pool = PILOT_MESSAGE_POOLS[sender];
     const variant = pool[index % pool.length];
+    const requiredRuns = unlocksAtRun(index);
     return {
       id: `msg-pilot-image-${filename.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`,
       sender,
@@ -188,8 +195,10 @@ function buildPilotInboxMessages(): InboxMessageTemplate[] {
           label: `${sender} transmission`,
         },
       ],
-      timestamp: now - index * 90000,
-      isUnlocked: () => true,
+      // Newer messages at lower index surface first; timestamps are offset
+      // far enough apart that the spread reads as "arrived over days".
+      timestamp: now - index * 1000 * 60 * 60 * 3, // 3h apart
+      isUnlocked: (save) => save.totalRuns >= requiredRuns,
     };
   });
 }
@@ -317,7 +326,7 @@ const PLACEHOLDER_MESSAGES: InboxMessageTemplate[] = [...buildPilotInboxMessages
 
 function getInboxMessages(save: SaveData): InboxMessage[] {
   return PLACEHOLDER_MESSAGES
-    .filter((message) => FORCE_UNLOCK_ALL_MESSAGES || message.isUnlocked(save))
+    .filter((message) => message.isUnlocked(save))
     .map(({ isUnlocked: _isUnlocked, ...message }) => ({
       ...message,
       read: false,
@@ -391,7 +400,12 @@ function ImageLightbox({ src, onRelease }: { src: string; onRelease: () => void 
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "16px",
+        // Respect notched / rounded-corner safe areas so full-bleed images
+        // don't clip under the status bar or home indicator on mobile.
+        paddingTop: "max(16px, env(safe-area-inset-top))",
+        paddingBottom: "max(16px, env(safe-area-inset-bottom))",
+        paddingLeft: "max(16px, env(safe-area-inset-left))",
+        paddingRight: "max(16px, env(safe-area-inset-right))",
         touchAction: "none",
       }}
     >
@@ -535,8 +549,13 @@ export default function InboxOverlay({ isOpen, onClose }: InboxOverlayProps) {
       alignItems: "center", justifyContent: "center",
     }}>
       <div style={{
-        width: isMobile ? "100vw" : "min(92vw, 840px)",
-        height: isMobile ? "100vh" : "min(84vh, 620px)",
+        // 100% (not 100vw) keeps the panel inside the viewport even when
+        // a scrollbar / safe-area offset is present; mobile fills the
+        // flex parent rather than forcing horizontal overflow.
+        width: isMobile ? "100%" : "min(92vw, 840px)",
+        maxWidth: "100%",
+        height: isMobile ? "100%" : "min(84vh, 620px)",
+        maxHeight: "100%",
         background: "linear-gradient(180deg, #0a1628 0%, #040612 100%)",
         border: isMobile ? "none" : "1px solid rgba(102,217,239,0.3)",
         borderRadius: isMobile ? 0 : "16px",
@@ -564,6 +583,9 @@ export default function InboxOverlay({ isOpen, onClose }: InboxOverlayProps) {
           <button onClick={onClose} style={{
             background: "none", border: "none", color: "rgba(255,255,255,0.5)",
             cursor: "pointer", fontSize: "18px", fontFamily: "monospace",
+            // WCAG-minimum tap target so the close control is usable on phones.
+            minWidth: "44px", minHeight: "44px",
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
           }}>
             {"\u2715"}
           </button>
@@ -626,9 +648,10 @@ export default function InboxOverlay({ isOpen, onClose }: InboxOverlayProps) {
                 {isMobile && (
                   <button onClick={() => setSelectedMessageId(null)} style={{
                     background: "none", border: "1px solid rgba(102,217,239,0.3)",
-                    color: "#66d9ef", padding: "6px 14px", borderRadius: "8px",
-                    cursor: "pointer", fontFamily: "monospace", fontSize: "12px",
-                    marginBottom: "14px",
+                    color: "#66d9ef", padding: "10px 16px", borderRadius: "8px",
+                    cursor: "pointer", fontFamily: "monospace", fontSize: "13px",
+                    marginBottom: "14px", minHeight: "44px",
+                    display: "inline-flex", alignItems: "center",
                   }}>
                     ← Back to messages
                   </button>
