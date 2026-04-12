@@ -919,6 +919,10 @@ export default function ShmupPlayScreen() {
   const grazeCountRef = useRef(0);
   const grazeWindowStartRef = useRef(0);
   const grazeRewardUntilRef = useRef(0);
+  // Pass 3 refs — wave-clear punctuation
+  const lastEnemyCountRef = useRef(0);
+  const waveClearFlashUntilRef = useRef(0);
+  const waveClearAckAtRef = useRef(0);
 
   const pilots = pilotsData as Pilot[];
   const ships = shipsData as Ship[];
@@ -1263,6 +1267,9 @@ export default function ShmupPlayScreen() {
     grazeCountRef.current = 0;
     grazeWindowStartRef.current = 0;
     grazeRewardUntilRef.current = 0;
+    lastEnemyCountRef.current = 0;
+    waveClearFlashUntilRef.current = 0;
+    waveClearAckAtRef.current = 0;
     secondaryQueuedRef.current = false;
     touchMoveRef.current = { active: false, pointerId: null, x: 0, y: 0 };
     setTouchKnob({ active: false, x: 0, y: 0 });
@@ -3488,6 +3495,28 @@ export default function ShmupPlayScreen() {
           enemy.hp > 0
       );
 
+      // Pass 3: wave-clear punctuation. When the enemy list empties and no
+      // spawns are imminent (excluding boss warning), flash a subtle white
+      // pulse so the player registers the clear. Guarded by cooldown so
+      // stragglers don't double-fire.
+      const enemyCountNow = enemiesRef.current.length;
+      const pendingSpawnsSoon =
+        queuedWaveSpawnsRef.current.length > 0 &&
+        queuedWaveSpawnsRef.current[0].spawnAtMs - elapsedMs < 600;
+      if (
+        lastEnemyCountRef.current > 0 &&
+        enemyCountNow === 0 &&
+        !pendingSpawnsSoon &&
+        !bossRef.current &&
+        !bossIntroStartedRef.current &&
+        elapsedMs - waveClearAckAtRef.current > 1800
+      ) {
+        waveClearAckAtRef.current = elapsedMs;
+        waveClearFlashUntilRef.current = elapsedMs + 360;
+        addPulse(canvas.width / 2, canvas.height * 0.42, "#ffffff", 14, 220, 0.08, 2.6);
+      }
+      lastEnemyCountRef.current = enemyCountNow;
+
       if (
         bossIntroStartedRef.current &&
         bossRef.current === null &&
@@ -4007,8 +4036,33 @@ export default function ShmupPlayScreen() {
       }
 
       if (bossIntroStartedRef.current && bossRef.current === null && elapsedMs < bossWarningUntilRef.current) {
+        // Pass 3: warning overlay now crescendos. Base palette fill stays,
+        // but a pulsing red wash and edge vignette ramp with progress so
+        // the pre-boss moment actually feels like a countdown.
+        const warningLen = activeMap.bossWarningMs || 2600;
+        const remaining = bossWarningUntilRef.current - elapsedMs;
+        const progress = clamp(1 - remaining / warningLen, 0, 1); // 0→1
+        const pulse = 0.55 + Math.sin(elapsedMs / (90 - progress * 40)) * 0.45;
         ctx.fillStyle = activeMap.palette.warningOverlay;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.save();
+        ctx.globalAlpha = (0.18 + progress * 0.32) * pulse;
+        ctx.fillStyle = "rgba(255, 60, 60, 1)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
+        // Edge vignette — closes in as we approach boss spawn
+        ctx.save();
+        const vignette = ctx.createRadialGradient(
+          canvas.width / 2, canvas.height / 2,
+          canvas.height * (0.35 - progress * 0.18),
+          canvas.width / 2, canvas.height / 2,
+          canvas.height * 0.82
+        );
+        vignette.addColorStop(0, "rgba(0,0,0,0)");
+        vignette.addColorStop(1, `rgba(60,0,0,${0.35 + progress * 0.4})`);
+        ctx.fillStyle = vignette;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
       }
 
       if (empUntilRef.current > elapsedMs) {
@@ -4026,6 +4080,15 @@ export default function ShmupPlayScreen() {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
 
+      // Pass 3: wave-clear subtle fullscreen ack — fades quickly so it
+      // punctuates the moment without feeling like a screen flash.
+      if (waveClearFlashUntilRef.current > elapsedMs) {
+        const remaining = waveClearFlashUntilRef.current - elapsedMs;
+        const alpha = clamp(remaining / 360, 0, 1) * 0.08;
+        ctx.fillStyle = `rgba(240, 255, 255, ${alpha})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+
       ctx.save();
       if (shakeTimeRef.current > 0 && shakePowerRef.current > 0) {
         const damp = shakeTimeRef.current / 0.12;
@@ -4034,10 +4097,24 @@ export default function ShmupPlayScreen() {
         ctx.translate(offsetX, offsetY);
       }
 
-      ctx.strokeStyle = "rgba(255,255,255,0.08)";
-      ctx.lineWidth = 1;
-      for (let i = 0; i < 7; i++) {
-        const y = (elapsedMs / 7 + i * 108) % (canvas.height + 120) - 120;
+      // Pass 3: speed lines intensify and shift red during boss warning
+      // crescendo, giving a visual "falling toward the arena" feel.
+      const bossWarningActive =
+        bossIntroStartedRef.current &&
+        bossRef.current === null &&
+        elapsedMs < bossWarningUntilRef.current;
+      const warningProgress = bossWarningActive
+        ? clamp(1 - (bossWarningUntilRef.current - elapsedMs) / (activeMap.bossWarningMs || 2600), 0, 1)
+        : 0;
+      const streakAlpha = 0.08 + warningProgress * 0.14;
+      const streakCount = 7 + Math.floor(warningProgress * 6);
+      const streakSpeed = 7 / (1 + warningProgress * 2.1);
+      ctx.strokeStyle = bossWarningActive
+        ? `rgba(255, ${180 - Math.floor(warningProgress * 120)}, ${180 - Math.floor(warningProgress * 120)}, ${streakAlpha})`
+        : "rgba(255,255,255,0.08)";
+      ctx.lineWidth = 1 + warningProgress * 1.2;
+      for (let i = 0; i < streakCount; i++) {
+        const y = (elapsedMs / streakSpeed + i * 108) % (canvas.height + 120) - 120;
         ctx.beginPath();
         ctx.moveTo(canvas.width * 0.08, y);
         ctx.lineTo(canvas.width * 0.92, y);
