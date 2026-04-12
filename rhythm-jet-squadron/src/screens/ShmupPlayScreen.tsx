@@ -188,6 +188,8 @@ interface EnemyState {
   minibossPhase?: number; // 0=normal, 1=enraged (at 50% HP)
   minibossMaxHp?: number;
   minibossEnraged?: boolean;
+  // Pass 1 polish: hit feedback
+  hitFlashUntil?: number;
 }
 
 interface TouchMoveState {
@@ -214,6 +216,8 @@ interface BossState {
   minionCooldown: number;
   phaseTransitionFlash: number;
   lastPhase: 1 | 2 | 3;
+  // Pass 1 polish: hit feedback
+  hitFlashUntil?: number;
 }
 
 interface PowerChip {
@@ -806,6 +810,11 @@ export default function ShmupPlayScreen() {
   const shakePowerRef = useRef(0);
   const shipTiltRef = useRef(0);
   const droneOrbitRef = useRef(0);
+  // Pass 1 polish refs — hitstop, damage flash, slow-mo, overdrive sting
+  const hitstopUntilRef = useRef(0);
+  const slowMoUntilRef = useRef(0);
+  const damageFlashUntilRef = useRef(0);
+  const overdriveFlashUntilRef = useRef(0);
 
   const pilots = pilotsData as Pilot[];
   const ships = shipsData as Ship[];
@@ -1139,6 +1148,10 @@ export default function ShmupPlayScreen() {
     shakePowerRef.current = 0;
     shipTiltRef.current = 0;
     droneOrbitRef.current = 0;
+    hitstopUntilRef.current = 0;
+    slowMoUntilRef.current = 0;
+    damageFlashUntilRef.current = 0;
+    overdriveFlashUntilRef.current = 0;
     secondaryQueuedRef.current = false;
     touchMoveRef.current = { active: false, pointerId: null, x: 0, y: 0 };
     setTouchKnob({ active: false, x: 0, y: 0 });
@@ -1260,6 +1273,14 @@ export default function ShmupPlayScreen() {
       overdriveMeterRef.current = 0;
       overdriveStartRef.current = elapsedMs;
       overdriveUntilRef.current = elapsedMs + overdriveDurationMs;
+      // Pass 1: overdrive should not activate silently.
+      overdriveFlashUntilRef.current = elapsedMs + 420;
+      addScreenShake(5, 0.22);
+      triggerHitstop(80, elapsedMs);
+      sfxPowerup();
+      addPulse(ship.x, ship.y, "#ffd43b", 18, 420, 0.55, 3.2);
+      addPulse(ship.x, ship.y, "#fff3bf", 8, 260, 0.38, 2);
+      addSparkBurst(ship.x, ship.y, "#ffd43b", 18, 220, [2.4, 5.4]);
     };
 
     const addOverdrive = (amount: number, elapsedMs: number) => {
@@ -1309,6 +1330,16 @@ export default function ShmupPlayScreen() {
     const addScreenShake = (power: number, duration: number = 0.08) => {
       shakePowerRef.current = Math.max(shakePowerRef.current, power);
       shakeTimeRef.current = Math.max(shakeTimeRef.current, duration);
+    };
+
+    // Freeze physics for N ms on impact — the single biggest "feel" upgrade.
+    const triggerHitstop = (ms: number, elapsedMs: number) => {
+      hitstopUntilRef.current = Math.max(hitstopUntilRef.current, elapsedMs + ms);
+    };
+
+    // Dilate time to 25% for boss-kill cascade etc.
+    const triggerSlowMo = (ms: number, elapsedMs: number) => {
+      slowMoUntilRef.current = Math.max(slowMoUntilRef.current, elapsedMs + ms);
     };
 
     const addSparkBurst = (
@@ -2036,6 +2067,13 @@ export default function ShmupPlayScreen() {
 
     const registerKill = (enemy: EnemyState, elapsedMs: number) => {
       sfxEnemyDeath();
+      // Pass 1: hitstop on kill — scaled by enemy weight.
+      const isHeavy =
+        enemy.pattern === "dreadnought" ||
+        enemy.pattern === "tank" ||
+        enemy.pattern === "miniboss";
+      const hitstopMs = isHeavy ? 130 : enemy.elite ? 85 : 45;
+      triggerHitstop(hitstopMs, elapsedMs);
       killsRef.current += 1;
       streakRef.current += 1;
       // Update streak display for on-screen counter
@@ -2209,6 +2247,14 @@ export default function ShmupPlayScreen() {
       scoreRef.current += Math.round((4200 + scoreFlatBonus) * totalMultiplier);
       enemyBulletsRef.current = [];
       bomberZonesRef.current = [];
+      // Pass 1: boss death is a climax, not a cut.
+      triggerHitstop(260, elapsedMs);
+      triggerSlowMo(900, elapsedMs + 260);
+      overdriveFlashUntilRef.current = Math.max(
+        overdriveFlashUntilRef.current,
+        elapsedMs + 480
+      );
+      addScreenShake(9, 0.65);
       // Multi-stage boss death explosion sequence
       addExplosion(x, y, "#ffd43b", 34, 5.4);
       addExplosion(x, y - 26, "#ff922b", 42, 6);
@@ -2218,6 +2264,19 @@ export default function ShmupPlayScreen() {
       addSparkBurst(x, y, "#ffd43b", 16, 160, [2, 5]);
       addPulse(x, y, "#ffd43b", 20, 300, 0.4, 3);
       addPulse(x, y, "#ffffff", 10, 400, 0.3, 2);
+      // Pass 1: staggered secondary explosions for the cascade feel.
+      const cascadeColors = ["#ff922b", "#ff6b6b", "#ffd43b", "#4dabf7", "#ffffff"];
+      for (let i = 0; i < 6; i++) {
+        const delay = 120 + i * 90;
+        const ox = x + (Math.random() - 0.5) * 90;
+        const oy = y + (Math.random() - 0.5) * 70;
+        const color = cascadeColors[i % cascadeColors.length];
+        window.setTimeout(() => {
+          addExplosion(ox, oy, color, 22 + Math.random() * 14, 3 + Math.random() * 1.5);
+          addSparkBurst(ox, oy, color, 10, 160, [2, 4.8]);
+          addScreenShake(3 + Math.random() * 2, 0.12);
+        }, delay);
+      }
       if (secondaryUsesCharges) {
         addSecondaryCharge(2);
       }
@@ -2256,6 +2315,7 @@ export default function ShmupPlayScreen() {
           addPulse(enemy.x, enemy.y, "#4488ff", 20, 250, 0.3, 3.0);
         }
         enemy.hp -= enemyDamage;
+        enemy.hitFlashUntil = elapsedMs + 110;
         addSparkBurst(enemy.x, enemy.y, color, 8, 130, [2, 5]);
         addPulse(enemy.x, enemy.y, color, 10, 180, 0.16, 2.2);
         if (enemy.hp <= 0) {
@@ -2269,6 +2329,7 @@ export default function ShmupPlayScreen() {
         const blastDistance = radius + boss.radius;
         if (distanceSquared(x, y, boss.x, boss.y) <= blastDistance * blastDistance) {
           boss.hp -= bossDamage;
+          boss.hitFlashUntil = elapsedMs + 130;
           addSparkBurst(boss.x, boss.y, color, 14, 150, [2.4, 5.8]);
           addPulse(boss.x, boss.y, color, 16, 210, 0.2, 2.8);
           if (boss.hp <= 0) {
@@ -2519,6 +2580,10 @@ export default function ShmupPlayScreen() {
       regenPoolRef.current = 0;
       ship.invulnerableUntil = elapsedMs + PLAYER_INVULNERABLE_MS;
       addExplosion(ship.x, ship.y, "#ff8787", 18, 2.4);
+      // Pass 1: getting hit should feel like a real problem.
+      damageFlashUntilRef.current = elapsedMs + 320;
+      addScreenShake(4.2, 0.22);
+      triggerHitstop(60, elapsedMs);
 
       if (multiplierSaveReadyRef.current) {
         multiplierSaveReadyRef.current = false;
@@ -2635,8 +2700,15 @@ export default function ShmupPlayScreen() {
       }
 
       const elapsedMs = timestamp - runStartRef.current;
-      const deltaSeconds = Math.min(0.033, (timestamp - lastFrameRef.current) / 1000);
+      let deltaSeconds = Math.min(0.033, (timestamp - lastFrameRef.current) / 1000);
       lastFrameRef.current = timestamp;
+      // Hitstop / slow-mo dilation (Pass 1 polish). Hitstop fully freezes physics
+      // and wins over slow-mo when both are active.
+      if (hitstopUntilRef.current > elapsedMs) {
+        deltaSeconds = 0;
+      } else if (slowMoUntilRef.current > elapsedMs) {
+        deltaSeconds *= 0.28;
+      }
       triggerCrystalShatter(elapsedMs);
       const aggressiveRouteActive = activePassives.includes("aggressiveRoute");
       const empActive = empUntilRef.current > elapsedMs;
@@ -3255,6 +3327,9 @@ export default function ShmupPlayScreen() {
           shakeTimeRef.current = 0.4;
           shakePowerRef.current = 6;
           addExplosion(boss.x, boss.y, "#ffffff", 30, 4);
+          // Pass 1: phase transition is an event, not a threshold.
+          triggerHitstop(150, elapsedMs);
+          boss.hitFlashUntil = elapsedMs + 260;
         }
         if (boss.phaseTransitionFlash > 0) {
           boss.phaseTransitionFlash -= bossDelta;
@@ -3443,6 +3518,8 @@ export default function ShmupPlayScreen() {
           // Dreadnought shield reduces damage by 50%
           const shieldMult = (enemy.pattern === "dreadnought" && enemy.dreadShieldActive) ? 0.5 : (enemy.pattern === "tank" && enemy.tankShieldActive) ? 0.5 : 1;
           enemy.hp -= bullet.damage * shieldMult;
+          // Pass 1: flash the enemy on every bullet hit for impact.
+          enemy.hitFlashUntil = elapsedMs + 90;
           consumePlayerBullet(bulletIndex);
           if (shieldMult < 1) {
             addSparkBurst(bullet.x, bullet.y, "#4488ff", 3, 60);
@@ -3472,6 +3549,7 @@ export default function ShmupPlayScreen() {
           }
 
           activeBoss.hp -= bullet.damage;
+          activeBoss.hitFlashUntil = elapsedMs + 110;
           consumePlayerBullet(bulletIndex);
           addDamageNumber(bullet.x, bullet.y - 10, Math.round(bullet.damage * 10), "#ffd43b");
           addSparkBurst(bullet.x, bullet.y, activeBoss.phase === 1 ? "#ffa8a8" : "#ffd43b", 5, 96);
@@ -3767,6 +3845,10 @@ export default function ShmupPlayScreen() {
         ctx.ellipse(0, 0, bullet.length, bullet.radius, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.shadowBlur = 0;
+        // Pass 1: dark stroke so bullets read against particle soup.
+        ctx.strokeStyle = "rgba(10, 20, 40, 0.85)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
         ctx.fillStyle = bullet.coreColor;
         ctx.beginPath();
         ctx.ellipse(
@@ -3808,6 +3890,11 @@ export default function ShmupPlayScreen() {
         ctx.ellipse(0, 0, bullet.length, bullet.radius, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.shadowBlur = 0;
+        // Pass 1: heavier dark outline on hostile rounds so they never blend
+        // into background or ally fire during dense phases.
+        ctx.strokeStyle = "rgba(0, 0, 0, 0.92)";
+        ctx.lineWidth = 1.25;
+        ctx.stroke();
         ctx.fillStyle = bullet.coreColor;
         ctx.beginPath();
         ctx.ellipse(
@@ -4297,6 +4384,28 @@ export default function ShmupPlayScreen() {
         }
       }
 
+      // Pass 1: enemy hit flash — additive white disc over any enemy whose
+      // hit-flash window is still active. Separate pass so we don't touch
+      // the per-pattern branches.
+      for (const enemy of enemiesRef.current) {
+        if (!enemy.hitFlashUntil || enemy.hitFlashUntil <= elapsedMs) continue;
+        const remaining = enemy.hitFlashUntil - elapsedMs;
+        const strength = clamp(remaining / 90, 0, 1);
+        const r = enemy.radius * 1.35 * displayScale;
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.globalAlpha = 0.55 * strength;
+        const grad = ctx.createRadialGradient(enemy.x, enemy.y, 0, enemy.x, enemy.y, r);
+        grad.addColorStop(0, "rgba(255,255,255,1)");
+        grad.addColorStop(0.55, "rgba(255,255,255,0.55)");
+        grad.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(enemy.x, enemy.y, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
       // Bomber danger zones
       for (const zone of bomberZonesRef.current) {
         const alpha = clamp(zone.life / 3.0, 0.1, 0.5);
@@ -4499,6 +4608,25 @@ export default function ShmupPlayScreen() {
           ctx.font = "bold 10px monospace";
           ctx.textAlign = "center";
           ctx.fillText(boss.name, canvas.width / 2, barY - 4);
+          ctx.restore();
+        }
+
+        // Pass 1: boss hit flash — same additive disc, scaled bigger.
+        if (boss.hitFlashUntil && boss.hitFlashUntil > elapsedMs) {
+          const remaining = boss.hitFlashUntil - elapsedMs;
+          const strength = clamp(remaining / 110, 0, 1);
+          const fr = boss.radius * 1.55 * displayScale;
+          ctx.save();
+          ctx.globalCompositeOperation = "lighter";
+          ctx.globalAlpha = 0.55 * strength;
+          const bgrad = ctx.createRadialGradient(boss.x, boss.y, 0, boss.x, boss.y, fr);
+          bgrad.addColorStop(0, "rgba(255,255,255,1)");
+          bgrad.addColorStop(0.55, "rgba(255,255,255,0.6)");
+          bgrad.addColorStop(1, "rgba(255,255,255,0)");
+          ctx.fillStyle = bgrad;
+          ctx.beginPath();
+          ctx.arc(boss.x, boss.y, fr, 0, Math.PI * 2);
+          ctx.fill();
           ctx.restore();
         }
       }
@@ -4832,6 +4960,80 @@ export default function ShmupPlayScreen() {
       }
 
       ctx.restore();
+
+      // Pass 1: post-scene full-screen overlays — drawn on top, unaffected by
+      // shake so the frame they land on reads as a hard event.
+
+      // Damage flash: red vignette that decays from the edges inward.
+      if (damageFlashUntilRef.current > elapsedMs) {
+        const total = 320;
+        const remaining = damageFlashUntilRef.current - elapsedMs;
+        const strength = clamp(remaining / total, 0, 1);
+        ctx.save();
+        const dGrad = ctx.createRadialGradient(
+          canvas.width / 2,
+          canvas.height / 2,
+          Math.min(canvas.width, canvas.height) * 0.2,
+          canvas.width / 2,
+          canvas.height / 2,
+          Math.max(canvas.width, canvas.height) * 0.75
+        );
+        dGrad.addColorStop(0, `rgba(255, 40, 40, 0)`);
+        dGrad.addColorStop(0.6, `rgba(255, 40, 40, ${0.25 * strength})`);
+        dGrad.addColorStop(1, `rgba(255, 10, 10, ${0.55 * strength})`);
+        ctx.fillStyle = dGrad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // Very first 90ms: a sharp white pop to sell the impact.
+        if (strength > 0.72) {
+          ctx.fillStyle = `rgba(255, 230, 230, ${(strength - 0.72) * 0.9})`;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        ctx.restore();
+      }
+
+      // Overdrive activation sting: gold radial slam.
+      if (overdriveFlashUntilRef.current > elapsedMs) {
+        const total = 420;
+        const remaining = overdriveFlashUntilRef.current - elapsedMs;
+        const strength = clamp(remaining / total, 0, 1);
+        ctx.save();
+        const oGrad = ctx.createRadialGradient(
+          canvas.width / 2,
+          canvas.height / 2,
+          20,
+          canvas.width / 2,
+          canvas.height / 2,
+          Math.max(canvas.width, canvas.height) * 0.8
+        );
+        oGrad.addColorStop(0, `rgba(255, 230, 120, ${0.38 * strength})`);
+        oGrad.addColorStop(0.5, `rgba(255, 180, 50, ${0.22 * strength})`);
+        oGrad.addColorStop(1, `rgba(255, 120, 30, 0)`);
+        ctx.fillStyle = oGrad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // "OVERDRIVE" slam text on the leading edge.
+        if (strength > 0.55) {
+          const textAlpha = clamp((strength - 0.55) / 0.45, 0, 1);
+          const scale = 1 + (1 - textAlpha) * 0.4;
+          ctx.save();
+          ctx.translate(canvas.width / 2, canvas.height * 0.38);
+          ctx.scale(scale, scale);
+          ctx.globalAlpha = textAlpha;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.font = "bold 38px monospace";
+          ctx.shadowColor = "rgba(255, 140, 30, 0.9)";
+          ctx.shadowBlur = 16;
+          ctx.fillStyle = "#fff3bf";
+          ctx.fillText("OVERDRIVE", 0, 0);
+          ctx.shadowBlur = 0;
+          ctx.strokeStyle = "rgba(60, 30, 0, 0.7)";
+          ctx.lineWidth = 2;
+          ctx.strokeText("OVERDRIVE", 0, 0);
+          ctx.restore();
+        }
+        ctx.restore();
+      }
 
       if (elapsedMs - hudSyncRef.current >= 75) {
         hudSyncRef.current = elapsedMs;
