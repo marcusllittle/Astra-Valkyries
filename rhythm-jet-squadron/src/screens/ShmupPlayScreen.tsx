@@ -923,6 +923,9 @@ export default function ShmupPlayScreen() {
   const lastEnemyCountRef = useRef(0);
   const waveClearFlashUntilRef = useRef(0);
   const waveClearAckAtRef = useRef(0);
+  // Pass 4 refs — streak loss flash, overdrive near-ready ping
+  const streakLostFlashUntilRef = useRef(0);
+  const overdriveAlmostReadyFiredRef = useRef(false);
 
   const pilots = pilotsData as Pilot[];
   const ships = shipsData as Ship[];
@@ -1270,6 +1273,8 @@ export default function ShmupPlayScreen() {
     lastEnemyCountRef.current = 0;
     waveClearFlashUntilRef.current = 0;
     waveClearAckAtRef.current = 0;
+    streakLostFlashUntilRef.current = 0;
+    overdriveAlmostReadyFiredRef.current = false;
     secondaryQueuedRef.current = false;
     touchMoveRef.current = { active: false, pointerId: null, x: 0, y: 0 };
     setTouchKnob({ active: false, x: 0, y: 0 });
@@ -1389,6 +1394,7 @@ export default function ShmupPlayScreen() {
         return;
       }
       overdriveMeterRef.current = 0;
+      overdriveAlmostReadyFiredRef.current = false;
       overdriveStartRef.current = elapsedMs;
       overdriveUntilRef.current = elapsedMs + overdriveDurationMs;
       // Pass 1: overdrive should not activate silently.
@@ -1403,11 +1409,24 @@ export default function ShmupPlayScreen() {
 
     const addOverdrive = (amount: number, elapsedMs: number) => {
       if (overdriveUntilRef.current > elapsedMs) return;
+      const before = overdriveMeterRef.current;
       overdriveMeterRef.current = clamp(
         overdriveMeterRef.current + amount * overdriveFillMultiplier,
         0,
         OVERDRIVE_MAX
       );
+      // Pass 4: "almost ready" ping on the 80% crossing so the player can
+      // start planning the activation burst. Fires once per meter cycle.
+      const threshold = OVERDRIVE_MAX * 0.8;
+      if (
+        !overdriveAlmostReadyFiredRef.current &&
+        before < threshold &&
+        overdriveMeterRef.current >= threshold &&
+        overdriveMeterRef.current < OVERDRIVE_MAX
+      ) {
+        overdriveAlmostReadyFiredRef.current = true;
+        addPulse(ship.x, ship.y, "#ffd43b", 10, 160, 0.1, 2);
+      }
       activateOverdriveIfReady(elapsedMs);
     };
 
@@ -2204,11 +2223,26 @@ export default function ShmupPlayScreen() {
       const hitstopMs = isHeavy ? 130 : enemy.elite ? 85 : 45;
       triggerHitstop(hitstopMs, elapsedMs);
       killsRef.current += 1;
+      const streakBefore = streakRef.current;
       streakRef.current += 1;
+      // Pass 4: streak milestone stings. Crossing 5/10/20/30/50 fires a
+      // center pulse + shake + slight slow-mo so the player actually
+      // registers the threshold instead of just watching the text change.
+      const MILESTONES = [5, 10, 20, 30, 50];
+      for (const m of MILESTONES) {
+        if (streakBefore < m && streakRef.current >= m) {
+          const tint = m >= 30 ? "#ffd43b" : m >= 20 ? "#ff922b" : m >= 10 ? "#ffa94d" : "#74c0fc";
+          addPulse(ship.x, ship.y, tint, 16 + m * 0.4, 180 + m * 4, 0.12, 2.4);
+          addScreenShake(2 + m * 0.08, 0.1);
+          if (m >= 20) triggerSlowMo(140, elapsedMs);
+          streakDisplayTimerRef.current = 2.4;
+          break;
+        }
+      }
       // Update streak display for on-screen counter
       if (streakRef.current >= 5) {
         streakDisplayRef.current = streakRef.current;
-        streakDisplayTimerRef.current = 1.5;
+        streakDisplayTimerRef.current = Math.max(streakDisplayTimerRef.current, 1.5);
       }
       const totalMultiplier = getScoreMultiplier(elapsedMs);
       bestMultiplierRef.current = Math.max(bestMultiplierRef.current, totalMultiplier);
@@ -2719,6 +2753,15 @@ export default function ShmupPlayScreen() {
       if (multiplierSaveReadyRef.current) {
         multiplierSaveReadyRef.current = false;
       } else {
+        // Pass 4: losing a substantial streak is a narrative beat. Flash a
+        // brief "STREAK LOST" marker and fire a dim red pulse so the player
+        // feels the cost, not just the HP tick.
+        if (streakRef.current >= 10) {
+          streakDisplayRef.current = streakRef.current;
+          streakDisplayTimerRef.current = 1.6;
+          streakLostFlashUntilRef.current = elapsedMs + 720;
+          addPulse(ship.x, ship.y, "#ff6b6b", 12, 140, 0.12, 1.8);
+        }
         streakRef.current = 0;
       }
 
@@ -5301,8 +5344,12 @@ export default function ShmupPlayScreen() {
         ctx.restore();
       }
 
-      // Kill streak counter
-      if (streakDisplayTimerRef.current > 0 && streakDisplayRef.current >= 5) {
+      // Kill streak counter — hidden while streak-lost banner is up
+      if (
+        streakDisplayTimerRef.current > 0 &&
+        streakDisplayRef.current >= 5 &&
+        streakLostFlashUntilRef.current <= elapsedMs
+      ) {
         const alpha = clamp(streakDisplayTimerRef.current / 0.5, 0, 1);
         const streak = streakDisplayRef.current;
         const streakColor = streak >= 20 ? "#ffd43b" : streak >= 10 ? "#ff922b" : "#74c0fc";
@@ -5314,6 +5361,28 @@ export default function ShmupPlayScreen() {
         ctx.shadowColor = "#000000";
         ctx.shadowBlur = 4;
         ctx.fillText(`${streak} KILL STREAK!`, canvas.width - 12, canvas.height - 16);
+        ctx.shadowBlur = 0;
+        ctx.restore();
+      }
+
+      // Pass 4: streak-lost banner — replaces the cheerful streak text for
+      // 720ms when a ≥10 run ended on damage. Fades out; reuses the stored
+      // display value so the player sees what they lost.
+      if (streakLostFlashUntilRef.current > elapsedMs) {
+        const remaining = streakLostFlashUntilRef.current - elapsedMs;
+        const alpha = clamp(remaining / 720, 0, 1);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = "#ff6b6b";
+        ctx.font = "bold 16px monospace";
+        ctx.textAlign = "right";
+        ctx.shadowColor = "#000000";
+        ctx.shadowBlur = 4;
+        ctx.fillText(
+          `STREAK LOST · ${streakDisplayRef.current}`,
+          canvas.width - 12,
+          canvas.height - 16
+        );
         ctx.shadowBlur = 0;
         ctx.restore();
       }
