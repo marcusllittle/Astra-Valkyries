@@ -225,9 +225,21 @@ export default function HangarScreen() {
             >
               <div
                 className="map-card-glow"
-                style={{
-                  background: `linear-gradient(150deg, ${map.palette.backgroundTop}, ${map.palette.backgroundBottom})`,
-                }}
+                style={
+                  map.artUrl
+                    ? {
+                        // Rendered key art as the card backdrop. Palette gradient
+                        // sits underneath as a fallback while the image decodes
+                        // and as a tinted base if the image fails to load.
+                        backgroundColor: map.palette.backgroundBottom,
+                        backgroundImage: `url(${map.artUrl})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                      }
+                    : {
+                        background: `linear-gradient(150deg, ${map.palette.backgroundTop}, ${map.palette.backgroundBottom})`,
+                      }
+                }
               />
               <div className="map-card-info">
                 <strong className="map-card-title">{map.name}</strong>

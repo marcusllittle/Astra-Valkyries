@@ -60,6 +60,8 @@ export interface ShmupMap {
   bossWarningMs: number;
   bossPhases: BossPhaseConfig[];
   palette: ShmupMapPalette;
+  /** Optional rendered key art used as the map-card background in the hangar. */
+  artUrl?: string;
   waves: ShmupWave[];
 }
 
@@ -369,6 +371,7 @@ export const SHMUP_MAPS: ShmupMap[] = [
     name: "Nebula Runway",
     bossName: "Aegis Dreadnought",
     tagline: "Slipstream interception corridor",
+    artUrl: "/assets/maps/nebula-runway.png",
     briefing: "Break the patrol line and reopen the route.",
     debrief: "Corridor pressure collapsed. The lane is ours again.",
     bossMaxHp: 360,
@@ -399,6 +402,7 @@ export const SHMUP_MAPS: ShmupMap[] = [
     name: "Solar Rift",
     bossName: "Helios Tyrant",
     tagline: "Thermal fortress breach",
+    artUrl: "/assets/maps/solar-rift.png",
     briefing: "Push through the flare wall and crack the weapons platform.",
     debrief: "The heat front is broken. Solar control is shifting back.",
     bossMaxHp: 430,
@@ -429,6 +433,7 @@ export const SHMUP_MAPS: ShmupMap[] = [
     name: "Abyss Crown",
     bossName: "Cryo Leviathan",
     tagline: "Deep-void terminal descent",
+    artUrl: "/assets/maps/abyss-crown.png",
     briefing: "Hold formation through the cold breach and cut down the Leviathan.",
     debrief: "The void finally blinked. Abyss Crown is no longer untouchable.",
     bossMaxHp: 470,
