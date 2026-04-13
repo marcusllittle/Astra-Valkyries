@@ -100,28 +100,190 @@ export function pressStart() {
 // Throttle rapid-fire sounds to avoid audio glitches
 let _lastShot = 0;
 
-/** Player primary weapon fire — short laser blip */
-export function sfxShoot() {
+/**
+ * Per-ship shot tint. Each frame gets a signature sound instead of every
+ * pilot sharing the same square-wave blip. Kept tiny and short so the
+ * auto-fire cadence doesn't turn into a drone.
+ */
+interface ShotTint {
+  /** Primary oscillator waveform. */
+  type: OscillatorType;
+  /** Starting pitch in Hz. */
+  startHz: number;
+  /** Ending pitch in Hz (exponential decay). */
+  endHz: number;
+  /** Peak gain before the envelope decays. */
+  peakGain: number;
+  /** Total duration in seconds. */
+  durationSec: number;
+  /** Optional sub-oscillator one octave down for body. */
+  sub?: {
+    type: OscillatorType;
+    gain: number;
+  };
+  /** Optional short noise click at attack for "crack". */
+  clickNoise?: boolean;
+}
+
+const DEFAULT_SHOT_TINT: ShotTint = {
+  type: "square",
+  startHz: 1200,
+  endHz: 400,
+  peakGain: 0.09,
+  durationSec: 0.07,
+};
+
+const SHIP_SHOT_TINTS: Record<string, ShotTint> = {
+  // Interceptor — higher and snappier, feels precise/quick
+  ship_astra_interceptor: {
+    type: "square",
+    startHz: 1500,
+    endHz: 520,
+    peakGain: 0.08,
+    durationSec: 0.06,
+  },
+  // Lancer — rougher sawtooth with a sub layer, feels aggressive
+  ship_valkyrie_lancer: {
+    type: "sawtooth",
+    startHz: 1000,
+    endHz: 300,
+    peakGain: 0.085,
+    durationSec: 0.08,
+    sub: { type: "square", gain: 0.05 },
+    clickNoise: true,
+  },
+  // Guard — triangle + square body, deeper weight, feels heavy/armored
+  ship_seraph_guard: {
+    type: "triangle",
+    startHz: 820,
+    endHz: 240,
+    peakGain: 0.095,
+    durationSec: 0.085,
+    sub: { type: "square", gain: 0.045 },
+  },
+};
+
+/** Player primary weapon fire — short laser blip, optionally tinted per ship. */
+export function sfxShoot(shipId?: string) {
   const now = performance.now();
   if (now - _lastShot < 60) return; // max ~16 shots/sec audio
   _lastShot = now;
+
+  const tint = (shipId && SHIP_SHOT_TINTS[shipId]) || DEFAULT_SHOT_TINT;
 
   const ac = getAudioCtx();
   const bus = getSfxBus();
   const t = ac.currentTime;
 
   const osc = ac.createOscillator();
-  osc.type = "square";
-  osc.frequency.setValueAtTime(1200, t);
-  osc.frequency.exponentialRampToValueAtTime(400, t + 0.06);
+  osc.type = tint.type;
+  osc.frequency.setValueAtTime(tint.startHz, t);
+  osc.frequency.exponentialRampToValueAtTime(tint.endHz, t + tint.durationSec);
 
   const g = ac.createGain();
-  g.gain.setValueAtTime(0.09, t);
-  g.gain.linearRampToValueAtTime(0, t + 0.07);
+  g.gain.setValueAtTime(tint.peakGain, t);
+  g.gain.linearRampToValueAtTime(0, t + tint.durationSec);
 
   osc.connect(g).connect(bus);
   osc.start(t);
-  osc.stop(t + 0.07);
+  osc.stop(t + tint.durationSec);
+
+  if (tint.sub) {
+    // Sub one octave down for low-end body on heavier ships
+    const subOsc = ac.createOscillator();
+    subOsc.type = tint.sub.type;
+    subOsc.frequency.setValueAtTime(tint.startHz * 0.5, t);
+    subOsc.frequency.exponentialRampToValueAtTime(tint.endHz * 0.5, t + tint.durationSec);
+
+    const subG = ac.createGain();
+    subG.gain.setValueAtTime(tint.sub.gain, t);
+    subG.gain.linearRampToValueAtTime(0, t + tint.durationSec);
+
+    subOsc.connect(subG).connect(bus);
+    subOsc.start(t);
+    subOsc.stop(t + tint.durationSec);
+  }
+
+  if (tint.clickNoise) {
+    // Short noise crack at attack — gives the Lancer shot its bite
+    const bufLen = Math.max(1, Math.floor(ac.sampleRate * 0.012));
+    const buf = ac.createBuffer(1, bufLen, ac.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < bufLen; i++) data[i] = (Math.random() * 2 - 1);
+    const noise = ac.createBufferSource();
+    noise.buffer = buf;
+    const ng = ac.createGain();
+    ng.gain.setValueAtTime(0.05, t);
+    ng.gain.linearRampToValueAtTime(0, t + 0.012);
+    noise.connect(ng).connect(bus);
+    noise.start(t);
+  }
+}
+
+/**
+ * Run-end grade reveal sting. Higher grades get a bigger, brighter chord
+ * stack so the results screen "lands" instead of quietly appearing.
+ */
+export function sfxRunGrade(grade: "S" | "A" | "B" | "C" | "D") {
+  const ac = getAudioCtx();
+  const bus = getSfxBus();
+  const t = ac.currentTime;
+
+  // Base chord pitches (root, fifth, octave) scaled per grade.
+  // S is triumphant / bright, D is flat / subdued.
+  const gradeConfig: Record<string, { root: number; glide: number; dur: number; peak: number; shimmer: boolean }> = {
+    S: { root: 440, glide: 660, dur: 0.70, peak: 0.22, shimmer: true },
+    A: { root: 392, glide: 588, dur: 0.60, peak: 0.19, shimmer: true },
+    B: { root: 330, glide: 494, dur: 0.52, peak: 0.16, shimmer: false },
+    C: { root: 294, glide: 392, dur: 0.44, peak: 0.13, shimmer: false },
+    D: { root: 220, glide: 262, dur: 0.36, peak: 0.11, shimmer: false },
+  };
+  const cfg = gradeConfig[grade] ?? gradeConfig.B;
+
+  // Stack root + fifth + octave with triangle waves for a warm synth chord
+  const notes = [cfg.root, cfg.root * 1.5, cfg.root * 2];
+  notes.forEach((hz, i) => {
+    const osc = ac.createOscillator();
+    osc.type = i === 0 ? "sawtooth" : "triangle";
+    osc.frequency.setValueAtTime(hz, t);
+    osc.frequency.linearRampToValueAtTime(hz * (cfg.glide / cfg.root), t + cfg.dur * 0.35);
+
+    const g = ac.createGain();
+    // Slight stagger so voices layer in rather than all-at-once
+    const start = t + i * 0.04;
+    const peak = cfg.peak * (i === 0 ? 1 : 0.7);
+    g.gain.setValueAtTime(0, start);
+    g.gain.linearRampToValueAtTime(peak, start + 0.05);
+    g.gain.linearRampToValueAtTime(0, start + cfg.dur);
+
+    osc.connect(g).connect(bus);
+    osc.start(start);
+    osc.stop(start + cfg.dur + 0.05);
+  });
+
+  // Shimmer hats on S/A — short bright noise bursts layered above the chord
+  if (cfg.shimmer) {
+    for (let i = 0; i < 3; i++) {
+      const bufLen = Math.floor(ac.sampleRate * 0.045);
+      const buf = ac.createBuffer(1, bufLen, ac.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let j = 0; j < bufLen; j++) data[j] = (Math.random() * 2 - 1) * 0.4;
+      const noise = ac.createBufferSource();
+      noise.buffer = buf;
+
+      const hp = ac.createBiquadFilter();
+      hp.type = "highpass";
+      hp.frequency.value = 4200;
+
+      const ng = ac.createGain();
+      const nt = t + 0.12 + i * 0.08;
+      ng.gain.setValueAtTime(0.06, nt);
+      ng.gain.linearRampToValueAtTime(0, nt + 0.05);
+
+      noise.connect(hp).connect(ng).connect(bus);
+      noise.start(nt);
+    }
+  }
 }
 
 /** Enemy destroyed — noise burst + descending tone */

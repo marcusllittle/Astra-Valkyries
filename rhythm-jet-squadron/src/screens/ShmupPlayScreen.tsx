@@ -3052,7 +3052,8 @@ export default function ShmupPlayScreen() {
         }
         while (fireTimerRef.current <= 0) {
           spawnPlayerBullets(elapsedMs);
-          sfxShoot();
+          // Per-ship shot tint so each frame has a signature sound
+          sfxShoot(selectedShip?.id);
           fireTimerRef.current += fireInterval;
         }
       }
