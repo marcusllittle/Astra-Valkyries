@@ -335,8 +335,11 @@ function getInboxMessages(save: SaveData): InboxMessage[] {
 
 function AttachmentImage({ attachment, onHoldStart, onHoldEnd }: { attachment: InboxAttachment; onHoldStart?: (src: string) => void; onHoldEnd?: () => void }) {
   const [src, setSrc] = useState(() => resolveAssetUrl(attachment.url) ?? attachment.url);
+  // Fade-in on decode so the image doesn't "pop" into the message pane.
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    setLoaded(false);
     setSrc(resolveAssetUrl(attachment.url) ?? attachment.url);
   }, [attachment.url]);
 
@@ -354,10 +357,13 @@ function AttachmentImage({ attachment, onHoldStart, onHoldEnd }: { attachment: I
       src={src}
       alt={attachment.alt ?? attachment.label ?? ""}
       draggable={false}
+      decoding="async"
+      onLoad={() => setLoaded(true)}
       onError={() => {
         if (!attachment.fallbackUrl) return;
         const fallbackSrc = resolveAssetUrl(attachment.fallbackUrl) ?? attachment.fallbackUrl;
         if (fallbackSrc !== src) {
+          setLoaded(false);
           setSrc(fallbackSrc);
         }
       }}
@@ -367,6 +373,11 @@ function AttachmentImage({ attachment, onHoldStart, onHoldEnd }: { attachment: I
       onContextMenu={(e) => e.preventDefault()}
       style={{
         width: "100%",
+        // Cap vertical footprint so a tall portrait never pushes the body
+        // text below the fold, especially in landscape where viewport height
+        // collapses. 55vh capped at 440px reads comfortably on both phones
+        // and desktop without cropping pilot portraits awkwardly.
+        maxHeight: "min(55vh, 440px)",
         display: "block",
         objectFit: "contain",
         borderRadius: "6px",
@@ -374,6 +385,10 @@ function AttachmentImage({ attachment, onHoldStart, onHoldEnd }: { attachment: I
         userSelect: "none",
         WebkitUserSelect: "none",
         touchAction: "none",
+        opacity: loaded ? 1 : 0,
+        transform: loaded ? "scale(1)" : "scale(0.985)",
+        transition: "opacity 320ms ease, transform 420ms cubic-bezier(0.22, 0.61, 0.36, 1)",
+        willChange: "opacity, transform",
       }}
     />
   );
@@ -591,16 +606,48 @@ export default function InboxOverlay({ isOpen, onClose }: InboxOverlayProps) {
           </button>
         </div>
 
-        {/* Content */}
-        <div style={{ flex: 1, display: "flex", flexDirection: isMobile ? "column" : "row", overflow: "hidden" }}>
-          {/* Message list - show when no message selected on mobile, always on desktop */}
-          {(!isMobile || !selectedMessageId) && (
-          <div style={{
-            width: isMobile ? "100%" : "260px",
-            flex: isMobile ? 1 : undefined,
-            borderRight: isMobile ? "none" : "1px solid rgba(102,217,239,0.1)",
-            overflowY: "auto",
-            background: "linear-gradient(180deg, rgba(8,16,30,0.94) 0%, rgba(5,10,20,0.88) 100%)",
+        {/* Keyframes for message-body fade/slide-in on switch. Inlined so the
+            component has no external CSS dependency. */}
+        <style>{`
+          @keyframes inboxDetailFade {
+            0% { opacity: 0; transform: translateY(6px); }
+            100% { opacity: 1; transform: translateY(0); }
+          }
+        `}</style>
+
+        {/* Content. On mobile both panes stay mounted and slide with a CSS
+            transform, which keeps the detail view in the DOM across orientation
+            changes (fixes "rotate phone and text pane disappears") and gives
+            the list↔detail transition a modern slide feel instead of a hard
+            conditional render swap. */}
+        <div style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "row",
+          overflow: "hidden",
+          position: "relative",
+        }}>
+          {/* Message list */}
+          <div
+            aria-hidden={isMobile && !!selectedMessageId}
+            style={{
+              width: isMobile ? "100%" : "260px",
+              borderRight: isMobile ? "none" : "1px solid rgba(102,217,239,0.1)",
+              overflowY: "auto",
+              background: "linear-gradient(180deg, rgba(8,16,30,0.94) 0%, rgba(5,10,20,0.88) 100%)",
+              ...(isMobile
+                ? {
+                    position: "absolute",
+                    inset: 0,
+                    transform: selectedMessageId ? "translateX(-100%)" : "translateX(0)",
+                    transition: "transform 300ms cubic-bezier(0.22, 0.61, 0.36, 1)",
+                    willChange: "transform",
+                    zIndex: 1,
+                    // Pointer blocked when off-screen so buried buttons aren't
+                    // tappable through the detail pane mid-animation.
+                    pointerEvents: selectedMessageId ? "none" : "auto",
+                  }
+                : {}),
           }}>
             {messages.map(msg => (
               <button key={msg.id} onClick={() => selectMessage(msg)} style={{
@@ -609,6 +656,7 @@ export default function InboxOverlay({ isOpen, onClose }: InboxOverlayProps) {
                 background: selectedMessage?.id === msg.id ? "rgba(102,217,239,0.12)" : "transparent",
                 border: "none", borderBottom: "1px solid rgba(255,255,255,0.05)",
                 fontFamily: "monospace",
+                transition: "background 180ms ease",
               }}>
                 <div style={{
                   fontSize: "11px", color: msg.read ? "rgba(255,255,255,0.4)" : "#66d9ef",
@@ -638,13 +686,32 @@ export default function InboxOverlay({ isOpen, onClose }: InboxOverlayProps) {
               </button>
             ))}
           </div>
-          )}
 
-          {/* Message detail - show when message selected on mobile, always on desktop */}
-          {(!isMobile || selectedMessageId) && (
-          <div style={{ flex: 1, padding: isMobile ? "14px" : "22px", overflowY: "auto" }}>
+          {/* Message detail */}
+          <div
+            aria-hidden={isMobile && !selectedMessageId}
+            style={{
+              flex: isMobile ? undefined : 1,
+              padding: isMobile ? "14px" : "22px",
+              overflowY: "auto",
+              ...(isMobile
+                ? {
+                    position: "absolute",
+                    inset: 0,
+                    transform: selectedMessageId ? "translateX(0)" : "translateX(100%)",
+                    transition: "transform 300ms cubic-bezier(0.22, 0.61, 0.36, 1)",
+                    willChange: "transform",
+                    zIndex: 2,
+                    pointerEvents: selectedMessageId ? "auto" : "none",
+                  }
+                : {}),
+            }}
+          >
             {selectedMessage ? (
-              <>
+              // key forces re-mount → triggers inboxDetailFade animation on
+              // every message switch, which makes the content feel like it
+              // "arrives" rather than flashing.
+              <div key={selectedMessage.id} style={{ animation: "inboxDetailFade 260ms cubic-bezier(0.22, 0.61, 0.36, 1) both" }}>
                 {isMobile && (
                   <button onClick={() => setSelectedMessageId(null)} style={{
                     background: "none", border: "1px solid rgba(102,217,239,0.3)",
@@ -680,7 +747,7 @@ export default function InboxOverlay({ isOpen, onClose }: InboxOverlayProps) {
                 }}>
                   {selectedMessage.body}
                 </p>
-              </>
+              </div>
             ) : (
               <div style={{
                 display: "flex", alignItems: "center", justifyContent: "center",
@@ -691,7 +758,6 @@ export default function InboxOverlay({ isOpen, onClose }: InboxOverlayProps) {
               </div>
             )}
           </div>
-          )}
         </div>
       </div>
     </div>
