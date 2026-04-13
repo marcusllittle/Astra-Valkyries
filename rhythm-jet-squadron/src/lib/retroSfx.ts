@@ -100,28 +100,124 @@ export function pressStart() {
 // Throttle rapid-fire sounds to avoid audio glitches
 let _lastShot = 0;
 
-/** Player primary weapon fire — short laser blip */
-export function sfxShoot() {
+/**
+ * Per-ship shot tint. Each frame gets a signature sound instead of every
+ * pilot sharing the same square-wave blip. Kept tiny and short so the
+ * auto-fire cadence doesn't turn into a drone.
+ */
+interface ShotTint {
+  /** Primary oscillator waveform. */
+  type: OscillatorType;
+  /** Starting pitch in Hz. */
+  startHz: number;
+  /** Ending pitch in Hz (exponential decay). */
+  endHz: number;
+  /** Peak gain before the envelope decays. */
+  peakGain: number;
+  /** Total duration in seconds. */
+  durationSec: number;
+  /** Optional sub-oscillator one octave down for body. */
+  sub?: {
+    type: OscillatorType;
+    gain: number;
+  };
+  /** Optional short noise click at attack for "crack". */
+  clickNoise?: boolean;
+}
+
+const DEFAULT_SHOT_TINT: ShotTint = {
+  type: "square",
+  startHz: 1200,
+  endHz: 400,
+  peakGain: 0.09,
+  durationSec: 0.07,
+};
+
+const SHIP_SHOT_TINTS: Record<string, ShotTint> = {
+  // Interceptor — higher and snappier, feels precise/quick
+  ship_astra_interceptor: {
+    type: "square",
+    startHz: 1500,
+    endHz: 520,
+    peakGain: 0.08,
+    durationSec: 0.06,
+  },
+  // Lancer — rougher sawtooth with a sub layer, feels aggressive
+  ship_valkyrie_lancer: {
+    type: "sawtooth",
+    startHz: 1000,
+    endHz: 300,
+    peakGain: 0.085,
+    durationSec: 0.08,
+    sub: { type: "square", gain: 0.05 },
+    clickNoise: true,
+  },
+  // Guard — triangle + square body, deeper weight, feels heavy/armored
+  ship_seraph_guard: {
+    type: "triangle",
+    startHz: 820,
+    endHz: 240,
+    peakGain: 0.095,
+    durationSec: 0.085,
+    sub: { type: "square", gain: 0.045 },
+  },
+};
+
+/** Player primary weapon fire — short laser blip, optionally tinted per ship. */
+export function sfxShoot(shipId?: string) {
   const now = performance.now();
   if (now - _lastShot < 60) return; // max ~16 shots/sec audio
   _lastShot = now;
+
+  const tint = (shipId && SHIP_SHOT_TINTS[shipId]) || DEFAULT_SHOT_TINT;
 
   const ac = getAudioCtx();
   const bus = getSfxBus();
   const t = ac.currentTime;
 
   const osc = ac.createOscillator();
-  osc.type = "square";
-  osc.frequency.setValueAtTime(1200, t);
-  osc.frequency.exponentialRampToValueAtTime(400, t + 0.06);
+  osc.type = tint.type;
+  osc.frequency.setValueAtTime(tint.startHz, t);
+  osc.frequency.exponentialRampToValueAtTime(tint.endHz, t + tint.durationSec);
 
   const g = ac.createGain();
-  g.gain.setValueAtTime(0.09, t);
-  g.gain.linearRampToValueAtTime(0, t + 0.07);
+  g.gain.setValueAtTime(tint.peakGain, t);
+  g.gain.linearRampToValueAtTime(0, t + tint.durationSec);
 
   osc.connect(g).connect(bus);
   osc.start(t);
-  osc.stop(t + 0.07);
+  osc.stop(t + tint.durationSec);
+
+  if (tint.sub) {
+    // Sub one octave down for low-end body on heavier ships
+    const subOsc = ac.createOscillator();
+    subOsc.type = tint.sub.type;
+    subOsc.frequency.setValueAtTime(tint.startHz * 0.5, t);
+    subOsc.frequency.exponentialRampToValueAtTime(tint.endHz * 0.5, t + tint.durationSec);
+
+    const subG = ac.createGain();
+    subG.gain.setValueAtTime(tint.sub.gain, t);
+    subG.gain.linearRampToValueAtTime(0, t + tint.durationSec);
+
+    subOsc.connect(subG).connect(bus);
+    subOsc.start(t);
+    subOsc.stop(t + tint.durationSec);
+  }
+
+  if (tint.clickNoise) {
+    // Short noise crack at attack — gives the Lancer shot its bite
+    const bufLen = Math.max(1, Math.floor(ac.sampleRate * 0.012));
+    const buf = ac.createBuffer(1, bufLen, ac.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < bufLen; i++) data[i] = (Math.random() * 2 - 1);
+    const noise = ac.createBufferSource();
+    noise.buffer = buf;
+    const ng = ac.createGain();
+    ng.gain.setValueAtTime(0.05, t);
+    ng.gain.linearRampToValueAtTime(0, t + 0.012);
+    noise.connect(ng).connect(bus);
+    noise.start(t);
+  }
 }
 
 /** Enemy destroyed — noise burst + descending tone */
