@@ -220,6 +220,72 @@ export function sfxShoot(shipId?: string) {
   }
 }
 
+/**
+ * Run-end grade reveal sting. Higher grades get a bigger, brighter chord
+ * stack so the results screen "lands" instead of quietly appearing.
+ */
+export function sfxRunGrade(grade: "S" | "A" | "B" | "C" | "D") {
+  const ac = getAudioCtx();
+  const bus = getSfxBus();
+  const t = ac.currentTime;
+
+  // Base chord pitches (root, fifth, octave) scaled per grade.
+  // S is triumphant / bright, D is flat / subdued.
+  const gradeConfig: Record<string, { root: number; glide: number; dur: number; peak: number; shimmer: boolean }> = {
+    S: { root: 440, glide: 660, dur: 0.70, peak: 0.22, shimmer: true },
+    A: { root: 392, glide: 588, dur: 0.60, peak: 0.19, shimmer: true },
+    B: { root: 330, glide: 494, dur: 0.52, peak: 0.16, shimmer: false },
+    C: { root: 294, glide: 392, dur: 0.44, peak: 0.13, shimmer: false },
+    D: { root: 220, glide: 262, dur: 0.36, peak: 0.11, shimmer: false },
+  };
+  const cfg = gradeConfig[grade] ?? gradeConfig.B;
+
+  // Stack root + fifth + octave with triangle waves for a warm synth chord
+  const notes = [cfg.root, cfg.root * 1.5, cfg.root * 2];
+  notes.forEach((hz, i) => {
+    const osc = ac.createOscillator();
+    osc.type = i === 0 ? "sawtooth" : "triangle";
+    osc.frequency.setValueAtTime(hz, t);
+    osc.frequency.linearRampToValueAtTime(hz * (cfg.glide / cfg.root), t + cfg.dur * 0.35);
+
+    const g = ac.createGain();
+    // Slight stagger so voices layer in rather than all-at-once
+    const start = t + i * 0.04;
+    const peak = cfg.peak * (i === 0 ? 1 : 0.7);
+    g.gain.setValueAtTime(0, start);
+    g.gain.linearRampToValueAtTime(peak, start + 0.05);
+    g.gain.linearRampToValueAtTime(0, start + cfg.dur);
+
+    osc.connect(g).connect(bus);
+    osc.start(start);
+    osc.stop(start + cfg.dur + 0.05);
+  });
+
+  // Shimmer hats on S/A — short bright noise bursts layered above the chord
+  if (cfg.shimmer) {
+    for (let i = 0; i < 3; i++) {
+      const bufLen = Math.floor(ac.sampleRate * 0.045);
+      const buf = ac.createBuffer(1, bufLen, ac.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let j = 0; j < bufLen; j++) data[j] = (Math.random() * 2 - 1) * 0.4;
+      const noise = ac.createBufferSource();
+      noise.buffer = buf;
+
+      const hp = ac.createBiquadFilter();
+      hp.type = "highpass";
+      hp.frequency.value = 4200;
+
+      const ng = ac.createGain();
+      const nt = t + 0.12 + i * 0.08;
+      ng.gain.setValueAtTime(0.06, nt);
+      ng.gain.linearRampToValueAtTime(0, nt + 0.05);
+
+      noise.connect(hp).connect(ng).connect(bus);
+      noise.start(nt);
+    }
+  }
+}
+
 /** Enemy destroyed — noise burst + descending tone */
 export function sfxEnemyDeath() {
   const ac = getAudioCtx();

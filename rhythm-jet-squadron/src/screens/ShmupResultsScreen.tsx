@@ -11,6 +11,7 @@ import { astraReward } from "../lib/havnApi";
 import { getDialogueForMap } from "../data/dialogues";
 import DialogueBox from "../components/DialogueBox";
 import { getShmupMapById } from "../lib/shmupWaves";
+import { sfxRunGrade } from "../lib/retroSfx";
 
 const GRADE_COLORS: Record<string, string> = {
   S: "#ffd43b",
@@ -55,6 +56,37 @@ export default function ShmupResultsScreen() {
   const mapId = (location.state as { mapId?: string } | undefined)?.mapId;
   const grade = shmupResult ? gradeShmupRun(shmupResult) : null;
   const creditsEarned = grade ? creditsForGrade(grade) : 0;
+
+  // Score count-up from 0 → final over ~900ms so the number feels earned
+  // rather than just printed.
+  const [displayScore, setDisplayScore] = useState(0);
+  useEffect(() => {
+    if (!shmupResult) return;
+    const target = shmupResult.score;
+    const durationMs = 900;
+    const start = performance.now();
+    let raf = 0;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / durationMs);
+      // easeOutCubic so numbers accelerate then settle
+      const eased = 1 - Math.pow(1 - t, 3);
+      setDisplayScore(Math.round(target * eased));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [shmupResult]);
+
+  // Grade-reveal SFX sting on mount. Guarded by a ref so we only fire
+  // once even if the component re-renders (e.g. wallet reward resolution).
+  const stingFiredRef = useRef(false);
+  useEffect(() => {
+    if (!grade || stingFiredRef.current) return;
+    stingFiredRef.current = true;
+    // Slight delay so the sting lines up with the stamp-in animation peak
+    const id = window.setTimeout(() => sfxRunGrade(grade), 120);
+    return () => window.clearTimeout(id);
+  }, [grade]);
 
   const debriefScript = mapId ? getDialogueForMap(mapId, "post_mission") : undefined;
   const debriefNode = debriefScript?.nodes.find((n) => n.id === debriefScript.startNodeId);
@@ -204,7 +236,7 @@ export default function ShmupResultsScreen() {
       <div className="results-grid">
         <div className="result-item">
           <span className="result-label">Score</span>
-          <span className="result-value">{shmupResult.score.toLocaleString()}</span>
+          <span className="result-value">{displayScore.toLocaleString()}</span>
         </div>
         <div className="result-item">
           <span className="result-label">Kills</span>

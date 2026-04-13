@@ -1812,6 +1812,69 @@ video.card-art-img {
   font-size: 5rem;
   font-weight: 900;
   line-height: 1;
+  position: relative;
+  /* Stamp-in reveal: overshoot scale + settle, feels like the grade is
+     slammed onto the screen rather than quietly appearing. */
+  animation: gradeStampIn 0.72s cubic-bezier(0.2, 1.35, 0.35, 1) both;
+  text-shadow: 0 0 18px currentColor, 0 2px 6px rgba(0, 0, 0, 0.6);
+  will-change: transform, text-shadow;
+}
+
+.grade-display::before {
+  /* Radial flash behind the grade, tinted by the letter color via
+     currentColor. Fades out while the grade is settling. */
+  content: "";
+  position: absolute;
+  inset: -40% -40%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, currentColor 0%, transparent 70%);
+  opacity: 0;
+  filter: blur(10px);
+  animation: gradeFlash 0.9s ease-out both;
+  animation-delay: 0.05s;
+  z-index: -1;
+  pointer-events: none;
+}
+
+@keyframes gradeStampIn {
+  0% { transform: scale(0.2) rotate(-6deg); opacity: 0; letter-spacing: 0.3em; }
+  55% { transform: scale(1.18) rotate(2deg); opacity: 1; letter-spacing: 0; }
+  78% { transform: scale(0.95) rotate(-1deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; letter-spacing: 0; }
+}
+
+@keyframes gradeFlash {
+  0% { opacity: 0; transform: scale(0.4); }
+  25% { opacity: 0.55; transform: scale(1.1); }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+
+/* Stats fade+slide in staggered so the card reads progressively. */
+.results-grid .result-item {
+  animation: resultRowIn 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+.results-grid .result-item:nth-child(1) { animation-delay: 0.25s; }
+.results-grid .result-item:nth-child(2) { animation-delay: 0.32s; }
+.results-grid .result-item:nth-child(3) { animation-delay: 0.39s; }
+.results-grid .result-item:nth-child(4) { animation-delay: 0.46s; }
+.results-grid .result-item:nth-child(5) { animation-delay: 0.53s; }
+.results-grid .result-item:nth-child(6) { animation-delay: 0.60s; }
+
+@keyframes resultRowIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Credits pulse-in so the reward lands with weight. */
+.credits-earned {
+  animation: creditsPulse 0.55s cubic-bezier(0.2, 1.35, 0.35, 1) both;
+  animation-delay: 0.75s;
+}
+
+@keyframes creditsPulse {
+  0% { opacity: 0; transform: scale(0.7); filter: brightness(1.8); }
+  60% { opacity: 1; transform: scale(1.12); filter: brightness(1.4); }
+  100% { opacity: 1; transform: scale(1); filter: brightness(1); }
 }
 
 .results-grid {
