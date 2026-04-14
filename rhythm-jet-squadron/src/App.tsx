@@ -3,6 +3,7 @@
  */
 
 import { BrowserRouter, HashRouter, Navigate, Routes, Route, useLocation } from "react-router-dom";
+import { Analytics } from "@vercel/analytics/react";
 import { GameProvider, useGame } from "./context/GameContext";
 import { WalletProvider } from "./context/WalletContext";
 import HomeScreen from "./screens/HomeScreen";
@@ -66,6 +67,7 @@ export default function App() {
           </Routes>
           <AchievementLayer />
         </div>
+        <Analytics />
       </Router>
     </GameProvider>
     </WalletProvider>
