@@ -728,8 +728,7 @@ function createHudState(modifiers: ShmupModifiers, activeMap: ShmupMap): HudStat
 
 export default function ShmupPlayScreen() {
   const navigate = useNavigate();
-  const { save, submitResult } = useGame();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { save, submitResult, submitRunStats } = useGame();  const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [viewportBounds, setViewportBounds] = useState<ViewportBounds>(() => getViewportBounds());
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -2701,37 +2700,49 @@ export default function ShmupPlayScreen() {
     };
 
     const finishRun = (elapsedMs: number, bossDefeated: boolean = false) => {
-      if (runEndedRef.current) return;
-      runEndedRef.current = true;
+  if (runEndedRef.current) return;
+  runEndedRef.current = true;
 
-      const shmupResult: ShmupRunResult = {
-        score: scoreRef.current,
-        kills: killsRef.current,
-        timeSurvivedMs: elapsedMs,
-        bossDefeated,
-        stage: Math.max(1, Math.floor(elapsedMs / 60_000) + 1),
-        maxWeaponLevel: weaponLevelRef.current,
-      };
+  const shmupResult: ShmupRunResult = {
+    score: scoreRef.current,
+    kills: killsRef.current,
+    timeSurvivedMs: elapsedMs,
+    bossDefeated,
+    stage: Math.max(1, Math.floor(elapsedMs / 60_000) + 1),
+    maxWeaponLevel: weaponLevelRef.current,
+  };
 
-      const scoreRecord: GameResult = {
-        mode: "shmup",
-        trackId: SHMUP_TRACK_ID,
-        score: shmupResult.score,
-        grade: gradeShmupRun(shmupResult),
-        creditsEarned: 0,
-        kills: shmupResult.kills,
-        timeSurvivedMs: shmupResult.timeSurvivedMs,
-        bestMultiplier: bestMultiplierRef.current,
-        weaponLevel: weaponLevelRef.current,
-        damageTaken: damageTakenRef.current,
-      };
+  const grade = gradeShmupRun(shmupResult);
 
-      syncHud(elapsedMs);
-      submitResult(scoreRecord);
-      window.setTimeout(() => {
-        navigate("/shmup-results", { state: { shmupResult, mapId: activeMap?.id } });
-      }, bossDefeated ? 650 : 400);
-    };
+  const scoreRecord: GameResult = {
+    mode: "shmup",
+    trackId: SHMUP_TRACK_ID,
+    score: shmupResult.score,
+    grade,
+    creditsEarned: 0,
+    kills: shmupResult.kills,
+    timeSurvivedMs: shmupResult.timeSurvivedMs,
+    bestMultiplier: bestMultiplierRef.current,
+    weaponLevel: weaponLevelRef.current,
+    damageTaken: damageTakenRef.current,
+  };
+
+  syncHud(elapsedMs);
+  submitResult(scoreRecord);
+
+  submitRunStats({
+    pilotId: save.selectedPilotId ?? pilot?.id ?? "pilot_nova",
+    mapId: activeMap.id,
+    score: shmupResult.score,
+    kills: shmupResult.kills,
+    grade,
+    bossDefeated,
+  });
+
+  window.setTimeout(() => {
+    navigate("/shmup-results", { state: { shmupResult, mapId: activeMap?.id } });
+  }, bossDefeated ? 650 : 400);
+};
 
     const handleShipHit = (elapsedMs: number) => {
       if (elapsedMs < ship.invulnerableUntil || runEndedRef.current) return;
@@ -3052,7 +3063,8 @@ export default function ShmupPlayScreen() {
         }
         while (fireTimerRef.current <= 0) {
           spawnPlayerBullets(elapsedMs);
-          sfxShoot();
+          // Per-ship shot tint so each frame has a signature sound
+          sfxShoot(selectedShip?.id);
           fireTimerRef.current += fireInterval;
         }
       }
