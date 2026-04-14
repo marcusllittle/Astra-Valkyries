@@ -728,7 +728,8 @@ function createHudState(modifiers: ShmupModifiers, activeMap: ShmupMap): HudStat
 
 export default function ShmupPlayScreen() {
   const navigate = useNavigate();
-  const { save, submitResult, submitRunStats } = useGame();  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { save, submitResult, submitRunStats } = useGame();
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [viewportBounds, setViewportBounds] = useState<ViewportBounds>(() => getViewportBounds());
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -3064,7 +3065,7 @@ export default function ShmupPlayScreen() {
         while (fireTimerRef.current <= 0) {
           spawnPlayerBullets(elapsedMs);
           // Per-ship shot tint so each frame has a signature sound
-          sfxShoot(selectedShip?.id);
+          sfxShoot();
           fireTimerRef.current += fireInterval;
         }
       }
