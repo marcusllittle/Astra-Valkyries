@@ -28,5 +28,17 @@ export default defineConfig(({ mode }) => {
         '/api': apiProxy,
       },
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('@metamask/sdk')) return 'metamask-sdk'
+            if (id.includes('src/context/WalletContext') || id.includes('src/lib/wallet') || id.includes('src/lib/havnApi')) {
+              return 'wallet-shared'
+            }
+          },
+        },
+      },
+    },
   }
 })

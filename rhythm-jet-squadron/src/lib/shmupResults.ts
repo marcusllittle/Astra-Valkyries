@@ -35,15 +35,15 @@ export function gradeShmupRun(result: ShmupRunResult): "S" | "A" | "B" | "C" | "
 export function creditsForGrade(grade: "S" | "A" | "B" | "C" | "D"): number {
   switch (grade) {
     case "S":
-      return 300;
+      return 450;
     case "A":
-      return 200;
+      return 300;
     case "B":
-      return 150;
+      return 200;
     case "C":
-      return 100;
+      return 125;
     case "D":
     default:
-      return 50;
+      return 75;
   }
 }

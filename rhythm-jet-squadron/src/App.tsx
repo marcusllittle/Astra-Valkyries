@@ -2,10 +2,14 @@
  * App root - sets up React Router and GameProvider.
  */
 
+import { Suspense, lazy } from "react";
 import { BrowserRouter, HashRouter, Navigate, Routes, Route, useLocation } from "react-router-dom";
 import { Analytics } from "@vercel/analytics/react";
 import { GameProvider, useGame } from "./context/GameContext";
-import { WalletProvider } from "./context/WalletContext";
+const WalletProvider = lazy(async () => {
+  const mod = await import("./context/WalletContext");
+  return { default: mod.WalletProvider };
+});
 import HomeScreen from "./screens/HomeScreen";
 import HangarScreen from "./screens/HangarScreen";
 import ShmupPlayScreen from "./screens/ShmupPlayScreen";
@@ -45,7 +49,8 @@ export default function App() {
     : BrowserRouter;
 
   return (
-    <WalletProvider>
+    <Suspense fallback={<GameProvider><div className="screen">Loading…</div></GameProvider>}>
+      <WalletProvider>
     <GameProvider>
       <Router>
         <div className="app-container">
@@ -70,6 +75,7 @@ export default function App() {
         <Analytics />
       </Router>
     </GameProvider>
-    </WalletProvider>
+      </WalletProvider>
+    </Suspense>
   );
 }

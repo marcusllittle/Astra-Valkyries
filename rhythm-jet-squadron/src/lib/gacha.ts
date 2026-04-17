@@ -14,8 +14,8 @@ const RARITY_WEIGHTS = {
 };
 
 /** Cost constants */
-export const PULL_COST_1 = 120;
-export const PULL_COST_10 = 1000;
+export const PULL_COST_1 = 100;
+export const PULL_COST_10 = 850;
 
 /** Shard thresholds for star upgrades */
 export const SHARD_THRESHOLDS: Record<number, number> = {
@@ -96,8 +96,8 @@ export function getEffectivePerkValue(outfit: Outfit, stars: number): number {
 // ─── Pity counter ─────────────────────────────────────────
 
 const PITY_STORAGE_KEY = "astra.pityCounter";
-const PITY_THRESHOLD_SR = 30;
-const PITY_THRESHOLD_SSR = 90;
+const PITY_THRESHOLD_SR = 20;
+const PITY_THRESHOLD_SSR = 70;
 
 export interface PityState {
   pullsSinceSR: number;
