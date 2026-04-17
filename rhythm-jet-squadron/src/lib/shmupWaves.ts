@@ -48,10 +48,13 @@ export interface BossPhaseConfig {
   sweepLaser: boolean;    // whether to fire sweeping laser beams
 }
 
+export type BossArchetype = "dreadnought" | "tyrant" | "leviathan";
+
 export interface ShmupMap {
   id: string;
   name: string;
   bossName: string;
+  bossArchetype: BossArchetype;
   tagline: string;
   briefing: string;
   debrief: string;
@@ -368,6 +371,7 @@ export const SHMUP_MAPS: ShmupMap[] = [
     id: "nebula-runway",
     name: "Nebula Runway",
     bossName: "Aegis Dreadnought",
+    bossArchetype: "dreadnought",
     tagline: "Slipstream interception corridor",
     briefing: "Break the patrol line and reopen the route.",
     debrief: "Corridor pressure collapsed. The lane is ours again.",
@@ -398,6 +402,7 @@ export const SHMUP_MAPS: ShmupMap[] = [
     id: "solar-rift",
     name: "Solar Rift",
     bossName: "Helios Tyrant",
+    bossArchetype: "tyrant",
     tagline: "Thermal fortress breach",
     briefing: "Push through the flare wall and crack the weapons platform.",
     debrief: "The heat front is broken. Solar control is shifting back.",
@@ -428,6 +433,7 @@ export const SHMUP_MAPS: ShmupMap[] = [
     id: "abyss-crown",
     name: "Abyss Crown",
     bossName: "Cryo Leviathan",
+    bossArchetype: "leviathan",
     tagline: "Deep-void terminal descent",
     briefing: "Hold formation through the cold breach and cut down the Leviathan.",
     debrief: "The void finally blinked. Abyss Crown is no longer untouchable.",

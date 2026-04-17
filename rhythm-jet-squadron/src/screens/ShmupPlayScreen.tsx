@@ -34,6 +34,7 @@ import {
 import {
   getShmupMapById,
   getShmupMapForShip,
+  type BossArchetype,
   type EnemyPattern,
   type ShmupMap,
   type ShmupWaveEnemy,
@@ -199,6 +200,7 @@ interface TouchMoveState {
 
 interface BossState {
   name: string;
+  archetype: BossArchetype;
   x: number;
   y: number;
   radius: number;
@@ -1631,9 +1633,10 @@ export default function ShmupPlayScreen() {
       if (bossRef.current) return;
       bossRef.current = {
         name: activeMap.bossName,
+        archetype: activeMap.bossArchetype,
         x: canvas.width / 2,
         y: -96,
-        radius: 30,
+        radius: activeMap.bossArchetype === "leviathan" ? 34 : activeMap.bossArchetype === "tyrant" ? 28 : 30,
         hp: activeMap.bossMaxHp,
         maxHp: activeMap.bossMaxHp,
         age: 0,
@@ -1939,19 +1942,60 @@ export default function ShmupPlayScreen() {
       const length = Math.hypot(dx, dy) || 1;
       const baseVx = (dx / length) * 180;
       const baseVy = (dy / length) * 180;
-      const fanOffsets = boss.phase === 1
-        ? [-36, 0, 36]
-        : boss.phase === 2
-          ? [-72, -24, 24, 72]
-          : [-96, -48, 0, 48, 96]; // Phase 3: 5-way fan
 
-      const shotColor = boss.phase === 1
-        ? activeMap.palette.enemyShotColor
-        : activeMap.palette.bossShotColor;
-      const shotCore = boss.phase === 1
-        ? activeMap.palette.enemyShotCore
-        : activeMap.palette.bossShotCore;
-      const shotRadius = boss.phase === 1 ? 6 : boss.phase === 2 ? 7 : 7;
+      if (boss.archetype === "tyrant") {
+        const lanceSpread = boss.phase === 1 ? 24 : boss.phase === 2 ? 44 : 64;
+        for (const side of [-1, 1]) {
+          pushEnemyBullet({
+            x: boss.x + side * (18 + boss.phase * 6),
+            y: boss.y + boss.radius * 0.45,
+            vx: baseVx * 0.4 + side * lanceSpread,
+            vy: baseVy + 38,
+            radius: boss.phase === 3 ? 7 : 6,
+            color: boss.phase === 3 ? "#ff6b6b" : activeMap.palette.bossShotColor,
+            coreColor: "#fff4e6",
+            length: boss.phase === 3 ? 18 : 16,
+            spriteKey: "bulletBoss",
+          });
+        }
+        if (boss.phase >= 2) {
+          pushEnemyBullet({
+            x: boss.x,
+            y: boss.y + boss.radius * 0.6,
+            vx: 0,
+            vy: 220,
+            radius: 7,
+            color: "#ffa94d",
+            coreColor: "#fff4e6",
+            length: 18,
+            spriteKey: "bulletBoss",
+          });
+        }
+        return;
+      }
+
+      if (boss.archetype === "leviathan") {
+        const offsets = boss.phase === 1 ? [-60, 0, 60] : boss.phase === 2 ? [-100, -36, 36, 100] : [-132, -72, 0, 72, 132];
+        for (const offset of offsets) {
+          pushEnemyBullet({
+            x: boss.x,
+            y: boss.y + boss.radius * 0.55,
+            vx: offset,
+            vy: 150 + boss.phase * 20,
+            radius: 6,
+            color: activeMap.palette.bossShotColor,
+            coreColor: activeMap.palette.bossShotCore,
+            length: 14,
+            spriteKey: "bulletBoss",
+          });
+        }
+        return;
+      }
+
+      const fanOffsets = boss.phase === 1 ? [-36, 0, 36] : boss.phase === 2 ? [-72, -24, 24, 72] : [-96, -48, 0, 48, 96];
+      const shotColor = boss.phase === 1 ? activeMap.palette.enemyShotColor : activeMap.palette.bossShotColor;
+      const shotCore = boss.phase === 1 ? activeMap.palette.enemyShotCore : activeMap.palette.bossShotCore;
+      const shotRadius = boss.phase === 1 ? 6 : 7;
       const shotLength = boss.phase === 1 ? 14 : 16;
 
       for (const offset of fanOffsets) {
@@ -1968,7 +2012,6 @@ export default function ShmupPlayScreen() {
         });
       }
 
-      // Phase 2+: flanking shots
       if (boss.phase >= 2) {
         for (const side of [-1, 1]) {
           pushEnemyBullet({
@@ -1984,37 +2027,57 @@ export default function ShmupPlayScreen() {
           });
         }
       }
-
-      // Phase 3: extra random scatter shots
-      if (boss.phase === 3) {
-        for (let i = 0; i < 3; i++) {
-          const angle = Math.PI * 0.2 + Math.random() * Math.PI * 0.6;
-          pushEnemyBullet({
-            x: boss.x + (Math.random() - 0.5) * 50,
-            y: boss.y + boss.radius * 0.5,
-            vx: Math.cos(angle) * 200,
-            vy: Math.sin(angle) * 200,
-            radius: 5,
-            color: "#ff4444",
-            coreColor: "#ffaaaa",
-            length: 12,
-            spriteKey: "bulletBoss",
-          });
-        }
-      }
     };
 
     const shootBossBurst = (boss: BossState) => {
+      if (boss.archetype === "tyrant") {
+        const rings = boss.phase === 3 ? 2 : 1;
+        for (let ring = 0; ring < rings; ring++) {
+          const bulletCount = boss.phase === 1 ? 6 : boss.phase === 2 ? 8 : 10;
+          for (let index = 0; index < bulletCount; index++) {
+            const angle = (Math.PI * 0.22) + (Math.PI * 0.56 * index) / Math.max(1, bulletCount - 1) + ring * 0.08;
+            pushEnemyBullet({
+              x: boss.x,
+              y: boss.y + boss.radius * 0.45,
+              vx: Math.cos(angle) * (165 + ring * 18),
+              vy: Math.sin(angle) * (165 + ring * 18),
+              radius: 6,
+              color: "#ff922b",
+              coreColor: "#fff4e6",
+              length: 16,
+              spriteKey: "bulletBoss",
+            });
+          }
+        }
+        return;
+      }
+
+      if (boss.archetype === "leviathan") {
+        const bulletCount = boss.phase === 1 ? 8 : boss.phase === 2 ? 12 : 16;
+        for (let index = 0; index < bulletCount; index++) {
+          const ratio = index / Math.max(1, bulletCount - 1);
+          const angle = Math.PI * 0.1 + Math.PI * 0.8 * ratio;
+          const speed = boss.phase === 3 ? 225 : 190;
+          pushEnemyBullet({
+            x: boss.x + Math.sin(ratio * Math.PI) * 12,
+            y: boss.y + boss.radius * 0.4,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * (speed * 0.9),
+            radius: boss.phase === 3 ? 7 : 6,
+            color: activeMap.palette.bossShotColor,
+            coreColor: activeMap.palette.bossShotCore,
+            length: 15,
+            spriteKey: "bulletBoss",
+          });
+        }
+        return;
+      }
+
       const startAngle = boss.phase === 1 ? Math.PI * 0.22 : Math.PI * 0.1;
       const endAngle = Math.PI - startAngle;
       const bulletCount = boss.phase === 1 ? 7 : boss.phase === 2 ? 10 : 14;
-
-      const shotColor = boss.phase === 1
-        ? activeMap.palette.enemyShotColor
-        : activeMap.palette.bossShotColor;
-      const shotCore = boss.phase === 1
-        ? activeMap.palette.enemyShotCore
-        : activeMap.palette.bossShotCore;
+      const shotColor = boss.phase === 1 ? activeMap.palette.enemyShotColor : activeMap.palette.bossShotColor;
+      const shotCore = boss.phase === 1 ? activeMap.palette.enemyShotCore : activeMap.palette.bossShotCore;
 
       for (let index = 0; index < bulletCount; index++) {
         const ratio = index / (bulletCount - 1);
