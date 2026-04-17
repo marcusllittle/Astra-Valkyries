@@ -43,16 +43,18 @@ export const DIALOGUE_SCRIPTS: DialogueScript[] = [
       {
         id: "start",
         lines: [
-          { speaker: "Command", text: "Valkyrie squadron, you are cleared for launch.", position: "left", mood: "neutral" },
-          { speaker: "Command", text: "The Nebula Runway is swarming with hostile drones. Clear a path to the sector gate.", position: "left", mood: "neutral" },
+          { speaker: "Command", text: "Valkyrie squadron, launch clearance granted. Nebula Runway is contested and getting worse by the minute.", position: "left", mood: "neutral" },
+          { speaker: "Command", text: "Enemy patrol craft are stacking in the corridor around a hardened command hull. If that lane closes, the whole route closes with it.", position: "left", mood: "serious" },
+          { speaker: "Command", text: "Break the screen, keep the pressure on, and do not let the Dreadnought settle into firing position.", position: "left", mood: "serious" },
         ],
         nextNodeId: "pilot-response",
       },
       {
         id: "pilot-response",
         lines: [
-          { speaker: "Nova", text: "Copy that, Command. Weapons hot, systems green.", position: "right", mood: "excited" },
-          { speaker: "Nova", text: "Let's light them up.", position: "right", mood: "excited" },
+          { speaker: "Nova", text: "That corridor only feels crowded because nobody's taught them how to die in sequence yet.", position: "right", mood: "happy" },
+          { speaker: "Nova", text: "I'll open the line, hold center mass, and cut the command hull apart when it shows itself.", position: "right", mood: "serious" },
+          { speaker: "Nova", text: "Keep up with me and this turns from blockade to wreckage pretty fast.", position: "right", mood: "excited" },
         ],
       },
     ],
@@ -66,16 +68,18 @@ export const DIALOGUE_SCRIPTS: DialogueScript[] = [
       {
         id: "start",
         lines: [
-          { speaker: "Command", text: "Warning: Solar Rift sector detected extreme thermal readings.", position: "left", mood: "worried" },
-          { speaker: "Command", text: "The Helios Tyrant has been spotted. Proceed with extreme caution.", position: "left", mood: "worried" },
+          { speaker: "Command", text: "Solar Rift is running beyond projected thermal limits. Hull stress and weapons bloom will both spike inside the flare wall.", position: "left", mood: "worried" },
+          { speaker: "Command", text: "The Helios Tyrant is using the heat haze as cover and pushing heavy fire lanes straight through the sector core.", position: "left", mood: "serious" },
+          { speaker: "Command", text: "Stay mobile, punish the openings, and do not give the platform time to establish a firing rhythm.", position: "left", mood: "serious" },
         ],
         nextNodeId: "pilot-response",
       },
       {
         id: "pilot-response",
         lines: [
-          { speaker: "Rex", text: "Heat shielding at maximum. I've seen worse.", position: "right", mood: "neutral" },
-          { speaker: "Rex", text: "Engaging combat protocols.", position: "right", mood: "excited" },
+          { speaker: "Rex", text: "Good. If the air is trying to kill us too, at least the fight has some personality.", position: "right", mood: "happy" },
+          { speaker: "Rex", text: "I want the Tyrant angry, overheating, and making mistakes before it realizes what's happening.", position: "right", mood: "serious" },
+          { speaker: "Rex", text: "You keep the pressure on and I'll make the whole sector feel like an engine fire.", position: "right", mood: "excited" },
         ],
       },
     ],
@@ -89,15 +93,18 @@ export const DIALOGUE_SCRIPTS: DialogueScript[] = [
       {
         id: "start",
         lines: [
-          { speaker: "Command", text: "This is it, Valkyrie. The Abyss Crown — deepest point of the void sector.", position: "left", mood: "worried" },
-          { speaker: "Command", text: "The Cryo Leviathan lurks within. No squadron has returned intact.", position: "left", mood: "worried" },
+          { speaker: "Command", text: "Abyss Crown is the deepest breach in the void line. Sensor dropout is severe and long-range tracking is effectively dead inside the descent channel.", position: "left", mood: "worried" },
+          { speaker: "Command", text: "The Cryo Leviathan is not behaving like a conventional command unit. It moves like an ambush and controls space like weather.", position: "left", mood: "serious" },
+          { speaker: "Command", text: "If the formation breaks, recover it immediately. If the void goes quiet, assume that's the trap.", position: "left", mood: "serious" },
         ],
         nextNodeId: "pilot-response",
       },
       {
         id: "pilot-response",
         lines: [
-          { speaker: "Yuki", text: "Then we'll be the first. Lock and load.", position: "right", mood: "excited" },
+          { speaker: "Yuki", text: "Quiet sectors don't scare me. They just mean the real pattern hasn't shown itself yet.", position: "right", mood: "neutral" },
+          { speaker: "Yuki", text: "I'll read the gaps, track the cold fronts, and cut into the Leviathan when it overcommits.", position: "right", mood: "serious" },
+          { speaker: "Yuki", text: "Stay precise. The void only gets to feel infinite if we panic.", position: "right", mood: "excited" },
         ],
       },
     ],
@@ -112,9 +119,11 @@ export const DIALOGUE_SCRIPTS: DialogueScript[] = [
       {
         id: "start",
         lines: [
-          { speaker: "Command", text: "Nebula Runway cleared. Excellent work, Valkyrie.", position: "left", mood: "neutral" },
-          { speaker: "Nova", text: "Hostiles neutralized. Returning to base.", position: "right", mood: "happy" },
-          { speaker: "Command", text: "Intelligence reports movement in the Solar Rift. Stand by for new orders.", position: "left", mood: "serious" },
+          { speaker: "Command", text: "Nebula Runway is open again. Corridor pressure collapsed the moment that Dreadnought lost central control.", position: "left", mood: "happy" },
+          { speaker: "Nova", text: "They folded exactly the way bad formations always do. Too much armor, not enough discipline.", position: "right", mood: "happy" },
+          { speaker: "Command", text: "Convoys are already moving. That single clear bought us breathing room across the whole line.", position: "left", mood: "neutral" },
+          { speaker: "Nova", text: "Then let's not waste the opening. If the next sector wants to posture, we can educate it too.", position: "right", mood: "excited" },
+          { speaker: "Command", text: "Understood. Solar Rift is flashing hot. Recover, rearm, and expect the next briefing immediately.", position: "left", mood: "serious" },
         ],
       },
     ],
@@ -128,9 +137,11 @@ export const DIALOGUE_SCRIPTS: DialogueScript[] = [
       {
         id: "start",
         lines: [
-          { speaker: "Command", text: "Solar Rift secured. The Helios Tyrant won't be troubling us for a while.", position: "left", mood: "neutral" },
-          { speaker: "Rex", text: "Barely broke a sweat. What's next?", position: "right", mood: "happy" },
-          { speaker: "Command", text: "The Abyss Crown awaits. Prepare yourself — this won't be easy.", position: "left", mood: "worried" },
+          { speaker: "Command", text: "Solar Rift secured. The Helios Tyrant has gone dark and the thermal wall is finally breaking apart.", position: "left", mood: "happy" },
+          { speaker: "Rex", text: "It talked big for something that came apart that clean. I almost wanted a second round.", position: "right", mood: "happy" },
+          { speaker: "Command", text: "You forced the platform off its rhythm before it could stabilize. That prevented a sector-wide burn cascade.", position: "left", mood: "neutral" },
+          { speaker: "Rex", text: "Good. Means all that aggression was technically responsible behavior.", position: "right", mood: "excited" },
+          { speaker: "Command", text: "Do not get comfortable. Abyss Crown is next, and nothing in that sector behaves like the targets you've seen so far.", position: "left", mood: "worried" },
         ],
       },
     ],
@@ -144,9 +155,11 @@ export const DIALOGUE_SCRIPTS: DialogueScript[] = [
       {
         id: "start",
         lines: [
-          { speaker: "Command", text: "Unbelievable. The Abyss Crown is clear. You actually did it.", position: "left", mood: "happy" },
-          { speaker: "Yuki", text: "Told you we'd be the first. The void bows to no one.", position: "right", mood: "happy" },
-          { speaker: "Command", text: "Report to the Spaceport. You've earned some rest… and a reward.", position: "left", mood: "neutral" },
+          { speaker: "Command", text: "Confirmed. Abyss Crown is clear. The Leviathan's signal collapsed and the entire void channel is stabilizing around the breach.", position: "left", mood: "happy" },
+          { speaker: "Yuki", text: "It was always going to break once we proved it could bleed. The rest was patience.", position: "right", mood: "happy" },
+          { speaker: "Command", text: "No squadron has ever returned from that descent with a kill confirmation. You just rewrote the operational model for the whole front.", position: "left", mood: "serious" },
+          { speaker: "Yuki", text: "Good. The old model was built around fear and incomplete data. I prefer cleaner numbers.", position: "right", mood: "neutral" },
+          { speaker: "Command", text: "Return to Spaceport. You've earned recovery time, formal honors, and whatever private celebration the squad has clearly been planning.", position: "left", mood: "happy" },
         ],
       },
     ],
