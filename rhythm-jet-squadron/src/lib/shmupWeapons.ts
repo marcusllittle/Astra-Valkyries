@@ -123,7 +123,7 @@ export function spawnPrimaryShots(
   timeNowMs: number
 ): PrimaryBulletSpec[] {
   const primaryKey = resolvePrimaryKey(primaryKeyRaw);
-  const level = Math.max(1, Math.min(4, state.weaponLevel));
+  const level = Math.max(1, Math.min(6, state.weaponLevel));
   const precisionRoute = Boolean(state.precisionRoute);
   const aggressiveRoute = Boolean(state.aggressiveRoute);
   const shots: PrimaryBulletSpec[] = [];
@@ -201,31 +201,75 @@ export function spawnPrimaryShots(
 
       shots.push(
         createBullet(primaryKey, state, {
-          radius: 4.8,
-          length: 42,
-          vy: -speed(1040, precisionRoute),
-          damage: damage(2.7, level, precisionRoute, aggressiveRoute),
-          pierce: 4,
+          radius: level >= 6 ? 5.8 : level >= 5 ? 5.2 : 4.8,
+          length: level >= 6 ? 54 : level >= 5 ? 48 : 42,
+          vy: -speed(level >= 6 ? 1120 : level >= 5 ? 1080 : 1040, precisionRoute),
+          damage: damage(level >= 6 ? 3.4 : level >= 5 ? 3.0 : 2.7, level, precisionRoute, aggressiveRoute),
+          pierce: level >= 6 ? 6 : level >= 5 ? 5 : 4,
           maxLife: 1.3,
         }),
         createBullet(primaryKey, state, {
           x: state.x - 14,
-          radius: 3.6,
-          length: 30,
-          vy: -speed(940, precisionRoute),
-          damage: damage(1.5, level, precisionRoute, aggressiveRoute),
-          pierce: 2,
+          radius: 3.9,
+          length: level >= 5 ? 36 : 30,
+          vy: -speed(level >= 5 ? 980 : 940, precisionRoute),
+          damage: damage(level >= 5 ? 1.82 : 1.5, level, precisionRoute, aggressiveRoute),
+          pierce: level >= 5 ? 3 : 2,
           maxLife: 1.35,
         }),
         createBullet(primaryKey, state, {
           x: state.x + 14,
-          radius: 3.6,
-          length: 30,
-          vy: -speed(940, precisionRoute),
-          damage: damage(1.5, level, precisionRoute, aggressiveRoute),
-          pierce: 2,
+          radius: 3.9,
+          length: level >= 5 ? 36 : 30,
+          vy: -speed(level >= 5 ? 980 : 940, precisionRoute),
+          damage: damage(level >= 5 ? 1.82 : 1.5, level, precisionRoute, aggressiveRoute),
+          pierce: level >= 5 ? 3 : 2,
           maxLife: 1.35,
-        })
+        }),
+        ...(level >= 5 ? [
+          createBullet(primaryKey, state, {
+            x: state.x - 28,
+            radius: 3.2,
+            length: 28,
+            vy: -speed(920, precisionRoute),
+            vx: -spread(90, precisionRoute),
+            damage: damage(1.12, level, precisionRoute, aggressiveRoute),
+            pierce: 2,
+            maxLife: 1.25,
+          }),
+          createBullet(primaryKey, state, {
+            x: state.x + 28,
+            radius: 3.2,
+            length: 28,
+            vy: -speed(920, precisionRoute),
+            vx: spread(90, precisionRoute),
+            damage: damage(1.12, level, precisionRoute, aggressiveRoute),
+            pierce: 2,
+            maxLife: 1.25,
+          }),
+        ] : []),
+        ...(level >= 6 ? [
+          createBullet(primaryKey, state, {
+            x: state.x - 42,
+            radius: 2.8,
+            length: 24,
+            vy: -speed(860, precisionRoute),
+            vx: -spread(150, precisionRoute),
+            damage: damage(0.96, level, precisionRoute, aggressiveRoute),
+            pierce: 1,
+            maxLife: 1.15,
+          }),
+          createBullet(primaryKey, state, {
+            x: state.x + 42,
+            radius: 2.8,
+            length: 24,
+            vy: -speed(860, precisionRoute),
+            vx: spread(150, precisionRoute),
+            damage: damage(0.96, level, precisionRoute, aggressiveRoute),
+            pierce: 1,
+            maxLife: 1.15,
+          }),
+        ] : [])
       );
       break;
     }
@@ -355,13 +399,13 @@ export function spawnPrimaryShots(
         }),
         createBullet(primaryKey, state, {
           x: state.x,
-          vy: -speed(700, precisionRoute),
-          damage: damage(1.08, level, precisionRoute, aggressiveRoute),
-          oscillateAmp: 28,
+          vy: -speed(level >= 6 ? 760 : 700, precisionRoute),
+          damage: damage(level >= 6 ? 1.28 : 1.08, level, precisionRoute, aggressiveRoute),
+          oscillateAmp: level >= 6 ? 18 : 28,
           oscillateFreq: 11.2,
           oscillatePhase: phase + Math.PI * 0.6,
-          radius: 4.2,
-          length: 16,
+          radius: level >= 6 ? 4.8 : 4.2,
+          length: level >= 6 ? 22 : 16,
         }),
         createBullet(primaryKey, state, {
           x: state.x + 10,
@@ -382,7 +426,43 @@ export function spawnPrimaryShots(
           oscillatePhase: phase + Math.PI * 1.35,
           radius: 3.8,
           length: 14,
-        })
+        }),
+        ...(level >= 5 ? [
+          createBullet(primaryKey, state, {
+            x: state.x - 34,
+            vy: -speed(610, precisionRoute),
+            damage: damage(0.72, level, precisionRoute, aggressiveRoute),
+            oscillateAmp: 70,
+            oscillateFreq: 7.8,
+            oscillatePhase: phase + Math.PI * 0.15,
+            radius: 3.4,
+            length: 13,
+          }),
+          createBullet(primaryKey, state, {
+            x: state.x + 34,
+            vy: -speed(610, precisionRoute),
+            damage: damage(0.72, level, precisionRoute, aggressiveRoute),
+            oscillateAmp: 70,
+            oscillateFreq: 7.8,
+            oscillatePhase: phase + Math.PI * 1.15,
+            radius: 3.4,
+            length: 13,
+          }),
+        ] : []),
+        ...(level >= 6 ? [
+          createBullet(primaryKey, state, {
+            x: state.x,
+            y: state.y - state.radius - 18,
+            vy: -speed(820, precisionRoute),
+            damage: damage(1.36, level, precisionRoute, aggressiveRoute),
+            oscillateAmp: 0,
+            oscillateFreq: 0,
+            oscillatePhase: phase,
+            radius: 4.2,
+            length: 24,
+            pierce: 2,
+          }),
+        ] : [])
       );
       break;
     }

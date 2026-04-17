@@ -514,8 +514,12 @@ function getWeaponLabel(level: number): string {
       return "Wide Assault";
     case 4:
       return "Nova Array";
+    case 5:
+      return "Overwing";
+    case 6:
+      return "Supernova";
     default:
-      return "Nova Array";
+      return "Supernova";
   }
 }
 
@@ -1944,55 +1948,57 @@ export default function ShmupPlayScreen() {
       const baseVy = (dy / length) * 180;
 
       if (boss.archetype === "tyrant") {
-        const lanceSpread = boss.phase === 1 ? 24 : boss.phase === 2 ? 44 : 64;
+        const lanceSpread = boss.phase === 1 ? 24 : boss.phase === 2 ? 52 : 78;
         for (const side of [-1, 1]) {
           pushEnemyBullet({
             x: boss.x + side * (18 + boss.phase * 6),
             y: boss.y + boss.radius * 0.45,
-            vx: baseVx * 0.4 + side * lanceSpread,
+            vx: baseVx * 0.42 + side * lanceSpread,
             vy: baseVy + 38,
-            radius: boss.phase === 3 ? 7 : 6,
+            radius: boss.phase === 3 ? 8 : 6.5,
             color: boss.phase === 3 ? "#ff6b6b" : activeMap.palette.bossShotColor,
             coreColor: "#fff4e6",
-            length: boss.phase === 3 ? 18 : 16,
+            length: boss.phase === 3 ? 20 : 16,
             spriteKey: "bulletBoss",
           });
         }
         if (boss.phase >= 2) {
-          pushEnemyBullet({
-            x: boss.x,
-            y: boss.y + boss.radius * 0.6,
-            vx: 0,
-            vy: 220,
-            radius: 7,
-            color: "#ffa94d",
-            coreColor: "#fff4e6",
-            length: 18,
-            spriteKey: "bulletBoss",
-          });
+          for (const vx of [-140, 0, 140]) {
+            pushEnemyBullet({
+              x: boss.x,
+              y: boss.y + boss.radius * 0.6,
+              vx,
+              vy: 220 + boss.phase * 12,
+              radius: 7,
+              color: "#ffa94d",
+              coreColor: "#fff4e6",
+              length: 18,
+              spriteKey: "bulletBoss",
+            });
+          }
         }
         return;
       }
 
       if (boss.archetype === "leviathan") {
-        const offsets = boss.phase === 1 ? [-60, 0, 60] : boss.phase === 2 ? [-100, -36, 36, 100] : [-132, -72, 0, 72, 132];
+        const offsets = boss.phase === 1 ? [-90, -30, 30, 90] : boss.phase === 2 ? [-140, -84, -28, 28, 84, 140] : [-180, -126, -72, -18, 18, 72, 126, 180];
         for (const offset of offsets) {
           pushEnemyBullet({
             x: boss.x,
             y: boss.y + boss.radius * 0.55,
             vx: offset,
-            vy: 150 + boss.phase * 20,
-            radius: 6,
+            vy: 150 + boss.phase * 26,
+            radius: boss.phase === 3 ? 7 : 6,
             color: activeMap.palette.bossShotColor,
             coreColor: activeMap.palette.bossShotCore,
-            length: 14,
+            length: boss.phase === 3 ? 16 : 14,
             spriteKey: "bulletBoss",
           });
         }
         return;
       }
 
-      const fanOffsets = boss.phase === 1 ? [-36, 0, 36] : boss.phase === 2 ? [-72, -24, 24, 72] : [-96, -48, 0, 48, 96];
+      const fanOffsets = boss.phase === 1 ? [-54, -18, 18, 54] : boss.phase === 2 ? [-96, -48, -16, 16, 48, 96] : [-126, -84, -42, 0, 42, 84, 126];
       const shotColor = boss.phase === 1 ? activeMap.palette.enemyShotColor : activeMap.palette.bossShotColor;
       const shotCore = boss.phase === 1 ? activeMap.palette.enemyShotCore : activeMap.palette.bossShotCore;
       const shotRadius = boss.phase === 1 ? 6 : 7;
@@ -2073,9 +2079,9 @@ export default function ShmupPlayScreen() {
         return;
       }
 
-      const startAngle = boss.phase === 1 ? Math.PI * 0.22 : Math.PI * 0.1;
+      const startAngle = boss.phase === 1 ? Math.PI * 0.18 : Math.PI * 0.08;
       const endAngle = Math.PI - startAngle;
-      const bulletCount = boss.phase === 1 ? 7 : boss.phase === 2 ? 10 : 14;
+      const bulletCount = boss.phase === 1 ? 9 : boss.phase === 2 ? 13 : 18;
       const shotColor = boss.phase === 1 ? activeMap.palette.enemyShotColor : activeMap.palette.bossShotColor;
       const shotCore = boss.phase === 1 ? activeMap.palette.enemyShotCore : activeMap.palette.bossShotCore;
 
@@ -2436,7 +2442,9 @@ export default function ShmupPlayScreen() {
           barrierUntilRef.current = elapsedMs + secondaryDurationMs;
           barrierLayersRef.current = 3;
           startSecondaryCooldown(elapsedMs);
-          addPulse(ship.x, ship.y, "#8ce99a", 12, 140, 0.12, 2.2);
+          addPulse(ship.x, ship.y, "#8ce99a", 16, 180, 0.16, 2.8);
+          addPulse(ship.x, ship.y, "#d3f9d8", 10, 104, 0.1, 1.8);
+          addSparkBurst(ship.x, ship.y, "#8ce99a", 14, 150, [2, 5.2]);
           return;
         case "emp":
           sfxEmp();
@@ -2465,7 +2473,8 @@ export default function ShmupPlayScreen() {
           barrelRollDirRef.current = rollDir;
           ship.invulnerableUntil = Math.max(ship.invulnerableUntil, elapsedMs + SHMUP_BALANCE.effects.barrelRollDurationMs);
           startSecondaryCooldown(elapsedMs);
-          addPulse(ship.x, ship.y, "#74c0fc", 8, 80, 0.1, 1.8);
+          addPulse(ship.x, ship.y, "#74c0fc", 12, 110, 0.14, 2.1);
+          addSparkBurst(ship.x, ship.y, "#a5d8ff", 12, 170, [2, 5]);
           return;
         }
         case "phaseShift": {
@@ -2482,8 +2491,10 @@ export default function ShmupPlayScreen() {
           phaseShiftUntilRef.current = elapsedMs + 180;
           phaseShiftGhostRef.current = { x: ghostOrigin.x, y: ghostOrigin.y, triggerAtMs: elapsedMs + 120 };
           startSecondaryCooldown(elapsedMs);
-          addPulse(ghostOrigin.x, ghostOrigin.y, "#d0bfff", 14, 100, 0.15, 2);
-          addPulse(ship.x, ship.y, "#b494ff", 10, 80, 0.12, 1.6);
+          addPulse(ghostOrigin.x, ghostOrigin.y, "#d0bfff", 18, 140, 0.18, 2.4);
+          addPulse(ship.x, ship.y, "#b494ff", 14, 120, 0.14, 2.1);
+          addSparkBurst(ghostOrigin.x, ghostOrigin.y, "#d0bfff", 16, 180, [2.4, 5.8]);
+          addSparkBurst(ship.x, ship.y, "#b494ff", 10, 120, [1.8, 4.5]);
           addScreenShake(1.5, 0.08);
           return;
         }
@@ -2508,15 +2519,18 @@ export default function ShmupPlayScreen() {
           mirrorShieldUntilRef.current = elapsedMs + secondaryDurationMs;
           mirrorShieldLayersRef.current = SHMUP_BALANCE.effects.mirrorShieldLayers;
           startSecondaryCooldown(elapsedMs);
-          addPulse(ship.x, ship.y, "#4dabf7", 14, 120, 0.14, 2.4);
+          addPulse(ship.x, ship.y, "#4dabf7", 18, 160, 0.16, 2.8);
+          addPulse(ship.x, ship.y, "#d0ebff", 12, 96, 0.1, 1.8);
+          addSparkBurst(ship.x, ship.y, "#74c0fc", 18, 180, [2.2, 5.6]);
           return;
         case "overcharge":
           sfxDrones();
           overchargeUntilRef.current = elapsedMs + secondaryDurationMs;
           statusFlashUntilRef.current = elapsedMs + 300;
           startSecondaryCooldown(elapsedMs);
-          addPulse(ship.x, ship.y, "#ffd43b", 16, 170, 0.18, 3.0);
-          addPulse(ship.x, ship.y, "#fff3bf", 10, 96, 0.12, 1.9);
+          addPulse(ship.x, ship.y, "#ffd43b", 22, 210, 0.2, 3.3);
+          addPulse(ship.x, ship.y, "#fff3bf", 14, 130, 0.14, 2.2);
+          addSparkBurst(ship.x, ship.y, "#ffd43b", 20, 220, [2.4, 6.2]);
           addScreenShake(1.2, 0.08);
           return;
         case "none":
@@ -3339,8 +3353,13 @@ export default function ShmupPlayScreen() {
 
         // Boss movement — horizontal sweeps + lunges in later phases
         const baseX = canvas.width / 2 + Math.sin(boss.age * moveSpeed) * moveFreq;
-        if (boss.phase === 3) {
-          // Phase 3: occasional lunge toward player
+        if (boss.archetype === "tyrant") {
+          const pressureX = baseX + Math.sin(boss.age * (boss.phase === 3 ? 4.4 : 3.1)) * (boss.phase === 3 ? 44 : 26);
+          boss.x = clamp(pressureX, boss.radius + 12, canvas.width - boss.radius - 12);
+        } else if (boss.archetype === "leviathan") {
+          const tideX = baseX + Math.sin(boss.age * 1.9) * (boss.phase >= 2 ? 34 : 16);
+          boss.x = clamp(tideX, boss.radius + 12, canvas.width - boss.radius - 12);
+        } else if (boss.phase === 3) {
           const lungeX = baseX + Math.sin(boss.age * 3.2) * 20;
           boss.x = clamp(lungeX, boss.radius + 12, canvas.width - boss.radius - 12);
         } else {
@@ -3362,36 +3381,36 @@ export default function ShmupPlayScreen() {
           boss.burstCooldown += burstRate;
         }
 
-        // Sweep laser (phase 2+)
-        if (phaseConfig?.sweepLaser !== false && boss.phase >= 2) {
+        // Sweep laser (dreadnought dominates space, leviathan in late phases)
+        if (phaseConfig?.sweepLaser !== false && (boss.archetype === "dreadnought" ? boss.phase >= 2 : boss.archetype === "leviathan" ? boss.phase >= 3 : boss.phase >= 2)) {
           boss.sweepCooldown -= bossDelta;
           if (boss.sweepActive) {
-            boss.sweepAngle += Math.PI * 0.6 * bossDelta; // sweep across screen
-            if (boss.sweepAngle > Math.PI * 0.85) {
+            boss.sweepAngle += (boss.archetype === "dreadnought" ? Math.PI * 0.82 : Math.PI * 0.54) * bossDelta;
+            if (boss.sweepAngle > Math.PI * 0.9) {
               boss.sweepActive = false;
-              boss.sweepCooldown = boss.phase === 3 ? 3.0 : 5.0;
+              boss.sweepCooldown = boss.archetype === "dreadnought" ? (boss.phase === 3 ? 2.2 : 3.4) : boss.phase === 3 ? 3.6 : 5.0;
             }
           } else if (boss.sweepCooldown <= 0 && boss.y >= bossTargetY) {
             boss.sweepActive = true;
-            boss.sweepAngle = Math.PI * 0.15;
+            boss.sweepAngle = boss.archetype === "dreadnought" ? Math.PI * 0.08 : Math.PI * 0.15;
           }
         }
 
-        // Minion summoning (phase 3)
-        if (phaseConfig?.summonMinions !== false && boss.phase === 3) {
+        // Minion summoning, especially aggressive on tyrant and leviathan
+        if (phaseConfig?.summonMinions !== false && boss.phase >= (boss.archetype === "tyrant" ? 2 : 3)) {
           boss.minionCooldown -= bossDelta;
           if (boss.minionCooldown <= 0 && boss.y >= bossTargetY) {
-            boss.minionCooldown = 4.2;
-            // Spawn 4 swarm minions
-            for (let i = 0; i < 4; i++) {
+            boss.minionCooldown = boss.archetype === "tyrant" ? 3.1 : boss.archetype === "leviathan" ? 3.6 : 4.2;
+            const minionCount = boss.archetype === "tyrant" ? 5 : boss.archetype === "leviathan" ? 4 : 4;
+            for (let i = 0; i < minionCount; i++) {
               enemiesRef.current.push({
                 id: enemyIdRef.current++,
                 pattern: "swarm",
-                x: boss.x + (i - 1.5) * 34,
+                x: boss.x + (i - (minionCount - 1) / 2) * 34,
                 y: boss.y + 20,
-                originX: boss.x + (i - 1.5) * 34,
-                vx: (i - 1.5) * 95,
-                vy: 180,
+                originX: boss.x + (i - (minionCount - 1) / 2) * 34,
+                vx: (i - (minionCount - 1) / 2) * (boss.archetype === "tyrant" ? 110 : 95),
+                vy: boss.archetype === "leviathan" ? 205 : 180,
                 radius: 10,
                 hp: 1,
                 scoreValue: 60,
@@ -3768,6 +3787,45 @@ export default function ShmupPlayScreen() {
       corridorGlow.addColorStop(1, "rgba(54, 138, 255, 0)");
       ctx.fillStyle = corridorGlow;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const zonePulse = 0.5 + Math.sin(elapsedMs / 520) * 0.5;
+      if (activeMap.id === "nebula-runway") {
+        ctx.save();
+        ctx.strokeStyle = `rgba(150, 220, 255, ${0.08 + zonePulse * 0.12})`;
+        ctx.lineWidth = 2;
+        for (let i = -2; i < 5; i++) {
+          const x = ((elapsedMs * 0.08 + i * 180) % (canvas.width + 220)) - 110;
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x + 110, canvas.height);
+          ctx.stroke();
+        }
+        ctx.restore();
+      } else if (activeMap.id === "solar-rift") {
+        ctx.save();
+        for (let i = 0; i < 5; i++) {
+          const flareX = ((elapsedMs * 0.12 + i * 160) % (canvas.width + 260)) - 130;
+          const flare = ctx.createLinearGradient(flareX, 0, flareX + 120, canvas.height);
+          flare.addColorStop(0, "rgba(255, 160, 64, 0)");
+          flare.addColorStop(0.5, `rgba(255, 140, 40, ${0.05 + zonePulse * 0.06})`);
+          flare.addColorStop(1, "rgba(255, 220, 120, 0)");
+          ctx.fillStyle = flare;
+          ctx.fillRect(flareX, 0, 120, canvas.height);
+        }
+        ctx.restore();
+      } else if (activeMap.id === "abyss-crown") {
+        ctx.save();
+        ctx.strokeStyle = `rgba(170, 220, 255, ${0.05 + zonePulse * 0.08})`;
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i < 6; i++) {
+          const y = ((elapsedMs * 0.05 + i * 120) % (canvas.height + 160)) - 80;
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.bezierCurveTo(canvas.width * 0.25, y - 30, canvas.width * 0.75, y + 30, canvas.width, y - 10);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
 
       if (overdriveUntilRef.current > elapsedMs) {
         ctx.fillStyle = activeMap.palette.overdriveOverlay;
@@ -4927,17 +4985,29 @@ export default function ShmupPlayScreen() {
           const orbitX = ship.x + Math.cos(angle) * 24;
           const orbitY = ship.y - 10 + Math.sin(angle) * 18;
           ctx.save();
-          ctx.globalAlpha = 0.9;
+          const droneGlow = ctx.createRadialGradient(orbitX, orbitY, 1, orbitX, orbitY, 18);
+          droneGlow.addColorStop(0, "rgba(178,255,249,0.95)");
+          droneGlow.addColorStop(0.35, "rgba(0,229,255,0.65)");
+          droneGlow.addColorStop(1, "rgba(0,229,255,0)");
+          ctx.fillStyle = droneGlow;
+          ctx.beginPath();
+          ctx.arc(orbitX, orbitY, 18, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 0.96;
           ctx.fillStyle = "#00e5ff";
           ctx.shadowColor = "#00e5ff";
-          ctx.shadowBlur = 10;
+          ctx.shadowBlur = 12;
           ctx.beginPath();
-          ctx.arc(orbitX, orbitY, 5.8, 0, Math.PI * 2);
+          ctx.moveTo(orbitX, orbitY - 7);
+          ctx.lineTo(orbitX + 6, orbitY + 5);
+          ctx.lineTo(orbitX, orbitY + 3);
+          ctx.lineTo(orbitX - 6, orbitY + 5);
+          ctx.closePath();
           ctx.fill();
           ctx.shadowBlur = 0;
           ctx.fillStyle = "#b2fff9";
           ctx.beginPath();
-          ctx.arc(orbitX, orbitY, 2.4, 0, Math.PI * 2);
+          ctx.arc(orbitX, orbitY, 2.6, 0, Math.PI * 2);
           ctx.fill();
           ctx.restore();
         }
@@ -4968,6 +5038,11 @@ export default function ShmupPlayScreen() {
           ctx.lineWidth = 2.5 - i * 0.4;
           ctx.beginPath();
           ctx.arc(ship.x, ship.y, r, Math.PI * 1.12, Math.PI * 1.9);
+          ctx.stroke();
+          ctx.strokeStyle = `rgba(211, 249, 216, ${alpha * 0.5})`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(ship.x, ship.y, r + 5, Math.PI * 1.08, Math.PI * 1.94);
           ctx.stroke();
           ctx.restore();
         }
@@ -5062,6 +5137,11 @@ export default function ShmupPlayScreen() {
         ctx.arc(vt.x, vt.y, vtR, 0, Math.PI * 2);
         ctx.stroke();
         ctx.setLineDash([]);
+        ctx.strokeStyle = "rgba(208,191,255,0.28)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(vt.x, vt.y, vtR * 0.6, 0, Math.PI * 2);
+        ctx.stroke();
         ctx.restore();
       }
 
@@ -5085,9 +5165,19 @@ export default function ShmupPlayScreen() {
           }
           ctx.closePath();
           ctx.stroke();
-          // Fill with subtle glow
           ctx.fillStyle = `rgba(77, 171, 247, ${a * 0.08})`;
           ctx.fill();
+          ctx.strokeStyle = `rgba(208, 235, 255, ${a * 0.45})`;
+          ctx.lineWidth = 0.9;
+          ctx.beginPath();
+          for (let s = 0; s < 6; s++) {
+            const angle = s * Math.PI / 3 - Math.PI / 2 - elapsedMs * 0.00022;
+            const px = Math.cos(angle) * (r * 0.78) * pulse;
+            const py = Math.sin(angle) * (r * 0.78) * pulse;
+            if (s === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+          }
+          ctx.closePath();
+          ctx.stroke();
         }
         ctx.restore();
       }
@@ -5105,6 +5195,11 @@ export default function ShmupPlayScreen() {
         ctx.beginPath();
         ctx.arc(ship.x, ship.y, ocR, 0, Math.PI * 2);
         ctx.fill();
+        ctx.strokeStyle = "rgba(255, 243, 191, 0.65)";
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(ship.x, ship.y, ocR * 0.72, 0, Math.PI * 2);
+        ctx.stroke();
         // Electric arcs
         ctx.strokeStyle = "rgba(255, 212, 59, 0.6)";
         ctx.lineWidth = 1.5;
