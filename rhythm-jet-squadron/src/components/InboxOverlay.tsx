@@ -105,21 +105,53 @@ const PILOT_MESSAGE_POOLS: Record<PilotSender, Array<{ subject: string; body: st
     },
     {
       subject: "Private send",
-      body: "Before you ask, yes, this was meant for you. Don’t make me regret having good taste.\n\n- Nova",
+      body: "Before you ask, yes, this was meant for you. Don't make me regret having good taste.\n\n- Nova",
     },
     {
       subject: "Keep this one close",
-      body: "Thought you’d want something better than telemetry and mission logs for once.\n\n- Nova",
+      body: "Thought you'd want something better than telemetry and mission logs for once.\n\n- Nova",
+    },
+    {
+      subject: "You earned this",
+      body: "I don't hand these out to just anyone. The run was clean and so was your focus.\n\nDon't make it weird.\n\n- Nova",
+    },
+    {
+      subject: "Off the record",
+      body: "Command doesn't see this channel. Neither does the squad. It's just ours now.\n\nI wasn't sure I'd say that. Now I have.\n\n- Nova",
+    },
+    {
+      subject: "Admit it",
+      body: "You've been checking your inbox more than your threat radar.\n\nI respect the priorities.\n\n- Nova",
+    },
+    {
+      subject: "No context needed",
+      body: "You'll understand what this is. You've been paying attention.\n\nGood.\n\n- Nova",
+    },
+    {
+      subject: "Between sorties",
+      body: "There's a gap in the briefing schedule. I used it productively.\n\nSo did you, apparently — you're reading this instead of sleeping.\n\n- Nova",
+    },
+    {
+      subject: "Signal strength: high",
+      body: "Your attention doesn't waver much. I've noticed.\n\nThis is what that gets you.\n\n- Nova",
+    },
+    {
+      subject: "Still thinking about the last run",
+      body: "The way you held formation right up until you had to break was actually kind of beautiful.\n\nThis is what beautiful gets you.\n\n- Nova",
+    },
+    {
+      subject: "Prelaunch ritual",
+      body: "I have a thing I do before every sortie. You wouldn't know about it.\n\nNow you have a version of it.\n\n- Nova",
     },
   ],
   Rex: [
     {
       subject: "Still focused?",
-      body: "Consider this a stress test for your concentration. If it fails, that’s not my problem.\n\n- Rex",
+      body: "Consider this a stress test for your concentration. If it fails, that's not my problem.\n\n- Rex",
     },
     {
       subject: "Afterburn drop",
-      body: "You cleared the run, so I sent something with a little more heat behind it. Don’t waste it.\n\n- Rex",
+      body: "You cleared the run, so I sent something with a little more heat behind it. Don't waste it.\n\n- Rex",
     },
     {
       subject: "You can handle this",
@@ -128,6 +160,38 @@ const PILOT_MESSAGE_POOLS: Record<PilotSender, Array<{ subject: string; body: st
     {
       subject: "Off-channel",
       body: "Not for command, not for the squad, not for the archive. Just your inbox.\n\n- Rex",
+    },
+    {
+      subject: "Heat signature",
+      body: "You run hot under pressure. So do I.\n\nMake of that what you will.\n\n- Rex",
+    },
+    {
+      subject: "Post-mission window",
+      body: "Adrenaline drops fast after a clean kill streak. Here's something to keep it elevated.\n\n- Rex",
+    },
+    {
+      subject: "No questions",
+      body: "I don't explain my decisions in the field. I don't explain this one either.\n\nJust open it.\n\n- Rex",
+    },
+    {
+      subject: "High score: distraction",
+      body: "You're going to look at this and lose ten seconds of mission prep.\n\nWorth it. Probably.\n\n- Rex",
+    },
+    {
+      subject: "Throttle check",
+      body: "Some people can't handle full power.\n\nI'm betting you can.\n\n- Rex",
+    },
+    {
+      subject: "Unscheduled transmission",
+      body: "Command didn't authorize this. I sent it anyway.\n\nI do that sometimes.\n\n- Rex",
+    },
+    {
+      subject: "Full burn",
+      body: "You don't hold back when it counts. Neither do I.\n\nThis is what that looks like outside the cockpit.\n\n- Rex",
+    },
+    {
+      subject: "Second pass",
+      body: "The first run was to see what you could do. You passed.\n\nSecond pass is a reward.\n\n- Rex",
     },
   ],
   Yuki: [
@@ -147,6 +211,38 @@ const PILOT_MESSAGE_POOLS: Record<PilotSender, Array<{ subject: string; body: st
       subject: "Closer than usual",
       body: "If this feels more personal than my normal messages, that was intentional.\n\n- Yuki",
     },
+    {
+      subject: "Encrypted send",
+      body: "I ran three encryption layers on this. Not because it's required.\n\nBecause I wanted it to feel like it was only for you.\n\n- Yuki",
+    },
+    {
+      subject: "Rest cycle",
+      body: "I don't sleep well before deployments. So I sent this instead.\n\nNow it's your problem too.\n\n- Yuki",
+    },
+    {
+      subject: "Precision drop",
+      body: "You're careful. Deliberate. I notice those things.\n\nThis is the version of me that matches that energy.\n\n- Yuki",
+    },
+    {
+      subject: "Low-emission channel",
+      body: "Minimum interference. Maximum signal.\n\nThat's the idea. You can decide if it worked.\n\n- Yuki",
+    },
+    {
+      subject: "Secondary file",
+      body: "The official record has the mission stats. This file has something else entirely.\n\n- Yuki",
+    },
+    {
+      subject: "Observation note",
+      body: "I watch the data more than most. I also watched the last run.\n\nYou're worth observing.\n\n- Yuki",
+    },
+    {
+      subject: "Quiet sector",
+      body: "There's a lull between engagements. I used it to think about something I don't usually admit.\n\nThen I sent you this.\n\n- Yuki",
+    },
+    {
+      subject: "Subzero calm",
+      body: "People think I'm cold because I'm focused. They're not wrong.\n\nBut there are exceptions.\n\n- Yuki",
+    },
   ],
 };
 
@@ -154,7 +250,7 @@ const PILOT_MESSAGE_POOLS: Record<PilotSender, Array<{ subject: string; body: st
 // play instead of all showing up at once. The 3 named pilot portraits
 // (nova_after_hours, rex_afterburn, yuki_midnight_archive) are excluded
 // here because BASE_MESSAGES below already has hand-written entries for
-// them gated by specific mission grades — including them in the batch
+// them gated by specific mission grades - including them in the batch
 // would duplicate the image under a canned subject line.
 const PILOT_BATCH_IMAGE_FILES = PILOT_INBOX_IMAGE_FILES.filter((name) =>
   name.startsWith("job-")
@@ -173,7 +269,7 @@ function buildPilotInboxMessages(): InboxMessageTemplate[] {
   const now = Date.now();
   return PILOT_BATCH_IMAGE_FILES.map((filename, index) => {
     // Round-robin pilot assignment so each pilot gets an even share of the
-    // batch instead of filename-hash bias. index 0 → Nova, 1 → Rex, 2 → Yuki…
+    // batch instead of filename-hash bias. index 0 → Nova, 1 → Rex, 2 → Yuki...
     const sender = PILOT_SENDERS[index % PILOT_SENDERS.length];
     const sequence = String(index + 1).padStart(2, "0");
     const pool = PILOT_MESSAGE_POOLS[sender];
@@ -232,7 +328,7 @@ const BASE_MESSAGES: InboxMessageTemplate[] = [
     sender: "Intelligence Division",
     subject: "Nebula Runway - Threat Assessment",
     preview: "Heavy enemy activity confirmed",
-    body: "Our scouts report increased enemy activity in the Nebula Runway sector. New heavy units have been deployed — codename 'Tank Fortress'. These armored platforms feature rotating shield generators. Focus fire during shield downtime windows.\n\nStay sharp out there.",
+    body: "Our scouts report increased enemy activity in the Nebula Runway sector. New heavy units have been deployed - codename 'Tank Fortress'. These armored platforms feature rotating shield generators. Focus fire during shield downtime windows.\n\nStay sharp out there.",
     timestamp: Date.now() - 43200000,
     isUnlocked: () => true,
   },

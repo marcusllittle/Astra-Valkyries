@@ -71,7 +71,7 @@ const BOMB_BOSS_DAMAGE = 22;
 const BOMB_PROJECTILE_SPEED = 430;
 const BOMB_PROJECTILE_LIFE = 1.15;
 const BOMB_PICKUP_SPEED = 108;
-const BOMB_PICKUP_CHANCE = 0.1;
+const BOMB_PICKUP_CHANCE = 0.18;
 const BOMB_OVERFLOW_CHIPS = 3;
 const INTRO_FLY_IN_MS = 360;
 const INTRO_READY_MS = 240;
@@ -322,6 +322,7 @@ interface HudState {
   hp: number;
   maxHp: number;
   weaponLevel: number;
+  bonusLasers: number;
   weaponLabel: string;
   overdriveMeter: number;
   overdriveActive: boolean;
@@ -694,6 +695,7 @@ function createHudState(modifiers: ShmupModifiers, activeMap: ShmupMap): HudStat
     hp: modifiers.maxHp,
     maxHp: modifiers.maxHp,
     weaponLevel: 1,
+    bonusLasers: 0,
     weaponLabel: getWeaponLabel(1),
     overdriveMeter: 0,
     overdriveActive: false,
@@ -869,6 +871,7 @@ export default function ShmupPlayScreen() {
   const overdriveUntilRef = useRef(0);
   const overdriveStartRef = useRef(0);
   const chipOverflowRef = useRef(0);
+  const bonusLasersRef = useRef(0); // extra laser columns collected beyond max weapon level
   const secondaryChargesRef = useRef(0);
   const secondaryCooldownUntilRef = useRef(0);
   const barrierUntilRef = useRef(0);
@@ -1226,6 +1229,7 @@ export default function ShmupPlayScreen() {
     overdriveUntilRef.current = 0;
     overdriveStartRef.current = 0;
     chipOverflowRef.current = 0;
+    bonusLasersRef.current = 0;
     secondaryChargesRef.current = secondaryStartCharges;
     secondaryCooldownUntilRef.current = 0;
     barrierUntilRef.current = 0;
@@ -1339,6 +1343,7 @@ export default function ShmupPlayScreen() {
         hp: Math.max(0, Math.ceil(ship.hp)),
         maxHp,
         weaponLevel: weaponLevelRef.current,
+        bonusLasers: bonusLasersRef.current,
         weaponLabel: getWeaponLabel(weaponLevelRef.current),
         overdriveMeter: overdriveMeterRef.current,
         overdriveActive,
@@ -1658,6 +1663,7 @@ export default function ShmupPlayScreen() {
       );
       addScreenShake(overdriveActive ? 0.86 + weaponLevel * 0.18 : 0.28 + weaponLevel * 0.14, 0.045);
 
+      const bonusLasers = bonusLasersRef.current;
       for (const shot of spawned) {
         playerBulletsRef.current.push({
           x: shot.x,
@@ -1683,6 +1689,42 @@ export default function ShmupPlayScreen() {
           homingTurnRate: shot.homingTurnRate ?? 0,
           homingRange: shot.homingRange ?? 0,
         });
+      }
+
+      // Bonus laser columns from chip overflow — flanking shots that grow the spread
+      if (bonusLasers > 0) {
+        const bonusColor = shotColor ?? "#ff6ec7";
+        const bonusDamage = 0.6 * weaponDamageMultiplier * (overchargeUntilRef.current > elapsedMs ? SHMUP_BALANCE.effects.overchargeDamageMult : 1);
+        const baseSep = 28;
+        for (let col = 1; col <= bonusLasers; col++) {
+          for (const side of [-1, 1]) {
+            const offsetX = side * (baseSep * col + 12);
+            playerBulletsRef.current.push({
+              x: ship.x + offsetX,
+              y: ship.y - ship.radius - 6,
+              vx: side * 30 * spreadMultiplier,
+              vy: -820 * bulletSpeedMultiplier,
+              age: 0,
+              maxLife: 1.1,
+              radius: 3.2 * ENTITY_SCALE,
+              damage: bonusDamage,
+              color: bonusColor,
+              coreColor: "#ffffff",
+              length: 36 * ENTITY_SCALE,
+              spriteKey: undefined,
+              pierce: 1,
+              driftVx: 0,
+              oscillateAmp: 0,
+              oscillateFreq: 0,
+              oscillatePhase: 0,
+              boomerangTurnAt: 0,
+              boomerangReturnVy: 0,
+              boomerangReturning: false,
+              homingTurnRate: 0,
+              homingRange: 0,
+            });
+          }
+        }
       }
     };
 
@@ -2362,7 +2404,7 @@ export default function ShmupPlayScreen() {
         }
       }
 
-      if (Math.random() < 0.22) {
+      if (Math.random() < 0.34) {
         chipsRef.current.push({
           x: enemy.x,
           y: enemy.y,
@@ -3775,15 +3817,23 @@ export default function ShmupPlayScreen() {
             weaponLevelRef.current = Math.min(MAX_WEAPON_LEVEL, weaponLevelRef.current + 1);
           } else {
             chipOverflowRef.current += 1;
+            // Every 2 overflow chips beyond max weapon level: +1 bonus laser column (cap at 4)
+            const newBonus = Math.min(4, Math.floor(chipOverflowRef.current / 2));
+            if (newBonus > bonusLasersRef.current) {
+              bonusLasersRef.current = newBonus;
+              // Visual feedback for new laser unlock
+              addSparkBurst(chip.x, chip.y - 20, "#ff6ec7", 10, 120, [3, 5]);
+              addPulse(chip.x, chip.y, "#ff6ec7", 14, 100, 0.2, 2.0);
+            }
             if (chipOverflowRef.current >= BOMB_OVERFLOW_CHIPS) {
-              chipOverflowRef.current = 0;
+              chipOverflowRef.current = chipOverflowRef.current % BOMB_OVERFLOW_CHIPS;
               addSecondaryCharge(1);
             }
           }
           addSparkBurst(chip.x, chip.y, "#ffd43b", 6, 70, [2, 3.8]);
           addPulse(chip.x, chip.y, "#ffe066", 6, 62, 0.12, 1.5);
           if (weaponLevelRef.current >= 3) {
-            addOverdrive(8, elapsedMs);
+            addOverdrive(12, elapsedMs);
           }
         }
       }
@@ -5682,7 +5732,7 @@ export default function ShmupPlayScreen() {
             ))}
           </div>
           <div className="shmup-subtitle">
-            Lv{hud.weaponLevel} {hud.weaponLabel} &middot; {hud.waveLabel}
+            Lv{hud.weaponLevel}{hud.bonusLasers > 0 ? `+${hud.bonusLasers}` : ""} {hud.weaponLabel} &middot; {hud.waveLabel}
           </div>
         </div>
 
