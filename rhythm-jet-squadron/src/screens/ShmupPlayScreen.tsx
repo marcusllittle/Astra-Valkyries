@@ -3788,6 +3788,45 @@ export default function ShmupPlayScreen() {
       ctx.fillStyle = corridorGlow;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+      const zonePulse = 0.5 + Math.sin(elapsedMs / 520) * 0.5;
+      if (activeMap.id === "nebula-runway") {
+        ctx.save();
+        ctx.strokeStyle = `rgba(150, 220, 255, ${0.08 + zonePulse * 0.12})`;
+        ctx.lineWidth = 2;
+        for (let i = -2; i < 5; i++) {
+          const x = ((elapsedMs * 0.08 + i * 180) % (canvas.width + 220)) - 110;
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x + 110, canvas.height);
+          ctx.stroke();
+        }
+        ctx.restore();
+      } else if (activeMap.id === "solar-rift") {
+        ctx.save();
+        for (let i = 0; i < 5; i++) {
+          const flareX = ((elapsedMs * 0.12 + i * 160) % (canvas.width + 260)) - 130;
+          const flare = ctx.createLinearGradient(flareX, 0, flareX + 120, canvas.height);
+          flare.addColorStop(0, "rgba(255, 160, 64, 0)");
+          flare.addColorStop(0.5, `rgba(255, 140, 40, ${0.05 + zonePulse * 0.06})`);
+          flare.addColorStop(1, "rgba(255, 220, 120, 0)");
+          ctx.fillStyle = flare;
+          ctx.fillRect(flareX, 0, 120, canvas.height);
+        }
+        ctx.restore();
+      } else if (activeMap.id === "abyss-crown") {
+        ctx.save();
+        ctx.strokeStyle = `rgba(170, 220, 255, ${0.05 + zonePulse * 0.08})`;
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i < 6; i++) {
+          const y = ((elapsedMs * 0.05 + i * 120) % (canvas.height + 160)) - 80;
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.bezierCurveTo(canvas.width * 0.25, y - 30, canvas.width * 0.75, y + 30, canvas.width, y - 10);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
       if (overdriveUntilRef.current > elapsedMs) {
         ctx.fillStyle = activeMap.palette.overdriveOverlay;
         ctx.fillRect(0, 0, canvas.width, canvas.height);

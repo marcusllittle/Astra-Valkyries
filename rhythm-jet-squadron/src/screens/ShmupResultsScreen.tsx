@@ -27,11 +27,38 @@ const DEBRIEF_BACKDROPS: Record<string, string> = {
   "abyss-crown": "/assets/cutins/scenes/abyss_crown_briefing.png",
 };
 
-const DEBRIEF_NOTES: Record<string, { label: string; accent: string }> = {
-  "nebula-runway": { label: "Nebula corridor secured", accent: "#66d9ef" },
-  "solar-rift": { label: "Thermal front survived", accent: "#ff9f43" },
-  "abyss-crown": { label: "Void breach contained", accent: "#74c0fc" },
+const DEBRIEF_NOTES: Record<string, { win: { label: string; accent: string }; loss: { label: string; accent: string } }> = {
+  "nebula-runway": {
+    win: { label: "Nebula corridor secured", accent: "#66d9ef" },
+    loss: { label: "Corridor breach failed", accent: "#ff8787" },
+  },
+  "solar-rift": {
+    win: { label: "Thermal front survived", accent: "#ff9f43" },
+    loss: { label: "Solar pressure overwhelmed", accent: "#ff6b6b" },
+  },
+  "abyss-crown": {
+    win: { label: "Void breach contained", accent: "#74c0fc" },
+    loss: { label: "Void channel still unstable", accent: "#a5d8ff" },
+  },
 };
+
+const LOSS_DEBRIEF_LINES = {
+  "nebula-runway": [
+    { speaker: "Command", text: "Nebula Runway remains contested. The corridor never fully opened and convoy traffic is still pinned behind the line.", position: "left", mood: "serious" },
+    { speaker: "Nova", text: "We saw the opening, just didn't hold it long enough. That one's fixable.", position: "right", mood: "neutral" },
+    { speaker: "Command", text: "Rearm, tighten the route, and hit the Dreadnought before the screen thickens again.", position: "left", mood: "serious" },
+  ],
+  "solar-rift": [
+    { speaker: "Command", text: "Solar Rift is still unstable. The Helios Tyrant kept control of the lane and the thermal wall is only getting meaner.", position: "left", mood: "worried" },
+    { speaker: "Rex", text: "Too much drift, not enough punishment. Fine. Next run we push first and make it react to us.", position: "right", mood: "serious" },
+    { speaker: "Command", text: "Maintain aggression, but clean up the exposure. This sector snowballs the moment you surrender tempo.", position: "left", mood: "serious" },
+  ],
+  "abyss-crown": [
+    { speaker: "Command", text: "Abyss Crown did not break. Signal clarity dropped out and the Leviathan still owns the descent channel.", position: "left", mood: "worried" },
+    { speaker: "Yuki", text: "Not a dead end. Just incomplete data with teeth. I know more now than I did on entry.", position: "right", mood: "neutral" },
+    { speaker: "Command", text: "Good. Use it. The next attempt needs cleaner positioning before the void closes around you again.", position: "left", mood: "serious" },
+  ],
+} as const;
 
 function formatTime(timeMs: number): string {
   const totalSeconds = Math.max(0, Math.floor(timeMs / 1000));
@@ -88,12 +115,17 @@ export default function ShmupResultsScreen() {
     return () => window.clearTimeout(id);
   }, [grade]);
 
-  const debriefScript = mapId ? getDialogueForMap(mapId, "post_mission") : undefined;
+  const didWinRun = Boolean(shmupResult?.bossDefeated);
+  const debriefScript = didWinRun && mapId ? getDialogueForMap(mapId, "post_mission") : undefined;
   const debriefNode = debriefScript?.nodes.find((n) => n.id === debriefScript.startNodeId);
-  const debriefLines = debriefNode?.lines ?? [];
+  const debriefLines = didWinRun
+    ? (debriefNode?.lines ?? [])
+    : mapId
+      ? (LOSS_DEBRIEF_LINES[mapId as keyof typeof LOSS_DEBRIEF_LINES] ?? [])
+      : [];
   const debriefBackdrop = mapId ? DEBRIEF_BACKDROPS[mapId] : undefined;
   const activeMap = getShmupMapById(mapId);
-  const debriefNote = mapId ? DEBRIEF_NOTES[mapId] : undefined;
+  const debriefNote = mapId ? (didWinRun ? DEBRIEF_NOTES[mapId]?.win : DEBRIEF_NOTES[mapId]?.loss) : undefined;
 
   const handleReturnToPort = () => {
     navigate("/spaceport");
