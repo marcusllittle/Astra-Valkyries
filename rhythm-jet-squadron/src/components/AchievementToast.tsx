@@ -26,8 +26,10 @@ export default function AchievementToast({ achievement, onDone }: AchievementToa
 
   return (
     <div className={`achievement-toast ${visible ? "achievement-toast-visible" : ""}`}>
+      <span className="achievement-toast-orbit" aria-hidden="true" />
       <span className="achievement-toast-icon">{achievement.icon}</span>
       <div className="achievement-toast-text">
+        <span className="achievement-toast-kicker">Achievement Unlocked</span>
         <strong>{achievement.title}</strong>
         <span>{achievement.description}</span>
       </div>

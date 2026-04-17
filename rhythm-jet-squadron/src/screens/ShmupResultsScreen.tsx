@@ -182,26 +182,34 @@ export default function ShmupResultsScreen() {
 
   return (
     <div className="screen results-screen">
-      <h2>Arcade Run Complete!</h2>
+      <div className="results-atmosphere" aria-hidden="true" />
+      <div className="results-shell panel-surface">
+        <div className="results-grade-halo" aria-hidden="true" style={{ color: GRADE_COLORS[grade] }} />
 
-      <div
-        className="grade-display"
-        style={{ color: GRADE_COLORS[grade] }}
-      >
-        {grade}
-      </div>
+        <div className="results-header">
+          <span className="results-kicker">After Action Report</span>
+          <h2>Arcade Run Complete!</h2>
+          {activeMap?.name ? <p className="results-map-name">{activeMap.name}</p> : null}
+        </div>
 
-      <div className="results-victory-copy">
-        {grade === "S"
-          ? "That was a command-level sortie."
-          : grade === "A"
-            ? "Strong clear, strong momentum."
-            : grade === "B"
-              ? "Solid run, room to sharpen the build."
-              : "You cleared it. Tighten one thing and go again."}
-      </div>
+        <div
+          className="grade-display"
+          style={{ color: GRADE_COLORS[grade] }}
+        >
+          {grade}
+        </div>
 
-      <div className="results-grid">
+        <div className="results-victory-copy">
+          {grade === "S"
+            ? "That was a command-level sortie."
+            : grade === "A"
+              ? "Strong clear, strong momentum."
+              : grade === "B"
+                ? "Solid run, room to sharpen the build."
+                : "You cleared it. Tighten one thing and go again."}
+        </div>
+
+        <div className="results-grid">
         <div className="result-item">
           <span className="result-label">Score</span>
           <span className="result-value">{shmupResult.score.toLocaleString()}</span>
@@ -226,50 +234,53 @@ export default function ShmupResultsScreen() {
           <span className="result-label">Max Weapon</span>
           <span className="result-value">{shmupResult.maxWeaponLevel ?? 1}</span>
         </div>
-      </div>
-
-      <div className="credits-earned">
-        <span className="credit-icon">✦</span> +{creditsEarned} Credits
-      </div>
-
-      {sharedReward !== null && sharedReward > 0 && (
-        <div className="credits-earned credits-earned-shared">
-          <span className="shared-icon">&#x26A1;</span> +{sharedReward} HavnAI Credits
         </div>
-      )}
 
-      <div className="results-focus-pill">
-        <span className="result-label">Next Focus</span>
-        <strong>{isFirstRun ? "Refine loadout" : "Push a cleaner grade"}</strong>
-      </div>
-      {wallet.status !== "connected" && (
-        <div className="reward-status-note">Wallet rewards available when connected</div>
-      )}
-      {rewardStatus && (
-        <div className="reward-status-note">
-          {rewardStatus === "daily_cap_reached" && "Daily HavnAI earn cap reached"}
-          {rewardStatus === "cooldown" && "HavnAI reward on cooldown — wait and play again"}
-          {rewardStatus === "score_too_low" && "Score below 5,000 — no HavnAI credits earned"}
-          {rewardStatus === "run_too_short" && "Run too short — survive longer to earn credits"}
-          {rewardStatus === "duplicate_run" && "Duplicate run detected"}
-          {rewardStatus === "network_error" && "Could not reach HavnAI server — credits will sync next run"}
-          {!['daily_cap_reached', 'cooldown', 'score_too_low', 'run_too_short', 'duplicate_run', 'network_error'].includes(rewardStatus) && `HavnAI: ${rewardStatus}`}
+        <div className="results-reward-strip">
+          <div className="credits-earned">
+            <span className="credit-icon">✦</span> +{creditsEarned} Credits
+          </div>
+
+          {sharedReward !== null && sharedReward > 0 && (
+            <div className="credits-earned credits-earned-shared">
+              <span className="shared-icon">&#x26A1;</span> +{sharedReward} HavnAI Credits
+            </div>
+          )}
         </div>
-      )}
 
-      {isFirstRun ? (
-        <div className="results-next-step-callout">
-          <strong>Loadout updated.</strong> Choose your next route from the port.
+        <div className="results-focus-pill">
+          <span className="result-label">Next Focus</span>
+          <strong>{isFirstRun ? "Refine loadout" : "Push a cleaner grade"}</strong>
         </div>
-      ) : null}
+        {wallet.status !== "connected" && (
+          <div className="reward-status-note">Wallet rewards available when connected</div>
+        )}
+        {rewardStatus && (
+          <div className="reward-status-note">
+            {rewardStatus === "daily_cap_reached" && "Daily HavnAI earn cap reached"}
+            {rewardStatus === "cooldown" && "HavnAI reward on cooldown — wait and play again"}
+            {rewardStatus === "score_too_low" && "Score below 5,000 — no HavnAI credits earned"}
+            {rewardStatus === "run_too_short" && "Run too short — survive longer to earn credits"}
+            {rewardStatus === "duplicate_run" && "Duplicate run detected"}
+            {rewardStatus === "network_error" && "Could not reach HavnAI server — credits will sync next run"}
+            {!['daily_cap_reached', 'cooldown', 'score_too_low', 'run_too_short', 'duplicate_run', 'network_error'].includes(rewardStatus) && `HavnAI: ${rewardStatus}`}
+          </div>
+        )}
 
-      <div className="results-buttons">
-        <button className="btn btn-primary" onClick={() => navigate(isFirstRun ? "/hangar" : "/shmup")}>
-          {isFirstRun ? "Open Loadout" : "Play Again"}
-        </button>
-        <button className="btn btn-secondary" onClick={handleReturnToPort}>
-          Return to Port
-        </button>
+        {isFirstRun ? (
+          <div className="results-next-step-callout">
+            <strong>Loadout updated.</strong> Choose your next route from the port.
+          </div>
+        ) : null}
+
+        <div className="results-buttons">
+          <button className="btn btn-primary" onClick={() => navigate(isFirstRun ? "/hangar" : "/shmup")}>
+            {isFirstRun ? "Open Loadout" : "Play Again"}
+          </button>
+          <button className="btn btn-secondary" onClick={handleReturnToPort}>
+            Return to Port
+          </button>
+        </div>
       </div>
     </div>
   );

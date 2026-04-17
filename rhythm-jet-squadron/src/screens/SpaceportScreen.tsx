@@ -47,13 +47,15 @@ export default function SpaceportScreen() {
           </div>
 
           <div className="spaceport-top-stats">
-            <div className="spaceport-stat-card">
+            <div className="spaceport-stat-card spaceport-stat-card-pilot">
+              <span className="spaceport-stat-accent" aria-hidden="true" />
               <span className="spaceport-stat-label">Assigned Pilot</span>
               <strong className="spaceport-stat-value">{pilotName}</strong>
               <span className="spaceport-stat-meta">LV.{pilotLevel} command clearance</span>
             </div>
 
-            <div className="spaceport-stat-card">
+            <div className="spaceport-stat-card spaceport-stat-card-credits">
+              <span className="spaceport-stat-accent" aria-hidden="true" />
               <span className="spaceport-stat-label">Credits</span>
               <strong className="spaceport-stat-value spaceport-stat-value-gold">
                 <span className="credit-icon">✦</span> {credits}
@@ -61,7 +63,8 @@ export default function SpaceportScreen() {
               <span className="spaceport-stat-meta">Fleet purchasing power online</span>
             </div>
 
-            <div className="spaceport-stat-card">
+            <div className="spaceport-stat-card spaceport-stat-card-ledger">
+              <span className="spaceport-stat-accent" aria-hidden="true" />
               <span className="spaceport-stat-label">Combat Ledger</span>
               <strong className="spaceport-stat-value">{save.totalRuns} runs</strong>
               <span className="spaceport-stat-meta">{kills} kills confirmed</span>
@@ -120,6 +123,7 @@ export default function SpaceportScreen() {
 
           <aside className="spaceport-side-column">
             <section className="spaceport-visual-panel panel-surface">
+              <div className="spaceport-panel-shine" aria-hidden="true" />
               <span className="spaceport-section-kicker">Dockside Readiness</span>
               <h2 className="spaceport-visual-title">Command Deck Online</h2>
               <p className="spaceport-visual-copy">
@@ -147,6 +151,7 @@ export default function SpaceportScreen() {
             </section>
 
             <section className="spaceport-launch-panel">
+              <div className="spaceport-panel-shine" aria-hidden="true" />
               <div className="spaceport-launch-copy">
                 <span className="spaceport-section-kicker">Primary Flight Path</span>
                 <h2 className="spaceport-launch-title">Launch Mission</h2>
