@@ -257,11 +257,19 @@ const PILOT_BATCH_IMAGE_FILES = PILOT_INBOX_IMAGE_FILES.filter((name) =>
   name.startsWith("job-")
 );
 
-// Linear unlock curve: image N unlocks at run N+1. First image after
-// first completed run, last job image after ~50 runs. Feels earned,
-// keeps the drip going for players who commit to the game.
+// First few inbox rewards come quickly, then the drip slows so later
+// unlocks still feel earned instead of flooding all at once.
 function unlocksAtRun(index: number): number {
-  return index + 1;
+  if (index < 6) return index + 1;
+  if (index < 18) return 6 + Math.ceil((index - 5) * 1.5);
+  return 24 + (index - 17) * 2;
+}
+
+function batchMessageUnlocked(save: SaveData, index: number): boolean {
+  const requiredRuns = unlocksAtRun(index);
+  const successfulClears = Object.values(save.zoneClears ?? {}).reduce((sum, count) => sum + count, 0);
+  const bossMomentum = save.totalBossKills * 2;
+  return save.totalRuns + successfulClears + bossMomentum >= requiredRuns;
 }
 
 function buildPilotInboxMessages(): InboxMessageTemplate[] {
@@ -275,7 +283,6 @@ function buildPilotInboxMessages(): InboxMessageTemplate[] {
     const sequence = String(index + 1).padStart(2, "0");
     const pool = PILOT_MESSAGE_POOLS[sender];
     const variant = pool[index % pool.length];
-    const requiredRuns = unlocksAtRun(index);
     return {
       id: `msg-pilot-image-${filename.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`,
       sender,
@@ -295,7 +302,7 @@ function buildPilotInboxMessages(): InboxMessageTemplate[] {
       // Newer messages at lower index surface first; timestamps are offset
       // far enough apart that the spread reads as "arrived over days".
       timestamp: now - index * 1000 * 60 * 60 * 3, // 3h apart
-      isUnlocked: (save) => save.totalRuns >= requiredRuns,
+      isUnlocked: (save) => batchMessageUnlocked(save, index),
     };
   });
 }
@@ -409,6 +416,51 @@ const BASE_MESSAGES: InboxMessageTemplate[] = [
     isUnlocked: (save) => Boolean(save.bestGrades["nebula-runway"]) && save.totalRuns >= 2,
   },
   {
+    id: "msg-grade-a-brief",
+    sender: "Flight Ops",
+    subject: "A-Rank review posted",
+    preview: "Performance bracket elevated",
+    body: "Your last sortie cleared the A-rank threshold. That puts you above the noise floor and squarely on command's radar.\n\nExpect sharper resistance and better rewards from here on out.",
+    timestamp: Date.now() - 620000,
+    isUnlocked: (save) => Object.values(save.bestGrades).some((grade) => grade === "A" || grade === "S"),
+  },
+  {
+    id: "msg-boss-kill-directive",
+    sender: "HQ Command",
+    subject: "Boss kill confirmation",
+    preview: "Priority sortie clearance raised",
+    body: "Confirmed: hostile command unit destroyed. That kill changes your standing immediately.\n\nPilots notice things like that. So does Command.",
+    timestamp: Date.now() - 520000,
+    isUnlocked: (save) => save.totalBossKills >= 1,
+  },
+  {
+    id: "msg-repeat-clear-nova",
+    sender: "Nova",
+    subject: "You keep coming back cleaner",
+    preview: "Private channel ping • Nova",
+    body: "One clean run is talent. Doing it again means you know exactly what you're doing.\n\nThat makes you more interesting.\n\n- Nova",
+    timestamp: Date.now() - 470000,
+    isUnlocked: (save) => (save.zoneClears["nebula-runway"] ?? 0) >= 2,
+  },
+  {
+    id: "msg-repeat-clear-rex",
+    sender: "Rex",
+    subject: "Still alive. Still hot.",
+    preview: "Private channel ping • Rex",
+    body: "You keep stacking clears like you're trying to show off.\n\nIt's working.\n\n- Rex",
+    timestamp: Date.now() - 420000,
+    isUnlocked: (save) => (save.zoneClears["solar-rift"] ?? 0) >= 2 || save.totalBossKills >= 2,
+  },
+  {
+    id: "msg-repeat-clear-yuki",
+    sender: "Yuki",
+    subject: "Pattern confirmed",
+    preview: "Private channel ping • Yuki",
+    body: "The first clear could have been momentum. Repeating it means the pattern is real.\n\nI prefer repeatable things.\n\n- Yuki",
+    timestamp: Date.now() - 390000,
+    isUnlocked: (save) => (save.zoneClears["abyss-crown"] ?? 0) >= 1 || save.totalBossKills >= 3,
+  },
+  {
     id: "msg-command-after-abyss",
     sender: "HQ Command",
     subject: "Crew Morale Advisory",
@@ -416,6 +468,15 @@ const BASE_MESSAGES: InboxMessageTemplate[] = [
     body: "Your post-sortie performance has had an observable effect on squad morale.\n\nUnofficial translation: several pilots are now using priority channels to flirt with you instead of filing clean debriefs.\n\nCommand will allow this to continue as long as mission readiness remains unaffected.",
     timestamp: Date.now() - 300000,
     isUnlocked: (save) => Boolean(save.bestGrades["abyss-crown"]),
+  },
+  {
+    id: "msg-s-rank-command",
+    sender: "Strategic Command",
+    subject: "S-rank sortie flagged",
+    preview: "Top-bracket combat review",
+    body: "Your S-rank combat review has been circulated to senior command staff.\n\nThat is not routine. Maintain pressure. The squad is starting to orbit around your results.",
+    timestamp: Date.now() - 180000,
+    isUnlocked: (save) => Object.values(save.bestGrades).includes("S"),
   },
 ];
 
