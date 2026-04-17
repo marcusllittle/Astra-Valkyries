@@ -375,7 +375,7 @@ export const SHMUP_MAPS: ShmupMap[] = [
     tagline: "Slipstream interception corridor",
     briefing: "Break the patrol line and reopen the route.",
     debrief: "Corridor pressure collapsed. The lane is ours again.",
-    bossMaxHp: 360,
+    bossMaxHp: 620,
     bossTriggerMs: 72_000,
     bossWarningMs: 2600,
     bossPhases: [
@@ -406,7 +406,7 @@ export const SHMUP_MAPS: ShmupMap[] = [
     tagline: "Thermal fortress breach",
     briefing: "Push through the flare wall and crack the weapons platform.",
     debrief: "The heat front is broken. Solar control is shifting back.",
-    bossMaxHp: 430,
+    bossMaxHp: 760,
     bossTriggerMs: 78_000,
     bossWarningMs: 2800,
     bossPhases: [
@@ -437,7 +437,7 @@ export const SHMUP_MAPS: ShmupMap[] = [
     tagline: "Deep-void terminal descent",
     briefing: "Hold formation through the cold breach and cut down the Leviathan.",
     debrief: "The void finally blinked. Abyss Crown is no longer untouchable.",
-    bossMaxHp: 470,
+    bossMaxHp: 880,
     bossTriggerMs: 84_000,
     bossWarningMs: 3000,
     bossPhases: [

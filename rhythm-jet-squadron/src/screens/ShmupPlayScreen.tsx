@@ -65,15 +65,15 @@ const REFERENCE_HEIGHT = 540; // design reference resolution
 const PLAYER_INVULNERABLE_MS = 900;
 const OVERDRIVE_MAX = 100;
 const SHMUP_TRACK_ID = "shmup_arcade";
-const MAX_WEAPON_LEVEL = 4;
+const MAX_WEAPON_LEVEL = 6;
 const BOMB_RADIUS = 140;
 const BOMB_ENEMY_DAMAGE = 5;
 const BOMB_BOSS_DAMAGE = 22;
 const BOMB_PROJECTILE_SPEED = 430;
 const BOMB_PROJECTILE_LIFE = 1.15;
 const BOMB_PICKUP_SPEED = 108;
-const BOMB_PICKUP_CHANCE = 0.1;
-const BOMB_OVERFLOW_CHIPS = 3;
+const BOMB_PICKUP_CHANCE = 0.18;
+const BOMB_OVERFLOW_CHIPS = 2;
 const INTRO_FLY_IN_MS = 360;
 const INTRO_READY_MS = 240;
 const INTRO_TOTAL_MS = INTRO_FLY_IN_MS + INTRO_READY_MS;
@@ -2443,14 +2443,17 @@ export default function ShmupPlayScreen() {
           empUntilRef.current = elapsedMs + secondaryDurationMs;
           statusFlashUntilRef.current = elapsedMs + 260;
           startSecondaryCooldown(elapsedMs);
-          addPulse(ship.x, ship.y, "#4dabf7", 10, 200, 0.16, 2.6);
+          addPulse(ship.x, ship.y, "#4dabf7", 14, 250, 0.18, 3.1);
+          addPulse(ship.x, ship.y, "#74c0fc", 8, 130, 0.1, 1.8);
+          addScreenShake(1.3, 0.09);
           return;
         case "drones":
           sfxDrones();
           dronesUntilRef.current = elapsedMs + secondaryDurationMs;
           dronesFireTimerRef.current = 0;
           startSecondaryCooldown(elapsedMs);
-          addPulse(ship.x, ship.y, "#00e5ff", 11, 120, 0.14, 2.2);
+          addPulse(ship.x, ship.y, "#00e5ff", 15, 150, 0.16, 2.7);
+          addPulse(ship.x, ship.y, "#a5f3ff", 9, 84, 0.11, 1.7);
           return;
         case "barrelRoll": {
           sfxShield();
@@ -2495,7 +2498,8 @@ export default function ShmupPlayScreen() {
             endMs: elapsedMs + SHMUP_BALANCE.effects.vortexDurationMs,
           };
           startSecondaryCooldown(elapsedMs);
-          addPulse(vx, vy, "#9775fa", 6, 60, 0.2, 2);
+          addPulse(vx, vy, "#9775fa", 9, 90, 0.24, 2.4);
+          addPulse(vx, vy, "#d0bfff", 14, 160, 0.14, 3.2);
           addScreenShake(1.8, 0.1);
           return;
         }
@@ -2511,8 +2515,9 @@ export default function ShmupPlayScreen() {
           overchargeUntilRef.current = elapsedMs + secondaryDurationMs;
           statusFlashUntilRef.current = elapsedMs + 300;
           startSecondaryCooldown(elapsedMs);
-          addPulse(ship.x, ship.y, "#ffd43b", 12, 140, 0.16, 2.6);
-          addScreenShake(1.0, 0.08);
+          addPulse(ship.x, ship.y, "#ffd43b", 16, 170, 0.18, 3.0);
+          addPulse(ship.x, ship.y, "#fff3bf", 10, 96, 0.12, 1.9);
+          addScreenShake(1.2, 0.08);
           return;
         case "none":
         default:
@@ -3345,8 +3350,8 @@ export default function ShmupPlayScreen() {
         boss.fireCooldown -= bossDelta;
         boss.burstCooldown -= bossDelta;
 
-        const fireRate = phaseConfig?.fireRate ?? (boss.phase === 1 ? 0.85 : 0.58);
-        const burstRate = phaseConfig?.burstRate ?? (boss.phase === 1 ? 2.1 : 1.35);
+        const fireRate = (phaseConfig?.fireRate ?? (boss.phase === 1 ? 0.85 : 0.58)) * (boss.phase === 1 ? 0.92 : boss.phase === 2 ? 0.84 : 0.76);
+        const burstRate = (phaseConfig?.burstRate ?? (boss.phase === 1 ? 2.1 : 1.35)) * (boss.phase === 1 ? 0.9 : boss.phase === 2 ? 0.82 : 0.72);
 
         if (boss.y >= bossTargetY && boss.fireCooldown <= 0) {
           shootBossBullets(boss);
@@ -3376,16 +3381,16 @@ export default function ShmupPlayScreen() {
         if (phaseConfig?.summonMinions !== false && boss.phase === 3) {
           boss.minionCooldown -= bossDelta;
           if (boss.minionCooldown <= 0 && boss.y >= bossTargetY) {
-            boss.minionCooldown = 6.0;
-            // Spawn 3 swarm minions
-            for (let i = 0; i < 3; i++) {
+            boss.minionCooldown = 4.2;
+            // Spawn 4 swarm minions
+            for (let i = 0; i < 4; i++) {
               enemiesRef.current.push({
                 id: enemyIdRef.current++,
                 pattern: "swarm",
-                x: boss.x + (i - 1) * 40,
+                x: boss.x + (i - 1.5) * 34,
                 y: boss.y + 20,
-                originX: boss.x + (i - 1) * 40,
-                vx: (i - 1) * 80,
+                originX: boss.x + (i - 1.5) * 34,
+                vx: (i - 1.5) * 95,
                 vy: 180,
                 radius: 10,
                 hp: 1,
@@ -3459,10 +3464,13 @@ export default function ShmupPlayScreen() {
               addSecondaryCharge(1);
             }
           }
-          addSparkBurst(chip.x, chip.y, "#ffd43b", 6, 70, [2, 3.8]);
-          addPulse(chip.x, chip.y, "#ffe066", 6, 62, 0.12, 1.5);
+          if (weaponLevelRef.current >= 4) {
+            addSecondaryCharge(1);
+          }
+          addSparkBurst(chip.x, chip.y, "#ffd43b", 8, 92, [2, 4.6]);
+          addPulse(chip.x, chip.y, "#ffe066", 8, 78, 0.15, 1.9);
           if (weaponLevelRef.current >= 3) {
-            addOverdrive(8, elapsedMs);
+            addOverdrive(12, elapsedMs);
           }
         }
       }

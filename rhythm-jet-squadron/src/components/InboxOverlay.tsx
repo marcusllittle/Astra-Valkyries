@@ -33,7 +33,7 @@ interface InboxMessage extends Omit<InboxMessageTemplate, "isUnlocked"> {
 const INBOX_STORAGE_KEY = "astra-inbox-state";
 const CUSTOM_INBOX_DIR = "/assets/inbox";
 const PILOT_INBOX_DIR = `${CUSTOM_INBOX_DIR}/pilot`;
-const FORCE_UNLOCK_ALL_MESSAGES = true;
+const FORCE_UNLOCK_ALL_MESSAGES = false;
 
 const PILOT_INBOX_IMAGE_FILES = [
   "job-0293e3f9670d.png",
@@ -98,55 +98,79 @@ const PILOT_MESSAGE_POOLS: Record<PilotSender, Array<{ subject: string; body: st
   Nova: [
     {
       subject: "Caught you looking",
-      body: "You flew well. I felt generous. Enjoy the view and try not to get weird about it.\n\n- Nova",
+      body: "Clean run. Clean enough that I figured you earned something off-record for once.\n\n- Nova",
     },
     {
       subject: "After-hours channel",
-      body: "Off-duty transmission. No briefing language, no squad chatter, no excuses. Just me.\n\n- Nova",
+      body: "No command voice, no tactical jargon, no helmet. Just a better signal after a good sortie.\n\n- Nova",
     },
     {
       subject: "Private send",
-      body: "Before you ask, yes, this was meant for you. Don’t make me regret having good taste.\n\n- Nova",
+      body: "You cleared the lane, so I sent something that wasn't another stack of telemetry. Try to appreciate the upgrade.\n\n- Nova",
     },
     {
       subject: "Keep this one close",
-      body: "Thought you’d want something better than telemetry and mission logs for once.\n\n- Nova",
+      body: "You looked like you needed one nice thing after the run. I decided to be generous.\n\n- Nova",
+    },
+    {
+      subject: "Post-sortie indulgence",
+      body: "Mission complete, pressure off, and suddenly I felt like being distracting on purpose. Funny how that happens.\n\n- Nova",
+    },
+    {
+      subject: "Unread priority",
+      body: "You brought the ship back in one piece. That gets you access to better material than the official briefing archive.\n\n- Nova",
     },
   ],
   Rex: [
     {
       subject: "Still focused?",
-      body: "Consider this a stress test for your concentration. If it fails, that’s not my problem.\n\n- Rex",
+      body: "You survived the run, so let's see if your concentration survives this too.\n\n- Rex",
     },
     {
       subject: "Afterburn drop",
-      body: "You cleared the run, so I sent something with a little more heat behind it. Don’t waste it.\n\n- Rex",
+      body: "Successful sortie, hot engines, bad judgment. That's usually when the fun mail gets sent.\n\n- Rex",
     },
     {
       subject: "You can handle this",
-      body: "If this scrambles your thoughts, maybe you needed the practice.\n\n- Rex",
+      body: "You cleared the mission, so I assumed you could handle a little extra heat in your inbox.\n\n- Rex",
     },
     {
       subject: "Off-channel",
-      body: "Not for command, not for the squad, not for the archive. Just your inbox.\n\n- Rex",
+      body: "Not for command review. Not for squad logs. Just for the person who actually finished the fight.\n\n- Rex",
+    },
+    {
+      subject: "Post-combat static",
+      body: "Adrenaline's still high after that run. Seemed smarter to dump it into your inbox than start a hallway incident.\n\n- Rex",
+    },
+    {
+      subject: "Victory tax",
+      body: "You win, I send something reckless. Call it a tradition if you keep performing like that.\n\n- Rex",
     },
   ],
   Yuki: [
     {
       subject: "Archive access",
-      body: "This transmission is quieter than my mission logs, but probably more useful to you.\n\n- Yuki",
+      body: "You completed the sortie. I thought you deserved something quieter than another performance breakdown.\n\n- Yuki",
     },
     {
       subject: "For your eyes only",
-      body: "You get the formal reports already. I thought you deserved the version with less distance in it.\n\n- Yuki",
+      body: "The official reports are useful. They are also an incomplete version of me. This is better.\n\n- Yuki",
     },
     {
       subject: "Midnight transmission",
-      body: "No tactical value. No strategic importance. I sent it anyway.\n\n- Yuki",
+      body: "No strategic importance. No tactical relevance. It felt right to send after a successful run.\n\n- Yuki",
     },
     {
       subject: "Closer than usual",
-      body: "If this feels more personal than my normal messages, that was intentional.\n\n- Yuki",
+      body: "You flew well. I noticed. This message is what happens when I stop pretending I did not.\n\n- Yuki",
+    },
+    {
+      subject: "Quiet reward",
+      body: "Some people celebrate loudly. I prefer a cleaner signal, sent to the person who earned it.\n\n- Yuki",
+    },
+    {
+      subject: "Personal archive",
+      body: "You get mission logs from everyone else. I thought you might want the version with a little less distance in it.\n\n- Yuki",
     },
   ],
 };
@@ -189,7 +213,7 @@ function buildPilotInboxMessages(): InboxMessageTemplate[] {
         },
       ],
       timestamp: now - index * 90000,
-      isUnlocked: () => true,
+      isUnlocked: (save) => save.totalBossKills >= index + 1 || save.totalRuns >= (index + 1) * 2,
     };
   });
 }

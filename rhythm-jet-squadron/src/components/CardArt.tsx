@@ -113,9 +113,9 @@ export default function CardArt({
           ref={videoRef}
           src={motionUrl}
           className="card-art-img"
-          loop
           muted
           playsInline
+          onEnded={() => setHoldingMotion(false)}
           onError={() => {
             setFailedMotionUrl(motionUrl);
             setHoldingMotion(false);
