@@ -34,6 +34,7 @@ const INBOX_STORAGE_KEY = "astra-inbox-state";
 const CUSTOM_INBOX_DIR = "/assets/inbox";
 const PILOT_INBOX_DIR = `${CUSTOM_INBOX_DIR}/pilot`;
 const FORCE_UNLOCK_ALL_MESSAGES = false;
+const ENABLE_INBOX_IMAGE_ATTACHMENTS = false;
 
 const PILOT_INBOX_IMAGE_FILES = [
   "job-0293e3f9670d.png",
@@ -289,16 +290,18 @@ function buildPilotInboxMessages(): InboxMessageTemplate[] {
       subject: variant.subject,
       preview: `Image attachment • ${sender}`,
       body: variant.body,
-      attachments: [
-        {
-          id: `pilot-image-${sequence}`,
-          type: "image",
-          url: `${PILOT_INBOX_DIR}/${filename}`,
-          fallbackUrl: `/assets/outfits/${sender === "Nova" ? "cosmic_surge" : sender === "Rex" ? "solar_flare" : "lunar_eclipse"}.png`,
-          alt: `${sender} inbox portrait`,
-          label: `${sender} transmission`,
-        },
-      ],
+      attachments: ENABLE_INBOX_IMAGE_ATTACHMENTS
+        ? [
+            {
+              id: `pilot-image-${sequence}`,
+              type: "image",
+              url: `${PILOT_INBOX_DIR}/${filename}`,
+              fallbackUrl: `/assets/outfits/${sender === "Nova" ? "cosmic_surge" : sender === "Rex" ? "solar_flare" : "lunar_eclipse"}.png`,
+              alt: `${sender} inbox portrait`,
+              label: `${sender} transmission`,
+            },
+          ]
+        : undefined,
       // Newer messages at lower index surface first; timestamps are offset
       // far enough apart that the spread reads as "arrived over days".
       timestamp: now - index * 1000 * 60 * 60 * 3, // 3h apart
@@ -344,18 +347,20 @@ const BASE_MESSAGES: InboxMessageTemplate[] = [
     id: "msg-nova-personal",
     sender: "Nova",
     subject: "You were staring. I checked.",
-    preview: "Image attachment • Nova",
+    preview: ENABLE_INBOX_IMAGE_ATTACHMENTS ? "Image attachment • Nova" : "Private channel • Nova",
     body: "You do that thing after a sortie where you act calm and then absolutely fail to hide your eyes.\n\nSo here. Off-duty Nova. Consider this a reward for surviving your first real run.\n\nIf that expression on your face gets any more obvious, I'm charging you for the view.\n\n- Nova",
-    attachments: [
-      {
-        id: "nova-photo",
-        type: "image",
-        url: `${PILOT_INBOX_DIR}/nova_after_hours.png`,
-        fallbackUrl: "/assets/outfits/cosmic_surge.png",
-        alt: "Nova off-duty portrait",
-        label: "Nova portrait",
-      },
-    ],
+    attachments: ENABLE_INBOX_IMAGE_ATTACHMENTS
+      ? [
+          {
+            id: "nova-photo",
+            type: "image",
+            url: `${PILOT_INBOX_DIR}/nova_after_hours.png`,
+            fallbackUrl: "/assets/outfits/cosmic_surge.png",
+            alt: "Nova off-duty portrait",
+            label: "Nova portrait",
+          },
+        ]
+      : undefined,
     timestamp: Date.now() - 5400000,
     isUnlocked: (save) => save.totalRuns >= 1,
   },
@@ -363,18 +368,20 @@ const BASE_MESSAGES: InboxMessageTemplate[] = [
     id: "msg-rex-personal",
     sender: "Rex",
     subject: "Try not to lose focus",
-    preview: "Image attachment • Rex",
+    preview: ENABLE_INBOX_IMAGE_ATTACHMENTS ? "Image attachment • Rex" : "Private channel • Rex",
     body: "Cleared Nebula and suddenly you look like you can handle premium distractions.\n\nTell me this shot doesn't work and I'll call you a liar to your face.\n\nIf it does work, maybe keep that reaction in a private channel. Or don't. I'm flexible.\n\n- Rex",
-    attachments: [
-      {
-        id: "rex-photo",
-        type: "image",
-        url: `${PILOT_INBOX_DIR}/rex_afterburn.png`,
-        fallbackUrl: "/assets/outfits/solar_flare.png",
-        alt: "Rex portrait in Solar Flare outfit",
-        label: "Rex portrait",
-      },
-    ],
+    attachments: ENABLE_INBOX_IMAGE_ATTACHMENTS
+      ? [
+          {
+            id: "rex-photo",
+            type: "image",
+            url: `${PILOT_INBOX_DIR}/rex_afterburn.png`,
+            fallbackUrl: "/assets/outfits/solar_flare.png",
+            alt: "Rex portrait in Solar Flare outfit",
+            label: "Rex portrait",
+          },
+        ]
+      : undefined,
     timestamp: Date.now() - 3300000,
     isUnlocked: (save) => Boolean(save.bestGrades["nebula-runway"]),
   },
@@ -382,18 +389,20 @@ const BASE_MESSAGES: InboxMessageTemplate[] = [
     id: "msg-yuki-personal",
     sender: "Yuki",
     subject: "For your eyes only",
-    preview: "Image attachment • Yuki",
+    preview: ENABLE_INBOX_IMAGE_ATTACHMENTS ? "Image attachment • Yuki" : "Private channel • Yuki",
     body: "You get battle telemetry, accuracy logs, and mission records. That is an unforgivably sterile version of me.\n\nThis one is better. Quieter. Closer.\n\nIf you're blushing, good. It means you were paying attention.\n\n- Yuki",
-    attachments: [
-      {
-        id: "yuki-photo",
-        type: "image",
-        url: `${PILOT_INBOX_DIR}/yuki_midnight_archive.png`,
-        fallbackUrl: "/assets/outfits/lunar_eclipse.png",
-        alt: "Yuki portrait in Lunar Eclipse outfit",
-        label: "Yuki portrait",
-      },
-    ],
+    attachments: ENABLE_INBOX_IMAGE_ATTACHMENTS
+      ? [
+          {
+            id: "yuki-photo",
+            type: "image",
+            url: `${PILOT_INBOX_DIR}/yuki_midnight_archive.png`,
+            fallbackUrl: "/assets/outfits/lunar_eclipse.png",
+            alt: "Yuki portrait in Lunar Eclipse outfit",
+            label: "Yuki portrait",
+          },
+        ]
+      : undefined,
     timestamp: Date.now() - 2100000,
     isUnlocked: (save) => Boolean(save.bestGrades["solar-rift"]),
   },
