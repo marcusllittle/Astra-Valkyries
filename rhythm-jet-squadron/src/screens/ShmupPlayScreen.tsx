@@ -2442,7 +2442,9 @@ export default function ShmupPlayScreen() {
           barrierUntilRef.current = elapsedMs + secondaryDurationMs;
           barrierLayersRef.current = 3;
           startSecondaryCooldown(elapsedMs);
-          addPulse(ship.x, ship.y, "#8ce99a", 12, 140, 0.12, 2.2);
+          addPulse(ship.x, ship.y, "#8ce99a", 16, 180, 0.16, 2.8);
+          addPulse(ship.x, ship.y, "#d3f9d8", 10, 104, 0.1, 1.8);
+          addSparkBurst(ship.x, ship.y, "#8ce99a", 14, 150, [2, 5.2]);
           return;
         case "emp":
           sfxEmp();
@@ -2471,7 +2473,8 @@ export default function ShmupPlayScreen() {
           barrelRollDirRef.current = rollDir;
           ship.invulnerableUntil = Math.max(ship.invulnerableUntil, elapsedMs + SHMUP_BALANCE.effects.barrelRollDurationMs);
           startSecondaryCooldown(elapsedMs);
-          addPulse(ship.x, ship.y, "#74c0fc", 8, 80, 0.1, 1.8);
+          addPulse(ship.x, ship.y, "#74c0fc", 12, 110, 0.14, 2.1);
+          addSparkBurst(ship.x, ship.y, "#a5d8ff", 12, 170, [2, 5]);
           return;
         }
         case "phaseShift": {
@@ -2488,8 +2491,10 @@ export default function ShmupPlayScreen() {
           phaseShiftUntilRef.current = elapsedMs + 180;
           phaseShiftGhostRef.current = { x: ghostOrigin.x, y: ghostOrigin.y, triggerAtMs: elapsedMs + 120 };
           startSecondaryCooldown(elapsedMs);
-          addPulse(ghostOrigin.x, ghostOrigin.y, "#d0bfff", 14, 100, 0.15, 2);
-          addPulse(ship.x, ship.y, "#b494ff", 10, 80, 0.12, 1.6);
+          addPulse(ghostOrigin.x, ghostOrigin.y, "#d0bfff", 18, 140, 0.18, 2.4);
+          addPulse(ship.x, ship.y, "#b494ff", 14, 120, 0.14, 2.1);
+          addSparkBurst(ghostOrigin.x, ghostOrigin.y, "#d0bfff", 16, 180, [2.4, 5.8]);
+          addSparkBurst(ship.x, ship.y, "#b494ff", 10, 120, [1.8, 4.5]);
           addScreenShake(1.5, 0.08);
           return;
         }
@@ -2514,15 +2519,18 @@ export default function ShmupPlayScreen() {
           mirrorShieldUntilRef.current = elapsedMs + secondaryDurationMs;
           mirrorShieldLayersRef.current = SHMUP_BALANCE.effects.mirrorShieldLayers;
           startSecondaryCooldown(elapsedMs);
-          addPulse(ship.x, ship.y, "#4dabf7", 14, 120, 0.14, 2.4);
+          addPulse(ship.x, ship.y, "#4dabf7", 18, 160, 0.16, 2.8);
+          addPulse(ship.x, ship.y, "#d0ebff", 12, 96, 0.1, 1.8);
+          addSparkBurst(ship.x, ship.y, "#74c0fc", 18, 180, [2.2, 5.6]);
           return;
         case "overcharge":
           sfxDrones();
           overchargeUntilRef.current = elapsedMs + secondaryDurationMs;
           statusFlashUntilRef.current = elapsedMs + 300;
           startSecondaryCooldown(elapsedMs);
-          addPulse(ship.x, ship.y, "#ffd43b", 16, 170, 0.18, 3.0);
-          addPulse(ship.x, ship.y, "#fff3bf", 10, 96, 0.12, 1.9);
+          addPulse(ship.x, ship.y, "#ffd43b", 22, 210, 0.2, 3.3);
+          addPulse(ship.x, ship.y, "#fff3bf", 14, 130, 0.14, 2.2);
+          addSparkBurst(ship.x, ship.y, "#ffd43b", 20, 220, [2.4, 6.2]);
           addScreenShake(1.2, 0.08);
           return;
         case "none":
@@ -4938,17 +4946,29 @@ export default function ShmupPlayScreen() {
           const orbitX = ship.x + Math.cos(angle) * 24;
           const orbitY = ship.y - 10 + Math.sin(angle) * 18;
           ctx.save();
-          ctx.globalAlpha = 0.9;
+          const droneGlow = ctx.createRadialGradient(orbitX, orbitY, 1, orbitX, orbitY, 18);
+          droneGlow.addColorStop(0, "rgba(178,255,249,0.95)");
+          droneGlow.addColorStop(0.35, "rgba(0,229,255,0.65)");
+          droneGlow.addColorStop(1, "rgba(0,229,255,0)");
+          ctx.fillStyle = droneGlow;
+          ctx.beginPath();
+          ctx.arc(orbitX, orbitY, 18, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 0.96;
           ctx.fillStyle = "#00e5ff";
           ctx.shadowColor = "#00e5ff";
-          ctx.shadowBlur = 10;
+          ctx.shadowBlur = 12;
           ctx.beginPath();
-          ctx.arc(orbitX, orbitY, 5.8, 0, Math.PI * 2);
+          ctx.moveTo(orbitX, orbitY - 7);
+          ctx.lineTo(orbitX + 6, orbitY + 5);
+          ctx.lineTo(orbitX, orbitY + 3);
+          ctx.lineTo(orbitX - 6, orbitY + 5);
+          ctx.closePath();
           ctx.fill();
           ctx.shadowBlur = 0;
           ctx.fillStyle = "#b2fff9";
           ctx.beginPath();
-          ctx.arc(orbitX, orbitY, 2.4, 0, Math.PI * 2);
+          ctx.arc(orbitX, orbitY, 2.6, 0, Math.PI * 2);
           ctx.fill();
           ctx.restore();
         }
@@ -4979,6 +4999,11 @@ export default function ShmupPlayScreen() {
           ctx.lineWidth = 2.5 - i * 0.4;
           ctx.beginPath();
           ctx.arc(ship.x, ship.y, r, Math.PI * 1.12, Math.PI * 1.9);
+          ctx.stroke();
+          ctx.strokeStyle = `rgba(211, 249, 216, ${alpha * 0.5})`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(ship.x, ship.y, r + 5, Math.PI * 1.08, Math.PI * 1.94);
           ctx.stroke();
           ctx.restore();
         }
@@ -5073,6 +5098,11 @@ export default function ShmupPlayScreen() {
         ctx.arc(vt.x, vt.y, vtR, 0, Math.PI * 2);
         ctx.stroke();
         ctx.setLineDash([]);
+        ctx.strokeStyle = "rgba(208,191,255,0.28)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(vt.x, vt.y, vtR * 0.6, 0, Math.PI * 2);
+        ctx.stroke();
         ctx.restore();
       }
 
@@ -5096,9 +5126,19 @@ export default function ShmupPlayScreen() {
           }
           ctx.closePath();
           ctx.stroke();
-          // Fill with subtle glow
           ctx.fillStyle = `rgba(77, 171, 247, ${a * 0.08})`;
           ctx.fill();
+          ctx.strokeStyle = `rgba(208, 235, 255, ${a * 0.45})`;
+          ctx.lineWidth = 0.9;
+          ctx.beginPath();
+          for (let s = 0; s < 6; s++) {
+            const angle = s * Math.PI / 3 - Math.PI / 2 - elapsedMs * 0.00022;
+            const px = Math.cos(angle) * (r * 0.78) * pulse;
+            const py = Math.sin(angle) * (r * 0.78) * pulse;
+            if (s === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+          }
+          ctx.closePath();
+          ctx.stroke();
         }
         ctx.restore();
       }
@@ -5116,6 +5156,11 @@ export default function ShmupPlayScreen() {
         ctx.beginPath();
         ctx.arc(ship.x, ship.y, ocR, 0, Math.PI * 2);
         ctx.fill();
+        ctx.strokeStyle = "rgba(255, 243, 191, 0.65)";
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(ship.x, ship.y, ocR * 0.72, 0, Math.PI * 2);
+        ctx.stroke();
         // Electric arcs
         ctx.strokeStyle = "rgba(255, 212, 59, 0.6)";
         ctx.lineWidth = 1.5;
