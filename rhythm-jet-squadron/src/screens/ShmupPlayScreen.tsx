@@ -34,6 +34,7 @@ import {
 import {
   getShmupMapById,
   getShmupMapForShip,
+  type BossArchetype,
   type EnemyPattern,
   type ShmupMap,
   type ShmupWaveEnemy,
@@ -64,7 +65,7 @@ const REFERENCE_HEIGHT = 540; // design reference resolution
 const PLAYER_INVULNERABLE_MS = 900;
 const OVERDRIVE_MAX = 100;
 const SHMUP_TRACK_ID = "shmup_arcade";
-const MAX_WEAPON_LEVEL = 4;
+const MAX_WEAPON_LEVEL = 6;
 const BOMB_RADIUS = 140;
 const BOMB_ENEMY_DAMAGE = 5;
 const BOMB_BOSS_DAMAGE = 22;
@@ -72,7 +73,7 @@ const BOMB_PROJECTILE_SPEED = 430;
 const BOMB_PROJECTILE_LIFE = 1.15;
 const BOMB_PICKUP_SPEED = 108;
 const BOMB_PICKUP_CHANCE = 0.18;
-const BOMB_OVERFLOW_CHIPS = 3;
+const BOMB_OVERFLOW_CHIPS = 2;
 const INTRO_FLY_IN_MS = 360;
 const INTRO_READY_MS = 240;
 const INTRO_TOTAL_MS = INTRO_FLY_IN_MS + INTRO_READY_MS;
@@ -188,8 +189,6 @@ interface EnemyState {
   minibossPhase?: number; // 0=normal, 1=enraged (at 50% HP)
   minibossMaxHp?: number;
   minibossEnraged?: boolean;
-  // Pass 1 polish: hit feedback
-  hitFlashUntil?: number;
 }
 
 interface TouchMoveState {
@@ -201,6 +200,7 @@ interface TouchMoveState {
 
 interface BossState {
   name: string;
+  archetype: BossArchetype;
   x: number;
   y: number;
   radius: number;
@@ -216,8 +216,6 @@ interface BossState {
   minionCooldown: number;
   phaseTransitionFlash: number;
   lastPhase: 1 | 2 | 3;
-  // Pass 1 polish: hit feedback
-  hitFlashUntil?: number;
 }
 
 interface PowerChip {
@@ -322,7 +320,6 @@ interface HudState {
   hp: number;
   maxHp: number;
   weaponLevel: number;
-  bonusLasers: number;
   weaponLabel: string;
   overdriveMeter: number;
   overdriveActive: boolean;
@@ -431,102 +428,6 @@ function getPlayerShipSpritePath(
   if (ship?.artUrl) return ship.artUrl;
   if (pilotId && PILOT_SHIP_ART_PATHS[pilotId]) return PILOT_SHIP_ART_PATHS[pilotId];
   return SPRITE_PATHS.player;
-}
-
-// Ship gameplay pass — per-ship identity tokens. All in-play palette/motion
-// differences go through this table so the three ships feel like three ships.
-// Do NOT touch the underlying sprite assets.
-type ShipVisual = {
-  glow: string;
-  glowOverdrive: string;
-  trail: string;
-  hitboxRing: string;
-  muzzleColor: string;
-  muzzleCore: string;
-  exhaustCore: string;
-  exhaustShell: string;
-  damageColor: string;
-  bankStiffness: number; // tilt gain per frame on input
-  bankDecay: number; // tilt decay per frame (closer to 1 = more persistent lean)
-  bankMax: number; // radians
-  exhaustLength: number; // px at full velocity
-  exhaustWidth: number; // px (half width)
-};
-
-const SHIP_VISUAL_DEFAULT: ShipVisual = {
-  glow: "rgba(69, 199, 255, 0.28)",
-  glowOverdrive: "rgba(255, 212, 59, 0.42)",
-  trail: "#74c0fc",
-  hitboxRing: "rgba(167, 231, 255, 0.9)",
-  muzzleColor: "#a7e7ff",
-  muzzleCore: "#ffffff",
-  exhaustCore: "#e6f7ff",
-  exhaustShell: "#4dabf7",
-  damageColor: "#ff8787",
-  bankStiffness: 0.09,
-  bankDecay: 0.82,
-  bankMax: 0.46,
-  exhaustLength: 26,
-  exhaustWidth: 5,
-};
-
-const SHIP_VISUALS: Record<string, ShipVisual> = {
-  // Blue — agile, elegant, precision. Sharpest bank, tightest thruster.
-  ship_astra_interceptor: {
-    glow: "rgba(77, 171, 247, 0.32)",
-    glowOverdrive: "rgba(255, 230, 120, 0.45)",
-    trail: "#4dabf7",
-    hitboxRing: "rgba(165, 224, 255, 0.95)",
-    muzzleColor: "#a5e8ff",
-    muzzleCore: "#ffffff",
-    exhaustCore: "#e3f8ff",
-    exhaustShell: "#4dabf7",
-    damageColor: "#74c0fc",
-    bankStiffness: 0.12,
-    bankDecay: 0.78,
-    bankMax: 0.54,
-    exhaustLength: 32,
-    exhaustWidth: 4,
-  },
-  // Red — aggressive, assault, power. Heaviest bank, fat ember exhaust.
-  ship_valkyrie_lancer: {
-    glow: "rgba(255, 107, 107, 0.32)",
-    glowOverdrive: "rgba(255, 160, 60, 0.5)",
-    trail: "#ff8787",
-    hitboxRing: "rgba(255, 180, 140, 0.9)",
-    muzzleColor: "#ffb080",
-    muzzleCore: "#fff0c2",
-    exhaustCore: "#ffe8b0",
-    exhaustShell: "#ff6b3d",
-    damageColor: "#ff6b6b",
-    bankStiffness: 0.07,
-    bankDecay: 0.86,
-    bankMax: 0.42,
-    exhaustLength: 22,
-    exhaustWidth: 7,
-  },
-  // White — elite, premium, balanced. Planted bank, steady gold-lined flame.
-  ship_seraph_guard: {
-    glow: "rgba(230, 230, 235, 0.3)",
-    glowOverdrive: "rgba(255, 215, 120, 0.48)",
-    trail: "#e6e6ef",
-    hitboxRing: "rgba(255, 243, 200, 0.95)",
-    muzzleColor: "#fff4d6",
-    muzzleCore: "#ffffff",
-    exhaustCore: "#ffffff",
-    exhaustShell: "#ffd77a",
-    damageColor: "#f4e7c1",
-    bankStiffness: 0.06,
-    bankDecay: 0.9,
-    bankMax: 0.36,
-    exhaustLength: 28,
-    exhaustWidth: 6,
-  },
-};
-
-function getShipVisual(id: string | undefined): ShipVisual {
-  if (!id) return SHIP_VISUAL_DEFAULT;
-  return SHIP_VISUALS[id] ?? SHIP_VISUAL_DEFAULT;
 }
 
 function createSpriteStore(): Record<SpriteKey, HTMLImageElement | null> {
@@ -695,7 +596,6 @@ function createHudState(modifiers: ShmupModifiers, activeMap: ShmupMap): HudStat
     hp: modifiers.maxHp,
     maxHp: modifiers.maxHp,
     weaponLevel: 1,
-    bonusLasers: 0,
     weaponLabel: getWeaponLabel(1),
     overdriveMeter: 0,
     overdriveActive: false,
@@ -730,7 +630,7 @@ function createHudState(modifiers: ShmupModifiers, activeMap: ShmupMap): HudStat
 
 export default function ShmupPlayScreen() {
   const navigate = useNavigate();
-  const { save, submitResult, submitRunStats } = useGame();
+  const { save, submitResult } = useGame();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [viewportBounds, setViewportBounds] = useState<ViewportBounds>(() => getViewportBounds());
@@ -871,7 +771,6 @@ export default function ShmupPlayScreen() {
   const overdriveUntilRef = useRef(0);
   const overdriveStartRef = useRef(0);
   const chipOverflowRef = useRef(0);
-  const bonusLasersRef = useRef(0); // extra laser columns collected beyond max weapon level
   const secondaryChargesRef = useRef(0);
   const secondaryCooldownUntilRef = useRef(0);
   const barrierUntilRef = useRef(0);
@@ -909,33 +808,12 @@ export default function ShmupPlayScreen() {
   const shakePowerRef = useRef(0);
   const shipTiltRef = useRef(0);
   const droneOrbitRef = useRef(0);
-  // Pass 1 polish refs — hitstop, damage flash, slow-mo, overdrive sting
-  const hitstopUntilRef = useRef(0);
-  const slowMoUntilRef = useRef(0);
-  const damageFlashUntilRef = useRef(0);
-  const overdriveFlashUntilRef = useRef(0);
-  // Ship pass refs — velocity for thruster length, grazing pulse trigger
-  const shipVelocityRef = useRef(0);
-  const grazePulseUntilRef = useRef(0);
-  const grazePulseStrengthRef = useRef(0);
-  // Pass 2 refs — multi-graze kinetic time reward
-  const grazeCountRef = useRef(0);
-  const grazeWindowStartRef = useRef(0);
-  const grazeRewardUntilRef = useRef(0);
-  // Pass 3 refs — wave-clear punctuation
-  const lastEnemyCountRef = useRef(0);
-  const waveClearFlashUntilRef = useRef(0);
-  const waveClearAckAtRef = useRef(0);
-  // Pass 4 refs — streak loss flash, overdrive near-ready ping
-  const streakLostFlashUntilRef = useRef(0);
-  const overdriveAlmostReadyFiredRef = useRef(false);
 
   const pilots = pilotsData as Pilot[];
   const ships = shipsData as Ship[];
   const outfits = outfitsData as Outfit[];
   const pilot = pilots.find((item) => item.id === save.selectedPilotId);
   const selectedShip = ships.find((item) => item.id === save.selectedShipId);
-  const shipVisual = getShipVisual(selectedShip?.id);
   const activeMap =
     getShmupMapById(save.selectedMapId) ?? getShmupMapForShip(save.selectedShipId);
   const outfit = outfits.find((item) => item.id === save.selectedOutfitId);
@@ -1229,7 +1107,6 @@ export default function ShmupPlayScreen() {
     overdriveUntilRef.current = 0;
     overdriveStartRef.current = 0;
     chipOverflowRef.current = 0;
-    bonusLasersRef.current = 0;
     secondaryChargesRef.current = secondaryStartCharges;
     secondaryCooldownUntilRef.current = 0;
     barrierUntilRef.current = 0;
@@ -1264,21 +1141,6 @@ export default function ShmupPlayScreen() {
     shakePowerRef.current = 0;
     shipTiltRef.current = 0;
     droneOrbitRef.current = 0;
-    hitstopUntilRef.current = 0;
-    slowMoUntilRef.current = 0;
-    damageFlashUntilRef.current = 0;
-    overdriveFlashUntilRef.current = 0;
-    shipVelocityRef.current = 0;
-    grazePulseUntilRef.current = 0;
-    grazePulseStrengthRef.current = 0;
-    grazeCountRef.current = 0;
-    grazeWindowStartRef.current = 0;
-    grazeRewardUntilRef.current = 0;
-    lastEnemyCountRef.current = 0;
-    waveClearFlashUntilRef.current = 0;
-    waveClearAckAtRef.current = 0;
-    streakLostFlashUntilRef.current = 0;
-    overdriveAlmostReadyFiredRef.current = false;
     secondaryQueuedRef.current = false;
     touchMoveRef.current = { active: false, pointerId: null, x: 0, y: 0 };
     setTouchKnob({ active: false, x: 0, y: 0 });
@@ -1343,7 +1205,6 @@ export default function ShmupPlayScreen() {
         hp: Math.max(0, Math.ceil(ship.hp)),
         maxHp,
         weaponLevel: weaponLevelRef.current,
-        bonusLasers: bonusLasersRef.current,
         weaponLabel: getWeaponLabel(weaponLevelRef.current),
         overdriveMeter: overdriveMeterRef.current,
         overdriveActive,
@@ -1399,39 +1260,17 @@ export default function ShmupPlayScreen() {
         return;
       }
       overdriveMeterRef.current = 0;
-      overdriveAlmostReadyFiredRef.current = false;
       overdriveStartRef.current = elapsedMs;
       overdriveUntilRef.current = elapsedMs + overdriveDurationMs;
-      // Pass 1: overdrive should not activate silently.
-      overdriveFlashUntilRef.current = elapsedMs + 420;
-      addScreenShake(5, 0.22);
-      triggerHitstop(80, elapsedMs);
-      sfxPowerup();
-      addPulse(ship.x, ship.y, "#ffd43b", 18, 420, 0.55, 3.2);
-      addPulse(ship.x, ship.y, "#fff3bf", 8, 260, 0.38, 2);
-      addSparkBurst(ship.x, ship.y, "#ffd43b", 18, 220, [2.4, 5.4]);
     };
 
     const addOverdrive = (amount: number, elapsedMs: number) => {
       if (overdriveUntilRef.current > elapsedMs) return;
-      const before = overdriveMeterRef.current;
       overdriveMeterRef.current = clamp(
         overdriveMeterRef.current + amount * overdriveFillMultiplier,
         0,
         OVERDRIVE_MAX
       );
-      // Pass 4: "almost ready" ping on the 80% crossing so the player can
-      // start planning the activation burst. Fires once per meter cycle.
-      const threshold = OVERDRIVE_MAX * 0.8;
-      if (
-        !overdriveAlmostReadyFiredRef.current &&
-        before < threshold &&
-        overdriveMeterRef.current >= threshold &&
-        overdriveMeterRef.current < OVERDRIVE_MAX
-      ) {
-        overdriveAlmostReadyFiredRef.current = true;
-        addPulse(ship.x, ship.y, "#ffd43b", 10, 160, 0.1, 2);
-      }
       activateOverdriveIfReady(elapsedMs);
     };
 
@@ -1472,16 +1311,6 @@ export default function ShmupPlayScreen() {
     const addScreenShake = (power: number, duration: number = 0.08) => {
       shakePowerRef.current = Math.max(shakePowerRef.current, power);
       shakeTimeRef.current = Math.max(shakeTimeRef.current, duration);
-    };
-
-    // Freeze physics for N ms on impact — the single biggest "feel" upgrade.
-    const triggerHitstop = (ms: number, elapsedMs: number) => {
-      hitstopUntilRef.current = Math.max(hitstopUntilRef.current, elapsedMs + ms);
-    };
-
-    // Dilate time to 25% for boss-kill cascade etc.
-    const triggerSlowMo = (ms: number, elapsedMs: number) => {
-      slowMoUntilRef.current = Math.max(slowMoUntilRef.current, elapsedMs + ms);
     };
 
     const addSparkBurst = (
@@ -1640,30 +1469,18 @@ export default function ShmupPlayScreen() {
       );
       if (spawned.length === 0) return;
 
-      // Per-ship muzzle flash: hot white core + ship-tinted shell
-      const muzzleX = ship.x;
-      const muzzleY = ship.y - ship.radius - 10;
+      const leadColor = spawned[0].color;
       addPulse(
-        muzzleX,
-        muzzleY,
-        shipVisual.muzzleColor,
-        7 + weaponLevel * 1.4,
-        68 + weaponLevel * 24,
-        0.09,
-        1.8
-      );
-      addPulse(
-        muzzleX,
-        muzzleY,
-        shipVisual.muzzleCore,
-        3 + weaponLevel * 0.6,
-        32 + weaponLevel * 10,
-        0.06,
-        1.2
+        ship.x,
+        ship.y - ship.radius - 10,
+        leadColor,
+        5 + weaponLevel * 1.1,
+        58 + weaponLevel * 22,
+        0.08,
+        1.5
       );
       addScreenShake(overdriveActive ? 0.86 + weaponLevel * 0.18 : 0.28 + weaponLevel * 0.14, 0.045);
 
-      const bonusLasers = bonusLasersRef.current;
       for (const shot of spawned) {
         playerBulletsRef.current.push({
           x: shot.x,
@@ -1689,42 +1506,6 @@ export default function ShmupPlayScreen() {
           homingTurnRate: shot.homingTurnRate ?? 0,
           homingRange: shot.homingRange ?? 0,
         });
-      }
-
-      // Bonus laser columns from chip overflow — flanking shots that grow the spread
-      if (bonusLasers > 0) {
-        const bonusColor = shotColor ?? "#ff6ec7";
-        const bonusDamage = 0.6 * weaponDamageMultiplier * (overchargeUntilRef.current > elapsedMs ? SHMUP_BALANCE.effects.overchargeDamageMult : 1);
-        const baseSep = 28;
-        for (let col = 1; col <= bonusLasers; col++) {
-          for (const side of [-1, 1]) {
-            const offsetX = side * (baseSep * col + 12);
-            playerBulletsRef.current.push({
-              x: ship.x + offsetX,
-              y: ship.y - ship.radius - 6,
-              vx: side * 30 * spreadMultiplier,
-              vy: -820 * bulletSpeedMultiplier,
-              age: 0,
-              maxLife: 1.1,
-              radius: 3.2 * ENTITY_SCALE,
-              damage: bonusDamage,
-              color: bonusColor,
-              coreColor: "#ffffff",
-              length: 36 * ENTITY_SCALE,
-              spriteKey: undefined,
-              pierce: 1,
-              driftVx: 0,
-              oscillateAmp: 0,
-              oscillateFreq: 0,
-              oscillatePhase: 0,
-              boomerangTurnAt: 0,
-              boomerangReturnVy: 0,
-              boomerangReturning: false,
-              homingTurnRate: 0,
-              homingRange: 0,
-            });
-          }
-        }
       }
     };
 
@@ -1852,9 +1633,10 @@ export default function ShmupPlayScreen() {
       if (bossRef.current) return;
       bossRef.current = {
         name: activeMap.bossName,
+        archetype: activeMap.bossArchetype,
         x: canvas.width / 2,
         y: -96,
-        radius: 30,
+        radius: activeMap.bossArchetype === "leviathan" ? 34 : activeMap.bossArchetype === "tyrant" ? 28 : 30,
         hp: activeMap.bossMaxHp,
         maxHp: activeMap.bossMaxHp,
         age: 0,
@@ -2160,19 +1942,60 @@ export default function ShmupPlayScreen() {
       const length = Math.hypot(dx, dy) || 1;
       const baseVx = (dx / length) * 180;
       const baseVy = (dy / length) * 180;
-      const fanOffsets = boss.phase === 1
-        ? [-36, 0, 36]
-        : boss.phase === 2
-          ? [-72, -24, 24, 72]
-          : [-96, -48, 0, 48, 96]; // Phase 3: 5-way fan
 
-      const shotColor = boss.phase === 1
-        ? activeMap.palette.enemyShotColor
-        : activeMap.palette.bossShotColor;
-      const shotCore = boss.phase === 1
-        ? activeMap.palette.enemyShotCore
-        : activeMap.palette.bossShotCore;
-      const shotRadius = boss.phase === 1 ? 6 : boss.phase === 2 ? 7 : 7;
+      if (boss.archetype === "tyrant") {
+        const lanceSpread = boss.phase === 1 ? 24 : boss.phase === 2 ? 44 : 64;
+        for (const side of [-1, 1]) {
+          pushEnemyBullet({
+            x: boss.x + side * (18 + boss.phase * 6),
+            y: boss.y + boss.radius * 0.45,
+            vx: baseVx * 0.4 + side * lanceSpread,
+            vy: baseVy + 38,
+            radius: boss.phase === 3 ? 7 : 6,
+            color: boss.phase === 3 ? "#ff6b6b" : activeMap.palette.bossShotColor,
+            coreColor: "#fff4e6",
+            length: boss.phase === 3 ? 18 : 16,
+            spriteKey: "bulletBoss",
+          });
+        }
+        if (boss.phase >= 2) {
+          pushEnemyBullet({
+            x: boss.x,
+            y: boss.y + boss.radius * 0.6,
+            vx: 0,
+            vy: 220,
+            radius: 7,
+            color: "#ffa94d",
+            coreColor: "#fff4e6",
+            length: 18,
+            spriteKey: "bulletBoss",
+          });
+        }
+        return;
+      }
+
+      if (boss.archetype === "leviathan") {
+        const offsets = boss.phase === 1 ? [-60, 0, 60] : boss.phase === 2 ? [-100, -36, 36, 100] : [-132, -72, 0, 72, 132];
+        for (const offset of offsets) {
+          pushEnemyBullet({
+            x: boss.x,
+            y: boss.y + boss.radius * 0.55,
+            vx: offset,
+            vy: 150 + boss.phase * 20,
+            radius: 6,
+            color: activeMap.palette.bossShotColor,
+            coreColor: activeMap.palette.bossShotCore,
+            length: 14,
+            spriteKey: "bulletBoss",
+          });
+        }
+        return;
+      }
+
+      const fanOffsets = boss.phase === 1 ? [-36, 0, 36] : boss.phase === 2 ? [-72, -24, 24, 72] : [-96, -48, 0, 48, 96];
+      const shotColor = boss.phase === 1 ? activeMap.palette.enemyShotColor : activeMap.palette.bossShotColor;
+      const shotCore = boss.phase === 1 ? activeMap.palette.enemyShotCore : activeMap.palette.bossShotCore;
+      const shotRadius = boss.phase === 1 ? 6 : 7;
       const shotLength = boss.phase === 1 ? 14 : 16;
 
       for (const offset of fanOffsets) {
@@ -2189,7 +2012,6 @@ export default function ShmupPlayScreen() {
         });
       }
 
-      // Phase 2+: flanking shots
       if (boss.phase >= 2) {
         for (const side of [-1, 1]) {
           pushEnemyBullet({
@@ -2205,37 +2027,57 @@ export default function ShmupPlayScreen() {
           });
         }
       }
-
-      // Phase 3: extra random scatter shots
-      if (boss.phase === 3) {
-        for (let i = 0; i < 3; i++) {
-          const angle = Math.PI * 0.2 + Math.random() * Math.PI * 0.6;
-          pushEnemyBullet({
-            x: boss.x + (Math.random() - 0.5) * 50,
-            y: boss.y + boss.radius * 0.5,
-            vx: Math.cos(angle) * 200,
-            vy: Math.sin(angle) * 200,
-            radius: 5,
-            color: "#ff4444",
-            coreColor: "#ffaaaa",
-            length: 12,
-            spriteKey: "bulletBoss",
-          });
-        }
-      }
     };
 
     const shootBossBurst = (boss: BossState) => {
+      if (boss.archetype === "tyrant") {
+        const rings = boss.phase === 3 ? 2 : 1;
+        for (let ring = 0; ring < rings; ring++) {
+          const bulletCount = boss.phase === 1 ? 6 : boss.phase === 2 ? 8 : 10;
+          for (let index = 0; index < bulletCount; index++) {
+            const angle = (Math.PI * 0.22) + (Math.PI * 0.56 * index) / Math.max(1, bulletCount - 1) + ring * 0.08;
+            pushEnemyBullet({
+              x: boss.x,
+              y: boss.y + boss.radius * 0.45,
+              vx: Math.cos(angle) * (165 + ring * 18),
+              vy: Math.sin(angle) * (165 + ring * 18),
+              radius: 6,
+              color: "#ff922b",
+              coreColor: "#fff4e6",
+              length: 16,
+              spriteKey: "bulletBoss",
+            });
+          }
+        }
+        return;
+      }
+
+      if (boss.archetype === "leviathan") {
+        const bulletCount = boss.phase === 1 ? 8 : boss.phase === 2 ? 12 : 16;
+        for (let index = 0; index < bulletCount; index++) {
+          const ratio = index / Math.max(1, bulletCount - 1);
+          const angle = Math.PI * 0.1 + Math.PI * 0.8 * ratio;
+          const speed = boss.phase === 3 ? 225 : 190;
+          pushEnemyBullet({
+            x: boss.x + Math.sin(ratio * Math.PI) * 12,
+            y: boss.y + boss.radius * 0.4,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * (speed * 0.9),
+            radius: boss.phase === 3 ? 7 : 6,
+            color: activeMap.palette.bossShotColor,
+            coreColor: activeMap.palette.bossShotCore,
+            length: 15,
+            spriteKey: "bulletBoss",
+          });
+        }
+        return;
+      }
+
       const startAngle = boss.phase === 1 ? Math.PI * 0.22 : Math.PI * 0.1;
       const endAngle = Math.PI - startAngle;
       const bulletCount = boss.phase === 1 ? 7 : boss.phase === 2 ? 10 : 14;
-
-      const shotColor = boss.phase === 1
-        ? activeMap.palette.enemyShotColor
-        : activeMap.palette.bossShotColor;
-      const shotCore = boss.phase === 1
-        ? activeMap.palette.enemyShotCore
-        : activeMap.palette.bossShotCore;
+      const shotColor = boss.phase === 1 ? activeMap.palette.enemyShotColor : activeMap.palette.bossShotColor;
+      const shotCore = boss.phase === 1 ? activeMap.palette.enemyShotCore : activeMap.palette.bossShotCore;
 
       for (let index = 0; index < bulletCount; index++) {
         const ratio = index / (bulletCount - 1);
@@ -2257,34 +2099,12 @@ export default function ShmupPlayScreen() {
 
     const registerKill = (enemy: EnemyState, elapsedMs: number) => {
       sfxEnemyDeath();
-      // Pass 1: hitstop on kill — scaled by enemy weight.
-      const isHeavy =
-        enemy.pattern === "dreadnought" ||
-        enemy.pattern === "tank" ||
-        enemy.pattern === "miniboss";
-      const hitstopMs = isHeavy ? 130 : enemy.elite ? 85 : 45;
-      triggerHitstop(hitstopMs, elapsedMs);
       killsRef.current += 1;
-      const streakBefore = streakRef.current;
       streakRef.current += 1;
-      // Pass 4: streak milestone stings. Crossing 5/10/20/30/50 fires a
-      // center pulse + shake + slight slow-mo so the player actually
-      // registers the threshold instead of just watching the text change.
-      const MILESTONES = [5, 10, 20, 30, 50];
-      for (const m of MILESTONES) {
-        if (streakBefore < m && streakRef.current >= m) {
-          const tint = m >= 30 ? "#ffd43b" : m >= 20 ? "#ff922b" : m >= 10 ? "#ffa94d" : "#74c0fc";
-          addPulse(ship.x, ship.y, tint, 16 + m * 0.4, 180 + m * 4, 0.12, 2.4);
-          addScreenShake(2 + m * 0.08, 0.1);
-          if (m >= 20) triggerSlowMo(140, elapsedMs);
-          streakDisplayTimerRef.current = 2.4;
-          break;
-        }
-      }
       // Update streak display for on-screen counter
       if (streakRef.current >= 5) {
         streakDisplayRef.current = streakRef.current;
-        streakDisplayTimerRef.current = Math.max(streakDisplayTimerRef.current, 1.5);
+        streakDisplayTimerRef.current = 1.5;
       }
       const totalMultiplier = getScoreMultiplier(elapsedMs);
       bestMultiplierRef.current = Math.max(bestMultiplierRef.current, totalMultiplier);
@@ -2404,7 +2224,7 @@ export default function ShmupPlayScreen() {
         }
       }
 
-      if (Math.random() < 0.34) {
+      if (Math.random() < 0.22) {
         chipsRef.current.push({
           x: enemy.x,
           y: enemy.y,
@@ -2452,14 +2272,6 @@ export default function ShmupPlayScreen() {
       scoreRef.current += Math.round((4200 + scoreFlatBonus) * totalMultiplier);
       enemyBulletsRef.current = [];
       bomberZonesRef.current = [];
-      // Pass 1: boss death is a climax, not a cut.
-      triggerHitstop(260, elapsedMs);
-      triggerSlowMo(900, elapsedMs + 260);
-      overdriveFlashUntilRef.current = Math.max(
-        overdriveFlashUntilRef.current,
-        elapsedMs + 480
-      );
-      addScreenShake(9, 0.65);
       // Multi-stage boss death explosion sequence
       addExplosion(x, y, "#ffd43b", 34, 5.4);
       addExplosion(x, y - 26, "#ff922b", 42, 6);
@@ -2469,19 +2281,6 @@ export default function ShmupPlayScreen() {
       addSparkBurst(x, y, "#ffd43b", 16, 160, [2, 5]);
       addPulse(x, y, "#ffd43b", 20, 300, 0.4, 3);
       addPulse(x, y, "#ffffff", 10, 400, 0.3, 2);
-      // Pass 1: staggered secondary explosions for the cascade feel.
-      const cascadeColors = ["#ff922b", "#ff6b6b", "#ffd43b", "#4dabf7", "#ffffff"];
-      for (let i = 0; i < 6; i++) {
-        const delay = 120 + i * 90;
-        const ox = x + (Math.random() - 0.5) * 90;
-        const oy = y + (Math.random() - 0.5) * 70;
-        const color = cascadeColors[i % cascadeColors.length];
-        window.setTimeout(() => {
-          addExplosion(ox, oy, color, 22 + Math.random() * 14, 3 + Math.random() * 1.5);
-          addSparkBurst(ox, oy, color, 10, 160, [2, 4.8]);
-          addScreenShake(3 + Math.random() * 2, 0.12);
-        }, delay);
-      }
       if (secondaryUsesCharges) {
         addSecondaryCharge(2);
       }
@@ -2520,7 +2319,6 @@ export default function ShmupPlayScreen() {
           addPulse(enemy.x, enemy.y, "#4488ff", 20, 250, 0.3, 3.0);
         }
         enemy.hp -= enemyDamage;
-        enemy.hitFlashUntil = elapsedMs + 110;
         addSparkBurst(enemy.x, enemy.y, color, 8, 130, [2, 5]);
         addPulse(enemy.x, enemy.y, color, 10, 180, 0.16, 2.2);
         if (enemy.hp <= 0) {
@@ -2534,7 +2332,6 @@ export default function ShmupPlayScreen() {
         const blastDistance = radius + boss.radius;
         if (distanceSquared(x, y, boss.x, boss.y) <= blastDistance * blastDistance) {
           boss.hp -= bossDamage;
-          boss.hitFlashUntil = elapsedMs + 130;
           addSparkBurst(boss.x, boss.y, color, 14, 150, [2.4, 5.8]);
           addPulse(boss.x, boss.y, color, 16, 210, 0.2, 2.8);
           if (boss.hp <= 0) {
@@ -2646,14 +2443,17 @@ export default function ShmupPlayScreen() {
           empUntilRef.current = elapsedMs + secondaryDurationMs;
           statusFlashUntilRef.current = elapsedMs + 260;
           startSecondaryCooldown(elapsedMs);
-          addPulse(ship.x, ship.y, "#4dabf7", 10, 200, 0.16, 2.6);
+          addPulse(ship.x, ship.y, "#4dabf7", 14, 250, 0.18, 3.1);
+          addPulse(ship.x, ship.y, "#74c0fc", 8, 130, 0.1, 1.8);
+          addScreenShake(1.3, 0.09);
           return;
         case "drones":
           sfxDrones();
           dronesUntilRef.current = elapsedMs + secondaryDurationMs;
           dronesFireTimerRef.current = 0;
           startSecondaryCooldown(elapsedMs);
-          addPulse(ship.x, ship.y, "#00e5ff", 11, 120, 0.14, 2.2);
+          addPulse(ship.x, ship.y, "#00e5ff", 15, 150, 0.16, 2.7);
+          addPulse(ship.x, ship.y, "#a5f3ff", 9, 84, 0.11, 1.7);
           return;
         case "barrelRoll": {
           sfxShield();
@@ -2698,7 +2498,8 @@ export default function ShmupPlayScreen() {
             endMs: elapsedMs + SHMUP_BALANCE.effects.vortexDurationMs,
           };
           startSecondaryCooldown(elapsedMs);
-          addPulse(vx, vy, "#9775fa", 6, 60, 0.2, 2);
+          addPulse(vx, vy, "#9775fa", 9, 90, 0.24, 2.4);
+          addPulse(vx, vy, "#d0bfff", 14, 160, 0.14, 3.2);
           addScreenShake(1.8, 0.1);
           return;
         }
@@ -2714,8 +2515,9 @@ export default function ShmupPlayScreen() {
           overchargeUntilRef.current = elapsedMs + secondaryDurationMs;
           statusFlashUntilRef.current = elapsedMs + 300;
           startSecondaryCooldown(elapsedMs);
-          addPulse(ship.x, ship.y, "#ffd43b", 12, 140, 0.16, 2.6);
-          addScreenShake(1.0, 0.08);
+          addPulse(ship.x, ship.y, "#ffd43b", 16, 170, 0.18, 3.0);
+          addPulse(ship.x, ship.y, "#fff3bf", 10, 96, 0.12, 1.9);
+          addScreenShake(1.2, 0.08);
           return;
         case "none":
         default:
@@ -2743,49 +2545,37 @@ export default function ShmupPlayScreen() {
     };
 
     const finishRun = (elapsedMs: number, bossDefeated: boolean = false) => {
-  if (runEndedRef.current) return;
-  runEndedRef.current = true;
+      if (runEndedRef.current) return;
+      runEndedRef.current = true;
 
-  const shmupResult: ShmupRunResult = {
-    score: scoreRef.current,
-    kills: killsRef.current,
-    timeSurvivedMs: elapsedMs,
-    bossDefeated,
-    stage: Math.max(1, Math.floor(elapsedMs / 60_000) + 1),
-    maxWeaponLevel: weaponLevelRef.current,
-  };
+      const shmupResult: ShmupRunResult = {
+        score: scoreRef.current,
+        kills: killsRef.current,
+        timeSurvivedMs: elapsedMs,
+        bossDefeated,
+        stage: Math.max(1, Math.floor(elapsedMs / 60_000) + 1),
+        maxWeaponLevel: weaponLevelRef.current,
+      };
 
-  const grade = gradeShmupRun(shmupResult);
+      const scoreRecord: GameResult = {
+        mode: "shmup",
+        trackId: SHMUP_TRACK_ID,
+        score: shmupResult.score,
+        grade: gradeShmupRun(shmupResult),
+        creditsEarned: 0,
+        kills: shmupResult.kills,
+        timeSurvivedMs: shmupResult.timeSurvivedMs,
+        bestMultiplier: bestMultiplierRef.current,
+        weaponLevel: weaponLevelRef.current,
+        damageTaken: damageTakenRef.current,
+      };
 
-  const scoreRecord: GameResult = {
-    mode: "shmup",
-    trackId: SHMUP_TRACK_ID,
-    score: shmupResult.score,
-    grade,
-    creditsEarned: 0,
-    kills: shmupResult.kills,
-    timeSurvivedMs: shmupResult.timeSurvivedMs,
-    bestMultiplier: bestMultiplierRef.current,
-    weaponLevel: weaponLevelRef.current,
-    damageTaken: damageTakenRef.current,
-  };
-
-  syncHud(elapsedMs);
-  submitResult(scoreRecord);
-
-  submitRunStats({
-    pilotId: save.selectedPilotId ?? pilot?.id ?? "pilot_nova",
-    mapId: activeMap.id,
-    score: shmupResult.score,
-    kills: shmupResult.kills,
-    grade,
-    bossDefeated,
-  });
-
-  window.setTimeout(() => {
-    navigate("/shmup-results", { state: { shmupResult, mapId: activeMap?.id } });
-  }, bossDefeated ? 650 : 400);
-};
+      syncHud(elapsedMs);
+      submitResult(scoreRecord);
+      window.setTimeout(() => {
+        navigate("/shmup-results", { state: { shmupResult, mapId: activeMap?.id } });
+      }, bossDefeated ? 650 : 400);
+    };
 
     const handleShipHit = (elapsedMs: number) => {
       if (elapsedMs < ship.invulnerableUntil || runEndedRef.current) return;
@@ -2796,26 +2586,11 @@ export default function ShmupPlayScreen() {
       lastHitMsRef.current = elapsedMs;
       regenPoolRef.current = 0;
       ship.invulnerableUntil = elapsedMs + PLAYER_INVULNERABLE_MS;
-      // Ship pass: damage explosion pulls away from ship center so the
-      // player doesn't lose sight of their frame during the flash window.
-      addExplosion(ship.x, ship.y + ship.radius * 1.1, shipVisual.damageColor, 18, 2.4);
-      // Pass 1: getting hit should feel like a real problem.
-      damageFlashUntilRef.current = elapsedMs + 320;
-      addScreenShake(4.2, 0.22);
-      triggerHitstop(60, elapsedMs);
+      addExplosion(ship.x, ship.y, "#ff8787", 18, 2.4);
 
       if (multiplierSaveReadyRef.current) {
         multiplierSaveReadyRef.current = false;
       } else {
-        // Pass 4: losing a substantial streak is a narrative beat. Flash a
-        // brief "STREAK LOST" marker and fire a dim red pulse so the player
-        // feels the cost, not just the HP tick.
-        if (streakRef.current >= 10) {
-          streakDisplayRef.current = streakRef.current;
-          streakDisplayTimerRef.current = 1.6;
-          streakLostFlashUntilRef.current = elapsedMs + 720;
-          addPulse(ship.x, ship.y, "#ff6b6b", 12, 140, 0.12, 1.8);
-        }
         streakRef.current = 0;
       }
 
@@ -2830,73 +2605,14 @@ export default function ShmupPlayScreen() {
       const blink = elapsedMs < ship.invulnerableUntil && Math.floor(elapsedMs / 80) % 2 === 0;
       if (blink) return;
 
-      const overdriveActive = overdriveUntilRef.current > elapsedMs;
-
-      // Ship pass secondary: stationary hover idle. When the ship is
-      // basically not moving, add a tiny render-only vertical bob so it
-      // feels alive between strafes. Collision position is untouched.
-      const idleStrength = clamp(1 - shipVelocityRef.current / 0.22, 0, 1);
-      const hoverOffset = idleStrength > 0.05
-        ? Math.sin(elapsedMs / 520) * 1.6 * idleStrength * displayScale
-        : 0;
-      ctx.save();
-      if (hoverOffset !== 0) ctx.translate(0, hoverOffset);
-
-      // Ship pass: directional thruster flame behind the ship. Length tied
-      // to actual velocity, color from the ship's visual table, rotated
-      // with the current tilt so the flame always points "back".
-      if (shipVelocityRef.current > 0.04) {
-        const velocityFactor = clamp(shipVelocityRef.current, 0, 1);
-        const tilt = shipTiltRef.current;
-        // Flame base sits just behind the ship, opposite the forward nose.
-        const baseX = ship.x + Math.sin(tilt) * 6 * displayScale;
-        const baseY = ship.y + ship.radius * 1.1 * displayScale;
-        const flameLen = shipVisual.exhaustLength * displayScale * (0.55 + velocityFactor * 0.9);
-        const flameHalf = shipVisual.exhaustWidth * displayScale;
-        const flicker = 0.88 + Math.sin(elapsedMs / 28) * 0.08 + Math.random() * 0.04;
-        const dirX = Math.sin(tilt);
-        const dirY = Math.cos(tilt);
-        const tipX = baseX + dirX * flameLen * flicker;
-        const tipY = baseY + dirY * flameLen * flicker;
-        // Perpendicular for the outer hull shell.
-        const perpX = Math.cos(tilt);
-        const perpY = -Math.sin(tilt);
-
-        ctx.save();
-        ctx.globalAlpha = 0.82;
-        ctx.shadowColor = shipVisual.exhaustShell;
-        ctx.shadowBlur = 14;
-        ctx.fillStyle = shipVisual.exhaustShell;
-        ctx.beginPath();
-        ctx.moveTo(baseX + perpX * flameHalf, baseY + perpY * flameHalf);
-        ctx.lineTo(tipX, tipY);
-        ctx.lineTo(baseX - perpX * flameHalf, baseY - perpY * flameHalf);
-        ctx.closePath();
-        ctx.fill();
-        ctx.shadowBlur = 0;
-        // Inner hot core, overdrive-tinted.
-        ctx.globalAlpha = 0.95;
-        ctx.fillStyle = overdriveActive ? "#fff3bf" : shipVisual.exhaustCore;
-        const coreHalf = flameHalf * 0.5;
-        const coreTipX = baseX + dirX * flameLen * flicker * 0.78;
-        const coreTipY = baseY + dirY * flameLen * flicker * 0.78;
-        ctx.beginPath();
-        ctx.moveTo(baseX + perpX * coreHalf, baseY + perpY * coreHalf);
-        ctx.lineTo(coreTipX, coreTipY);
-        ctx.lineTo(baseX - perpX * coreHalf, baseY - perpY * coreHalf);
-        ctx.closePath();
-        ctx.fill();
-        ctx.restore();
-      }
-
       const sprite = getSprite("player");
       if (sprite) {
         ctx.save();
-        ctx.globalAlpha = overdriveActive ? 0.95 : 0.85;
+        ctx.globalAlpha = overdriveUntilRef.current > elapsedMs ? 0.95 : 0.85;
         const glowR = ship.radius * 3.8 * displayScale;
         const glow = ctx.createRadialGradient(ship.x, ship.y + 8, 8 * displayScale, ship.x, ship.y + 8, glowR);
-        glow.addColorStop(0, overdriveActive ? shipVisual.glowOverdrive : shipVisual.glow);
-        glow.addColorStop(1, "rgba(0, 0, 0, 0)");
+        glow.addColorStop(0, overdriveUntilRef.current > elapsedMs ? "rgba(255, 212, 59, 0.42)" : "rgba(69, 199, 255, 0.28)");
+        glow.addColorStop(1, "rgba(69, 199, 255, 0)");
         ctx.fillStyle = glow;
         ctx.beginPath();
         ctx.arc(ship.x, ship.y + 8, glowR, 0, Math.PI * 2);
@@ -2912,27 +2628,12 @@ export default function ShmupPlayScreen() {
           shipTiltRef.current
         );
 
-        // Ship pass: grazing pulse replaces the permanent hitbox ring. Only
-        // visible when an enemy round passed close to the hitbox recently,
-        // so the ring means "that was close" instead of "here is a debug
-        // circle for all eternity".
-        if (grazePulseUntilRef.current > elapsedMs) {
-          const remaining = grazePulseUntilRef.current - elapsedMs;
-          const strength = clamp(remaining / 260, 0, 1) * grazePulseStrengthRef.current;
-          if (strength > 0.02) {
-            const ringR = ship.radius * (1 + (1 - strength) * 0.45) * displayScale;
-            ctx.save();
-            ctx.globalAlpha = 0.55 * strength + 0.2;
-            ctx.strokeStyle = shipVisual.hitboxRing;
-            ctx.lineWidth = 1.4;
-            ctx.shadowColor = shipVisual.hitboxRing;
-            ctx.shadowBlur = 8;
-            ctx.beginPath();
-            ctx.arc(ship.x, ship.y + 3, ringR, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.restore();
-          }
-        }
+        ctx.save();
+        ctx.strokeStyle = "rgba(167, 231, 255, 0.8)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(ship.x, ship.y + 3, ship.radius * displayScale, 0, Math.PI * 2);
+        ctx.stroke();
         ctx.restore();
         return;
       }
@@ -2954,7 +2655,6 @@ export default function ShmupPlayScreen() {
       ctx.beginPath();
       ctx.arc(0, 2, ship.radius, 0, Math.PI * 2);
       ctx.stroke();
-      ctx.restore();
       ctx.restore();
     };
 
@@ -3003,15 +2703,8 @@ export default function ShmupPlayScreen() {
       }
 
       const elapsedMs = timestamp - runStartRef.current;
-      let deltaSeconds = Math.min(0.033, (timestamp - lastFrameRef.current) / 1000);
+      const deltaSeconds = Math.min(0.033, (timestamp - lastFrameRef.current) / 1000);
       lastFrameRef.current = timestamp;
-      // Hitstop / slow-mo dilation (Pass 1 polish). Hitstop fully freezes physics
-      // and wins over slow-mo when both are active.
-      if (hitstopUntilRef.current > elapsedMs) {
-        deltaSeconds = 0;
-      } else if (slowMoUntilRef.current > elapsedMs) {
-        deltaSeconds *= 0.28;
-      }
       triggerCrystalShatter(elapsedMs);
       const aggressiveRouteActive = activePassives.includes("aggressiveRoute");
       const empActive = empUntilRef.current > elapsedMs;
@@ -3072,20 +2765,13 @@ export default function ShmupPlayScreen() {
         ship.x = clamp(ship.x + rd.x * rollSpeed * deltaSeconds, playerBounds.minX, playerBounds.maxX);
         ship.y = clamp(ship.y + rd.y * rollSpeed * deltaSeconds, playerBounds.minY, playerBounds.maxY);
         shipTiltRef.current = rd.x * 0.5;
-        shipVelocityRef.current = 1;
       } else {
         const moveLength = Math.hypot(moveX, moveY) || 1;
         const velocityScale =
           moveX !== 0 || moveY !== 0 ? shipSpeed * deltaSeconds / moveLength : 0;
         ship.x = clamp(ship.x + moveX * velocityScale, playerBounds.minX, playerBounds.maxX);
         ship.y = clamp(ship.y + moveY * velocityScale, playerBounds.minY, playerBounds.maxY);
-        const targetVel = Math.min(1, Math.hypot(moveX, moveY));
-        shipVelocityRef.current = shipVelocityRef.current * 0.72 + targetVel * 0.28;
-        shipTiltRef.current = clamp(
-          shipTiltRef.current * shipVisual.bankDecay + moveX * shipVisual.bankStiffness,
-          -shipVisual.bankMax,
-          shipVisual.bankMax
-        );
+        shipTiltRef.current = shipTiltRef.current * 0.82 + moveX * 0.08;
       }
 
       const introTargetX = canvas.width / 2;
@@ -3106,7 +2792,6 @@ export default function ShmupPlayScreen() {
         }
         while (fireTimerRef.current <= 0) {
           spawnPlayerBullets(elapsedMs);
-          // Per-ship shot tint so each frame has a signature sound
           sfxShoot();
           fireTimerRef.current += fireInterval;
         }
@@ -3376,28 +3061,10 @@ export default function ShmupPlayScreen() {
       }
       trailParticlesRef.current = trailParticlesRef.current.filter((t) => t.life > 0);
 
-      // Spawn trail particles behind player — only when actually moving, colored by ship identity
-      if (shipVelocityRef.current > 0.15 && Math.random() < 0.45 + shipVelocityRef.current * 0.25) {
-        const trailColor = overdriveUntilRef.current > elapsedMs ? "#ffd43b" : shipVisual.trail;
+      // Spawn trail particles behind player
+      if (Math.random() < 0.6) {
+        const trailColor = overdriveUntilRef.current > elapsedMs ? "#ffd43b" : "#74c0fc";
         addTrailParticle(ship.x, ship.y, trailColor);
-      }
-
-      // Ship pass secondary: low-HP smoke trail. Kicks in below 60% HP and
-      // intensifies as HP approaches zero so the player *sees* the damage
-      // state on the ship itself. Dark wide puffs rendered as trail
-      // particles so the existing trail pipeline handles fade/cleanup.
-      const hpRatio = maxHp > 0 ? clamp(ship.hp / maxHp, 0, 1) : 1;
-      const critical = clamp((0.6 - hpRatio) / 0.6, 0, 1); // 0 → 1
-      if (critical > 0 && Math.random() < 0.22 + critical * 0.55) {
-        const smokeColor = critical > 0.7 ? "#4a2a2a" : critical > 0.35 ? "#3a3438" : "#2f2f36";
-        trailParticlesRef.current.push({
-          x: ship.x + (Math.random() - 0.5) * 12,
-          y: ship.y + ship.radius * 0.6 + Math.random() * 6,
-          life: 0.45 + Math.random() * 0.35 + critical * 0.4,
-          maxLife: 1.1,
-          radius: 3.2 + Math.random() * 2.8 + critical * 2,
-          color: smokeColor,
-        });
       }
 
       // Update streak display timer
@@ -3623,28 +3290,6 @@ export default function ShmupPlayScreen() {
           enemy.hp > 0
       );
 
-      // Pass 3: wave-clear punctuation. When the enemy list empties and no
-      // spawns are imminent (excluding boss warning), flash a subtle white
-      // pulse so the player registers the clear. Guarded by cooldown so
-      // stragglers don't double-fire.
-      const enemyCountNow = enemiesRef.current.length;
-      const pendingSpawnsSoon =
-        queuedWaveSpawnsRef.current.length > 0 &&
-        queuedWaveSpawnsRef.current[0].spawnAtMs - elapsedMs < 600;
-      if (
-        lastEnemyCountRef.current > 0 &&
-        enemyCountNow === 0 &&
-        !pendingSpawnsSoon &&
-        !bossRef.current &&
-        !bossIntroStartedRef.current &&
-        elapsedMs - waveClearAckAtRef.current > 1800
-      ) {
-        waveClearAckAtRef.current = elapsedMs;
-        waveClearFlashUntilRef.current = elapsedMs + 360;
-        addPulse(canvas.width / 2, canvas.height * 0.42, "#ffffff", 14, 220, 0.08, 2.6);
-      }
-      lastEnemyCountRef.current = enemyCountNow;
-
       if (
         bossIntroStartedRef.current &&
         bossRef.current === null &&
@@ -3678,9 +3323,6 @@ export default function ShmupPlayScreen() {
           shakeTimeRef.current = 0.4;
           shakePowerRef.current = 6;
           addExplosion(boss.x, boss.y, "#ffffff", 30, 4);
-          // Pass 1: phase transition is an event, not a threshold.
-          triggerHitstop(150, elapsedMs);
-          boss.hitFlashUntil = elapsedMs + 260;
         }
         if (boss.phaseTransitionFlash > 0) {
           boss.phaseTransitionFlash -= bossDelta;
@@ -3708,8 +3350,8 @@ export default function ShmupPlayScreen() {
         boss.fireCooldown -= bossDelta;
         boss.burstCooldown -= bossDelta;
 
-        const fireRate = phaseConfig?.fireRate ?? (boss.phase === 1 ? 0.85 : 0.58);
-        const burstRate = phaseConfig?.burstRate ?? (boss.phase === 1 ? 2.1 : 1.35);
+        const fireRate = (phaseConfig?.fireRate ?? (boss.phase === 1 ? 0.85 : 0.58)) * (boss.phase === 1 ? 0.92 : boss.phase === 2 ? 0.84 : 0.76);
+        const burstRate = (phaseConfig?.burstRate ?? (boss.phase === 1 ? 2.1 : 1.35)) * (boss.phase === 1 ? 0.9 : boss.phase === 2 ? 0.82 : 0.72);
 
         if (boss.y >= bossTargetY && boss.fireCooldown <= 0) {
           shootBossBullets(boss);
@@ -3739,16 +3381,16 @@ export default function ShmupPlayScreen() {
         if (phaseConfig?.summonMinions !== false && boss.phase === 3) {
           boss.minionCooldown -= bossDelta;
           if (boss.minionCooldown <= 0 && boss.y >= bossTargetY) {
-            boss.minionCooldown = 6.0;
-            // Spawn 3 swarm minions
-            for (let i = 0; i < 3; i++) {
+            boss.minionCooldown = 4.2;
+            // Spawn 4 swarm minions
+            for (let i = 0; i < 4; i++) {
               enemiesRef.current.push({
                 id: enemyIdRef.current++,
                 pattern: "swarm",
-                x: boss.x + (i - 1) * 40,
+                x: boss.x + (i - 1.5) * 34,
                 y: boss.y + 20,
-                originX: boss.x + (i - 1) * 40,
-                vx: (i - 1) * 80,
+                originX: boss.x + (i - 1.5) * 34,
+                vx: (i - 1.5) * 95,
                 vy: 180,
                 radius: 10,
                 hp: 1,
@@ -3817,21 +3459,16 @@ export default function ShmupPlayScreen() {
             weaponLevelRef.current = Math.min(MAX_WEAPON_LEVEL, weaponLevelRef.current + 1);
           } else {
             chipOverflowRef.current += 1;
-            // Every 2 overflow chips beyond max weapon level: +1 bonus laser column (cap at 4)
-            const newBonus = Math.min(4, Math.floor(chipOverflowRef.current / 2));
-            if (newBonus > bonusLasersRef.current) {
-              bonusLasersRef.current = newBonus;
-              // Visual feedback for new laser unlock
-              addSparkBurst(chip.x, chip.y - 20, "#ff6ec7", 10, 120, [3, 5]);
-              addPulse(chip.x, chip.y, "#ff6ec7", 14, 100, 0.2, 2.0);
-            }
             if (chipOverflowRef.current >= BOMB_OVERFLOW_CHIPS) {
-              chipOverflowRef.current = chipOverflowRef.current % BOMB_OVERFLOW_CHIPS;
+              chipOverflowRef.current = 0;
               addSecondaryCharge(1);
             }
           }
-          addSparkBurst(chip.x, chip.y, "#ffd43b", 6, 70, [2, 3.8]);
-          addPulse(chip.x, chip.y, "#ffe066", 6, 62, 0.12, 1.5);
+          if (weaponLevelRef.current >= 4) {
+            addSecondaryCharge(1);
+          }
+          addSparkBurst(chip.x, chip.y, "#ffd43b", 8, 92, [2, 4.6]);
+          addPulse(chip.x, chip.y, "#ffe066", 8, 78, 0.15, 1.9);
           if (weaponLevelRef.current >= 3) {
             addOverdrive(12, elapsedMs);
           }
@@ -3877,8 +3514,6 @@ export default function ShmupPlayScreen() {
           // Dreadnought shield reduces damage by 50%
           const shieldMult = (enemy.pattern === "dreadnought" && enemy.dreadShieldActive) ? 0.5 : (enemy.pattern === "tank" && enemy.tankShieldActive) ? 0.5 : 1;
           enemy.hp -= bullet.damage * shieldMult;
-          // Pass 1: flash the enemy on every bullet hit for impact.
-          enemy.hitFlashUntil = elapsedMs + 90;
           consumePlayerBullet(bulletIndex);
           if (shieldMult < 1) {
             addSparkBurst(bullet.x, bullet.y, "#4488ff", 3, 60);
@@ -3908,7 +3543,6 @@ export default function ShmupPlayScreen() {
           }
 
           activeBoss.hp -= bullet.damage;
-          activeBoss.hitFlashUntil = elapsedMs + 110;
           consumePlayerBullet(bulletIndex);
           addDamageNumber(bullet.x, bullet.y - 10, Math.round(bullet.damage * 10), "#ffd43b");
           addSparkBurst(bullet.x, bullet.y, activeBoss.phase === 1 ? "#ffa8a8" : "#ffd43b", 5, 96);
@@ -4057,37 +3691,6 @@ export default function ShmupPlayScreen() {
         if (distSq <= hitDistance * hitDistance) {
           enemyBulletsRef.current.splice(bulletIndex, 1);
           handleShipHit(elapsedMs);
-        } else {
-          // Grazing: bullet passed within a narrow band beyond the hitbox without striking
-          const grazeR = hitDistance + 22;
-          const bulletFlagged = bullet as unknown as { _grazed?: boolean };
-          if (!bulletFlagged._grazed && distSq <= grazeR * grazeR) {
-            bulletFlagged._grazed = true;
-            grazePulseUntilRef.current = elapsedMs + 260;
-            grazePulseStrengthRef.current = 1;
-            // Pass 2: multi-graze rewards kinetic time. Three grazes within
-            // a 520ms window trigger a short slow-mo + white pulse, cooling
-            // down before the next reward can fire.
-            const GRAZE_WINDOW = 520;
-            const GRAZE_THRESHOLD = 3;
-            const GRAZE_COOLDOWN = 1200;
-            if (elapsedMs - grazeWindowStartRef.current > GRAZE_WINDOW) {
-              grazeCountRef.current = 1;
-              grazeWindowStartRef.current = elapsedMs;
-            } else {
-              grazeCountRef.current += 1;
-            }
-            if (
-              grazeCountRef.current >= GRAZE_THRESHOLD &&
-              elapsedMs >= grazeRewardUntilRef.current
-            ) {
-              triggerSlowMo(180, elapsedMs);
-              grazeRewardUntilRef.current = elapsedMs + GRAZE_COOLDOWN;
-              grazeCountRef.current = 0;
-              addPulse(ship.x, ship.y, "#ffffff", 10, 140, 0.12, 2.2);
-              addScreenShake(1.2, 0.08);
-            }
-          }
         }
       }
 
@@ -4172,33 +3775,8 @@ export default function ShmupPlayScreen() {
       }
 
       if (bossIntroStartedRef.current && bossRef.current === null && elapsedMs < bossWarningUntilRef.current) {
-        // Pass 3: warning overlay now crescendos. Base palette fill stays,
-        // but a pulsing red wash and edge vignette ramp with progress so
-        // the pre-boss moment actually feels like a countdown.
-        const warningLen = activeMap.bossWarningMs || 2600;
-        const remaining = bossWarningUntilRef.current - elapsedMs;
-        const progress = clamp(1 - remaining / warningLen, 0, 1); // 0→1
-        const pulse = 0.55 + Math.sin(elapsedMs / (90 - progress * 40)) * 0.45;
         ctx.fillStyle = activeMap.palette.warningOverlay;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.save();
-        ctx.globalAlpha = (0.18 + progress * 0.32) * pulse;
-        ctx.fillStyle = "rgba(255, 60, 60, 1)";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.restore();
-        // Edge vignette — closes in as we approach boss spawn
-        ctx.save();
-        const vignette = ctx.createRadialGradient(
-          canvas.width / 2, canvas.height / 2,
-          canvas.height * (0.35 - progress * 0.18),
-          canvas.width / 2, canvas.height / 2,
-          canvas.height * 0.82
-        );
-        vignette.addColorStop(0, "rgba(0,0,0,0)");
-        vignette.addColorStop(1, `rgba(60,0,0,${0.35 + progress * 0.4})`);
-        ctx.fillStyle = vignette;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.restore();
       }
 
       if (empUntilRef.current > elapsedMs) {
@@ -4216,15 +3794,6 @@ export default function ShmupPlayScreen() {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
 
-      // Pass 3: wave-clear subtle fullscreen ack — fades quickly so it
-      // punctuates the moment without feeling like a screen flash.
-      if (waveClearFlashUntilRef.current > elapsedMs) {
-        const remaining = waveClearFlashUntilRef.current - elapsedMs;
-        const alpha = clamp(remaining / 360, 0, 1) * 0.08;
-        ctx.fillStyle = `rgba(240, 255, 255, ${alpha})`;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-      }
-
       ctx.save();
       if (shakeTimeRef.current > 0 && shakePowerRef.current > 0) {
         const damp = shakeTimeRef.current / 0.12;
@@ -4233,24 +3802,10 @@ export default function ShmupPlayScreen() {
         ctx.translate(offsetX, offsetY);
       }
 
-      // Pass 3: speed lines intensify and shift red during boss warning
-      // crescendo, giving a visual "falling toward the arena" feel.
-      const bossWarningActive =
-        bossIntroStartedRef.current &&
-        bossRef.current === null &&
-        elapsedMs < bossWarningUntilRef.current;
-      const warningProgress = bossWarningActive
-        ? clamp(1 - (bossWarningUntilRef.current - elapsedMs) / (activeMap.bossWarningMs || 2600), 0, 1)
-        : 0;
-      const streakAlpha = 0.08 + warningProgress * 0.14;
-      const streakCount = 7 + Math.floor(warningProgress * 6);
-      const streakSpeed = 7 / (1 + warningProgress * 2.1);
-      ctx.strokeStyle = bossWarningActive
-        ? `rgba(255, ${180 - Math.floor(warningProgress * 120)}, ${180 - Math.floor(warningProgress * 120)}, ${streakAlpha})`
-        : "rgba(255,255,255,0.08)";
-      ctx.lineWidth = 1 + warningProgress * 1.2;
-      for (let i = 0; i < streakCount; i++) {
-        const y = (elapsedMs / streakSpeed + i * 108) % (canvas.height + 120) - 120;
+      ctx.strokeStyle = "rgba(255,255,255,0.08)";
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 7; i++) {
+        const y = (elapsedMs / 7 + i * 108) % (canvas.height + 120) - 120;
         ctx.beginPath();
         ctx.moveTo(canvas.width * 0.08, y);
         ctx.lineTo(canvas.width * 0.92, y);
@@ -4283,10 +3838,6 @@ export default function ShmupPlayScreen() {
         ctx.ellipse(0, 0, bullet.length, bullet.radius, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.shadowBlur = 0;
-        // Pass 1: dark stroke so bullets read against particle soup.
-        ctx.strokeStyle = "rgba(10, 20, 40, 0.85)";
-        ctx.lineWidth = 1;
-        ctx.stroke();
         ctx.fillStyle = bullet.coreColor;
         ctx.beginPath();
         ctx.ellipse(
@@ -4328,11 +3879,6 @@ export default function ShmupPlayScreen() {
         ctx.ellipse(0, 0, bullet.length, bullet.radius, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.shadowBlur = 0;
-        // Pass 1: heavier dark outline on hostile rounds so they never blend
-        // into background or ally fire during dense phases.
-        ctx.strokeStyle = "rgba(0, 0, 0, 0.92)";
-        ctx.lineWidth = 1.25;
-        ctx.stroke();
         ctx.fillStyle = bullet.coreColor;
         ctx.beginPath();
         ctx.ellipse(
@@ -4807,98 +4353,19 @@ export default function ShmupPlayScreen() {
           ctx.restore();
         }
 
-        // Sniper warning line — pulses and thickens as fire approaches.
-        // Pass 2: the old 0.3-alpha dashed line was easy to miss. Now the
-        // line breathes, ramps width/alpha near fire, and has a hot core.
+        // Sniper warning line (drawn outside transform)
         if (enemy.pattern === "sniper" && enemy.sniperLocked) {
-          // Fire cooldown during lock runs down to 0, so progress ramps 0→1
-          const lockProgress = clamp(1 - enemy.fireCooldown / 2.0, 0, 1);
-          const pulse = 0.55 + Math.sin(elapsedMs / 60) * 0.45;
-          const alpha = 0.25 + lockProgress * 0.45 + pulse * 0.15;
-          const width = 1.4 + lockProgress * 2.2;
-          const dashOffset = (elapsedMs / 18) % 20;
-          const tx = enemy.sniperLockX ?? ship.x;
-          const ty = enemy.sniperLockY ?? ship.y;
           ctx.save();
-          // Outer red glow line
-          ctx.strokeStyle = `rgba(255, 60, 60, ${alpha})`;
-          ctx.lineWidth = width;
-          ctx.setLineDash([10, 6]);
-          ctx.lineDashOffset = -dashOffset;
-          ctx.shadowColor = "rgba(255, 40, 40, 0.8)";
-          ctx.shadowBlur = 6 + lockProgress * 10;
+          ctx.strokeStyle = "rgba(255,0,0,0.3)";
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([6, 4]);
           ctx.beginPath();
           ctx.moveTo(enemy.x, enemy.y + enemy.radius);
-          ctx.lineTo(tx, ty);
+          ctx.lineTo(enemy.sniperLockX ?? ship.x, enemy.sniperLockY ?? ship.y);
           ctx.stroke();
-          // Hot core near full lock
-          if (lockProgress > 0.65) {
-            ctx.shadowBlur = 0;
-            ctx.setLineDash([]);
-            ctx.strokeStyle = `rgba(255, 220, 220, ${(lockProgress - 0.65) * 1.6})`;
-            ctx.lineWidth = 0.8;
-            ctx.beginPath();
-            ctx.moveTo(enemy.x, enemy.y + enemy.radius);
-            ctx.lineTo(tx, ty);
-            ctx.stroke();
-          }
           ctx.setLineDash([]);
           ctx.restore();
         }
-      }
-
-      // Pass 1: enemy hit flash — additive white disc over any enemy whose
-      // hit-flash window is still active. Separate pass so we don't touch
-      // the per-pattern branches.
-      for (const enemy of enemiesRef.current) {
-        if (!enemy.hitFlashUntil || enemy.hitFlashUntil <= elapsedMs) continue;
-        const remaining = enemy.hitFlashUntil - elapsedMs;
-        const strength = clamp(remaining / 90, 0, 1);
-        const r = enemy.radius * 1.35 * displayScale;
-        ctx.save();
-        ctx.globalCompositeOperation = "lighter";
-        ctx.globalAlpha = 0.55 * strength;
-        const grad = ctx.createRadialGradient(enemy.x, enemy.y, 0, enemy.x, enemy.y, r);
-        grad.addColorStop(0, "rgba(255,255,255,1)");
-        grad.addColorStop(0.55, "rgba(255,255,255,0.55)");
-        grad.addColorStop(1, "rgba(255,255,255,0)");
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(enemy.x, enemy.y, r, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      }
-
-      // Pass 2: pre-fire windup glow. Any shooter whose fireCooldown drops
-      // below the windup window gets a growing radial pulse so the player
-      // sees the shot coming. Derived purely from cooldown, no new state.
-      const WINDUP_WINDOW = 0.32; // seconds
-      for (const enemy of enemiesRef.current) {
-        if (enemy.pattern === "swarm") continue;
-        if (enemy.pattern === "charger" && enemy.chargeState === "charge") continue;
-        if (enemy.pattern === "dreadnought" && !enemy.dreadAnchored) continue;
-        const cd = enemy.fireCooldown;
-        if (cd <= 0 || cd >= WINDUP_WINDOW) continue;
-        const progress = 1 - cd / WINDUP_WINDOW; // 0 → 1 as fire approaches
-        const pulse = 0.6 + Math.sin(elapsedMs / 34) * 0.25;
-        const r = enemy.radius * (1.15 + progress * 0.9) * displayScale;
-        const tint =
-          enemy.pattern === "sniper" ? "255,80,80" :
-          enemy.pattern === "bomber" ? "255,170,80" :
-          enemy.pattern === "dreadnought" ? "255,120,255" :
-          "255,240,180";
-        ctx.save();
-        ctx.globalCompositeOperation = "lighter";
-        ctx.globalAlpha = 0.38 * progress * pulse;
-        const grad = ctx.createRadialGradient(enemy.x, enemy.y, 0, enemy.x, enemy.y, r);
-        grad.addColorStop(0, `rgba(${tint},0.95)`);
-        grad.addColorStop(0.55, `rgba(${tint},0.35)`);
-        grad.addColorStop(1, `rgba(${tint},0)`);
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(enemy.x, enemy.y, r, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
       }
 
       // Bomber danger zones
@@ -4920,7 +4387,8 @@ export default function ShmupPlayScreen() {
 
       if (bossRef.current) {
         const boss = bossRef.current;
-        const sprite = getSprite("boss");
+        // Bosses are rendered procedurally per archetype — distinct designs per zone
+        const sprite: HTMLImageElement | null = null;
 
         // Phase transition flash
         if (boss.phaseTransitionFlash > 0) {
@@ -4959,83 +4427,336 @@ export default function ShmupPlayScreen() {
             ? activeMap.palette.bossPrimary
             : boss.phase === 2
               ? activeMap.palette.bossSecondary
-              : "#ff2222"; // Phase 3: red desperation
+              : "#ff2222";
           const bPulse = 0.88 + Math.sin(boss.age * 2.5) * 0.12;
           ctx.save();
           ctx.translate(boss.x, boss.y);
           ctx.scale(displayScale, displayScale);
-
-          // Outer glow aura
           ctx.shadowColor = bossColor;
           ctx.shadowBlur = 24;
 
-          // Main hull — wide armored dreadnought
-          const hullGrad = ctx.createLinearGradient(0, -br * 1.1, 0, br * 1.2);
-          hullGrad.addColorStop(0, bossColor);
-          hullGrad.addColorStop(0.6, "#2a1535");
-          hullGrad.addColorStop(1, "#0d0810");
-          ctx.fillStyle = hullGrad;
-          ctx.beginPath();
-          ctx.moveTo(0, -br * 1.1);
-          ctx.lineTo(br * 0.45, -br * 0.7);
-          ctx.lineTo(br * 1.1, -br * 0.15);
-          ctx.lineTo(br * 1.25, br * 0.4);
-          ctx.lineTo(br * 0.7, br * 1.0);
-          ctx.lineTo(br * 0.2, br * 1.15);
-          ctx.lineTo(0, br * 0.9);
-          ctx.lineTo(-br * 0.2, br * 1.15);
-          ctx.lineTo(-br * 0.7, br * 1.0);
-          ctx.lineTo(-br * 1.25, br * 0.4);
-          ctx.lineTo(-br * 1.1, -br * 0.15);
-          ctx.lineTo(-br * 0.45, -br * 0.7);
-          ctx.closePath();
-          ctx.fill();
-          ctx.shadowBlur = 0;
-
-          // Wing armor panels
-          const panelGrad = ctx.createLinearGradient(-br * 1.2, 0, br * 1.2, 0);
-          panelGrad.addColorStop(0, `${bossColor}44`);
-          panelGrad.addColorStop(0.5, `${bossColor}22`);
-          panelGrad.addColorStop(1, `${bossColor}44`);
-          ctx.fillStyle = panelGrad;
-          ctx.fillRect(-br * 1.15, -br * 0.1, br * 0.4, br * 0.9);
-          ctx.fillRect(br * 0.75, -br * 0.1, br * 0.4, br * 0.9);
-
-          // Central cockpit/eye
-          const eyeGrad = ctx.createRadialGradient(0, -br * 0.2, 2, 0, -br * 0.2, br * 0.35);
-          eyeGrad.addColorStop(0, "#ffffff");
-          eyeGrad.addColorStop(0.3, bossColor);
-          eyeGrad.addColorStop(1, `${bossColor}00`);
-          ctx.fillStyle = eyeGrad;
-          ctx.beginPath();
-          ctx.arc(0, -br * 0.2, br * 0.35 * bPulse, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Weapon turret mounts
-          ctx.fillStyle = `rgba(255,255,255,${0.4 * bPulse})`;
-          for (const turretX of [-br * 0.65, -br * 0.3, br * 0.3, br * 0.65]) {
+          if (boss.archetype === "dreadnought") {
+            // ─────────────────────────────────────────────────
+            // AEGIS DREADNOUGHT — heavy armored patrol fortress
+            // Wide flat hull, quad turret batteries, command dome
+            // Zone: Nebula Runway — blockade enforcer
+            // ─────────────────────────────────────────────────
+            const hullGrad = ctx.createLinearGradient(0, -br * 1.0, 0, br * 1.1);
+            hullGrad.addColorStop(0, bossColor);
+            hullGrad.addColorStop(0.55, "#1a1040");
+            hullGrad.addColorStop(1, "#0b0820");
+            ctx.fillStyle = hullGrad;
+            // Wide armored hull — blocky, fortified, wide/flat ratio
             ctx.beginPath();
-            ctx.arc(turretX, br * 0.5, br * 0.09, 0, Math.PI * 2);
+            ctx.moveTo(0, -br * 1.0);
+            ctx.lineTo(br * 0.55, -br * 0.82);
+            ctx.lineTo(br * 1.3, -br * 0.35);
+            ctx.lineTo(br * 1.45, br * 0.15);
+            ctx.lineTo(br * 1.15, br * 0.65);
+            ctx.lineTo(br * 0.5, br * 0.9);
+            ctx.lineTo(0, br * 0.75);
+            ctx.lineTo(-br * 0.5, br * 0.9);
+            ctx.lineTo(-br * 1.15, br * 0.65);
+            ctx.lineTo(-br * 1.45, br * 0.15);
+            ctx.lineTo(-br * 1.3, -br * 0.35);
+            ctx.lineTo(-br * 0.55, -br * 0.82);
+            ctx.closePath();
             ctx.fill();
-          }
+            ctx.shadowBlur = 0;
 
-          // Engine array
-          ctx.fillStyle = `rgba(255,180,100,${0.55 * bPulse})`;
-          for (const engX of [-br * 0.4, 0, br * 0.4]) {
+            // Shoulder armor plates
+            const shoulderGrad = ctx.createLinearGradient(0, -br * 0.3, 0, br * 0.4);
+            shoulderGrad.addColorStop(0, `${bossColor}88`);
+            shoulderGrad.addColorStop(1, `${bossColor}22`);
+            ctx.fillStyle = shoulderGrad;
+            ctx.beginPath(); // right
+            ctx.moveTo(br * 1.15, -br * 0.1);
+            ctx.lineTo(br * 1.62, -br * 0.28);
+            ctx.lineTo(br * 1.72, br * 0.28);
+            ctx.lineTo(br * 1.3, br * 0.55);
+            ctx.lineTo(br * 1.1, br * 0.22);
+            ctx.closePath();
+            ctx.fill();
+            ctx.beginPath(); // left
+            ctx.moveTo(-br * 1.15, -br * 0.1);
+            ctx.lineTo(-br * 1.62, -br * 0.28);
+            ctx.lineTo(-br * 1.72, br * 0.28);
+            ctx.lineTo(-br * 1.3, br * 0.55);
+            ctx.lineTo(-br * 1.1, br * 0.22);
+            ctx.closePath();
+            ctx.fill();
+
+            // Quad turret batteries
+            ctx.fillStyle = `rgba(255,255,255,${0.45 * bPulse})`;
+            for (const tx of [-br * 0.72, -br * 0.24, br * 0.24, br * 0.72]) {
+              ctx.beginPath();
+              ctx.ellipse(tx, -br * 0.45, br * 0.13, br * 0.09, 0, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.fillStyle = `rgba(200,220,255,${0.5 * bPulse})`;
+              ctx.fillRect(tx - br * 0.03, -br * 0.65, br * 0.06, br * 0.22);
+              ctx.fillStyle = `rgba(255,255,255,${0.45 * bPulse})`;
+            }
+
+            // Central command dome
+            const domeGrad = ctx.createRadialGradient(0, -br * 0.1, 1, 0, -br * 0.1, br * 0.42);
+            domeGrad.addColorStop(0, "#ffffff");
+            domeGrad.addColorStop(0.25, bossColor);
+            domeGrad.addColorStop(0.7, `${bossColor}55`);
+            domeGrad.addColorStop(1, `${bossColor}00`);
+            ctx.fillStyle = domeGrad;
             ctx.beginPath();
-            ctx.ellipse(engX, br * 1.0, br * 0.08, br * 0.15, 0, 0, Math.PI * 2);
+            ctx.ellipse(0, -br * 0.1, br * 0.42 * bPulse, br * 0.28 * bPulse, 0, 0, Math.PI * 2);
             ctx.fill();
-          }
 
-          // Panel line details
-          ctx.strokeStyle = `${bossColor}55`;
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.moveTo(-br * 0.45, -br * 0.7);
-          ctx.lineTo(-br * 0.2, br * 0.3);
-          ctx.moveTo(br * 0.45, -br * 0.7);
-          ctx.lineTo(br * 0.2, br * 0.3);
-          ctx.stroke();
+            // Engine exhaust array
+            ctx.fillStyle = `rgba(160,200,255,${0.7 * bPulse})`;
+            for (const ex of [-br * 0.55, 0, br * 0.55]) {
+              ctx.beginPath();
+              ctx.ellipse(ex, br * 0.85, br * 0.09, br * 0.18, 0, 0, Math.PI * 2);
+              ctx.fill();
+            }
+
+            // Hull armor panel lines
+            ctx.strokeStyle = `${bossColor}66`;
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(0, -br * 0.8); ctx.lineTo(0, br * 0.65);       // spine
+            ctx.moveTo(-br * 0.8, -br * 0.2); ctx.lineTo(br * 0.8, -br * 0.2); // cross brace
+            ctx.moveTo(-br * 0.55, -br * 0.8); ctx.lineTo(-br * 0.3, br * 0.4); // left rib
+            ctx.moveTo(br * 0.55, -br * 0.8); ctx.lineTo(br * 0.3, br * 0.4);   // right rib
+            ctx.stroke();
+
+          } else if (boss.archetype === "tyrant") {
+            // ─────────────────────────────────────────────────
+            // HELIOS TYRANT — solar-powered weapons platform
+            // Diamond core, forward-swept wings, twin cannon array
+            // Zone: Solar Rift — thermal fortress siege engine
+            // ─────────────────────────────────────────────────
+            const hullGrad = ctx.createLinearGradient(0, -br * 1.3, 0, br * 1.4);
+            hullGrad.addColorStop(0, bossColor);
+            hullGrad.addColorStop(0.4, "#2e0c00");
+            hullGrad.addColorStop(1, "#140500");
+            ctx.fillStyle = hullGrad;
+            // Diamond core body — aggressive forward-pointing silhouette
+            ctx.beginPath();
+            ctx.moveTo(0, -br * 1.3);           // nose
+            ctx.lineTo(br * 0.55, -br * 0.5);
+            ctx.lineTo(br * 0.65, br * 0.3);
+            ctx.lineTo(br * 0.3, br * 0.9);
+            ctx.lineTo(0, br * 1.0);
+            ctx.lineTo(-br * 0.3, br * 0.9);
+            ctx.lineTo(-br * 0.65, br * 0.3);
+            ctx.lineTo(-br * 0.55, -br * 0.5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Forward-swept weapon wings
+            const wingGrad = ctx.createLinearGradient(0, -br * 0.3, br * 2.0, br * 0.6);
+            wingGrad.addColorStop(0, `${bossColor}cc`);
+            wingGrad.addColorStop(0.5, `${bossColor}55`);
+            wingGrad.addColorStop(1, `${bossColor}11`);
+            ctx.fillStyle = wingGrad;
+            ctx.beginPath(); // right wing
+            ctx.moveTo(br * 0.5, -br * 0.4);
+            ctx.lineTo(br * 1.9, -br * 0.9);
+            ctx.lineTo(br * 2.0, -br * 0.3);
+            ctx.lineTo(br * 1.6, br * 0.5);
+            ctx.lineTo(br * 0.6, br * 0.25);
+            ctx.closePath();
+            ctx.fill();
+            ctx.beginPath(); // left wing
+            ctx.moveTo(-br * 0.5, -br * 0.4);
+            ctx.lineTo(-br * 1.9, -br * 0.9);
+            ctx.lineTo(-br * 2.0, -br * 0.3);
+            ctx.lineTo(-br * 1.6, br * 0.5);
+            ctx.lineTo(-br * 0.6, br * 0.25);
+            ctx.closePath();
+            ctx.fill();
+
+            // Solar turbine rings on wingtips
+            for (const wx of [-br * 1.75, br * 1.75]) {
+              ctx.strokeStyle = `rgba(255,200,80,${0.7 * bPulse})`;
+              ctx.lineWidth = br * 0.08;
+              ctx.shadowColor = "#ffaa00";
+              ctx.shadowBlur = 12;
+              ctx.beginPath();
+              ctx.arc(wx, -br * 0.12, br * 0.32, 0, Math.PI * 2);
+              ctx.stroke();
+              ctx.fillStyle = `rgba(255,220,120,${0.9 * bPulse})`;
+              ctx.shadowBlur = 0;
+              ctx.beginPath();
+              ctx.arc(wx, -br * 0.12, br * 0.14, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            ctx.shadowBlur = 0;
+
+            // Twin cannon barrels pointing down at player
+            ctx.fillStyle = `rgba(255,180,60,${0.8 * bPulse})`;
+            ctx.beginPath();
+            ctx.rect(-br * 0.22, br * 0.6, br * 0.14, br * 0.8);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.rect(br * 0.08, br * 0.6, br * 0.14, br * 0.8);
+            ctx.fill();
+            // Cannon muzzle glow
+            ctx.shadowColor = "#ffff00";
+            ctx.shadowBlur = 14;
+            ctx.fillStyle = `rgba(255,255,100,${bPulse})`;
+            for (const cx of [-br * 0.15, br * 0.15]) {
+              ctx.beginPath();
+              ctx.arc(cx, br * 1.35, br * 0.1 * bPulse, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            ctx.shadowBlur = 0;
+
+            // Targeting array at nose
+            ctx.strokeStyle = `rgba(255,220,100,${0.6 * bPulse})`;
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(0, -br * 1.3); ctx.lineTo(-br * 0.2, -br * 0.9);
+            ctx.moveTo(0, -br * 1.3); ctx.lineTo(br * 0.2, -br * 0.9);
+            ctx.stroke();
+            ctx.fillStyle = `rgba(255,255,100,${bPulse})`;
+            ctx.beginPath();
+            ctx.arc(0, -br * 1.2, br * 0.07 * bPulse, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Hot exhaust vents along stern
+            ctx.fillStyle = `rgba(255,120,30,${0.65 * bPulse})`;
+            for (const vx of [-br * 0.55, -br * 0.25, br * 0.25, br * 0.55]) {
+              ctx.beginPath();
+              ctx.ellipse(vx, br * 0.85, br * 0.07, br * 0.14, 0, 0, Math.PI * 2);
+              ctx.fill();
+            }
+
+            // Wing panel lines
+            ctx.strokeStyle = `${bossColor}55`;
+            ctx.lineWidth = 1.0;
+            ctx.beginPath();
+            ctx.moveTo(0, -br * 1.0); ctx.lineTo(0, br * 0.7);
+            ctx.moveTo(-br * 0.45, -br * 0.3); ctx.lineTo(-br * 1.4, -br * 0.6);
+            ctx.moveTo(br * 0.45, -br * 0.3); ctx.lineTo(br * 1.4, -br * 0.6);
+            ctx.stroke();
+
+          } else {
+            // ─────────────────────────────────────────────────
+            // CRYO LEVIATHAN — ancient deep-void entity
+            // Organic body, void wings, crystal spines, multi-eye cluster
+            // Zone: Abyss Crown — the void doesn't build ships, it becomes them
+            // ─────────────────────────────────────────────────
+            const hullGrad = ctx.createLinearGradient(0, -br * 1.6, 0, br * 1.5);
+            hullGrad.addColorStop(0, `${bossColor}cc`);
+            hullGrad.addColorStop(0.35, "#071528");
+            hullGrad.addColorStop(0.75, "#03101f");
+            hullGrad.addColorStop(1, bossColor);
+            ctx.fillStyle = hullGrad;
+            // Elongated organic body — bezier curves, not straight lines
+            ctx.beginPath();
+            ctx.moveTo(0, -br * 1.6);
+            ctx.bezierCurveTo(br * 0.4, -br * 1.3, br * 0.55, -br * 0.5, br * 0.45, br * 0.4);
+            ctx.bezierCurveTo(br * 0.35, br * 1.0, br * 0.2, br * 1.4, 0, br * 1.6);
+            ctx.bezierCurveTo(-br * 0.2, br * 1.4, -br * 0.35, br * 1.0, -br * 0.45, br * 0.4);
+            ctx.bezierCurveTo(-br * 0.55, -br * 0.5, -br * 0.4, -br * 1.3, 0, -br * 1.6);
+            ctx.closePath();
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Void wings — massive organic manta-ray sweep
+            const voidWingGrad = ctx.createLinearGradient(0, -br * 0.3, br * 2.6, br * 1.0);
+            voidWingGrad.addColorStop(0, `${bossColor}aa`);
+            voidWingGrad.addColorStop(0.4, `${bossColor}44`);
+            voidWingGrad.addColorStop(1, `${bossColor}08`);
+            ctx.fillStyle = voidWingGrad;
+            ctx.beginPath(); // right wing
+            ctx.moveTo(br * 0.35, -br * 0.6);
+            ctx.bezierCurveTo(br * 1.2, -br * 1.2, br * 2.5, -br * 0.8, br * 2.6, br * 0.1);
+            ctx.bezierCurveTo(br * 2.4, br * 0.8, br * 1.4, br * 1.1, br * 0.4, br * 0.7);
+            ctx.closePath();
+            ctx.fill();
+            ctx.beginPath(); // left wing
+            ctx.moveTo(-br * 0.35, -br * 0.6);
+            ctx.bezierCurveTo(-br * 1.2, -br * 1.2, -br * 2.5, -br * 0.8, -br * 2.6, br * 0.1);
+            ctx.bezierCurveTo(-br * 2.4, br * 0.8, -br * 1.4, br * 1.1, -br * 0.4, br * 0.7);
+            ctx.closePath();
+            ctx.fill();
+
+            // Crystal spine array along dorsal surface
+            ctx.fillStyle = `rgba(160,230,255,${0.85 * bPulse})`;
+            ctx.shadowColor = "#a0e8ff";
+            ctx.shadowBlur = 10;
+            const spineYs = [-br * 1.1, -br * 0.65, -br * 0.2, br * 0.25, br * 0.7, br * 1.1];
+            for (let si = 0; si < spineYs.length; si++) {
+              const sy = spineYs[si];
+              const sh = br * (0.22 + 0.12 * Math.sin(si * 1.4));
+              ctx.beginPath();
+              ctx.moveTo(0, sy);
+              ctx.lineTo(-br * 0.08, sy + sh * 0.6);
+              ctx.lineTo(0, sy + sh);
+              ctx.lineTo(br * 0.08, sy + sh * 0.6);
+              ctx.closePath();
+              ctx.fill();
+            }
+            ctx.shadowBlur = 0;
+
+            // Multi-eye clusters
+            const eyePos: [number, number][] = [
+              [-br * 0.18, -br * 1.1], [br * 0.18, -br * 1.1],
+              [-br * 0.25, -br * 0.4], [br * 0.25, -br * 0.4],
+            ];
+            for (const [ex, ey] of eyePos) {
+              const eg = ctx.createRadialGradient(ex, ey, 0, ex, ey, br * 0.13);
+              eg.addColorStop(0, "#ffffff");
+              eg.addColorStop(0.3, bossColor);
+              eg.addColorStop(1, `${bossColor}00`);
+              ctx.fillStyle = eg;
+              ctx.beginPath();
+              ctx.arc(ex, ey, br * 0.13 * bPulse, 0, Math.PI * 2);
+              ctx.fill();
+            }
+
+            // Central void-mouth weapon port
+            const voidGrad = ctx.createRadialGradient(0, br * 0.1, 2, 0, br * 0.1, br * 0.45);
+            voidGrad.addColorStop(0, "#000000");
+            voidGrad.addColorStop(0.4, `${bossColor}88`);
+            voidGrad.addColorStop(0.7, `${bossColor}33`);
+            voidGrad.addColorStop(1, `${bossColor}00`);
+            ctx.fillStyle = voidGrad;
+            ctx.shadowColor = bossColor;
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.ellipse(0, br * 0.1, br * 0.45 * bPulse, br * 0.32 * bPulse, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Ice crystal formations at wingtips
+            ctx.fillStyle = `rgba(180,240,255,${0.65 * bPulse})`;
+            ctx.shadowColor = "#b4f0ff";
+            ctx.shadowBlur = 8;
+            for (const [wxBase, dir] of [[br * 2.2, 1], [-br * 2.2, -1]] as [number, number][]) {
+              for (let ci = 0; ci < 3; ci++) {
+                const angle = (ci - 1) * 0.4 + (dir === 1 ? 0.2 : -0.2);
+                const cLen = br * (0.25 + ci * 0.08);
+                ctx.beginPath();
+                ctx.moveTo(wxBase, -br * 0.05);
+                ctx.lineTo(wxBase + dir * Math.cos(angle) * cLen, -br * 0.05 + Math.sin(angle) * cLen);
+                ctx.lineTo(wxBase + dir * Math.cos(angle) * cLen * 0.4, -br * 0.05 + Math.sin(angle + 0.6) * cLen * 0.3);
+                ctx.closePath();
+                ctx.fill();
+              }
+            }
+            ctx.shadowBlur = 0;
+
+            // Bio-luminescent wing streaks
+            ctx.strokeStyle = `rgba(100,210,255,${0.35 * bPulse})`;
+            ctx.lineWidth = 1.0;
+            ctx.beginPath();
+            ctx.moveTo(br * 0.3, -br * 0.4);
+            ctx.bezierCurveTo(br * 0.9, -br * 0.6, br * 1.6, -br * 0.4, br * 2.0, br * 0.2);
+            ctx.moveTo(-br * 0.3, -br * 0.4);
+            ctx.bezierCurveTo(-br * 0.9, -br * 0.6, -br * 1.6, -br * 0.4, -br * 2.0, br * 0.2);
+            ctx.stroke();
+          }
 
           ctx.restore();
         }
@@ -5103,25 +4824,6 @@ export default function ShmupPlayScreen() {
           ctx.font = "bold 10px monospace";
           ctx.textAlign = "center";
           ctx.fillText(boss.name, canvas.width / 2, barY - 4);
-          ctx.restore();
-        }
-
-        // Pass 1: boss hit flash — same additive disc, scaled bigger.
-        if (boss.hitFlashUntil && boss.hitFlashUntil > elapsedMs) {
-          const remaining = boss.hitFlashUntil - elapsedMs;
-          const strength = clamp(remaining / 110, 0, 1);
-          const fr = boss.radius * 1.55 * displayScale;
-          ctx.save();
-          ctx.globalCompositeOperation = "lighter";
-          ctx.globalAlpha = 0.55 * strength;
-          const bgrad = ctx.createRadialGradient(boss.x, boss.y, 0, boss.x, boss.y, fr);
-          bgrad.addColorStop(0, "rgba(255,255,255,1)");
-          bgrad.addColorStop(0.55, "rgba(255,255,255,0.6)");
-          bgrad.addColorStop(1, "rgba(255,255,255,0)");
-          ctx.fillStyle = bgrad;
-          ctx.beginPath();
-          ctx.arc(boss.x, boss.y, fr, 0, Math.PI * 2);
-          ctx.fill();
           ctx.restore();
         }
       }
@@ -5437,12 +5139,8 @@ export default function ShmupPlayScreen() {
         ctx.restore();
       }
 
-      // Kill streak counter — hidden while streak-lost banner is up
-      if (
-        streakDisplayTimerRef.current > 0 &&
-        streakDisplayRef.current >= 5 &&
-        streakLostFlashUntilRef.current <= elapsedMs
-      ) {
+      // Kill streak counter
+      if (streakDisplayTimerRef.current > 0 && streakDisplayRef.current >= 5) {
         const alpha = clamp(streakDisplayTimerRef.current / 0.5, 0, 1);
         const streak = streakDisplayRef.current;
         const streakColor = streak >= 20 ? "#ffd43b" : streak >= 10 ? "#ff922b" : "#74c0fc";
@@ -5458,103 +5156,7 @@ export default function ShmupPlayScreen() {
         ctx.restore();
       }
 
-      // Pass 4: streak-lost banner — replaces the cheerful streak text for
-      // 720ms when a ≥10 run ended on damage. Fades out; reuses the stored
-      // display value so the player sees what they lost.
-      if (streakLostFlashUntilRef.current > elapsedMs) {
-        const remaining = streakLostFlashUntilRef.current - elapsedMs;
-        const alpha = clamp(remaining / 720, 0, 1);
-        ctx.save();
-        ctx.globalAlpha = alpha;
-        ctx.fillStyle = "#ff6b6b";
-        ctx.font = "bold 16px monospace";
-        ctx.textAlign = "right";
-        ctx.shadowColor = "#000000";
-        ctx.shadowBlur = 4;
-        ctx.fillText(
-          `STREAK LOST · ${streakDisplayRef.current}`,
-          canvas.width - 12,
-          canvas.height - 16
-        );
-        ctx.shadowBlur = 0;
-        ctx.restore();
-      }
-
       ctx.restore();
-
-      // Pass 1: post-scene full-screen overlays — drawn on top, unaffected by
-      // shake so the frame they land on reads as a hard event.
-
-      // Damage flash: red vignette that decays from the edges inward.
-      if (damageFlashUntilRef.current > elapsedMs) {
-        const total = 320;
-        const remaining = damageFlashUntilRef.current - elapsedMs;
-        const strength = clamp(remaining / total, 0, 1);
-        ctx.save();
-        const dGrad = ctx.createRadialGradient(
-          canvas.width / 2,
-          canvas.height / 2,
-          Math.min(canvas.width, canvas.height) * 0.2,
-          canvas.width / 2,
-          canvas.height / 2,
-          Math.max(canvas.width, canvas.height) * 0.75
-        );
-        dGrad.addColorStop(0, `rgba(255, 40, 40, 0)`);
-        dGrad.addColorStop(0.6, `rgba(255, 40, 40, ${0.25 * strength})`);
-        dGrad.addColorStop(1, `rgba(255, 10, 10, ${0.55 * strength})`);
-        ctx.fillStyle = dGrad;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        // Very first 90ms: a sharp white pop to sell the impact.
-        if (strength > 0.72) {
-          ctx.fillStyle = `rgba(255, 230, 230, ${(strength - 0.72) * 0.9})`;
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
-        ctx.restore();
-      }
-
-      // Overdrive activation sting: gold radial slam.
-      if (overdriveFlashUntilRef.current > elapsedMs) {
-        const total = 420;
-        const remaining = overdriveFlashUntilRef.current - elapsedMs;
-        const strength = clamp(remaining / total, 0, 1);
-        ctx.save();
-        const oGrad = ctx.createRadialGradient(
-          canvas.width / 2,
-          canvas.height / 2,
-          20,
-          canvas.width / 2,
-          canvas.height / 2,
-          Math.max(canvas.width, canvas.height) * 0.8
-        );
-        oGrad.addColorStop(0, `rgba(255, 230, 120, ${0.38 * strength})`);
-        oGrad.addColorStop(0.5, `rgba(255, 180, 50, ${0.22 * strength})`);
-        oGrad.addColorStop(1, `rgba(255, 120, 30, 0)`);
-        ctx.fillStyle = oGrad;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // "OVERDRIVE" slam text on the leading edge.
-        if (strength > 0.55) {
-          const textAlpha = clamp((strength - 0.55) / 0.45, 0, 1);
-          const scale = 1 + (1 - textAlpha) * 0.4;
-          ctx.save();
-          ctx.translate(canvas.width / 2, canvas.height * 0.38);
-          ctx.scale(scale, scale);
-          ctx.globalAlpha = textAlpha;
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.font = "bold 38px monospace";
-          ctx.shadowColor = "rgba(255, 140, 30, 0.9)";
-          ctx.shadowBlur = 16;
-          ctx.fillStyle = "#fff3bf";
-          ctx.fillText("OVERDRIVE", 0, 0);
-          ctx.shadowBlur = 0;
-          ctx.strokeStyle = "rgba(60, 30, 0, 0.7)";
-          ctx.lineWidth = 2;
-          ctx.strokeText("OVERDRIVE", 0, 0);
-          ctx.restore();
-        }
-        ctx.restore();
-      }
 
       if (elapsedMs - hudSyncRef.current >= 75) {
         hudSyncRef.current = elapsedMs;
@@ -5651,7 +5253,6 @@ export default function ShmupPlayScreen() {
     shotColor,
     submitResult,
     playerSpritePath,
-    shipVisual,
   ]);
 
   const handleTutorialComplete = useCallback(() => {
@@ -5732,7 +5333,7 @@ export default function ShmupPlayScreen() {
             ))}
           </div>
           <div className="shmup-subtitle">
-            Lv{hud.weaponLevel}{hud.bonusLasers > 0 ? `+${hud.bonusLasers}` : ""} {hud.weaponLabel} &middot; {hud.waveLabel}
+            Lv{hud.weaponLevel} {hud.weaponLabel} &middot; {hud.waveLabel}
           </div>
         </div>
 

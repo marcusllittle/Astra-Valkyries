@@ -48,10 +48,13 @@ export interface BossPhaseConfig {
   sweepLaser: boolean;    // whether to fire sweeping laser beams
 }
 
+export type BossArchetype = "dreadnought" | "tyrant" | "leviathan";
+
 export interface ShmupMap {
   id: string;
   name: string;
   bossName: string;
+  bossArchetype: BossArchetype;
   tagline: string;
   briefing: string;
   debrief: string;
@@ -60,8 +63,6 @@ export interface ShmupMap {
   bossWarningMs: number;
   bossPhases: BossPhaseConfig[];
   palette: ShmupMapPalette;
-  /** Optional rendered key art used as the map-card background in the hangar. */
-  artUrl?: string;
   waves: ShmupWave[];
 }
 
@@ -370,17 +371,17 @@ export const SHMUP_MAPS: ShmupMap[] = [
     id: "nebula-runway",
     name: "Nebula Runway",
     bossName: "Aegis Dreadnought",
+    bossArchetype: "dreadnought",
     tagline: "Slipstream interception corridor",
-    artUrl: "/assets/maps/nebula-runway.png",
     briefing: "Break the patrol line and reopen the route.",
     debrief: "Corridor pressure collapsed. The lane is ours again.",
-    bossMaxHp: 560,
+    bossMaxHp: 620,
     bossTriggerMs: 72_000,
-    bossWarningMs: 3200,
+    bossWarningMs: 2600,
     bossPhases: [
-      { hpThreshold: 1.0, fireRate: 0.72, burstRate: 1.8, burstCount: 9, moveSpeed: 100, moveFreq: 1.1, summonMinions: false, sweepLaser: false },
-      { hpThreshold: 0.65, fireRate: 0.52, burstRate: 1.2, burstCount: 13, moveSpeed: 145, moveFreq: 1.4, summonMinions: true, sweepLaser: true },
-      { hpThreshold: 0.3, fireRate: 0.34, burstRate: 0.78, burstCount: 18, moveSpeed: 195, moveFreq: 1.9, summonMinions: true, sweepLaser: true },
+      { hpThreshold: 1.0, fireRate: 0.85, burstRate: 2.1, burstCount: 7, moveSpeed: 86, moveFreq: 0.95, summonMinions: false, sweepLaser: false },
+      { hpThreshold: 0.6, fireRate: 0.65, burstRate: 1.5, burstCount: 10, moveSpeed: 120, moveFreq: 1.2, summonMinions: false, sweepLaser: true },
+      { hpThreshold: 0.25, fireRate: 0.45, burstRate: 1.0, burstCount: 14, moveSpeed: 160, moveFreq: 1.6, summonMinions: true, sweepLaser: true },
     ],
     palette: {
       backgroundTop: "#040612",
@@ -401,17 +402,17 @@ export const SHMUP_MAPS: ShmupMap[] = [
     id: "solar-rift",
     name: "Solar Rift",
     bossName: "Helios Tyrant",
+    bossArchetype: "tyrant",
     tagline: "Thermal fortress breach",
-    artUrl: "/assets/maps/solar-rift.png",
     briefing: "Push through the flare wall and crack the weapons platform.",
     debrief: "The heat front is broken. Solar control is shifting back.",
-    bossMaxHp: 650,
+    bossMaxHp: 760,
     bossTriggerMs: 78_000,
-    bossWarningMs: 3400,
+    bossWarningMs: 2800,
     bossPhases: [
-      { hpThreshold: 1.0, fireRate: 0.68, burstRate: 1.7, burstCount: 10, moveSpeed: 105, moveFreq: 1.1, summonMinions: false, sweepLaser: false },
-      { hpThreshold: 0.6, fireRate: 0.46, burstRate: 1.1, burstCount: 15, moveSpeed: 160, moveFreq: 1.5, summonMinions: true, sweepLaser: true },
-      { hpThreshold: 0.25, fireRate: 0.3, burstRate: 0.68, burstCount: 20, moveSpeed: 210, moveFreq: 2.1, summonMinions: true, sweepLaser: true },
+      { hpThreshold: 1.0, fireRate: 0.80, burstRate: 2.0, burstCount: 8, moveSpeed: 90, moveFreq: 1.0, summonMinions: false, sweepLaser: false },
+      { hpThreshold: 0.55, fireRate: 0.55, burstRate: 1.3, burstCount: 12, moveSpeed: 140, moveFreq: 1.35, summonMinions: true, sweepLaser: false },
+      { hpThreshold: 0.2, fireRate: 0.38, burstRate: 0.85, burstCount: 16, moveSpeed: 180, moveFreq: 1.8, summonMinions: true, sweepLaser: true },
     ],
     palette: {
       backgroundTop: "#170503",
@@ -432,17 +433,17 @@ export const SHMUP_MAPS: ShmupMap[] = [
     id: "abyss-crown",
     name: "Abyss Crown",
     bossName: "Cryo Leviathan",
+    bossArchetype: "leviathan",
     tagline: "Deep-void terminal descent",
-    artUrl: "/assets/maps/abyss-crown.png",
     briefing: "Hold formation through the cold breach and cut down the Leviathan.",
     debrief: "The void finally blinked. Abyss Crown is no longer untouchable.",
-    bossMaxHp: 750,
+    bossMaxHp: 880,
     bossTriggerMs: 84_000,
-    bossWarningMs: 3800,
+    bossWarningMs: 3000,
     bossPhases: [
-      { hpThreshold: 1.0, fireRate: 0.62, burstRate: 1.6, burstCount: 11, moveSpeed: 110, moveFreq: 1.15, summonMinions: false, sweepLaser: false },
-      { hpThreshold: 0.55, fireRate: 0.42, burstRate: 1.0, burstCount: 16, moveSpeed: 170, moveFreq: 1.55, summonMinions: true, sweepLaser: true },
-      { hpThreshold: 0.22, fireRate: 0.26, burstRate: 0.58, burstCount: 22, moveSpeed: 230, moveFreq: 2.2, summonMinions: true, sweepLaser: true },
+      { hpThreshold: 1.0, fireRate: 0.75, burstRate: 1.8, burstCount: 9, moveSpeed: 95, moveFreq: 1.05, summonMinions: false, sweepLaser: false },
+      { hpThreshold: 0.5, fireRate: 0.50, burstRate: 1.2, burstCount: 13, moveSpeed: 150, moveFreq: 1.4, summonMinions: true, sweepLaser: true },
+      { hpThreshold: 0.2, fireRate: 0.32, burstRate: 0.75, burstCount: 18, moveSpeed: 200, moveFreq: 2.0, summonMinions: true, sweepLaser: true },
     ],
     palette: {
       backgroundTop: "#030b16",

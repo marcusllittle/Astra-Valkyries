@@ -33,6 +33,7 @@ interface InboxMessage extends Omit<InboxMessageTemplate, "isUnlocked"> {
 const INBOX_STORAGE_KEY = "astra-inbox-state";
 const CUSTOM_INBOX_DIR = "/assets/inbox";
 const PILOT_INBOX_DIR = `${CUSTOM_INBOX_DIR}/pilot`;
+const FORCE_UNLOCK_ALL_MESSAGES = false;
 
 const PILOT_INBOX_IMAGE_FILES = [
   "job-0293e3f9670d.png",
@@ -422,7 +423,7 @@ const PLACEHOLDER_MESSAGES: InboxMessageTemplate[] = [...buildPilotInboxMessages
 
 function getInboxMessages(save: SaveData): InboxMessage[] {
   return PLACEHOLDER_MESSAGES
-    .filter((message) => message.isUnlocked(save))
+    .filter((message) => FORCE_UNLOCK_ALL_MESSAGES || message.isUnlocked(save))
     .map(({ isUnlocked: _isUnlocked, ...message }) => ({
       ...message,
       read: false,

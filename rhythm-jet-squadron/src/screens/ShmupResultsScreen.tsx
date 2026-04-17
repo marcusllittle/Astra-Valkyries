@@ -289,27 +289,33 @@ export default function ShmupResultsScreen() {
         </div>
       ) : null}
 
-      <div className="results-buttons">
-  {debriefLines.length > 0 ? (
-    <button
-      className="btn btn-primary"
-      onClick={() => {
-        setDebriefLineIdx(0);
-        setShowDebrief(true);
-      }}
-    >
-      Continue to Debrief
-    </button>
-  ) : null}
+        {isFirstRun ? (
+          <div className="results-next-step-callout">
+            <strong>Loadout updated.</strong> Choose your next route from the port.
+          </div>
+        ) : null}
 
-  <button className="btn btn-primary" onClick={() => navigate(isFirstRun ? "/hangar" : "/shmup")}>
-    {isFirstRun ? "Open Loadout" : "Play Again"}
-  </button>
+        <div className="results-buttons">
+          {debriefLines.length > 0 ? (
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                setDebriefLineIdx(0);
+                setShowDebrief(true);
+              }}
+            >
+              Continue to Debrief
+            </button>
+          ) : null}
 
-  <button className="btn btn-secondary" onClick={handleReturnToPort}>
-    Return to Port
-  </button>
-</div>
-</div>
+          <button className="btn btn-primary" onClick={() => navigate(isFirstRun ? "/hangar" : "/shmup")}>
+            {isFirstRun ? "Open Loadout" : "Play Again"}
+          </button>
+
+          <button className="btn btn-secondary" onClick={handleReturnToPort}>
+            Return to Port
+          </button>
+        </div>
+      </div>
   );
 }
