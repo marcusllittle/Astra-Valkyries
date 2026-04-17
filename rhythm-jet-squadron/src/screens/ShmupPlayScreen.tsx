@@ -3474,6 +3474,10 @@ export default function ShmupPlayScreen() {
         if (distanceSquared(ship.x, ship.y, chip.x, chip.y) <= hitDistance * hitDistance) {
           chipsRef.current.splice(chipIndex, 1);
           sfxPowerup();
+          const healed = ship.hp < maxHp;
+          if (healed) {
+            ship.hp = Math.min(maxHp, ship.hp + 1);
+          }
           if (weaponLevelRef.current < MAX_WEAPON_LEVEL) {
             weaponLevelRef.current = Math.min(MAX_WEAPON_LEVEL, weaponLevelRef.current + 1);
           } else {
@@ -3486,8 +3490,12 @@ export default function ShmupPlayScreen() {
           if (weaponLevelRef.current >= 4) {
             addSecondaryCharge(1);
           }
-          addSparkBurst(chip.x, chip.y, "#ffd43b", 8, 92, [2, 4.6]);
-          addPulse(chip.x, chip.y, "#ffe066", 8, 78, 0.15, 1.9);
+          addSparkBurst(chip.x, chip.y, healed ? "#8ce99a" : "#ffd43b", 8, 92, [2, 4.6]);
+          addPulse(chip.x, chip.y, healed ? "#8ce99a" : "#ffe066", 8, 78, 0.15, 1.9);
+          if (healed) {
+            addPulse(ship.x, ship.y, "#8ce99a", 16, 180, 0.16, 2.8);
+            addPulse(ship.x, ship.y, "#d3f9d8", 10, 104, 0.1, 1.8);
+          }
           if (weaponLevelRef.current >= 3) {
             addOverdrive(12, elapsedMs);
           }

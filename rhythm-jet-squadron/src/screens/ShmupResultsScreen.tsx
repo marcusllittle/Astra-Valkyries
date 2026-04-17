@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useGame } from "../context/GameContext";
+import pilotsData from "../data/pilots.json";
 import { useWallet } from "../context/WalletContext";
 import {
   creditsForGrade,
@@ -43,21 +44,21 @@ const DEBRIEF_NOTES: Record<string, { win: { label: string; accent: string }; lo
 };
 
 const LOSS_DEBRIEF_LINES = {
-  "nebula-runway": [
-    { speaker: "Command", text: "Nebula Runway remains contested. The corridor never fully opened and convoy traffic is still pinned behind the line.", position: "left", mood: "serious" },
-    { speaker: "Nova", text: "We saw the opening, just didn't hold it long enough. That one's fixable.", position: "right", mood: "neutral" },
-    { speaker: "Command", text: "Rearm, tighten the route, and hit the Dreadnought before the screen thickens again.", position: "left", mood: "serious" },
-  ],
-  "solar-rift": [
-    { speaker: "Command", text: "Solar Rift is still unstable. The Helios Tyrant kept control of the lane and the thermal wall is only getting meaner.", position: "left", mood: "worried" },
-    { speaker: "Rex", text: "Too much drift, not enough punishment. Fine. Next run we push first and make it react to us.", position: "right", mood: "serious" },
-    { speaker: "Command", text: "Maintain aggression, but clean up the exposure. This sector snowballs the moment you surrender tempo.", position: "left", mood: "serious" },
-  ],
-  "abyss-crown": [
-    { speaker: "Command", text: "Abyss Crown did not break. Signal clarity dropped out and the Leviathan still owns the descent channel.", position: "left", mood: "worried" },
-    { speaker: "Yuki", text: "Not a dead end. Just incomplete data with teeth. I know more now than I did on entry.", position: "right", mood: "neutral" },
-    { speaker: "Command", text: "Good. Use it. The next attempt needs cleaner positioning before the void closes around you again.", position: "left", mood: "serious" },
-  ],
+  "nebula-runway": {
+    commandOpen: "Nebula Runway remains contested. The corridor never fully opened and convoy traffic is still pinned behind the line.",
+    pilotLine: "We saw the opening, just didn't hold it long enough. That one's fixable.",
+    commandClose: "Rearm, tighten the route, and hit the Dreadnought before the screen thickens again.",
+  },
+  "solar-rift": {
+    commandOpen: "Solar Rift is still unstable. The Helios Tyrant kept control of the lane and the thermal wall is only getting meaner.",
+    pilotLine: "Too much drift, not enough punishment. Fine. Next run we push first and make it react to us.",
+    commandClose: "Maintain aggression, but clean up the exposure. This sector snowballs the moment you surrender tempo.",
+  },
+  "abyss-crown": {
+    commandOpen: "Abyss Crown did not break. Signal clarity dropped out and the Leviathan still owns the descent channel.",
+    pilotLine: "Not a dead end. Just incomplete data with teeth. I know more now than I did on entry.",
+    commandClose: "Good. Use it. The next attempt needs cleaner positioning before the void closes around you again.",
+  },
 } as const;
 
 function formatTime(timeMs: number): string {
@@ -118,10 +119,16 @@ export default function ShmupResultsScreen() {
   const didWinRun = Boolean(shmupResult?.bossDefeated);
   const debriefScript = didWinRun && mapId ? getDialogueForMap(mapId, "post_mission") : undefined;
   const debriefNode = debriefScript?.nodes.find((n) => n.id === debriefScript.startNodeId);
+  const activePilot = pilotsData.find((pilot) => pilot.id === save.selectedPilotId);
+  const lossTemplate = mapId ? LOSS_DEBRIEF_LINES[mapId as keyof typeof LOSS_DEBRIEF_LINES] : undefined;
   const debriefLines = didWinRun
     ? (debriefNode?.lines ?? [])
-    : mapId
-      ? (LOSS_DEBRIEF_LINES[mapId as keyof typeof LOSS_DEBRIEF_LINES] ?? [])
+    : lossTemplate
+      ? [
+          { speaker: "Command", text: lossTemplate.commandOpen, position: "left" as const, mood: "serious" },
+          { speaker: activePilot?.name ?? "Pilot", text: lossTemplate.pilotLine, position: "right" as const, mood: "neutral" },
+          { speaker: "Command", text: lossTemplate.commandClose, position: "left" as const, mood: "serious" },
+        ]
       : [];
   const debriefBackdrop = mapId ? DEBRIEF_BACKDROPS[mapId] : undefined;
   const activeMap = getShmupMapById(mapId);
