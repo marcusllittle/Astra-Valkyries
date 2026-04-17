@@ -60,8 +60,11 @@ export default function ShopScreen() {
     setPity(loadPityState());
   }, []);
 
-  /** Whether we're in shared-credits mode (wallet connected with a balance) */
-  const useShared = wallet.status === "connected" && wallet.sharedBalance !== null && wallet.sharedBalance > 0;
+  const hasSharedBalance = wallet.status === "connected" && wallet.sharedBalance !== null && wallet.sharedBalance > 0;
+
+  const canAffordWithCredits = (count: 1 | 10) => save.credits >= (count === 1 ? PULL_COST_1 : PULL_COST_10);
+  const canAffordWithShared = (count: 1 | 10) => (wallet.sharedBalance ?? 0) >= (count === 1 ? SHARED_COST_1 : SHARED_COST_10);
+  const shouldUseSharedForPull = (count: 1 | 10) => !canAffordWithCredits(count) && hasSharedBalance && canAffordWithShared(count);
 
   const updatePityAfterPull = (pulled: GachaResult[]) => {
     const newPity = { ...pity };
@@ -83,8 +86,10 @@ export default function ShopScreen() {
   const doPull = async (count: 1 | 10) => {
     if (spending || isRevealing) return;
 
-    // ── Shared credits path (wallet connected) ───────────
-    if (useShared && wallet.address) {
+    const useSharedForThisPull = shouldUseSharedForPull(count);
+
+    // ── Shared credits path, only as fallback when local credits cannot cover the pull ──
+    if (useSharedForThisPull && wallet.address) {
       const action = count === 1 ? "gacha_1" as const : "gacha_10" as const;
       const cost = count === 1 ? SHARED_COST_1 : SHARED_COST_10;
       if ((wallet.sharedBalance ?? 0) < cost) return;
@@ -96,7 +101,6 @@ export default function ShopScreen() {
           setSpending(false);
           return;
         }
-        // Refresh balance after spend
         wallet.refreshBalance();
       } catch {
         setSpending(false);
@@ -104,7 +108,6 @@ export default function ShopScreen() {
       }
       setSpending(false);
     } else {
-      // ── Local credits path (offline / anonymous) ───────
       const cost = count === 1 ? PULL_COST_1 : PULL_COST_10;
       if (save.credits < cost) return;
       const success = spendCredits(cost);
@@ -158,7 +161,7 @@ export default function ShopScreen() {
           <div className="shop-credits">
             <span className="credit-icon">✦</span> {save.credits.toLocaleString()} Credits
           </div>
-          {useShared && (
+          {hasSharedBalance && (
             <div className="shop-credits shop-credits-shared">
               <span className="shared-icon">&#x26A1;</span> {(wallet.sharedBalance ?? 0).toLocaleString()} HavnAI
               <span className="shared-active-badge">Active</span>
@@ -166,8 +169,8 @@ export default function ShopScreen() {
           )}
         </div>
         <p className="shop-flavor">
-          {useShared
-            ? "Pulling with shared HavnAI credits. Costs are rebalanced for the shared economy."
+          {hasSharedBalance
+            ? "Credits are used first. HavnAI only kicks in as a fallback if you're short on local credits."
             : "Limited wardrobe uplink is active. High-rarity pulls unlock advanced kits and cut-ins."}
         </p>
       </section>
@@ -206,12 +209,12 @@ export default function ShopScreen() {
               onClick={() => doPull(1)}
               disabled={
                 spending || isRevealing ||
-                (useShared ? (wallet.sharedBalance ?? 0) < SHARED_COST_1 : save.credits < PULL_COST_1)
+                (!canAffordWithCredits(1) && !canAffordWithShared(1))
               }
             >
               <div className="gacha-btn-title">1-Pull</div>
               <div className="gacha-btn-cost">
-                {useShared ? `${SHARED_COST_1} HavnAI` : `${PULL_COST_1} Credits`}
+                {shouldUseSharedForPull(1) ? `${SHARED_COST_1} HavnAI` : `${PULL_COST_1} Credits`}
               </div>
             </button>
             <button
@@ -219,12 +222,12 @@ export default function ShopScreen() {
               onClick={() => doPull(10)}
               disabled={
                 spending || isRevealing ||
-                (useShared ? (wallet.sharedBalance ?? 0) < SHARED_COST_10 : save.credits < PULL_COST_10)
+                (!canAffordWithCredits(10) && !canAffordWithShared(10))
               }
             >
               <div className="gacha-btn-title">10-Pull</div>
               <div className="gacha-btn-cost">
-                {useShared ? `${SHARED_COST_10} HavnAI` : `${PULL_COST_10} Credits`}
+                {shouldUseSharedForPull(10) ? `${SHARED_COST_10} HavnAI` : `${PULL_COST_10} Credits`}
               </div>
             </button>
           </div>
