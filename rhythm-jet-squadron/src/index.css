@@ -1040,15 +1040,27 @@ video.card-art-img {
 .map-card-glow {
   position: absolute;
   inset: 0;
-  opacity: 0.9;
+  opacity: 0.95;
+  /* Subtle zoom on hover so the rendered art feels alive without
+     stealing focus from the rest of the hangar. */
+  transition: transform 0.32s ease, filter 0.32s ease;
+}
+
+.map-card:hover .map-card-glow {
+  transform: scale(1.04);
+  filter: brightness(1.06) saturate(1.05);
 }
 
 .map-card-glow::after {
   content: "";
   position: absolute;
   inset: 0;
+  /* Strong bottom-weighted gradient so title + meta stay legible over
+     photographic key art; subtle vignette at the top keeps the corners
+     from looking too washed out on bright scenes (Solar Rift). */
   background:
-    linear-gradient(180deg, rgba(4, 11, 28, 0.2), rgba(4, 11, 28, 0.82));
+    linear-gradient(180deg, rgba(4, 11, 28, 0.32) 0%, rgba(4, 11, 28, 0.55) 38%, rgba(4, 11, 28, 0.92) 100%),
+    radial-gradient(120% 80% at 50% 20%, rgba(4, 11, 28, 0) 55%, rgba(4, 11, 28, 0.45) 100%);
 }
 
 .map-card-info {

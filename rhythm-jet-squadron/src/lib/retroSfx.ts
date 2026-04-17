@@ -467,3 +467,49 @@ export function sfxShieldPulse() {
   osc.start(t);
   osc.stop(t + 0.22);
 }
+
+/** Results grade sting — short rank-dependent flourish */
+export function sfxRunGrade(grade: string) {
+  const ac = getAudioCtx();
+  const bus = getSfxBus();
+  const t = ac.currentTime;
+
+  const sequences: Record<string, number[]> = {
+    S: [784, 1047, 1319],
+    A: [659, 880, 1047],
+    B: [523, 659, 784],
+    C: [440, 523, 659],
+    D: [330, 392, 494],
+  };
+
+  const notes = sequences[grade] ?? sequences.B;
+
+  notes.forEach((freq, i) => {
+    const osc = ac.createOscillator();
+    osc.type = grade === "S" ? "triangle" : "square";
+    osc.frequency.setValueAtTime(freq, t + i * 0.08);
+
+    const g = ac.createGain();
+    const start = t + i * 0.08;
+    g.gain.setValueAtTime(0.12, start);
+    g.gain.linearRampToValueAtTime(0, start + 0.14);
+
+    osc.connect(g).connect(bus);
+    osc.start(start);
+    osc.stop(start + 0.14);
+  });
+
+  if (grade === "S") {
+    const osc = ac.createOscillator();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(1568, t + 0.04);
+
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.07, t + 0.04);
+    g.gain.linearRampToValueAtTime(0, t + 0.28);
+
+    osc.connect(g).connect(bus);
+    osc.start(t + 0.04);
+    osc.stop(t + 0.28);
+  }
+}

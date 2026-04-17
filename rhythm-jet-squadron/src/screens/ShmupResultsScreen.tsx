@@ -11,6 +11,7 @@ import { astraReward } from "../lib/havnApi";
 import { getDialogueForMap } from "../data/dialogues";
 import DialogueBox from "../components/DialogueBox";
 import { getShmupMapById } from "../lib/shmupWaves";
+import { sfxRunGrade } from "../lib/retroSfx";
 
 const GRADE_COLORS: Record<string, string> = {
   S: "#ffd43b",
@@ -55,6 +56,37 @@ export default function ShmupResultsScreen() {
   const mapId = (location.state as { mapId?: string } | undefined)?.mapId;
   const grade = shmupResult ? gradeShmupRun(shmupResult) : null;
   const creditsEarned = grade ? creditsForGrade(grade) : 0;
+
+  // Score count-up from 0 → final over ~900ms so the number feels earned
+  // rather than just printed.
+  const [displayScore, setDisplayScore] = useState(0);
+  useEffect(() => {
+    if (!shmupResult) return;
+    const target = shmupResult.score;
+    const durationMs = 900;
+    const start = performance.now();
+    let raf = 0;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / durationMs);
+      // easeOutCubic so numbers accelerate then settle
+      const eased = 1 - Math.pow(1 - t, 3);
+      setDisplayScore(Math.round(target * eased));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [shmupResult]);
+
+  // Grade-reveal SFX sting on mount. Guarded by a ref so we only fire
+  // once even if the component re-renders (e.g. wallet reward resolution).
+  const stingFiredRef = useRef(false);
+  useEffect(() => {
+    if (!grade || stingFiredRef.current) return;
+    stingFiredRef.current = true;
+    // Slight delay so the sting lines up with the stamp-in animation peak
+    const id = window.setTimeout(() => sfxRunGrade(grade), 120);
+    return () => window.clearTimeout(id);
+  }, [grade]);
 
   const debriefScript = mapId ? getDialogueForMap(mapId, "post_mission") : undefined;
   const debriefNode = debriefScript?.nodes.find((n) => n.id === debriefScript.startNodeId);
@@ -118,12 +150,6 @@ export default function ShmupResultsScreen() {
       });
   }, [shmupResult, grade, wallet.address, wallet.status, rewardKey, wallet]);
 
-  useEffect(() => {
-    if (!debriefLines.length || !shmupResult) return;
-    const timer = setTimeout(() => setShowDebrief(true), 900);
-    return () => clearTimeout(timer);
-  }, [debriefLines.length, shmupResult]);
-
   if (showDebrief && debriefLines.length > 0 && debriefLineIdx < debriefLines.length) {
     return (
       <div className="briefing-screen-shell debrief-screen-shell">
@@ -182,37 +208,29 @@ export default function ShmupResultsScreen() {
 
   return (
     <div className="screen results-screen">
-      <div className="results-atmosphere" aria-hidden="true" />
-      <div className="results-shell panel-surface">
-        <div className="results-grade-halo" aria-hidden="true" style={{ color: GRADE_COLORS[grade] }} />
+      <h2>Arcade Run Complete!</h2>
 
-        <div className="results-header">
-          <span className="results-kicker">After Action Report</span>
-          <h2>Arcade Run Complete!</h2>
-          {activeMap?.name ? <p className="results-map-name">{activeMap.name}</p> : null}
-        </div>
+      <div
+        className="grade-display"
+        style={{ color: GRADE_COLORS[grade] }}
+      >
+        {grade}
+      </div>
 
-        <div
-          className="grade-display"
-          style={{ color: GRADE_COLORS[grade] }}
-        >
-          {grade}
-        </div>
+      <div className="results-victory-copy">
+        {grade === "S"
+          ? "That was a command-level sortie."
+          : grade === "A"
+            ? "Strong clear, strong momentum."
+            : grade === "B"
+              ? "Solid run, room to sharpen the build."
+              : "You cleared it. Tighten one thing and go again."}
+      </div>
 
-        <div className="results-victory-copy">
-          {grade === "S"
-            ? "That was a command-level sortie."
-            : grade === "A"
-              ? "Strong clear, strong momentum."
-              : grade === "B"
-                ? "Solid run, room to sharpen the build."
-                : "You cleared it. Tighten one thing and go again."}
-        </div>
-
-        <div className="results-grid">
+      <div className="results-grid">
         <div className="result-item">
           <span className="result-label">Score</span>
-          <span className="result-value">{shmupResult.score.toLocaleString()}</span>
+          <span className="result-value">{displayScore.toLocaleString()}</span>
         </div>
         <div className="result-item">
           <span className="result-label">Kills</span>
@@ -234,38 +252,42 @@ export default function ShmupResultsScreen() {
           <span className="result-label">Max Weapon</span>
           <span className="result-value">{shmupResult.maxWeaponLevel ?? 1}</span>
         </div>
-        </div>
+      </div>
 
-        <div className="results-reward-strip">
-          <div className="credits-earned">
-            <span className="credit-icon">✦</span> +{creditsEarned} Credits
-          </div>
+      <div className="credits-earned">
+        <span className="credit-icon">✦</span> +{creditsEarned} Credits
+      </div>
 
-          {sharedReward !== null && sharedReward > 0 && (
-            <div className="credits-earned credits-earned-shared">
-              <span className="shared-icon">&#x26A1;</span> +{sharedReward} HavnAI Credits
-            </div>
-          )}
+      {sharedReward !== null && sharedReward > 0 && (
+        <div className="credits-earned credits-earned-shared">
+          <span className="shared-icon">&#x26A1;</span> +{sharedReward} HavnAI Credits
         </div>
+      )}
 
-        <div className="results-focus-pill">
-          <span className="result-label">Next Focus</span>
-          <strong>{isFirstRun ? "Refine loadout" : "Push a cleaner grade"}</strong>
+      <div className="results-focus-pill">
+        <span className="result-label">Next Focus</span>
+        <strong>{isFirstRun ? "Refine loadout" : "Push a cleaner grade"}</strong>
+      </div>
+      {wallet.status !== "connected" && (
+        <div className="reward-status-note">Wallet rewards available when connected</div>
+      )}
+      {rewardStatus && (
+        <div className="reward-status-note">
+          {rewardStatus === "daily_cap_reached" && "Daily HavnAI earn cap reached"}
+          {rewardStatus === "cooldown" && "HavnAI reward on cooldown — wait and play again"}
+          {rewardStatus === "score_too_low" && "Score below 5,000 — no HavnAI credits earned"}
+          {rewardStatus === "run_too_short" && "Run too short — survive longer to earn credits"}
+          {rewardStatus === "duplicate_run" && "Duplicate run detected"}
+          {rewardStatus === "network_error" && "Could not reach HavnAI server — credits will sync next run"}
+          {!['daily_cap_reached', 'cooldown', 'score_too_low', 'run_too_short', 'duplicate_run', 'network_error'].includes(rewardStatus) && `HavnAI: ${rewardStatus}`}
         </div>
-        {wallet.status !== "connected" && (
-          <div className="reward-status-note">Wallet rewards available when connected</div>
-        )}
-        {rewardStatus && (
-          <div className="reward-status-note">
-            {rewardStatus === "daily_cap_reached" && "Daily HavnAI earn cap reached"}
-            {rewardStatus === "cooldown" && "HavnAI reward on cooldown — wait and play again"}
-            {rewardStatus === "score_too_low" && "Score below 5,000 — no HavnAI credits earned"}
-            {rewardStatus === "run_too_short" && "Run too short — survive longer to earn credits"}
-            {rewardStatus === "duplicate_run" && "Duplicate run detected"}
-            {rewardStatus === "network_error" && "Could not reach HavnAI server — credits will sync next run"}
-            {!['daily_cap_reached', 'cooldown', 'score_too_low', 'run_too_short', 'duplicate_run', 'network_error'].includes(rewardStatus) && `HavnAI: ${rewardStatus}`}
-          </div>
-        )}
+      )}
+
+      {isFirstRun ? (
+        <div className="results-next-step-callout">
+          <strong>Loadout updated.</strong> Choose your next route from the port.
+        </div>
+      ) : null}
 
         {isFirstRun ? (
           <div className="results-next-step-callout">
@@ -274,14 +296,26 @@ export default function ShmupResultsScreen() {
         ) : null}
 
         <div className="results-buttons">
+          {debriefLines.length > 0 ? (
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                setDebriefLineIdx(0);
+                setShowDebrief(true);
+              }}
+            >
+              Continue to Debrief
+            </button>
+          ) : null}
+
           <button className="btn btn-primary" onClick={() => navigate(isFirstRun ? "/hangar" : "/shmup")}>
             {isFirstRun ? "Open Loadout" : "Play Again"}
           </button>
+
           <button className="btn btn-secondary" onClick={handleReturnToPort}>
             Return to Port
           </button>
         </div>
       </div>
-    </div>
   );
 }

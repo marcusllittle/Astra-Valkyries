@@ -98,104 +98,184 @@ const PILOT_MESSAGE_POOLS: Record<PilotSender, Array<{ subject: string; body: st
   Nova: [
     {
       subject: "Caught you looking",
-      body: "Clean run. Clean enough that I figured you earned something off-record for once.\n\n- Nova",
+      body: "You flew well. I felt generous. Enjoy the view and try not to get weird about it.\n\n- Nova",
     },
     {
       subject: "After-hours channel",
-      body: "No command voice, no tactical jargon, no helmet. Just a better signal after a good sortie.\n\n- Nova",
+      body: "Off-duty transmission. No briefing language, no squad chatter, no excuses. Just me.\n\n- Nova",
     },
     {
       subject: "Private send",
-      body: "You cleared the lane, so I sent something that wasn't another stack of telemetry. Try to appreciate the upgrade.\n\n- Nova",
+      body: "Before you ask, yes, this was meant for you. Don't make me regret having good taste.\n\n- Nova",
     },
     {
       subject: "Keep this one close",
-      body: "You looked like you needed one nice thing after the run. I decided to be generous.\n\n- Nova",
+      body: "Thought you'd want something better than telemetry and mission logs for once.\n\n- Nova",
     },
     {
-      subject: "Post-sortie indulgence",
-      body: "Mission complete, pressure off, and suddenly I felt like being distracting on purpose. Funny how that happens.\n\n- Nova",
+      subject: "You earned this",
+      body: "I don't hand these out to just anyone. The run was clean and so was your focus.\n\nDon't make it weird.\n\n- Nova",
     },
     {
-      subject: "Unread priority",
-      body: "You brought the ship back in one piece. That gets you access to better material than the official briefing archive.\n\n- Nova",
+      subject: "Off the record",
+      body: "Command doesn't see this channel. Neither does the squad. It's just ours now.\n\nI wasn't sure I'd say that. Now I have.\n\n- Nova",
+    },
+    {
+      subject: "Admit it",
+      body: "You've been checking your inbox more than your threat radar.\n\nI respect the priorities.\n\n- Nova",
+    },
+    {
+      subject: "No context needed",
+      body: "You'll understand what this is. You've been paying attention.\n\nGood.\n\n- Nova",
+    },
+    {
+      subject: "Between sorties",
+      body: "There's a gap in the briefing schedule. I used it productively.\n\nSo did you, apparently — you're reading this instead of sleeping.\n\n- Nova",
+    },
+    {
+      subject: "Signal strength: high",
+      body: "Your attention doesn't waver much. I've noticed.\n\nThis is what that gets you.\n\n- Nova",
+    },
+    {
+      subject: "Still thinking about the last run",
+      body: "The way you held formation right up until you had to break was actually kind of beautiful.\n\nThis is what beautiful gets you.\n\n- Nova",
+    },
+    {
+      subject: "Prelaunch ritual",
+      body: "I have a thing I do before every sortie. You wouldn't know about it.\n\nNow you have a version of it.\n\n- Nova",
     },
   ],
   Rex: [
     {
       subject: "Still focused?",
-      body: "You survived the run, so let's see if your concentration survives this too.\n\n- Rex",
+      body: "Consider this a stress test for your concentration. If it fails, that's not my problem.\n\n- Rex",
     },
     {
       subject: "Afterburn drop",
-      body: "Successful sortie, hot engines, bad judgment. That's usually when the fun mail gets sent.\n\n- Rex",
+      body: "You cleared the run, so I sent something with a little more heat behind it. Don't waste it.\n\n- Rex",
     },
     {
       subject: "You can handle this",
-      body: "You cleared the mission, so I assumed you could handle a little extra heat in your inbox.\n\n- Rex",
+      body: "If this scrambles your thoughts, maybe you needed the practice.\n\n- Rex",
     },
     {
       subject: "Off-channel",
-      body: "Not for command review. Not for squad logs. Just for the person who actually finished the fight.\n\n- Rex",
+      body: "Not for command, not for the squad, not for the archive. Just your inbox.\n\n- Rex",
     },
     {
-      subject: "Post-combat static",
-      body: "Adrenaline's still high after that run. Seemed smarter to dump it into your inbox than start a hallway incident.\n\n- Rex",
+      subject: "Heat signature",
+      body: "You run hot under pressure. So do I.\n\nMake of that what you will.\n\n- Rex",
     },
     {
-      subject: "Victory tax",
-      body: "You win, I send something reckless. Call it a tradition if you keep performing like that.\n\n- Rex",
+      subject: "Post-mission window",
+      body: "Adrenaline drops fast after a clean kill streak. Here's something to keep it elevated.\n\n- Rex",
+    },
+    {
+      subject: "No questions",
+      body: "I don't explain my decisions in the field. I don't explain this one either.\n\nJust open it.\n\n- Rex",
+    },
+    {
+      subject: "High score: distraction",
+      body: "You're going to look at this and lose ten seconds of mission prep.\n\nWorth it. Probably.\n\n- Rex",
+    },
+    {
+      subject: "Throttle check",
+      body: "Some people can't handle full power.\n\nI'm betting you can.\n\n- Rex",
+    },
+    {
+      subject: "Unscheduled transmission",
+      body: "Command didn't authorize this. I sent it anyway.\n\nI do that sometimes.\n\n- Rex",
+    },
+    {
+      subject: "Full burn",
+      body: "You don't hold back when it counts. Neither do I.\n\nThis is what that looks like outside the cockpit.\n\n- Rex",
+    },
+    {
+      subject: "Second pass",
+      body: "The first run was to see what you could do. You passed.\n\nSecond pass is a reward.\n\n- Rex",
     },
   ],
   Yuki: [
     {
       subject: "Archive access",
-      body: "You completed the sortie. I thought you deserved something quieter than another performance breakdown.\n\n- Yuki",
+      body: "This transmission is quieter than my mission logs, but probably more useful to you.\n\n- Yuki",
     },
     {
       subject: "For your eyes only",
-      body: "The official reports are useful. They are also an incomplete version of me. This is better.\n\n- Yuki",
+      body: "You get the formal reports already. I thought you deserved the version with less distance in it.\n\n- Yuki",
     },
     {
       subject: "Midnight transmission",
-      body: "No strategic importance. No tactical relevance. It felt right to send after a successful run.\n\n- Yuki",
+      body: "No tactical value. No strategic importance. I sent it anyway.\n\n- Yuki",
     },
     {
       subject: "Closer than usual",
-      body: "You flew well. I noticed. This message is what happens when I stop pretending I did not.\n\n- Yuki",
+      body: "If this feels more personal than my normal messages, that was intentional.\n\n- Yuki",
     },
     {
-      subject: "Quiet reward",
-      body: "Some people celebrate loudly. I prefer a cleaner signal, sent to the person who earned it.\n\n- Yuki",
+      subject: "Encrypted send",
+      body: "I ran three encryption layers on this. Not because it's required.\n\nBecause I wanted it to feel like it was only for you.\n\n- Yuki",
     },
     {
-      subject: "Personal archive",
-      body: "You get mission logs from everyone else. I thought you might want the version with a little less distance in it.\n\n- Yuki",
+      subject: "Rest cycle",
+      body: "I don't sleep well before deployments. So I sent this instead.\n\nNow it's your problem too.\n\n- Yuki",
+    },
+    {
+      subject: "Precision drop",
+      body: "You're careful. Deliberate. I notice those things.\n\nThis is the version of me that matches that energy.\n\n- Yuki",
+    },
+    {
+      subject: "Low-emission channel",
+      body: "Minimum interference. Maximum signal.\n\nThat's the idea. You can decide if it worked.\n\n- Yuki",
+    },
+    {
+      subject: "Secondary file",
+      body: "The official record has the mission stats. This file has something else entirely.\n\n- Yuki",
+    },
+    {
+      subject: "Observation note",
+      body: "I watch the data more than most. I also watched the last run.\n\nYou're worth observing.\n\n- Yuki",
+    },
+    {
+      subject: "Quiet sector",
+      body: "There's a lull between engagements. I used it to think about something I don't usually admit.\n\nThen I sent you this.\n\n- Yuki",
+    },
+    {
+      subject: "Subzero calm",
+      body: "People think I'm cold because I'm focused. They're not wrong.\n\nBut there are exceptions.\n\n- Yuki",
     },
   ],
 };
 
-function inferPilotSender(filename: string): PilotSender {
-  const lower = filename.toLowerCase();
-  if (lower.includes("nova")) return "Nova";
-  if (lower.includes("rex")) return "Rex";
-  if (lower.includes("yuki")) return "Yuki";
+// Pilot image flow: run-count gated so images arrive over the course of
+// play instead of all showing up at once. The 3 named pilot portraits
+// (nova_after_hours, rex_afterburn, yuki_midnight_archive) are excluded
+// here because BASE_MESSAGES below already has hand-written entries for
+// them gated by specific mission grades - including them in the batch
+// would duplicate the image under a canned subject line.
+const PILOT_BATCH_IMAGE_FILES = PILOT_INBOX_IMAGE_FILES.filter((name) =>
+  name.startsWith("job-")
+);
 
-  let hash = 0;
-  for (let index = 0; index < filename.length; index += 1) {
-    hash = (hash + filename.charCodeAt(index)) % PILOT_SENDERS.length;
-  }
-
-  return PILOT_SENDERS[hash];
+// Linear unlock curve: image N unlocks at run N+1. First image after
+// first completed run, last job image after ~50 runs. Feels earned,
+// keeps the drip going for players who commit to the game.
+function unlocksAtRun(index: number): number {
+  return index + 1;
 }
 
 function buildPilotInboxMessages(): InboxMessageTemplate[] {
+  // Base timestamp pinned so the spread across messages stays deterministic
+  // for the session. Newer (lower index) messages appear most recent.
   const now = Date.now();
-  return PILOT_INBOX_IMAGE_FILES.map((filename, index) => {
-    const sender = inferPilotSender(filename);
+  return PILOT_BATCH_IMAGE_FILES.map((filename, index) => {
+    // Round-robin pilot assignment so each pilot gets an even share of the
+    // batch instead of filename-hash bias. index 0 → Nova, 1 → Rex, 2 → Yuki...
+    const sender = PILOT_SENDERS[index % PILOT_SENDERS.length];
     const sequence = String(index + 1).padStart(2, "0");
     const pool = PILOT_MESSAGE_POOLS[sender];
     const variant = pool[index % pool.length];
+    const requiredRuns = unlocksAtRun(index);
     return {
       id: `msg-pilot-image-${filename.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`,
       sender,
@@ -212,8 +292,10 @@ function buildPilotInboxMessages(): InboxMessageTemplate[] {
           label: `${sender} transmission`,
         },
       ],
-      timestamp: now - index * 90000,
-      isUnlocked: (save) => save.totalBossKills >= index + 1 || save.totalRuns >= (index + 1) * 2,
+      // Newer messages at lower index surface first; timestamps are offset
+      // far enough apart that the spread reads as "arrived over days".
+      timestamp: now - index * 1000 * 60 * 60 * 3, // 3h apart
+      isUnlocked: (save) => save.totalRuns >= requiredRuns,
     };
   });
 }
@@ -247,7 +329,7 @@ const BASE_MESSAGES: InboxMessageTemplate[] = [
     sender: "Intelligence Division",
     subject: "Nebula Runway - Threat Assessment",
     preview: "Heavy enemy activity confirmed",
-    body: "Our scouts report increased enemy activity in the Nebula Runway sector. New heavy units have been deployed — codename 'Tank Fortress'. These armored platforms feature rotating shield generators. Focus fire during shield downtime windows.\n\nStay sharp out there.",
+    body: "Our scouts report increased enemy activity in the Nebula Runway sector. New heavy units have been deployed - codename 'Tank Fortress'. These armored platforms feature rotating shield generators. Focus fire during shield downtime windows.\n\nStay sharp out there.",
     timestamp: Date.now() - 43200000,
     isUnlocked: () => true,
   },
@@ -350,8 +432,11 @@ function getInboxMessages(save: SaveData): InboxMessage[] {
 
 function AttachmentImage({ attachment, onHoldStart, onHoldEnd }: { attachment: InboxAttachment; onHoldStart?: (src: string) => void; onHoldEnd?: () => void }) {
   const [src, setSrc] = useState(() => resolveAssetUrl(attachment.url) ?? attachment.url);
+  // Fade-in on decode so the image doesn't "pop" into the message pane.
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    setLoaded(false);
     setSrc(resolveAssetUrl(attachment.url) ?? attachment.url);
   }, [attachment.url]);
 
@@ -369,10 +454,13 @@ function AttachmentImage({ attachment, onHoldStart, onHoldEnd }: { attachment: I
       src={src}
       alt={attachment.alt ?? attachment.label ?? ""}
       draggable={false}
+      decoding="async"
+      onLoad={() => setLoaded(true)}
       onError={() => {
         if (!attachment.fallbackUrl) return;
         const fallbackSrc = resolveAssetUrl(attachment.fallbackUrl) ?? attachment.fallbackUrl;
         if (fallbackSrc !== src) {
+          setLoaded(false);
           setSrc(fallbackSrc);
         }
       }}
@@ -382,6 +470,11 @@ function AttachmentImage({ attachment, onHoldStart, onHoldEnd }: { attachment: I
       onContextMenu={(e) => e.preventDefault()}
       style={{
         width: "100%",
+        // Cap vertical footprint so a tall portrait never pushes the body
+        // text below the fold, especially in landscape where viewport height
+        // collapses. 55vh capped at 440px reads comfortably on both phones
+        // and desktop without cropping pilot portraits awkwardly.
+        maxHeight: "min(55vh, 440px)",
         display: "block",
         objectFit: "contain",
         borderRadius: "6px",
@@ -389,6 +482,10 @@ function AttachmentImage({ attachment, onHoldStart, onHoldEnd }: { attachment: I
         userSelect: "none",
         WebkitUserSelect: "none",
         touchAction: "none",
+        opacity: loaded ? 1 : 0,
+        transform: loaded ? "scale(1)" : "scale(0.985)",
+        transition: "opacity 320ms ease, transform 420ms cubic-bezier(0.22, 0.61, 0.36, 1)",
+        willChange: "opacity, transform",
       }}
     />
   );
@@ -415,7 +512,12 @@ function ImageLightbox({ src, onRelease }: { src: string; onRelease: () => void 
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "16px",
+        // Respect notched / rounded-corner safe areas so full-bleed images
+        // don't clip under the status bar or home indicator on mobile.
+        paddingTop: "max(16px, env(safe-area-inset-top))",
+        paddingBottom: "max(16px, env(safe-area-inset-bottom))",
+        paddingLeft: "max(16px, env(safe-area-inset-left))",
+        paddingRight: "max(16px, env(safe-area-inset-right))",
         touchAction: "none",
       }}
     >
@@ -559,8 +661,13 @@ export default function InboxOverlay({ isOpen, onClose }: InboxOverlayProps) {
       alignItems: "center", justifyContent: "center",
     }}>
       <div style={{
-        width: isMobile ? "100vw" : "min(92vw, 840px)",
-        height: isMobile ? "100vh" : "min(84vh, 620px)",
+        // 100% (not 100vw) keeps the panel inside the viewport even when
+        // a scrollbar / safe-area offset is present; mobile fills the
+        // flex parent rather than forcing horizontal overflow.
+        width: isMobile ? "100%" : "min(92vw, 840px)",
+        maxWidth: "100%",
+        height: isMobile ? "100%" : "min(84vh, 620px)",
+        maxHeight: "100%",
         background: "linear-gradient(180deg, #0a1628 0%, #040612 100%)",
         border: isMobile ? "none" : "1px solid rgba(102,217,239,0.3)",
         borderRadius: isMobile ? 0 : "16px",
@@ -588,21 +695,56 @@ export default function InboxOverlay({ isOpen, onClose }: InboxOverlayProps) {
           <button onClick={onClose} style={{
             background: "none", border: "none", color: "rgba(255,255,255,0.5)",
             cursor: "pointer", fontSize: "18px", fontFamily: "monospace",
+            // WCAG-minimum tap target so the close control is usable on phones.
+            minWidth: "44px", minHeight: "44px",
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
           }}>
             {"\u2715"}
           </button>
         </div>
 
-        {/* Content */}
-        <div style={{ flex: 1, display: "flex", flexDirection: isMobile ? "column" : "row", overflow: "hidden" }}>
-          {/* Message list - show when no message selected on mobile, always on desktop */}
-          {(!isMobile || !selectedMessageId) && (
-          <div style={{
-            width: isMobile ? "100%" : "260px",
-            flex: isMobile ? 1 : undefined,
-            borderRight: isMobile ? "none" : "1px solid rgba(102,217,239,0.1)",
-            overflowY: "auto",
-            background: "linear-gradient(180deg, rgba(8,16,30,0.94) 0%, rgba(5,10,20,0.88) 100%)",
+        {/* Keyframes for message-body fade/slide-in on switch. Inlined so the
+            component has no external CSS dependency. */}
+        <style>{`
+          @keyframes inboxDetailFade {
+            0% { opacity: 0; transform: translateY(6px); }
+            100% { opacity: 1; transform: translateY(0); }
+          }
+        `}</style>
+
+        {/* Content. On mobile both panes stay mounted and slide with a CSS
+            transform, which keeps the detail view in the DOM across orientation
+            changes (fixes "rotate phone and text pane disappears") and gives
+            the list↔detail transition a modern slide feel instead of a hard
+            conditional render swap. */}
+        <div style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "row",
+          overflow: "hidden",
+          position: "relative",
+        }}>
+          {/* Message list */}
+          <div
+            aria-hidden={isMobile && !!selectedMessageId}
+            style={{
+              width: isMobile ? "100%" : "260px",
+              borderRight: isMobile ? "none" : "1px solid rgba(102,217,239,0.1)",
+              overflowY: "auto",
+              background: "linear-gradient(180deg, rgba(8,16,30,0.94) 0%, rgba(5,10,20,0.88) 100%)",
+              ...(isMobile
+                ? {
+                    position: "absolute",
+                    inset: 0,
+                    transform: selectedMessageId ? "translateX(-100%)" : "translateX(0)",
+                    transition: "transform 300ms cubic-bezier(0.22, 0.61, 0.36, 1)",
+                    willChange: "transform",
+                    zIndex: 1,
+                    // Pointer blocked when off-screen so buried buttons aren't
+                    // tappable through the detail pane mid-animation.
+                    pointerEvents: selectedMessageId ? "none" : "auto",
+                  }
+                : {}),
           }}>
             {messages.map(msg => (
               <button key={msg.id} onClick={() => selectMessage(msg)} style={{
@@ -611,6 +753,7 @@ export default function InboxOverlay({ isOpen, onClose }: InboxOverlayProps) {
                 background: selectedMessage?.id === msg.id ? "rgba(102,217,239,0.12)" : "transparent",
                 border: "none", borderBottom: "1px solid rgba(255,255,255,0.05)",
                 fontFamily: "monospace",
+                transition: "background 180ms ease",
               }}>
                 <div style={{
                   fontSize: "11px", color: msg.read ? "rgba(255,255,255,0.4)" : "#66d9ef",
@@ -640,19 +783,39 @@ export default function InboxOverlay({ isOpen, onClose }: InboxOverlayProps) {
               </button>
             ))}
           </div>
-          )}
 
-          {/* Message detail - show when message selected on mobile, always on desktop */}
-          {(!isMobile || selectedMessageId) && (
-          <div style={{ flex: 1, padding: isMobile ? "14px" : "22px", overflowY: "auto" }}>
+          {/* Message detail */}
+          <div
+            aria-hidden={isMobile && !selectedMessageId}
+            style={{
+              flex: isMobile ? undefined : 1,
+              padding: isMobile ? "14px" : "22px",
+              overflowY: "auto",
+              ...(isMobile
+                ? {
+                    position: "absolute",
+                    inset: 0,
+                    transform: selectedMessageId ? "translateX(0)" : "translateX(100%)",
+                    transition: "transform 300ms cubic-bezier(0.22, 0.61, 0.36, 1)",
+                    willChange: "transform",
+                    zIndex: 2,
+                    pointerEvents: selectedMessageId ? "auto" : "none",
+                  }
+                : {}),
+            }}
+          >
             {selectedMessage ? (
-              <>
+              // key forces re-mount → triggers inboxDetailFade animation on
+              // every message switch, which makes the content feel like it
+              // "arrives" rather than flashing.
+              <div key={selectedMessage.id} style={{ animation: "inboxDetailFade 260ms cubic-bezier(0.22, 0.61, 0.36, 1) both" }}>
                 {isMobile && (
                   <button onClick={() => setSelectedMessageId(null)} style={{
                     background: "none", border: "1px solid rgba(102,217,239,0.3)",
-                    color: "#66d9ef", padding: "6px 14px", borderRadius: "8px",
-                    cursor: "pointer", fontFamily: "monospace", fontSize: "12px",
-                    marginBottom: "14px",
+                    color: "#66d9ef", padding: "10px 16px", borderRadius: "8px",
+                    cursor: "pointer", fontFamily: "monospace", fontSize: "13px",
+                    marginBottom: "14px", minHeight: "44px",
+                    display: "inline-flex", alignItems: "center",
                   }}>
                     ← Back to messages
                   </button>
@@ -681,7 +844,7 @@ export default function InboxOverlay({ isOpen, onClose }: InboxOverlayProps) {
                 }}>
                   {selectedMessage.body}
                 </p>
-              </>
+              </div>
             ) : (
               <div style={{
                 display: "flex", alignItems: "center", justifyContent: "center",
@@ -692,7 +855,6 @@ export default function InboxOverlay({ isOpen, onClose }: InboxOverlayProps) {
               </div>
             )}
           </div>
-          )}
         </div>
       </div>
     </div>
