@@ -1948,55 +1948,57 @@ export default function ShmupPlayScreen() {
       const baseVy = (dy / length) * 180;
 
       if (boss.archetype === "tyrant") {
-        const lanceSpread = boss.phase === 1 ? 24 : boss.phase === 2 ? 44 : 64;
+        const lanceSpread = boss.phase === 1 ? 24 : boss.phase === 2 ? 52 : 78;
         for (const side of [-1, 1]) {
           pushEnemyBullet({
             x: boss.x + side * (18 + boss.phase * 6),
             y: boss.y + boss.radius * 0.45,
-            vx: baseVx * 0.4 + side * lanceSpread,
+            vx: baseVx * 0.42 + side * lanceSpread,
             vy: baseVy + 38,
-            radius: boss.phase === 3 ? 7 : 6,
+            radius: boss.phase === 3 ? 8 : 6.5,
             color: boss.phase === 3 ? "#ff6b6b" : activeMap.palette.bossShotColor,
             coreColor: "#fff4e6",
-            length: boss.phase === 3 ? 18 : 16,
+            length: boss.phase === 3 ? 20 : 16,
             spriteKey: "bulletBoss",
           });
         }
         if (boss.phase >= 2) {
-          pushEnemyBullet({
-            x: boss.x,
-            y: boss.y + boss.radius * 0.6,
-            vx: 0,
-            vy: 220,
-            radius: 7,
-            color: "#ffa94d",
-            coreColor: "#fff4e6",
-            length: 18,
-            spriteKey: "bulletBoss",
-          });
+          for (const vx of [-140, 0, 140]) {
+            pushEnemyBullet({
+              x: boss.x,
+              y: boss.y + boss.radius * 0.6,
+              vx,
+              vy: 220 + boss.phase * 12,
+              radius: 7,
+              color: "#ffa94d",
+              coreColor: "#fff4e6",
+              length: 18,
+              spriteKey: "bulletBoss",
+            });
+          }
         }
         return;
       }
 
       if (boss.archetype === "leviathan") {
-        const offsets = boss.phase === 1 ? [-60, 0, 60] : boss.phase === 2 ? [-100, -36, 36, 100] : [-132, -72, 0, 72, 132];
+        const offsets = boss.phase === 1 ? [-90, -30, 30, 90] : boss.phase === 2 ? [-140, -84, -28, 28, 84, 140] : [-180, -126, -72, -18, 18, 72, 126, 180];
         for (const offset of offsets) {
           pushEnemyBullet({
             x: boss.x,
             y: boss.y + boss.radius * 0.55,
             vx: offset,
-            vy: 150 + boss.phase * 20,
-            radius: 6,
+            vy: 150 + boss.phase * 26,
+            radius: boss.phase === 3 ? 7 : 6,
             color: activeMap.palette.bossShotColor,
             coreColor: activeMap.palette.bossShotCore,
-            length: 14,
+            length: boss.phase === 3 ? 16 : 14,
             spriteKey: "bulletBoss",
           });
         }
         return;
       }
 
-      const fanOffsets = boss.phase === 1 ? [-36, 0, 36] : boss.phase === 2 ? [-72, -24, 24, 72] : [-96, -48, 0, 48, 96];
+      const fanOffsets = boss.phase === 1 ? [-54, -18, 18, 54] : boss.phase === 2 ? [-96, -48, -16, 16, 48, 96] : [-126, -84, -42, 0, 42, 84, 126];
       const shotColor = boss.phase === 1 ? activeMap.palette.enemyShotColor : activeMap.palette.bossShotColor;
       const shotCore = boss.phase === 1 ? activeMap.palette.enemyShotCore : activeMap.palette.bossShotCore;
       const shotRadius = boss.phase === 1 ? 6 : 7;
@@ -2077,9 +2079,9 @@ export default function ShmupPlayScreen() {
         return;
       }
 
-      const startAngle = boss.phase === 1 ? Math.PI * 0.22 : Math.PI * 0.1;
+      const startAngle = boss.phase === 1 ? Math.PI * 0.18 : Math.PI * 0.08;
       const endAngle = Math.PI - startAngle;
-      const bulletCount = boss.phase === 1 ? 7 : boss.phase === 2 ? 10 : 14;
+      const bulletCount = boss.phase === 1 ? 9 : boss.phase === 2 ? 13 : 18;
       const shotColor = boss.phase === 1 ? activeMap.palette.enemyShotColor : activeMap.palette.bossShotColor;
       const shotCore = boss.phase === 1 ? activeMap.palette.enemyShotCore : activeMap.palette.bossShotCore;
 
@@ -3343,8 +3345,13 @@ export default function ShmupPlayScreen() {
 
         // Boss movement — horizontal sweeps + lunges in later phases
         const baseX = canvas.width / 2 + Math.sin(boss.age * moveSpeed) * moveFreq;
-        if (boss.phase === 3) {
-          // Phase 3: occasional lunge toward player
+        if (boss.archetype === "tyrant") {
+          const pressureX = baseX + Math.sin(boss.age * (boss.phase === 3 ? 4.4 : 3.1)) * (boss.phase === 3 ? 44 : 26);
+          boss.x = clamp(pressureX, boss.radius + 12, canvas.width - boss.radius - 12);
+        } else if (boss.archetype === "leviathan") {
+          const tideX = baseX + Math.sin(boss.age * 1.9) * (boss.phase >= 2 ? 34 : 16);
+          boss.x = clamp(tideX, boss.radius + 12, canvas.width - boss.radius - 12);
+        } else if (boss.phase === 3) {
           const lungeX = baseX + Math.sin(boss.age * 3.2) * 20;
           boss.x = clamp(lungeX, boss.radius + 12, canvas.width - boss.radius - 12);
         } else {
@@ -3366,36 +3373,36 @@ export default function ShmupPlayScreen() {
           boss.burstCooldown += burstRate;
         }
 
-        // Sweep laser (phase 2+)
-        if (phaseConfig?.sweepLaser !== false && boss.phase >= 2) {
+        // Sweep laser (dreadnought dominates space, leviathan in late phases)
+        if (phaseConfig?.sweepLaser !== false && (boss.archetype === "dreadnought" ? boss.phase >= 2 : boss.archetype === "leviathan" ? boss.phase >= 3 : boss.phase >= 2)) {
           boss.sweepCooldown -= bossDelta;
           if (boss.sweepActive) {
-            boss.sweepAngle += Math.PI * 0.6 * bossDelta; // sweep across screen
-            if (boss.sweepAngle > Math.PI * 0.85) {
+            boss.sweepAngle += (boss.archetype === "dreadnought" ? Math.PI * 0.82 : Math.PI * 0.54) * bossDelta;
+            if (boss.sweepAngle > Math.PI * 0.9) {
               boss.sweepActive = false;
-              boss.sweepCooldown = boss.phase === 3 ? 3.0 : 5.0;
+              boss.sweepCooldown = boss.archetype === "dreadnought" ? (boss.phase === 3 ? 2.2 : 3.4) : boss.phase === 3 ? 3.6 : 5.0;
             }
           } else if (boss.sweepCooldown <= 0 && boss.y >= bossTargetY) {
             boss.sweepActive = true;
-            boss.sweepAngle = Math.PI * 0.15;
+            boss.sweepAngle = boss.archetype === "dreadnought" ? Math.PI * 0.08 : Math.PI * 0.15;
           }
         }
 
-        // Minion summoning (phase 3)
-        if (phaseConfig?.summonMinions !== false && boss.phase === 3) {
+        // Minion summoning, especially aggressive on tyrant and leviathan
+        if (phaseConfig?.summonMinions !== false && boss.phase >= (boss.archetype === "tyrant" ? 2 : 3)) {
           boss.minionCooldown -= bossDelta;
           if (boss.minionCooldown <= 0 && boss.y >= bossTargetY) {
-            boss.minionCooldown = 4.2;
-            // Spawn 4 swarm minions
-            for (let i = 0; i < 4; i++) {
+            boss.minionCooldown = boss.archetype === "tyrant" ? 3.1 : boss.archetype === "leviathan" ? 3.6 : 4.2;
+            const minionCount = boss.archetype === "tyrant" ? 5 : boss.archetype === "leviathan" ? 4 : 4;
+            for (let i = 0; i < minionCount; i++) {
               enemiesRef.current.push({
                 id: enemyIdRef.current++,
                 pattern: "swarm",
-                x: boss.x + (i - 1.5) * 34,
+                x: boss.x + (i - (minionCount - 1) / 2) * 34,
                 y: boss.y + 20,
-                originX: boss.x + (i - 1.5) * 34,
-                vx: (i - 1.5) * 95,
-                vy: 180,
+                originX: boss.x + (i - (minionCount - 1) / 2) * 34,
+                vx: (i - (minionCount - 1) / 2) * (boss.archetype === "tyrant" ? 110 : 95),
+                vy: boss.archetype === "leviathan" ? 205 : 180,
                 radius: 10,
                 hp: 1,
                 scoreValue: 60,
