@@ -514,8 +514,12 @@ function getWeaponLabel(level: number): string {
       return "Wide Assault";
     case 4:
       return "Nova Array";
+    case 5:
+      return "Overwing";
+    case 6:
+      return "Supernova";
     default:
-      return "Nova Array";
+      return "Supernova";
   }
 }
 
