@@ -4379,7 +4379,8 @@ export default function ShmupPlayScreen() {
 
       if (bossRef.current) {
         const boss = bossRef.current;
-        const sprite = getSprite("boss");
+        // Bosses are rendered procedurally per archetype — distinct designs per zone
+        const sprite: HTMLImageElement | null = null;
 
         // Phase transition flash
         if (boss.phaseTransitionFlash > 0) {
@@ -4418,83 +4419,336 @@ export default function ShmupPlayScreen() {
             ? activeMap.palette.bossPrimary
             : boss.phase === 2
               ? activeMap.palette.bossSecondary
-              : "#ff2222"; // Phase 3: red desperation
+              : "#ff2222";
           const bPulse = 0.88 + Math.sin(boss.age * 2.5) * 0.12;
           ctx.save();
           ctx.translate(boss.x, boss.y);
           ctx.scale(displayScale, displayScale);
-
-          // Outer glow aura
           ctx.shadowColor = bossColor;
           ctx.shadowBlur = 24;
 
-          // Main hull — wide armored dreadnought
-          const hullGrad = ctx.createLinearGradient(0, -br * 1.1, 0, br * 1.2);
-          hullGrad.addColorStop(0, bossColor);
-          hullGrad.addColorStop(0.6, "#2a1535");
-          hullGrad.addColorStop(1, "#0d0810");
-          ctx.fillStyle = hullGrad;
-          ctx.beginPath();
-          ctx.moveTo(0, -br * 1.1);
-          ctx.lineTo(br * 0.45, -br * 0.7);
-          ctx.lineTo(br * 1.1, -br * 0.15);
-          ctx.lineTo(br * 1.25, br * 0.4);
-          ctx.lineTo(br * 0.7, br * 1.0);
-          ctx.lineTo(br * 0.2, br * 1.15);
-          ctx.lineTo(0, br * 0.9);
-          ctx.lineTo(-br * 0.2, br * 1.15);
-          ctx.lineTo(-br * 0.7, br * 1.0);
-          ctx.lineTo(-br * 1.25, br * 0.4);
-          ctx.lineTo(-br * 1.1, -br * 0.15);
-          ctx.lineTo(-br * 0.45, -br * 0.7);
-          ctx.closePath();
-          ctx.fill();
-          ctx.shadowBlur = 0;
-
-          // Wing armor panels
-          const panelGrad = ctx.createLinearGradient(-br * 1.2, 0, br * 1.2, 0);
-          panelGrad.addColorStop(0, `${bossColor}44`);
-          panelGrad.addColorStop(0.5, `${bossColor}22`);
-          panelGrad.addColorStop(1, `${bossColor}44`);
-          ctx.fillStyle = panelGrad;
-          ctx.fillRect(-br * 1.15, -br * 0.1, br * 0.4, br * 0.9);
-          ctx.fillRect(br * 0.75, -br * 0.1, br * 0.4, br * 0.9);
-
-          // Central cockpit/eye
-          const eyeGrad = ctx.createRadialGradient(0, -br * 0.2, 2, 0, -br * 0.2, br * 0.35);
-          eyeGrad.addColorStop(0, "#ffffff");
-          eyeGrad.addColorStop(0.3, bossColor);
-          eyeGrad.addColorStop(1, `${bossColor}00`);
-          ctx.fillStyle = eyeGrad;
-          ctx.beginPath();
-          ctx.arc(0, -br * 0.2, br * 0.35 * bPulse, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Weapon turret mounts
-          ctx.fillStyle = `rgba(255,255,255,${0.4 * bPulse})`;
-          for (const turretX of [-br * 0.65, -br * 0.3, br * 0.3, br * 0.65]) {
+          if (boss.archetype === "dreadnought") {
+            // ─────────────────────────────────────────────────
+            // AEGIS DREADNOUGHT — heavy armored patrol fortress
+            // Wide flat hull, quad turret batteries, command dome
+            // Zone: Nebula Runway — blockade enforcer
+            // ─────────────────────────────────────────────────
+            const hullGrad = ctx.createLinearGradient(0, -br * 1.0, 0, br * 1.1);
+            hullGrad.addColorStop(0, bossColor);
+            hullGrad.addColorStop(0.55, "#1a1040");
+            hullGrad.addColorStop(1, "#0b0820");
+            ctx.fillStyle = hullGrad;
+            // Wide armored hull — blocky, fortified, wide/flat ratio
             ctx.beginPath();
-            ctx.arc(turretX, br * 0.5, br * 0.09, 0, Math.PI * 2);
+            ctx.moveTo(0, -br * 1.0);
+            ctx.lineTo(br * 0.55, -br * 0.82);
+            ctx.lineTo(br * 1.3, -br * 0.35);
+            ctx.lineTo(br * 1.45, br * 0.15);
+            ctx.lineTo(br * 1.15, br * 0.65);
+            ctx.lineTo(br * 0.5, br * 0.9);
+            ctx.lineTo(0, br * 0.75);
+            ctx.lineTo(-br * 0.5, br * 0.9);
+            ctx.lineTo(-br * 1.15, br * 0.65);
+            ctx.lineTo(-br * 1.45, br * 0.15);
+            ctx.lineTo(-br * 1.3, -br * 0.35);
+            ctx.lineTo(-br * 0.55, -br * 0.82);
+            ctx.closePath();
             ctx.fill();
-          }
+            ctx.shadowBlur = 0;
 
-          // Engine array
-          ctx.fillStyle = `rgba(255,180,100,${0.55 * bPulse})`;
-          for (const engX of [-br * 0.4, 0, br * 0.4]) {
+            // Shoulder armor plates
+            const shoulderGrad = ctx.createLinearGradient(0, -br * 0.3, 0, br * 0.4);
+            shoulderGrad.addColorStop(0, `${bossColor}88`);
+            shoulderGrad.addColorStop(1, `${bossColor}22`);
+            ctx.fillStyle = shoulderGrad;
+            ctx.beginPath(); // right
+            ctx.moveTo(br * 1.15, -br * 0.1);
+            ctx.lineTo(br * 1.62, -br * 0.28);
+            ctx.lineTo(br * 1.72, br * 0.28);
+            ctx.lineTo(br * 1.3, br * 0.55);
+            ctx.lineTo(br * 1.1, br * 0.22);
+            ctx.closePath();
+            ctx.fill();
+            ctx.beginPath(); // left
+            ctx.moveTo(-br * 1.15, -br * 0.1);
+            ctx.lineTo(-br * 1.62, -br * 0.28);
+            ctx.lineTo(-br * 1.72, br * 0.28);
+            ctx.lineTo(-br * 1.3, br * 0.55);
+            ctx.lineTo(-br * 1.1, br * 0.22);
+            ctx.closePath();
+            ctx.fill();
+
+            // Quad turret batteries
+            ctx.fillStyle = `rgba(255,255,255,${0.45 * bPulse})`;
+            for (const tx of [-br * 0.72, -br * 0.24, br * 0.24, br * 0.72]) {
+              ctx.beginPath();
+              ctx.ellipse(tx, -br * 0.45, br * 0.13, br * 0.09, 0, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.fillStyle = `rgba(200,220,255,${0.5 * bPulse})`;
+              ctx.fillRect(tx - br * 0.03, -br * 0.65, br * 0.06, br * 0.22);
+              ctx.fillStyle = `rgba(255,255,255,${0.45 * bPulse})`;
+            }
+
+            // Central command dome
+            const domeGrad = ctx.createRadialGradient(0, -br * 0.1, 1, 0, -br * 0.1, br * 0.42);
+            domeGrad.addColorStop(0, "#ffffff");
+            domeGrad.addColorStop(0.25, bossColor);
+            domeGrad.addColorStop(0.7, `${bossColor}55`);
+            domeGrad.addColorStop(1, `${bossColor}00`);
+            ctx.fillStyle = domeGrad;
             ctx.beginPath();
-            ctx.ellipse(engX, br * 1.0, br * 0.08, br * 0.15, 0, 0, Math.PI * 2);
+            ctx.ellipse(0, -br * 0.1, br * 0.42 * bPulse, br * 0.28 * bPulse, 0, 0, Math.PI * 2);
             ctx.fill();
-          }
 
-          // Panel line details
-          ctx.strokeStyle = `${bossColor}55`;
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.moveTo(-br * 0.45, -br * 0.7);
-          ctx.lineTo(-br * 0.2, br * 0.3);
-          ctx.moveTo(br * 0.45, -br * 0.7);
-          ctx.lineTo(br * 0.2, br * 0.3);
-          ctx.stroke();
+            // Engine exhaust array
+            ctx.fillStyle = `rgba(160,200,255,${0.7 * bPulse})`;
+            for (const ex of [-br * 0.55, 0, br * 0.55]) {
+              ctx.beginPath();
+              ctx.ellipse(ex, br * 0.85, br * 0.09, br * 0.18, 0, 0, Math.PI * 2);
+              ctx.fill();
+            }
+
+            // Hull armor panel lines
+            ctx.strokeStyle = `${bossColor}66`;
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(0, -br * 0.8); ctx.lineTo(0, br * 0.65);       // spine
+            ctx.moveTo(-br * 0.8, -br * 0.2); ctx.lineTo(br * 0.8, -br * 0.2); // cross brace
+            ctx.moveTo(-br * 0.55, -br * 0.8); ctx.lineTo(-br * 0.3, br * 0.4); // left rib
+            ctx.moveTo(br * 0.55, -br * 0.8); ctx.lineTo(br * 0.3, br * 0.4);   // right rib
+            ctx.stroke();
+
+          } else if (boss.archetype === "tyrant") {
+            // ─────────────────────────────────────────────────
+            // HELIOS TYRANT — solar-powered weapons platform
+            // Diamond core, forward-swept wings, twin cannon array
+            // Zone: Solar Rift — thermal fortress siege engine
+            // ─────────────────────────────────────────────────
+            const hullGrad = ctx.createLinearGradient(0, -br * 1.3, 0, br * 1.4);
+            hullGrad.addColorStop(0, bossColor);
+            hullGrad.addColorStop(0.4, "#2e0c00");
+            hullGrad.addColorStop(1, "#140500");
+            ctx.fillStyle = hullGrad;
+            // Diamond core body — aggressive forward-pointing silhouette
+            ctx.beginPath();
+            ctx.moveTo(0, -br * 1.3);           // nose
+            ctx.lineTo(br * 0.55, -br * 0.5);
+            ctx.lineTo(br * 0.65, br * 0.3);
+            ctx.lineTo(br * 0.3, br * 0.9);
+            ctx.lineTo(0, br * 1.0);
+            ctx.lineTo(-br * 0.3, br * 0.9);
+            ctx.lineTo(-br * 0.65, br * 0.3);
+            ctx.lineTo(-br * 0.55, -br * 0.5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Forward-swept weapon wings
+            const wingGrad = ctx.createLinearGradient(0, -br * 0.3, br * 2.0, br * 0.6);
+            wingGrad.addColorStop(0, `${bossColor}cc`);
+            wingGrad.addColorStop(0.5, `${bossColor}55`);
+            wingGrad.addColorStop(1, `${bossColor}11`);
+            ctx.fillStyle = wingGrad;
+            ctx.beginPath(); // right wing
+            ctx.moveTo(br * 0.5, -br * 0.4);
+            ctx.lineTo(br * 1.9, -br * 0.9);
+            ctx.lineTo(br * 2.0, -br * 0.3);
+            ctx.lineTo(br * 1.6, br * 0.5);
+            ctx.lineTo(br * 0.6, br * 0.25);
+            ctx.closePath();
+            ctx.fill();
+            ctx.beginPath(); // left wing
+            ctx.moveTo(-br * 0.5, -br * 0.4);
+            ctx.lineTo(-br * 1.9, -br * 0.9);
+            ctx.lineTo(-br * 2.0, -br * 0.3);
+            ctx.lineTo(-br * 1.6, br * 0.5);
+            ctx.lineTo(-br * 0.6, br * 0.25);
+            ctx.closePath();
+            ctx.fill();
+
+            // Solar turbine rings on wingtips
+            for (const wx of [-br * 1.75, br * 1.75]) {
+              ctx.strokeStyle = `rgba(255,200,80,${0.7 * bPulse})`;
+              ctx.lineWidth = br * 0.08;
+              ctx.shadowColor = "#ffaa00";
+              ctx.shadowBlur = 12;
+              ctx.beginPath();
+              ctx.arc(wx, -br * 0.12, br * 0.32, 0, Math.PI * 2);
+              ctx.stroke();
+              ctx.fillStyle = `rgba(255,220,120,${0.9 * bPulse})`;
+              ctx.shadowBlur = 0;
+              ctx.beginPath();
+              ctx.arc(wx, -br * 0.12, br * 0.14, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            ctx.shadowBlur = 0;
+
+            // Twin cannon barrels pointing down at player
+            ctx.fillStyle = `rgba(255,180,60,${0.8 * bPulse})`;
+            ctx.beginPath();
+            ctx.rect(-br * 0.22, br * 0.6, br * 0.14, br * 0.8);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.rect(br * 0.08, br * 0.6, br * 0.14, br * 0.8);
+            ctx.fill();
+            // Cannon muzzle glow
+            ctx.shadowColor = "#ffff00";
+            ctx.shadowBlur = 14;
+            ctx.fillStyle = `rgba(255,255,100,${bPulse})`;
+            for (const cx of [-br * 0.15, br * 0.15]) {
+              ctx.beginPath();
+              ctx.arc(cx, br * 1.35, br * 0.1 * bPulse, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            ctx.shadowBlur = 0;
+
+            // Targeting array at nose
+            ctx.strokeStyle = `rgba(255,220,100,${0.6 * bPulse})`;
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(0, -br * 1.3); ctx.lineTo(-br * 0.2, -br * 0.9);
+            ctx.moveTo(0, -br * 1.3); ctx.lineTo(br * 0.2, -br * 0.9);
+            ctx.stroke();
+            ctx.fillStyle = `rgba(255,255,100,${bPulse})`;
+            ctx.beginPath();
+            ctx.arc(0, -br * 1.2, br * 0.07 * bPulse, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Hot exhaust vents along stern
+            ctx.fillStyle = `rgba(255,120,30,${0.65 * bPulse})`;
+            for (const vx of [-br * 0.55, -br * 0.25, br * 0.25, br * 0.55]) {
+              ctx.beginPath();
+              ctx.ellipse(vx, br * 0.85, br * 0.07, br * 0.14, 0, 0, Math.PI * 2);
+              ctx.fill();
+            }
+
+            // Wing panel lines
+            ctx.strokeStyle = `${bossColor}55`;
+            ctx.lineWidth = 1.0;
+            ctx.beginPath();
+            ctx.moveTo(0, -br * 1.0); ctx.lineTo(0, br * 0.7);
+            ctx.moveTo(-br * 0.45, -br * 0.3); ctx.lineTo(-br * 1.4, -br * 0.6);
+            ctx.moveTo(br * 0.45, -br * 0.3); ctx.lineTo(br * 1.4, -br * 0.6);
+            ctx.stroke();
+
+          } else {
+            // ─────────────────────────────────────────────────
+            // CRYO LEVIATHAN — ancient deep-void entity
+            // Organic body, void wings, crystal spines, multi-eye cluster
+            // Zone: Abyss Crown — the void doesn't build ships, it becomes them
+            // ─────────────────────────────────────────────────
+            const hullGrad = ctx.createLinearGradient(0, -br * 1.6, 0, br * 1.5);
+            hullGrad.addColorStop(0, `${bossColor}cc`);
+            hullGrad.addColorStop(0.35, "#071528");
+            hullGrad.addColorStop(0.75, "#03101f");
+            hullGrad.addColorStop(1, bossColor);
+            ctx.fillStyle = hullGrad;
+            // Elongated organic body — bezier curves, not straight lines
+            ctx.beginPath();
+            ctx.moveTo(0, -br * 1.6);
+            ctx.bezierCurveTo(br * 0.4, -br * 1.3, br * 0.55, -br * 0.5, br * 0.45, br * 0.4);
+            ctx.bezierCurveTo(br * 0.35, br * 1.0, br * 0.2, br * 1.4, 0, br * 1.6);
+            ctx.bezierCurveTo(-br * 0.2, br * 1.4, -br * 0.35, br * 1.0, -br * 0.45, br * 0.4);
+            ctx.bezierCurveTo(-br * 0.55, -br * 0.5, -br * 0.4, -br * 1.3, 0, -br * 1.6);
+            ctx.closePath();
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Void wings — massive organic manta-ray sweep
+            const voidWingGrad = ctx.createLinearGradient(0, -br * 0.3, br * 2.6, br * 1.0);
+            voidWingGrad.addColorStop(0, `${bossColor}aa`);
+            voidWingGrad.addColorStop(0.4, `${bossColor}44`);
+            voidWingGrad.addColorStop(1, `${bossColor}08`);
+            ctx.fillStyle = voidWingGrad;
+            ctx.beginPath(); // right wing
+            ctx.moveTo(br * 0.35, -br * 0.6);
+            ctx.bezierCurveTo(br * 1.2, -br * 1.2, br * 2.5, -br * 0.8, br * 2.6, br * 0.1);
+            ctx.bezierCurveTo(br * 2.4, br * 0.8, br * 1.4, br * 1.1, br * 0.4, br * 0.7);
+            ctx.closePath();
+            ctx.fill();
+            ctx.beginPath(); // left wing
+            ctx.moveTo(-br * 0.35, -br * 0.6);
+            ctx.bezierCurveTo(-br * 1.2, -br * 1.2, -br * 2.5, -br * 0.8, -br * 2.6, br * 0.1);
+            ctx.bezierCurveTo(-br * 2.4, br * 0.8, -br * 1.4, br * 1.1, -br * 0.4, br * 0.7);
+            ctx.closePath();
+            ctx.fill();
+
+            // Crystal spine array along dorsal surface
+            ctx.fillStyle = `rgba(160,230,255,${0.85 * bPulse})`;
+            ctx.shadowColor = "#a0e8ff";
+            ctx.shadowBlur = 10;
+            const spineYs = [-br * 1.1, -br * 0.65, -br * 0.2, br * 0.25, br * 0.7, br * 1.1];
+            for (let si = 0; si < spineYs.length; si++) {
+              const sy = spineYs[si];
+              const sh = br * (0.22 + 0.12 * Math.sin(si * 1.4));
+              ctx.beginPath();
+              ctx.moveTo(0, sy);
+              ctx.lineTo(-br * 0.08, sy + sh * 0.6);
+              ctx.lineTo(0, sy + sh);
+              ctx.lineTo(br * 0.08, sy + sh * 0.6);
+              ctx.closePath();
+              ctx.fill();
+            }
+            ctx.shadowBlur = 0;
+
+            // Multi-eye clusters
+            const eyePos: [number, number][] = [
+              [-br * 0.18, -br * 1.1], [br * 0.18, -br * 1.1],
+              [-br * 0.25, -br * 0.4], [br * 0.25, -br * 0.4],
+            ];
+            for (const [ex, ey] of eyePos) {
+              const eg = ctx.createRadialGradient(ex, ey, 0, ex, ey, br * 0.13);
+              eg.addColorStop(0, "#ffffff");
+              eg.addColorStop(0.3, bossColor);
+              eg.addColorStop(1, `${bossColor}00`);
+              ctx.fillStyle = eg;
+              ctx.beginPath();
+              ctx.arc(ex, ey, br * 0.13 * bPulse, 0, Math.PI * 2);
+              ctx.fill();
+            }
+
+            // Central void-mouth weapon port
+            const voidGrad = ctx.createRadialGradient(0, br * 0.1, 2, 0, br * 0.1, br * 0.45);
+            voidGrad.addColorStop(0, "#000000");
+            voidGrad.addColorStop(0.4, `${bossColor}88`);
+            voidGrad.addColorStop(0.7, `${bossColor}33`);
+            voidGrad.addColorStop(1, `${bossColor}00`);
+            ctx.fillStyle = voidGrad;
+            ctx.shadowColor = bossColor;
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.ellipse(0, br * 0.1, br * 0.45 * bPulse, br * 0.32 * bPulse, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Ice crystal formations at wingtips
+            ctx.fillStyle = `rgba(180,240,255,${0.65 * bPulse})`;
+            ctx.shadowColor = "#b4f0ff";
+            ctx.shadowBlur = 8;
+            for (const [wxBase, dir] of [[br * 2.2, 1], [-br * 2.2, -1]] as [number, number][]) {
+              for (let ci = 0; ci < 3; ci++) {
+                const angle = (ci - 1) * 0.4 + (dir === 1 ? 0.2 : -0.2);
+                const cLen = br * (0.25 + ci * 0.08);
+                ctx.beginPath();
+                ctx.moveTo(wxBase, -br * 0.05);
+                ctx.lineTo(wxBase + dir * Math.cos(angle) * cLen, -br * 0.05 + Math.sin(angle) * cLen);
+                ctx.lineTo(wxBase + dir * Math.cos(angle) * cLen * 0.4, -br * 0.05 + Math.sin(angle + 0.6) * cLen * 0.3);
+                ctx.closePath();
+                ctx.fill();
+              }
+            }
+            ctx.shadowBlur = 0;
+
+            // Bio-luminescent wing streaks
+            ctx.strokeStyle = `rgba(100,210,255,${0.35 * bPulse})`;
+            ctx.lineWidth = 1.0;
+            ctx.beginPath();
+            ctx.moveTo(br * 0.3, -br * 0.4);
+            ctx.bezierCurveTo(br * 0.9, -br * 0.6, br * 1.6, -br * 0.4, br * 2.0, br * 0.2);
+            ctx.moveTo(-br * 0.3, -br * 0.4);
+            ctx.bezierCurveTo(-br * 0.9, -br * 0.6, -br * 1.6, -br * 0.4, -br * 2.0, br * 0.2);
+            ctx.stroke();
+          }
 
           ctx.restore();
         }
