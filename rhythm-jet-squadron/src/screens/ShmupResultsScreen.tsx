@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useGame } from "../context/GameContext";
 import pilotsData from "../data/pilots.json";
+import outfitsData from "../data/outfits.json";
 import { useWallet } from "../context/WalletContext";
 import {
   creditsForGrade,
@@ -11,6 +12,7 @@ import {
 import { astraReward } from "../lib/havnApi";
 import { getDialogueForMap } from "../data/dialogues";
 import DialogueBox from "../components/DialogueBox";
+import CutinOverlay from "../components/CutinOverlay";
 import { getShmupMapById } from "../lib/shmupWaves";
 import { sfxRunGrade } from "../lib/retroSfx";
 
@@ -24,9 +26,10 @@ const GRADE_COLORS: Record<string, string> = {
 
 const DEBRIEF_BACKDROPS: Record<string, string> = {
   "nebula-runway": "/assets/cutins/scenes/nebula_runway_debrief.png",
-  "solar-rift": "/assets/cutins/scenes/solar_rift_briefing.png",
-  "abyss-crown": "/assets/cutins/scenes/abyss_crown_briefing.png",
+  "solar-rift": "/assets/cutins/scenes/solar_rift_debrief.png",
+  "abyss-crown": "/assets/cutins/scenes/abyss_crown_debrief.png",
 };
+const DEBRIEF_FALLBACK = "/assets/cutins/scenes/nebula_runway_debrief.png";
 
 const DEBRIEF_NOTES: Record<string, { win: { label: string; accent: string }; loss: { label: string; accent: string } }> = {
   "nebula-runway": {
@@ -79,14 +82,14 @@ export default function ShmupResultsScreen() {
   const [rewardStatus, setRewardStatus] = useState<string | null>(null);
   const [showDebrief, setShowDebrief] = useState(false);
   const [debriefLineIdx, setDebriefLineIdx] = useState(0);
+  const [rankCutin, setRankCutin] = useState<string | null>(null);
 
   const shmupResult = (location.state as { shmupResult?: ShmupRunResult } | undefined)?.shmupResult;
   const mapId = (location.state as { mapId?: string } | undefined)?.mapId;
   const grade = shmupResult ? gradeShmupRun(shmupResult) : null;
   const creditsEarned = grade ? creditsForGrade(grade) : 0;
+  const activeOutfit = outfitsData.find((o) => o.id === save.selectedOutfitId);
 
-  // Score count-up from 0 → final over ~900ms so the number feels earned
-  // rather than just printed.
   const [displayScore, setDisplayScore] = useState(0);
   useEffect(() => {
     if (!shmupResult) return;
@@ -96,7 +99,6 @@ export default function ShmupResultsScreen() {
     let raf = 0;
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / durationMs);
-      // easeOutCubic so numbers accelerate then settle
       const eased = 1 - Math.pow(1 - t, 3);
       setDisplayScore(Math.round(target * eased));
       if (t < 1) raf = requestAnimationFrame(tick);
@@ -105,16 +107,24 @@ export default function ShmupResultsScreen() {
     return () => cancelAnimationFrame(raf);
   }, [shmupResult]);
 
-  // Grade-reveal SFX sting on mount. Guarded by a ref so we only fire
-  // once even if the component re-renders (e.g. wallet reward resolution).
   const stingFiredRef = useRef(false);
   useEffect(() => {
     if (!grade || stingFiredRef.current) return;
     stingFiredRef.current = true;
-    // Slight delay so the sting lines up with the stamp-in animation peak
     const id = window.setTimeout(() => sfxRunGrade(grade), 120);
     return () => window.clearTimeout(id);
   }, [grade]);
+
+  // Fire the active outfit's cutin on S or A rank.
+  const cutinFiredRef = useRef(false);
+  useEffect(() => {
+    if (!grade || cutinFiredRef.current || !activeOutfit?.cutinUrl) return;
+    if (grade !== "S" && grade !== "A") return;
+    cutinFiredRef.current = true;
+    const delay = grade === "S" ? 380 : 820;
+    const id = window.setTimeout(() => setRankCutin(activeOutfit.cutinUrl ?? null), delay);
+    return () => window.clearTimeout(id);
+  }, [grade, activeOutfit?.cutinUrl]);
 
   const didWinRun = Boolean(shmupResult?.bossDefeated);
   const debriefScript = didWinRun && mapId ? getDialogueForMap(mapId, "post_mission") : undefined;
@@ -153,12 +163,10 @@ export default function ShmupResultsScreen() {
 
   useEffect(() => {
     if (!shmupResult || !rewardKey || awardAppliedRef.current) return;
-
     if (sessionStorage.getItem(rewardKey) === "1") {
       awardAppliedRef.current = true;
       return;
     }
-
     addCredits(creditsEarned);
     sessionStorage.setItem(rewardKey, "1");
     awardAppliedRef.current = true;
@@ -167,10 +175,8 @@ export default function ShmupResultsScreen() {
   useEffect(() => {
     if (!shmupResult || !grade || !wallet.address || wallet.status !== "connected") return;
     if (sessionStorage.getItem(`${rewardKey}:shared`) === "1") return;
-
     const durationS = (shmupResult.timeSurvivedMs ?? 0) / 1000;
     const mapId = "shmup_arcade";
-
     astraReward(wallet.address, shmupResult.score, grade, durationS, mapId)
       .then((res) => {
         if (res.ok && res.reward && res.reward > 0) {
@@ -184,9 +190,7 @@ export default function ShmupResultsScreen() {
           }
         }
       })
-      .catch(() => {
-        setRewardStatus("network_error");
-      });
+      .catch(() => { setRewardStatus("network_error"); });
   }, [shmupResult, grade, wallet.address, wallet.status, rewardKey, wallet]);
 
   if (showDebrief && debriefLines.length > 0 && debriefLineIdx < debriefLines.length) {
@@ -195,9 +199,7 @@ export default function ShmupResultsScreen() {
         <div className="briefing-screen-atmosphere" aria-hidden="true" />
         <div className="briefing-screen-grid debrief-screen-grid">
           <section className="briefing-hero-panel debrief-hero-panel">
-            <button className="btn btn-secondary briefing-skip-btn" onClick={() => setShowDebrief(false)}>
-              Skip
-            </button>
+            <button className="btn btn-secondary briefing-skip-btn" onClick={() => setShowDebrief(false)}>Skip</button>
             <div className="briefing-hero-copy">
               <span className="briefing-kicker">After Action Debrief</span>
               <h1 className="briefing-title">{activeMap?.name ?? mapId?.replace(/-/g, " ") ?? "Mission"}</h1>
@@ -210,13 +212,17 @@ export default function ShmupResultsScreen() {
               </div>
             ) : null}
           </section>
-
           <section className="briefing-dialogue-stage briefing-dialogue-stage-art debrief-dialogue-stage">
             <div className="briefing-stage-backdrop">
               {debriefBackdrop ? (
-                <img className="briefing-art-image" src={debriefBackdrop} alt="Mission debrief art" />
+                <img
+                  className="briefing-art-image"
+                  src={debriefBackdrop}
+                  alt="Mission debrief art"
+                  onError={(e) => { (e.target as HTMLImageElement).src = DEBRIEF_FALLBACK; }}
+                />
               ) : (
-                <div className="briefing-art-placeholder">✦</div>
+                <div className="briefing-art-placeholder">❆</div>
               )}
               <div className="briefing-stage-wash" />
             </div>
@@ -250,7 +256,7 @@ export default function ShmupResultsScreen() {
       <h2>Arcade Run Complete!</h2>
 
       <div
-        className="grade-display"
+        className={`grade-display grade-stamp grade-stamp--${grade.toLowerCase()}`}
         style={{ color: GRADE_COLORS[grade] }}
       >
         {grade}
@@ -294,7 +300,7 @@ export default function ShmupResultsScreen() {
       </div>
 
       <div className="credits-earned">
-        <span className="credit-icon">✦</span> +{creditsEarned} Credits
+        <span className="credit-icon">❆</span> +{creditsEarned} Credits
       </div>
 
       {sharedReward !== null && sharedReward > 0 && (
@@ -328,33 +334,26 @@ export default function ShmupResultsScreen() {
         </div>
       ) : null}
 
-        {isFirstRun ? (
-          <div className="results-next-step-callout">
-            <strong>Loadout updated.</strong> Choose your next route from the port.
-          </div>
+      <div className="results-buttons">
+        {debriefLines.length > 0 ? (
+          <button
+            className="btn btn-primary"
+            onClick={() => { setDebriefLineIdx(0); setShowDebrief(true); }}
+          >
+            Continue to Debrief
+          </button>
         ) : null}
-
-        <div className="results-buttons">
-          {debriefLines.length > 0 ? (
-            <button
-              className="btn btn-primary"
-              onClick={() => {
-                setDebriefLineIdx(0);
-                setShowDebrief(true);
-              }}
-            >
-              Continue to Debrief
-            </button>
-          ) : null}
-
-          <button className="btn btn-primary" onClick={() => navigate(isFirstRun ? "/hangar" : "/shmup")}>
-            {isFirstRun ? "Open Loadout" : "Play Again"}
-          </button>
-
-          <button className="btn btn-secondary" onClick={handleReturnToPort}>
-            Return to Port
-          </button>
-        </div>
+        <button className="btn btn-primary" onClick={() => navigate(isFirstRun ? "/hangar" : "/shmup")}>
+          {isFirstRun ? "Open Loadout" : "Play Again"}
+        </button>
+        <button className="btn btn-secondary" onClick={handleReturnToPort}>
+          Return to Port
+        </button>
       </div>
+
+      {rankCutin && (
+        <CutinOverlay src={rankCutin} onComplete={() => setRankCutin(null)} allowPointerThrough />
+      )}
+    </div>
   );
 }
