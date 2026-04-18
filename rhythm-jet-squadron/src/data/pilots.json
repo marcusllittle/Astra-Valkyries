@@ -32,7 +32,8 @@
       "value": 5
     },
     "artPlaceholder": "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-    "artUrl": "/assets/pilots/rex_thunderbolt.png"
+    "artUrl": "/assets/pilots/rex_thunderbolt.png",
+    "feverCutinUrl": "/assets/cutins/rex_fever.mp4"
   },
   {
     "id": "pilot_yuki",
@@ -49,6 +50,7 @@
       "value": 3
     },
     "artPlaceholder": "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
-    "artUrl": "/assets/pilots/yuki_frostweaver.png"
+    "artUrl": "/assets/pilots/yuki_frostweaver.png",
+    "feverCutinUrl": "/assets/cutins/yuki_fever.mp4"
   }
 ]
