@@ -1787,11 +1787,28 @@ video.card-art-img {
   }
 }
 
-.shmup-touch-secondary {
+.shmup-secondary-zone {
   position: absolute;
-  right: max(28px, calc(18px + env(safe-area-inset-right, 0px)));
-  bottom: max(88px, calc(14px + env(safe-area-inset-bottom, 0px)));
+  top: 0;
+  right: 0;
+  width: 42%;
+  height: 100%;
   z-index: 20;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding:
+    calc(8px + env(safe-area-inset-top, 0px))
+    calc(24px + env(safe-area-inset-right, 0px))
+    calc(84px + env(safe-area-inset-bottom, 0px))
+    0;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.shmup-touch-secondary {
+  position: relative;
+  z-index: 1;
   width: 104px;
   height: 104px;
   border-radius: 999px;
@@ -1807,6 +1824,7 @@ video.card-art-img {
   transition: transform 0.08s, border-color 0.12s, box-shadow 0.12s;
   user-select: none;
   -webkit-user-select: none;
+  pointer-events: auto;
 }
 
 .shmup-touch-secondary:active {
@@ -3756,11 +3774,17 @@ video.card-art-img {
     height: 126px;
   }
 
+  .shmup-secondary-zone {
+    padding:
+      calc(8px + env(safe-area-inset-top, 0px))
+      calc(18px + env(safe-area-inset-right, 0px))
+      calc(72px + env(safe-area-inset-bottom, 0px))
+      0;
+  }
+
   .shmup-touch-secondary {
     width: 92px;
     height: 92px;
-    right: max(20px, calc(12px + env(safe-area-inset-right, 0px)));
-    bottom: max(78px, calc(12px + env(safe-area-inset-bottom, 0px)));
     font-size: 0.66rem;
   }
 
@@ -4034,11 +4058,18 @@ video.card-art-img {
     height: 84px;
   }
 
+  .shmup-secondary-zone {
+    width: 40%;
+    padding:
+      calc(6px + env(safe-area-inset-top, 0px))
+      calc(16px + env(safe-area-inset-right, 0px))
+      calc(68px + env(safe-area-inset-bottom, 0px))
+      0;
+  }
+
   .shmup-touch-secondary {
     width: 96px;
     height: 96px;
-    right: max(18px, calc(10px + env(safe-area-inset-right, 0px)));
-    bottom: max(74px, calc(10px + env(safe-area-inset-bottom, 0px)));
     font-size: 0.62rem;
   }
 

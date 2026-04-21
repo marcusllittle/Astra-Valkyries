@@ -5811,18 +5811,20 @@ export default function ShmupPlayScreen() {
               </div>
             )}
           </div>
-          {/* Right side: ability button */}
-          <button
-            type="button"
-            className="shmup-touch-secondary"
-            aria-label="Trigger ability"
-            onPointerDown={(event) => {
-              event.preventDefault();
-              queueSecondary();
-            }}
-          >
-            ABILITY
-          </button>
+          {/* Right side: ability zone with safe insets */}
+          <div className="shmup-secondary-zone">
+            <button
+              type="button"
+              className="shmup-touch-secondary"
+              aria-label="Trigger ability"
+              onPointerDown={(event) => {
+                event.preventDefault();
+                queueSecondary();
+              }}
+            >
+              ABILITY
+            </button>
+          </div>
         </>
       ) : null}
 
