@@ -1318,6 +1318,17 @@ export default function ShmupPlayScreen() {
       shakeTimeRef.current = Math.max(shakeTimeRef.current, duration);
     };
 
+    const addTelegraphPulse = (
+      x: number,
+      y: number,
+      color: string,
+      radius: number,
+      intensity: number = 1
+    ) => {
+      addPulse(x, y, color, radius, 220, 0.14 * intensity, 2.2);
+      addSparkBurst(x, y, color, Math.max(3, Math.round(4 * intensity)), 70 + intensity * 28, [1.2, 2.8]);
+    };
+
     const addSparkBurst = (
       x: number,
       y: number,
@@ -1823,6 +1834,7 @@ export default function ShmupPlayScreen() {
       }
 
       if (enemy.pattern === "tank") {
+        addTelegraphPulse(enemy.x, enemy.y, "#66d9ef", enemy.radius * 1.25, 1.15);
         // Tank fires 8-bullet 360-degree burst plus area-denial shot aimed at player
         for (let i = 0; i < 8; i++) {
           const angle = (Math.PI * 2 / 8) * i + enemy.age * 0.3;
@@ -1857,6 +1869,7 @@ export default function ShmupPlayScreen() {
       }
 
       if (enemy.pattern === "miniboss") {
+        addTelegraphPulse(enemy.x, enemy.y, enemy.minibossEnraged ? "#ff4466" : "#e040a0", enemy.radius * 1.35, enemy.minibossEnraged ? 1.25 : 1);
         // Miniboss: phase-dependent firing pattern
         const dx = ship.x - enemy.x;
         const dy = ship.y - enemy.y;
@@ -1904,6 +1917,7 @@ export default function ShmupPlayScreen() {
           enemy.sniperLocked = true;
           enemy.sniperLockX = ship.x;
           enemy.sniperLockY = ship.y;
+          addTelegraphPulse(enemy.x, enemy.y, "#ff3355", enemy.radius * 1.1, 0.95);
           // Fire on next cooldown cycle
           return;
         }
@@ -1965,6 +1979,13 @@ export default function ShmupPlayScreen() {
       const length = Math.hypot(dx, dy) || 1;
       const baseVx = (dx / length) * 180;
       const baseVy = (dy / length) * 180;
+      addTelegraphPulse(
+        boss.x,
+        boss.y + boss.radius * 0.2,
+        boss.phase === 1 ? activeMap.palette.enemyShotColor : activeMap.palette.bossShotColor,
+        boss.radius * (boss.phase === 3 ? 1.55 : 1.3),
+        boss.phase === 3 ? 1.35 : 1
+      );
 
       if (boss.archetype === "tyrant") {
         const lanceSpread = boss.phase === 1 ? 24 : boss.phase === 2 ? 52 : 78;
@@ -4471,14 +4492,19 @@ export default function ShmupPlayScreen() {
         // Sniper warning line (drawn outside transform)
         if (enemy.pattern === "sniper" && enemy.sniperLocked) {
           ctx.save();
-          ctx.strokeStyle = "rgba(255,0,0,0.3)";
-          ctx.lineWidth = 1.5;
-          ctx.setLineDash([6, 4]);
+          const lockPulse = 0.35 + (Math.sin(elapsedMs / 70) * 0.5 + 0.5) * 0.45;
+          ctx.strokeStyle = `rgba(255,40,80,${lockPulse})`;
+          ctx.lineWidth = 2.2;
+          ctx.setLineDash([8, 5]);
           ctx.beginPath();
           ctx.moveTo(enemy.x, enemy.y + enemy.radius);
           ctx.lineTo(enemy.sniperLockX ?? ship.x, enemy.sniperLockY ?? ship.y);
           ctx.stroke();
           ctx.setLineDash([]);
+          ctx.fillStyle = `rgba(255,80,120,${0.18 + lockPulse * 0.18})`;
+          ctx.beginPath();
+          ctx.arc(enemy.sniperLockX ?? ship.x, enemy.sniperLockY ?? ship.y, 12 + lockPulse * 10, 0, Math.PI * 2);
+          ctx.fill();
           ctx.restore();
         }
       }
