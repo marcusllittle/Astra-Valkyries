@@ -332,7 +332,7 @@ export default function HomeScreen() {
           <div className="home-hero-copy">
             <p className="home-hero-kicker">Command deck online</p>
             <p className="home-hero-subtitle">
-              High-speed squad combat, pilot chemistry, live economy, and a cleaner sci-fi command fantasy.
+              High-speed squad combat, pilot chemistry, live economy, and a command fantasy that actually feels premium.
             </p>
             <button className="btn btn-primary btn-large home-enter-btn" onClick={enterMenu}>
               Enter Command Deck
@@ -347,13 +347,13 @@ export default function HomeScreen() {
               const targetRoute = isFirstRun ? (FIRST_RUN_ROUTE_OVERRIDES[item.route] ?? item.route) : item.route;
               const isPrimary = item.route === "/hangar" || item.route === "/spaceport";
               const helperText =
-                item.route === "/hangar" ? "Loadout and launch" :
-                item.route === "/spaceport" ? "Squad hub and intel" :
+                item.route === "/hangar" ? "Mission loadout and launch" :
+                item.route === "/spaceport" ? "Command hub and squad intel" :
                 item.route === "/missions" ? "Daily and weekly pressure" :
-                item.route === "/leaderboard" ? "Top runs and score chase" :
-                item.route === "/collection" ? "Outfits, stars, gallery" :
-                item.route === "/codex" ? "Lore, enemies, world intel" :
-                item.route === "/shop" ? "Pulls, drops, progression" :
+                item.route === "/leaderboard" ? "Top sorties and score chase" :
+                item.route === "/collection" ? "Outfits, stars, archive" :
+                item.route === "/codex" ? "Lore, threats, world intel" :
+                item.route === "/shop" ? "Summons, drops, progression" :
                 "Audio, controls, tuning";
               return (
                 <button

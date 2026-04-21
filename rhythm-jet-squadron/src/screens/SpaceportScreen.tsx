@@ -5,12 +5,12 @@ import { getUnreadCount } from "../components/InboxOverlay";
 import InboxOverlay from "../components/InboxOverlay";
 
 const AREAS = [
-  { label: "HANGAR", desc: "Select loadout & launch", route: "/hangar", icon: "🚀" },
-  { label: "MISSIONS", desc: "Daily & weekly challenges", route: "/missions", icon: "📋" },
+  { label: "HANGAR", desc: "Mission loadout and launch", route: "/hangar", icon: "🚀" },
+  { label: "MISSIONS", desc: "Daily and weekly pressure", route: "/missions", icon: "📋" },
   { label: "INBOX", desc: "Pilot transmissions", route: null, icon: "📨" },
-  { label: "CODEX", desc: "Lore & bestiary", route: "/codex", icon: "📖" },
-  { label: "COLLECTION", desc: "Outfits & gallery", route: "/collection", icon: "👗" },
-  { label: "SHOP", desc: "Gacha & store", route: "/shop", icon: "🛒" },
+  { label: "CODEX", desc: "Lore and threat archive", route: "/codex", icon: "📖" },
+  { label: "COLLECTION", desc: "Outfits and star archive", route: "/collection", icon: "👗" },
+  { label: "SHOP", desc: "Summon bay and banner pulls", route: "/shop", icon: "🛒" },
 ] as const;
 
 export default function SpaceportScreen() {
@@ -41,7 +41,7 @@ export default function SpaceportScreen() {
               <span className="spaceport-kicker">Orbital Command Nexus</span>
               <h1 className="spaceport-title">SPACEPORT</h1>
               <p className="spaceport-subtitle">
-                Your command hub for deployment, intel, logistics, and squad readiness.
+                Your command hub for mission staging, intel, logistics, and squad readiness.
               </p>
             </div>
           </div>
@@ -80,7 +80,7 @@ export default function SpaceportScreen() {
                 <h2 className="spaceport-section-title">Operational Access</h2>
               </div>
               <p className="spaceport-section-note">
-                Move through ship systems, mission control, and squad archives without leaving the dock.
+                Move through mission systems, squad intel, and progression surfaces without leaving the dock.
               </p>
             </div>
 
@@ -157,8 +157,8 @@ export default function SpaceportScreen() {
                 <h2 className="spaceport-launch-title">Launch Mission</h2>
                 <p className="spaceport-launch-desc">
                   {isEarlyGame
-                    ? "Begin the next sortie."
-                    : "Depart the port and begin the next sortie."}
+                    ? "Lock the first loadout and begin the next sortie."
+                    : "Depart the port and push the next sortie."}
                 </p>
               </div>
 

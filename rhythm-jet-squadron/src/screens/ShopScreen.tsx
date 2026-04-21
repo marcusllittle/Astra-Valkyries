@@ -158,7 +158,7 @@ export default function ShopScreen() {
           <span className="shop-kicker">Black market outfit exchange</span>
           <h1 className="shop-title">Summon Bay</h1>
           <p className="shop-flavor">
-            Pull for pilot-exclusive looks, combat kits, and the kind of premium loadout that makes the next sortie feel unfair.
+            Pull for pilot-exclusive looks, combat kits, and the kind of premium mission loadout that makes the next sortie feel unfair.
           </p>
         </div>
 
@@ -177,7 +177,7 @@ export default function ShopScreen() {
           <p className="shop-economy-note">
             {hasSharedBalance
               ? "Local credits spend first. Shared HavnAI only fires when you come up short."
-              : "High-rarity pulls unlock sharper kits, better cut-ins, and stronger identity on the field."}
+              : "High-rarity pulls unlock sharper kits, better cut-ins, and stronger identity in the lane."}
           </p>
           <div className="shop-economy-micro">
             <span>SR pity in {Math.max(0, PITY_THRESHOLD_SR - pity.pullsSinceSR)} pulls</span>
@@ -206,7 +206,7 @@ export default function ShopScreen() {
                 {featured.rarity}
               </span>
               <div className="perk-label">{summarizeOutfitKit(featured)}</div>
-              <p className="shop-featured-flavor">If you are going to chase something expensive, chase the one that actually changes how the run feels.</p>
+              <p className="shop-featured-flavor">If you are going to chase something expensive, chase the one that actually changes how the sortie feels.</p>
             </div>
           </div>
         </section>
@@ -219,7 +219,7 @@ export default function ShopScreen() {
               <span className="shop-section-kicker">Summon controls</span>
               <h3>Pull the banner</h3>
             </div>
-            <span className="shop-section-note">Pick your spend, then let the bay decide how nice it wants to be.</span>
+            <span className="shop-section-note">Pick your spend, then let the bay decide how generous it wants to be.</span>
           </div>
           <div className="shop-buttons">
             <button

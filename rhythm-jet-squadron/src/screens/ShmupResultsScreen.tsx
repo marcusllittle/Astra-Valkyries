@@ -316,9 +316,9 @@ export default function ShmupResultsScreen() {
           <strong>
             {didWinRun
               ? isFirstRun
-                ? "Lock the next loadout and push harder"
-                : "Push a cleaner grade on the next sortie"
-              : "Fix the weak point and run it back"}
+                ? "Lock the next mission loadout and push harder"
+                : "Push a cleaner sortie on the next lane"
+              : "Fix the weak point and run the lane back"}
           </strong>
         </div>
 
@@ -339,7 +339,7 @@ export default function ShmupResultsScreen() {
 
         {isFirstRun ? (
           <div className="results-next-step-callout">
-            <strong>Loadout updated.</strong> Choose the next route from the port and keep building the squad.
+            <strong>Mission loadout updated.</strong> Choose the next route from the port and keep building the squad.
           </div>
         ) : null}
 
@@ -357,7 +357,7 @@ export default function ShmupResultsScreen() {
           ) : null}
 
           <button className="btn btn-primary" onClick={() => navigate(isFirstRun ? "/hangar" : "/shmup")}>
-            {isFirstRun ? "Open Loadout" : "Run It Back"}
+            {isFirstRun ? "Open Mission Loadout" : "Run It Back"}
           </button>
 
           <button className="btn btn-secondary" onClick={handleReturnToPort}>
