@@ -93,6 +93,8 @@ const PLAYER_BOTTOM_MARGIN = 100;
 const PLAYER_MOBILE_START_RATIO = 0.72;
 const PLAYER_DESKTOP_START_RATIO = 0.82;
 const MOBILE_CONTROL_SPACE = 88;
+const PLAYER_RECOVERY_SLOW_MS = 220;
+const PLAYER_RECOVERY_PUSH = 18;
 
 interface ShipState {
   x: number;
@@ -100,6 +102,8 @@ interface ShipState {
   hp: number;
   radius: number;
   invulnerableUntil: number;
+  vx: number;
+  vy: number;
 }
 
 interface PlayerBullet {
@@ -749,6 +753,8 @@ export default function ShmupPlayScreen() {
     hp: BASE_SHMUP_HP,
     radius: BASE_SHIP_RADIUS,
     invulnerableUntil: 0,
+    vx: 0,
+    vy: 0,
   });
   const playerBulletsRef = useRef<PlayerBullet[]>([]);
   const enemyBulletsRef = useRef<EnemyBullet[]>([]);
@@ -1089,6 +1095,8 @@ export default function ShmupPlayScreen() {
     ship.hp = maxHp;
     ship.radius = BASE_SHIP_RADIUS * hitboxScale;
     ship.invulnerableUntil = 0;
+    ship.vx = 0;
+    ship.vy = 0;
 
     playerBulletsRef.current = [];
     enemyBulletsRef.current = [];
@@ -2674,7 +2682,14 @@ export default function ShmupPlayScreen() {
       lastHitMsRef.current = elapsedMs;
       regenPoolRef.current = 0;
       ship.invulnerableUntil = elapsedMs + PLAYER_INVULNERABLE_MS;
+      ship.vx *= 0.22;
+      ship.vy = Math.max(ship.vy * 0.22, -PLAYER_RECOVERY_PUSH * 0.35);
+      const pushX = ship.x >= canvas.width / 2 ? -PLAYER_RECOVERY_PUSH : PLAYER_RECOVERY_PUSH;
+      ship.x = clamp(ship.x + pushX, ship.radius + 8, canvas.width - ship.radius - 8);
+      ship.y = clamp(ship.y + PLAYER_RECOVERY_PUSH, ship.radius + HUD_HEIGHT + 8, canvas.height - ship.radius - 12);
       addExplosion(ship.x, ship.y, "#ff8787", 18, 2.4);
+      addPulse(ship.x, ship.y, "#ffd7d7", 10, 210, 0.18, 2.2);
+      addScreenShake(2.6, 0.12);
 
       if (multiplierSaveReadyRef.current) {
         multiplierSaveReadyRef.current = false;
@@ -2850,16 +2865,29 @@ export default function ShmupPlayScreen() {
       if (barrelRollUntilRef.current > elapsedMs) {
         const rollSpeed = shipSpeed * 3.2;
         const rd = barrelRollDirRef.current;
-        ship.x = clamp(ship.x + rd.x * rollSpeed * deltaSeconds, playerBounds.minX, playerBounds.maxX);
-        ship.y = clamp(ship.y + rd.y * rollSpeed * deltaSeconds, playerBounds.minY, playerBounds.maxY);
+        ship.vx = rd.x * rollSpeed;
+        ship.vy = rd.y * rollSpeed;
+        ship.x = clamp(ship.x + ship.vx * deltaSeconds, playerBounds.minX, playerBounds.maxX);
+        ship.y = clamp(ship.y + ship.vy * deltaSeconds, playerBounds.minY, playerBounds.maxY);
         shipTiltRef.current = rd.x * 0.5;
       } else {
-        const moveLength = Math.hypot(moveX, moveY) || 1;
-        const velocityScale =
-          moveX !== 0 || moveY !== 0 ? shipSpeed * deltaSeconds / moveLength : 0;
-        ship.x = clamp(ship.x + moveX * velocityScale, playerBounds.minX, playerBounds.maxX);
-        ship.y = clamp(ship.y + moveY * velocityScale, playerBounds.minY, playerBounds.maxY);
-        shipTiltRef.current = shipTiltRef.current * 0.82 + moveX * 0.08;
+        const moveLength = Math.hypot(moveX, moveY);
+        const normalizedX = moveLength > 0 ? moveX / moveLength : 0;
+        const normalizedY = moveLength > 0 ? moveY / moveLength : 0;
+        const recoverySlow = elapsedMs - lastHitMsRef.current < PLAYER_RECOVERY_SLOW_MS ? 0.78 : 1;
+        const accel = shipSpeed * 8.6 * recoverySlow;
+        const damping = moveLength > 0 ? 0.82 : 0.7;
+        const targetVx = normalizedX * shipSpeed * recoverySlow;
+        const targetVy = normalizedY * shipSpeed * recoverySlow;
+        ship.vx += (targetVx - ship.vx) * Math.min(1, accel * deltaSeconds / Math.max(1, shipSpeed));
+        ship.vy += (targetVy - ship.vy) * Math.min(1, accel * deltaSeconds / Math.max(1, shipSpeed));
+        ship.vx *= damping;
+        ship.vy *= damping;
+        if (Math.abs(ship.vx) < 4) ship.vx = 0;
+        if (Math.abs(ship.vy) < 4) ship.vy = 0;
+        ship.x = clamp(ship.x + ship.vx * deltaSeconds, playerBounds.minX, playerBounds.maxX);
+        ship.y = clamp(ship.y + ship.vy * deltaSeconds, playerBounds.minY, playerBounds.maxY);
+        shipTiltRef.current = shipTiltRef.current * 0.78 + (ship.vx / Math.max(1, shipSpeed)) * 0.18;
       }
 
       const introTargetX = canvas.width / 2;
