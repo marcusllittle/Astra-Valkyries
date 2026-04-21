@@ -463,39 +463,9 @@ function getViewportBounds(): ViewportBounds {
   }
 
   const viewport = window.visualViewport;
-  const viewportWidth = viewport?.width ?? 0;
-  const viewportHeight = viewport?.height ?? 0;
-  const screenWidth = typeof window.screen?.width === "number" ? window.screen.width : 0;
-  const screenHeight = typeof window.screen?.height === "number" ? window.screen.height : 0;
-  const innerWidth = window.innerWidth;
-  const innerHeight = window.innerHeight;
-
-  const candidatePairs = [
-    [viewportWidth, viewportHeight],
-    [innerWidth, innerHeight],
-    [screenWidth, screenHeight],
-  ].filter(([w, h]) => w > 0 && h > 0);
-
-  let width = viewportWidth || innerWidth || screenWidth || 1280;
-  let height = viewportHeight || innerHeight || screenHeight || 720;
-
-  const hasLandscapeSignal = candidatePairs.some(([w, h]) => w > h);
-  const hasPortraitSignal = candidatePairs.some(([w, h]) => h > w);
-
-  if (hasLandscapeSignal && !hasPortraitSignal) {
-    width = Math.max(...candidatePairs.map(([w]) => w));
-    height = Math.min(...candidatePairs.map(([, h]) => h));
-  } else if (hasPortraitSignal && !hasLandscapeSignal) {
-    width = Math.min(...candidatePairs.map(([w]) => w));
-    height = Math.max(...candidatePairs.map(([, h]) => h));
-  } else {
-    width = Math.max(viewportWidth, innerWidth, screenWidth) || width;
-    height = Math.max(viewportHeight, innerHeight, screenHeight) || height;
-  }
-
   return {
-    width,
-    height,
+    width: viewport?.width ?? window.innerWidth,
+    height: viewport?.height ?? window.innerHeight,
     top: viewport?.offsetTop ?? 0,
     left: viewport?.offsetLeft ?? 0,
   };
@@ -1054,12 +1024,7 @@ export default function ShmupPlayScreen() {
     };
   }, [unlockLandscapeOrientation]);
 
-  const orientationType = typeof screen !== "undefined" && typeof screen.orientation?.type === "string"
-    ? screen.orientation.type
-    : null;
-  const isPortraitViewport = orientationType
-    ? orientationType.startsWith("portrait")
-    : viewportBounds.height > viewportBounds.width;
+  const isPortraitViewport = viewportBounds.height > viewportBounds.width;
   const showMobileRotateGate = isMobileDevice && isPortraitViewport;
   const showMobileLaunchGate = isMobileDevice && !mobileLaunchAccepted && !isPortraitViewport;
   const mobileGateVisible = showMobileLaunchGate || showMobileRotateGate;
@@ -1226,27 +1191,12 @@ export default function ShmupPlayScreen() {
       // Read actual HUD height from DOM (CSS media queries may change it)
       const hudEl = canvas.parentElement?.querySelector(".play-hud") as HTMLElement | null;
       const actualHudH = hudEl ? hudEl.offsetHeight : HUD_HEIGHT;
-      const viewportWidth = Math.max(
-        window.visualViewport?.width ?? 0,
-        containerRef.current?.clientWidth ?? 0,
-        window.innerWidth,
-        viewportBounds.width
-      );
-      const rawViewportHeight = Math.max(
-        window.visualViewport?.height ?? 0,
-        containerRef.current?.clientHeight ?? 0,
-        window.innerHeight,
-        viewportBounds.height
-      );
-      const containerHeight = Math.max(containerRef.current?.clientHeight ?? 0, rawViewportHeight);
-      const mobileReservedSpace = showTouchControls && isMobileDevice ? MOBILE_CONTROL_SPACE * 0.55 : 0;
-      const safeHeight = Math.max(rawViewportHeight, containerHeight);
-      const usableViewportHeight = Math.max(
-        220,
-        safeHeight - actualHudH - mobileReservedSpace
-      );
-      canvas.width = Math.max(320, Math.round(viewportWidth));
-      canvas.height = Math.max(220, Math.round(usableViewportHeight));
+      const viewportWidth =
+        containerRef.current?.clientWidth ?? window.visualViewport?.width ?? window.innerWidth;
+      const viewportHeight =
+        containerRef.current?.clientHeight ?? window.visualViewport?.height ?? window.innerHeight;
+      canvas.width = viewportWidth;
+      canvas.height = Math.max(0, viewportHeight - actualHudH);
       displayScale = Math.min(1, canvas.height / REFERENCE_HEIGHT);
       const playerBounds = getPlayerBounds(canvas.width, canvas.height, ship.radius, isMobileDevice);
       if (showTouchControls) {
