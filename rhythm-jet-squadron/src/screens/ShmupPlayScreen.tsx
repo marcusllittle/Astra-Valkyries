@@ -93,8 +93,8 @@ const PLAYER_BOTTOM_MARGIN = 100;
 const PLAYER_MOBILE_START_RATIO = 0.72;
 const PLAYER_DESKTOP_START_RATIO = 0.82;
 const MOBILE_CONTROL_SPACE = 88;
-const PLAYER_RECOVERY_SLOW_MS = 220;
-const PLAYER_RECOVERY_PUSH = 18;
+const PLAYER_RECOVERY_SLOW_MS = 120;
+const PLAYER_RECOVERY_PUSH = 14;
 
 interface ShipState {
   x: number;
@@ -2880,20 +2880,14 @@ export default function ShmupPlayScreen() {
         const moveLength = Math.hypot(moveX, moveY);
         const normalizedX = moveLength > 0 ? moveX / moveLength : 0;
         const normalizedY = moveLength > 0 ? moveY / moveLength : 0;
-        const recoverySlow = elapsedMs - lastHitMsRef.current < PLAYER_RECOVERY_SLOW_MS ? 0.78 : 1;
-        const accel = shipSpeed * 8.6 * recoverySlow;
-        const damping = moveLength > 0 ? 0.82 : 0.7;
-        const targetVx = normalizedX * shipSpeed * recoverySlow;
-        const targetVy = normalizedY * shipSpeed * recoverySlow;
-        ship.vx += (targetVx - ship.vx) * Math.min(1, accel * deltaSeconds / Math.max(1, shipSpeed));
-        ship.vy += (targetVy - ship.vy) * Math.min(1, accel * deltaSeconds / Math.max(1, shipSpeed));
-        ship.vx *= damping;
-        ship.vy *= damping;
-        if (Math.abs(ship.vx) < 4) ship.vx = 0;
-        if (Math.abs(ship.vy) < 4) ship.vy = 0;
-        ship.x = clamp(ship.x + ship.vx * deltaSeconds, playerBounds.minX, playerBounds.maxX);
-        ship.y = clamp(ship.y + ship.vy * deltaSeconds, playerBounds.minY, playerBounds.maxY);
-        shipTiltRef.current = shipTiltRef.current * 0.78 + (ship.vx / Math.max(1, shipSpeed)) * 0.18;
+        const recoverySlow = elapsedMs - lastHitMsRef.current < PLAYER_RECOVERY_SLOW_MS ? 0.9 : 1;
+        const targetSpeed = shipSpeed * recoverySlow;
+        const velocityScale = moveLength > 0 ? targetSpeed * deltaSeconds : 0;
+        ship.vx = normalizedX * targetSpeed;
+        ship.vy = normalizedY * targetSpeed;
+        ship.x = clamp(ship.x + normalizedX * velocityScale, playerBounds.minX, playerBounds.maxX);
+        ship.y = clamp(ship.y + normalizedY * velocityScale, playerBounds.minY, playerBounds.maxY);
+        shipTiltRef.current = shipTiltRef.current * 0.84 + normalizedX * 0.1;
       }
 
       const introTargetX = canvas.width / 2;
