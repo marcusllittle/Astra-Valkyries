@@ -148,32 +148,39 @@ export default function ShopScreen() {
 
   return (
     <div className="screen shop-screen">
-      <div className="screen-header">
-        <button className="btn btn-back" onClick={() => navigate("/")}>← Back</button>
-        <div className="header-title-stack">
-          <h2>Outfit Shop</h2>
-          <p>Acquire pilot-specific kits, rare cosmetics, and premium deploy loadouts.</p>
+      <header className="shop-hero panel-surface">
+        <div className="shop-hero-copy">
+          <button className="btn btn-back" onClick={() => navigate("/")}>← Back</button>
+          <span className="shop-kicker">Black market outfit exchange</span>
+          <h1 className="shop-title">Summon Bay</h1>
+          <p className="shop-flavor">
+            Pull for pilot-exclusive looks, combat kits, and the kind of premium loadout that makes the next sortie feel unfair.
+          </p>
         </div>
-      </div>
 
-      <section className="shop-hero panel-surface">
-        <div className="shop-credits-row">
-          <div className="shop-credits">
-            <span className="credit-icon">✦</span> {save.credits.toLocaleString()} Credits
-          </div>
-          {hasSharedBalance && (
-            <div className="shop-credits shop-credits-shared">
-              <span className="shared-icon">&#x26A1;</span> {(wallet.sharedBalance ?? 0).toLocaleString()} HavnAI
-              <span className="shared-active-badge">Active</span>
+        <div className="shop-hero-economy">
+          <div className="shop-credits-row">
+            <div className="shop-credits">
+              <span className="credit-icon">✦</span> {save.credits.toLocaleString()} Credits
             </div>
-          )}
+            {hasSharedBalance && (
+              <div className="shop-credits shop-credits-shared">
+                <span className="shared-icon">&#x26A1;</span> {(wallet.sharedBalance ?? 0).toLocaleString()} HavnAI
+                <span className="shared-active-badge">Active</span>
+              </div>
+            )}
+          </div>
+          <p className="shop-economy-note">
+            {hasSharedBalance
+              ? "Local credits spend first. Shared HavnAI only fires when you come up short."
+              : "High-rarity pulls unlock sharper kits, better cut-ins, and stronger identity on the field."}
+          </p>
+          <div className="shop-economy-micro">
+            <span>SR pity in {Math.max(0, PITY_THRESHOLD_SR - pity.pullsSinceSR)} pulls</span>
+            <span>SSR pity in {Math.max(0, PITY_THRESHOLD_SSR - pity.pullsSinceSSR)} pulls</span>
+          </div>
         </div>
-        <p className="shop-flavor">
-          {hasSharedBalance
-            ? "Credits are used first. HavnAI only kicks in as a fallback if you're short on local credits."
-            : "Limited wardrobe uplink is active. High-rarity pulls unlock advanced kits and cut-ins."}
-        </p>
-      </section>
+      </header>
 
       {/* Featured Banner */}
       {featured && (
@@ -183,18 +190,19 @@ export default function ShopScreen() {
             <CardArt
               title={featured.name}
               artUrl={featured.artUrl}
-                            artPlaceholder={featured.artPlaceholder}
+              artPlaceholder={featured.artPlaceholder}
               rarity={featured.rarity}
               className="shop-featured-art"
               motionMode="never"
             />
             <div className="shop-featured-info">
+              <span className="shop-featured-kicker">Rate-up live</span>
               <strong className="shop-featured-name">{featured.name}</strong>
               <span className="rarity-text" style={{ color: RARITY_COLORS[featured.rarity] }}>
                 {featured.rarity}
               </span>
               <div className="perk-label">{summarizeOutfitKit(featured)}</div>
-              <p className="shop-featured-flavor">Rate-up this week. SSR drops have increased odds of pulling this outfit.</p>
+              <p className="shop-featured-flavor">If you are going to chase something expensive, chase the one that actually changes how the run feels.</p>
             </div>
           </div>
         </section>
@@ -202,7 +210,13 @@ export default function ShopScreen() {
 
       <div className="shop-layout">
         <section className="shop-pulls panel-surface">
-          <h3>Summon Bay</h3>
+          <div className="shop-section-head">
+            <div>
+              <span className="shop-section-kicker">Summon controls</span>
+              <h3>Pull the banner</h3>
+            </div>
+            <span className="shop-section-note">Pick your spend, then let the bay decide how nice it wants to be.</span>
+          </div>
           <div className="shop-buttons">
             <button
               className="btn btn-gacha"
@@ -234,14 +248,19 @@ export default function ShopScreen() {
         </section>
 
         <section className="shop-rates panel-surface">
-          <h4>Drop Rates</h4>
+          <div className="shop-section-head shop-section-head-tight">
+            <div>
+              <span className="shop-section-kicker">Banner intel</span>
+              <h4>Odds and pressure</h4>
+            </div>
+          </div>
           <div className="rate-list">
             <span style={{ color: RARITY_COLORS.Common }}>Common: 70%</span>
             <span style={{ color: RARITY_COLORS.Rare }}>Rare: 20%</span>
             <span style={{ color: RARITY_COLORS.SR }}>SR: 9%</span>
             <span style={{ color: RARITY_COLORS.SSR }}>SSR: 1%</span>
           </div>
-          <p className="shop-note">SSR reveals are currently shown with static art.</p>
+          <p className="shop-note">SSR reveals still use static art, but the drop itself lands correctly.</p>
         </section>
       </div>
 
