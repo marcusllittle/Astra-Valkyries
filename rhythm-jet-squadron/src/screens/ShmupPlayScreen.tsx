@@ -812,6 +812,7 @@ export default function ShmupPlayScreen() {
   const shakePowerRef = useRef(0);
   const shipTiltRef = useRef(0);
   const droneOrbitRef = useRef(0);
+  const lastShotSoundAtRef = useRef(0);
 
   const pilots = pilotsData as Pilot[];
   const ships = shipsData as Ship[];
@@ -1474,16 +1475,34 @@ export default function ShmupPlayScreen() {
       if (spawned.length === 0) return;
 
       const leadColor = spawned[0].color;
+      const volleyDensity = Math.min(1.8, 0.72 + spawned.length * 0.16);
+      const averageDamage = spawned.reduce((sum, shot) => sum + shot.damage, 0) / spawned.length;
+      const heavyVolley = averageDamage >= 2.3 || spawned.some((shot) => (shot.pierce ?? 0) >= 3 || shot.radius >= 5.4);
+      const pulseRadius = (heavyVolley ? 9 : 6) + weaponLevel * (heavyVolley ? 1.35 : 1.05) + spawned.length * 0.45;
+      const pulseLife = heavyVolley ? 110 + weaponLevel * 26 : 70 + weaponLevel * 18;
+      const shakePower = heavyVolley
+        ? (overdriveActive ? 1.55 : 0.75) + weaponLevel * 0.2
+        : (overdriveActive ? 0.95 : 0.34) + weaponLevel * 0.12;
+      const shakeDuration = heavyVolley ? 0.06 : 0.04;
+
       addPulse(
         ship.x,
         ship.y - ship.radius - 10,
         leadColor,
-        5 + weaponLevel * 1.1,
-        58 + weaponLevel * 22,
-        0.08,
-        1.5
+        pulseRadius,
+        pulseLife,
+        heavyVolley ? 0.13 : 0.09,
+        heavyVolley ? 1.9 : 1.5
       );
-      addScreenShake(overdriveActive ? 0.86 + weaponLevel * 0.18 : 0.28 + weaponLevel * 0.14, 0.045);
+      addSparkBurst(
+        ship.x,
+        ship.y - ship.radius - 12,
+        spawned[0].coreColor,
+        heavyVolley ? 5 + Math.floor(spawned.length / 2) : 3 + Math.floor(spawned.length / 3),
+        (heavyVolley ? 105 : 72) * volleyDensity,
+        heavyVolley ? [1.5, 3.8] : [1.2, 2.4]
+      );
+      addScreenShake(shakePower, shakeDuration);
 
       for (const shot of spawned) {
         playerBulletsRef.current.push({
@@ -2824,7 +2843,19 @@ export default function ShmupPlayScreen() {
         }
         while (fireTimerRef.current <= 0) {
           spawnPlayerBullets(elapsedMs);
-          sfxShoot();
+          if (primaryKey === "flare_lance" || primaryKey === "starfall_rail" || primaryKey === "void_rake") {
+            sfxShoot();
+          } else if (primaryKey === "blazing_laser" || primaryKey === "photon_laser" || primaryKey === "lunar_stream") {
+            if (elapsedMs - lastShotSoundAtRef.current >= 90) {
+              sfxShoot();
+              lastShotSoundAtRef.current = elapsedMs;
+            }
+          } else {
+            if (elapsedMs - lastShotSoundAtRef.current >= 60) {
+              sfxShoot();
+              lastShotSoundAtRef.current = elapsedMs;
+            }
+          }
           fireTimerRef.current += fireInterval;
         }
       }
