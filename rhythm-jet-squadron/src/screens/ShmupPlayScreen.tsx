@@ -463,9 +463,39 @@ function getViewportBounds(): ViewportBounds {
   }
 
   const viewport = window.visualViewport;
+  const viewportWidth = viewport?.width ?? 0;
+  const viewportHeight = viewport?.height ?? 0;
+  const screenWidth = typeof window.screen?.width === "number" ? window.screen.width : 0;
+  const screenHeight = typeof window.screen?.height === "number" ? window.screen.height : 0;
+  const innerWidth = window.innerWidth;
+  const innerHeight = window.innerHeight;
+
+  const candidatePairs = [
+    [viewportWidth, viewportHeight],
+    [innerWidth, innerHeight],
+    [screenWidth, screenHeight],
+  ].filter(([w, h]) => w > 0 && h > 0);
+
+  let width = viewportWidth || innerWidth || screenWidth || 1280;
+  let height = viewportHeight || innerHeight || screenHeight || 720;
+
+  const hasLandscapeSignal = candidatePairs.some(([w, h]) => w > h);
+  const hasPortraitSignal = candidatePairs.some(([w, h]) => h > w);
+
+  if (hasLandscapeSignal && !hasPortraitSignal) {
+    width = Math.max(...candidatePairs.map(([w]) => w));
+    height = Math.min(...candidatePairs.map(([, h]) => h));
+  } else if (hasPortraitSignal && !hasLandscapeSignal) {
+    width = Math.min(...candidatePairs.map(([w]) => w));
+    height = Math.max(...candidatePairs.map(([, h]) => h));
+  } else {
+    width = Math.max(viewportWidth, innerWidth, screenWidth) || width;
+    height = Math.max(viewportHeight, innerHeight, screenHeight) || height;
+  }
+
   return {
-    width: viewport?.width ?? window.innerWidth,
-    height: viewport?.height ?? window.innerHeight,
+    width,
+    height,
     top: viewport?.offsetTop ?? 0,
     left: viewport?.offsetLeft ?? 0,
   };
@@ -1024,7 +1054,12 @@ export default function ShmupPlayScreen() {
     };
   }, [unlockLandscapeOrientation]);
 
-  const isPortraitViewport = viewportBounds.height > viewportBounds.width;
+  const orientationType = typeof screen !== "undefined" && typeof screen.orientation?.type === "string"
+    ? screen.orientation.type
+    : null;
+  const isPortraitViewport = orientationType
+    ? orientationType.startsWith("portrait")
+    : viewportBounds.height > viewportBounds.width;
   const showMobileRotateGate = isMobileDevice && isPortraitViewport;
   const showMobileLaunchGate = isMobileDevice && !mobileLaunchAccepted && !isPortraitViewport;
   const mobileGateVisible = showMobileLaunchGate || showMobileRotateGate;
