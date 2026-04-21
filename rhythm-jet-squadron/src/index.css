@@ -885,36 +885,111 @@ video.card-art-img {
 /* ─── Hangar ──────────────────────────────────────────── */
 
 .hangar-screen {
-  padding-bottom: 120px;
-  gap: 6px !important;
+  padding-bottom: 40px;
+  gap: 16px !important;
 }
 
-.hangar-topbar {
+.hangar-hero {
+  display: grid;
+  grid-template-columns: 1.15fr 0.95fr;
+  gap: 18px;
+  padding: 24px;
+  overflow: hidden;
+}
+
+.hangar-hero-copy {
   display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 4px 0 8px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.hangar-kicker {
+  font-size: 0.74rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(124, 220, 255, 0.86);
 }
 
 .hangar-title {
-  font-size: 1.2rem;
-  font-weight: 700;
+  font-size: clamp(1.8rem, 3vw, 2.7rem);
+  font-weight: 800;
+  line-height: 1.02;
+}
+
+.hangar-subtitle {
+  max-width: 40rem;
+  font-size: 0.98rem;
+  line-height: 1.65;
+  color: var(--text-secondary);
+}
+
+.hangar-hero-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.hangar-summary-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 128px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(145, 171, 239, 0.18);
+  background:
+    linear-gradient(160deg, rgba(12, 22, 43, 0.94), rgba(10, 18, 36, 0.86)),
+    linear-gradient(120deg, rgba(255, 255, 255, 0.03), transparent 42%);
+}
+
+.hangar-summary-card-accent {
+  border-color: rgba(255, 212, 59, 0.22);
+  background:
+    linear-gradient(160deg, rgba(22, 28, 48, 0.96), rgba(12, 18, 35, 0.9)),
+    linear-gradient(120deg, rgba(255, 212, 59, 0.06), transparent 44%);
+}
+
+.hangar-summary-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.hangar-summary-value {
+  font-size: 1.08rem;
+  line-height: 1.2;
+}
+
+.hangar-summary-meta {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
 }
 
 .hangar-section {
   margin-bottom: 0;
-  padding: 10px 12px;
+  padding: 16px 18px;
   background: rgba(10, 19, 40, 0.45);
-  border-radius: 14px;
+  border-radius: 18px;
   border: 1px solid rgba(130, 160, 230, 0.12);
+}
+
+.hangar-stage-section {
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.14);
 }
 
 .section-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+}
+
+.section-head > div {
+  min-width: 0;
 }
 
 .section-head h3 {
@@ -924,10 +999,18 @@ video.card-art-img {
   color: var(--text-secondary);
 }
 
+.section-copy {
+  margin-top: 4px;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
 .section-selected {
   font-size: 0.78rem;
   color: var(--accent);
   font-weight: 600;
+  padding-top: 2px;
 }
 
 .outfit-filter-toggle {
@@ -949,10 +1032,9 @@ video.card-art-img {
   height: 14px;
 }
 
-/* Horizontal scroll strip for cards */
 .hangar-strip {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   overflow-x: auto;
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
@@ -981,19 +1063,18 @@ video.card-art-img {
 
 .hangar-strip > .pilot-card,
 .hangar-strip > .ship-card {
-  width: 152px;
+  width: 172px;
 }
 
 .hangar-strip > .outfit-card {
-  width: 142px;
+  width: 148px;
 }
 
 .hangar-strip > .map-card {
-  width: 170px;
-  min-height: 80px;
+  width: 220px;
+  min-height: 104px;
 }
 
-/* Outfit strip wraps on desktop */
 .hangar-strip-wrap {
   flex-wrap: wrap;
 }
@@ -1001,13 +1082,17 @@ video.card-art-img {
 .outfit-groups {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .outfit-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(11, 20, 39, 0.46);
+  border: 1px solid rgba(130, 160, 230, 0.1);
 }
 
 .outfit-group-head {
@@ -1030,21 +1115,27 @@ video.card-art-img {
 }
 
 .kit-warning {
-  margin-top: 8px;
-  font-size: 0.8rem;
+  margin-top: 10px;
+  font-size: 0.82rem;
   color: #ffc7b7;
+}
+
+.empty-msg {
+  margin-top: 10px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
 }
 
 .map-card {
   position: relative;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: 16px;
   border: 1px solid rgba(145, 171, 239, 0.28);
   background: rgba(15, 27, 53, 0.82);
   padding: 0;
   text-align: left;
   cursor: pointer;
-  min-height: 80px;
+  min-height: 104px;
   transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
 }
 
@@ -1063,8 +1154,6 @@ video.card-art-img {
   position: absolute;
   inset: 0;
   opacity: 0.95;
-  /* Subtle zoom on hover so the rendered art feels alive without
-     stealing focus from the rest of the hangar. */
   transition: transform 0.32s ease, filter 0.32s ease;
 }
 
@@ -1077,9 +1166,6 @@ video.card-art-img {
   content: "";
   position: absolute;
   inset: 0;
-  /* Strong bottom-weighted gradient so title + meta stay legible over
-     photographic key art; subtle vignette at the top keeps the corners
-     from looking too washed out on bright scenes (Solar Rift). */
   background:
     linear-gradient(180deg, rgba(4, 11, 28, 0.32) 0%, rgba(4, 11, 28, 0.55) 38%, rgba(4, 11, 28, 0.92) 100%),
     radial-gradient(120% 80% at 50% 20%, rgba(4, 11, 28, 0) 55%, rgba(4, 11, 28, 0.45) 100%);
@@ -1088,48 +1174,50 @@ video.card-art-img {
 .map-card-info {
   position: relative;
   z-index: 2;
-  padding: 10px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 5px;
 }
 
 .map-card-title {
-  font-size: 0.88rem;
+  font-size: 0.95rem;
   line-height: 1.1;
 }
 
 .map-card-meta {
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   color: #b6c9f3;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
-/* ─── Compact Deploy Bar (sticky bottom) ────────────── */
-
-.hangar-deploy-bar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 30;
-  background: linear-gradient(180deg, rgba(8, 16, 36, 0.96), rgba(6, 12, 28, 0.98));
-  border-top: 1px solid rgba(140, 170, 240, 0.2);
-  backdrop-filter: blur(16px);
-  padding: 8px 16px;
+.hangar-launch-panel {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 14px;
+  padding: 18px 20px 20px;
+}
+
+.hangar-launch-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hangar-launch-title {
+  margin-top: 4px;
+  font-size: 1.2rem;
 }
 
 .deploy-bar-selections {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   flex-wrap: wrap;
-  font-size: 0.72rem;
-  line-height: 1.3;
+  font-size: 0.8rem;
+  line-height: 1.4;
 }
 
 .deploy-chip {
@@ -1139,21 +1227,15 @@ video.card-art-img {
 
 .deploy-chip-sep {
   color: var(--text-muted);
-  font-size: 0.64rem;
-}
-
-.deploy-bar-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  font-size: 0.7rem;
 }
 
 .deploy-details-toggle {
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   color: var(--text-muted) !important;
   background: none !important;
   border: none !important;
-  padding: 4px 8px !important;
+  padding: 4px 0 !important;
   min-height: 0 !important;
   cursor: pointer;
 }
@@ -1162,26 +1244,20 @@ video.card-art-img {
   color: var(--accent) !important;
 }
 
-.deploy-btn {
-  flex: 1;
-  padding: 10px 20px !important;
-  font-size: 0.92rem !important;
-}
-
 .deploy-details {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 6px 0 2px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 18px;
+  padding-top: 10px;
   border-top: 1px solid rgba(130, 160, 230, 0.12);
 }
 
 .deploy-detail-line {
   display: flex;
   gap: 8px;
-  font-size: 0.72rem;
+  font-size: 0.76rem;
   color: var(--text-secondary);
-  line-height: 1.3;
+  line-height: 1.45;
 }
 
 .deploy-detail-label {
@@ -1191,6 +1267,24 @@ video.card-art-img {
   font-size: 0.64rem;
   min-width: 52px;
   padding-top: 1px;
+}
+
+.hangar-launch-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.hangar-launch-copy {
+  max-width: 42rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.deploy-btn {
+  min-width: 220px;
 }
 
 /* ─── Collection Filter Tabs ─────────────────────────── */

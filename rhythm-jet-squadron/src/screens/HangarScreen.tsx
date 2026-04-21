@@ -142,16 +142,50 @@ export default function HangarScreen() {
 
   return (
     <div className="screen hangar-screen">
-      {/* Compact top bar */}
-      <div className="hangar-topbar">
-        <button className="btn btn-back" onClick={() => navigate("/")}>← Back</button>
-        <h2 className="hangar-title">Loadout</h2>
-      </div>
+      <header className="hangar-hero panel-surface">
+        <div className="hangar-hero-copy">
+          <button className="btn btn-back" onClick={() => navigate("/")}>← Back</button>
+          <span className="hangar-kicker">Pre-mission staging</span>
+          <h1 className="hangar-title">Mission Loadout</h1>
+          <p className="hangar-subtitle">
+            Build the pilot, frame, route, and outfit package before you throw this squadron into the lane.
+          </p>
+          {isFirstRun ? (
+            <p className="hangar-first-run-tip">Pick a pilot, select a ship, choose the route, then deploy.</p>
+          ) : null}
+        </div>
+
+        <div className="hangar-hero-summary">
+          <div className="hangar-summary-card">
+            <span className="hangar-summary-label">Pilot</span>
+            <strong className="hangar-summary-value">{selectedPilot?.name ?? "Unassigned"}</strong>
+            <span className="hangar-summary-meta">{selectedPilot ? `ACC ${selectedPilot.stats.accuracy} • RHY ${selectedPilot.stats.rhythm} • END ${selectedPilot.stats.endurance}` : "Choose who is flying point."}</span>
+          </div>
+          <div className="hangar-summary-card">
+            <span className="hangar-summary-label">Frame</span>
+            <strong className="hangar-summary-value">{selectedShip?.name ?? "No ship selected"}</strong>
+            <span className="hangar-summary-meta">{selectedShip ? `${selectedShip.className} • MOB ${selectedShip.stats.mobility} • FIR ${selectedShip.stats.firepower}` : "Pick the chassis before launch."}</span>
+          </div>
+          <div className="hangar-summary-card">
+            <span className="hangar-summary-label">Route</span>
+            <strong className="hangar-summary-value">{selectedMap?.name ?? "No route selected"}</strong>
+            <span className="hangar-summary-meta">{selectedMap ? `${selectedMap.tagline} • Boss ${selectedMap.bossName}` : "Select where the sortie goes hot."}</span>
+          </div>
+          <div className="hangar-summary-card hangar-summary-card-accent">
+            <span className="hangar-summary-label">Kit readout</span>
+            <strong className="hangar-summary-value">{selectedOutfit?.name ?? "Base loadout"}</strong>
+            <span className="hangar-summary-meta">{kitSummary}</span>
+          </div>
+        </div>
+      </header>
 
       {/* Pilot selection — horizontal strip on mobile */}
-      <section className="hangar-section">
+      <section className="hangar-section hangar-stage-section">
         <div className="section-head">
-          <h3>Pilot</h3>
+          <div>
+            <h3>Pilot</h3>
+            <p className="section-copy">Choose who sets the tone of the run.</p>
+          </div>
           <span className="section-selected">{selectedPilot?.name ?? "—"}</span>
         </div>
         <div className="hangar-strip">
@@ -180,9 +214,12 @@ export default function HangarScreen() {
       </section>
 
       {/* Ship selection */}
-      <section className="hangar-section">
+      <section className="hangar-section hangar-stage-section">
         <div className="section-head">
-          <h3>Ship</h3>
+          <div>
+            <h3>Ship</h3>
+            <p className="section-copy">Select the frame carrying the squad into contact.</p>
+          </div>
           <span className="section-selected">{selectedShip?.name ?? "—"}</span>
         </div>
         <div className="hangar-strip">
@@ -211,9 +248,12 @@ export default function HangarScreen() {
       </section>
 
       {/* Map selection */}
-      <section className="hangar-section">
+      <section className="hangar-section hangar-stage-section">
         <div className="section-head">
-          <h3>Map</h3>
+          <div>
+            <h3>Route</h3>
+            <p className="section-copy">Decide which combat lane you are about to survive.</p>
+          </div>
           <span className="section-selected">{selectedMap?.name ?? "—"}</span>
         </div>
         <div className="hangar-strip">
@@ -241,9 +281,12 @@ export default function HangarScreen() {
       </section>
 
       {/* Outfit selection */}
-      <section className="hangar-section">
+      <section className="hangar-section hangar-stage-section">
         <div className="section-head">
-          <h3>Outfit</h3>
+          <div>
+            <h3>Outfit</h3>
+            <p className="section-copy">Lock the visual identity and combat kit for this deployment.</p>
+          </div>
           <label className="outfit-filter-toggle">
             <input
               type="checkbox"
@@ -289,38 +332,30 @@ export default function HangarScreen() {
         )}
       </section>
 
-      {/* ── Compact sticky deploy bar ─── */}
-      <div className="hangar-deploy-bar">
+      <section className="hangar-launch-panel panel-surface">
+        <div className="hangar-launch-head">
+          <div>
+            <span className="hangar-kicker">Launch package</span>
+            <h2 className="hangar-launch-title">Final readout</h2>
+          </div>
+          <button
+            className="btn btn-text deploy-details-toggle"
+            onClick={() => setShowDetails(!showDetails)}
+          >
+            {showDetails ? "Hide systems ▴" : "Show systems ▾"}
+          </button>
+        </div>
+
         <div className="deploy-bar-selections">
           <span className="deploy-chip">{selectedPilot?.name ?? "Pilot?"}</span>
           <span className="deploy-chip-sep">/</span>
           <span className="deploy-chip">{selectedShip?.name ?? "Ship?"}</span>
           <span className="deploy-chip-sep">/</span>
-          <span className="deploy-chip">{selectedMap?.name ?? "Map?"}</span>
-          {selectedOutfit && (
-            <>
-              <span className="deploy-chip-sep">/</span>
-              <span className="deploy-chip">{selectedOutfit.name}{selectedOwned ? ` ${selectedOwned.stars}★` : ""}</span>
-            </>
-          )}
+          <span className="deploy-chip">{selectedMap?.name ?? "Route?"}</span>
+          <span className="deploy-chip-sep">/</span>
+          <span className="deploy-chip">{selectedOutfit ? `${selectedOutfit.name}${selectedOwned ? ` ${selectedOwned.stars}★` : ""}` : "Base loadout"}</span>
         </div>
-        <div className="deploy-bar-row">
-          <button
-            className="btn btn-text deploy-details-toggle"
-            onClick={() => setShowDetails(!showDetails)}
-          >
-            {showDetails ? "Hide details ▴" : "Details ▾"}
-          </button>
-          <button
-            className="btn btn-primary deploy-btn"
-            onClick={() => {
-              navigate("/briefing");
-            }}
-            disabled={!save.selectedPilotId || !save.selectedShipId}
-          >
-            Deploy
-          </button>
-        </div>
+
         {showDetails && (
           <div className="deploy-details">
             <div className="deploy-detail-line">
@@ -345,7 +380,22 @@ export default function HangarScreen() {
             </div>
           </div>
         )}
-      </div>
+
+        <div className="hangar-launch-row">
+          <p className="hangar-launch-copy">
+            {selectedMap ? `Route locked for ${selectedMap.name}.` : "Lock the route, then launch."} {selectedPilot && selectedShip ? "Squad is almost ready." : "Pilot and ship assignment still incomplete."}
+          </p>
+          <button
+            className="btn btn-primary btn-large deploy-btn"
+            onClick={() => {
+              navigate("/briefing");
+            }}
+            disabled={!save.selectedPilotId || !save.selectedShipId}
+          >
+            Launch Mission
+          </button>
+        </div>
+      </section>
 
     </div>
   );
