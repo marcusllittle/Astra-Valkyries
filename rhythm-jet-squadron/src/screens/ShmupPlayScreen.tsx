@@ -2256,15 +2256,33 @@ export default function ShmupPlayScreen() {
       const EXPLOSION_COLORS: Record<string, string> = {
         drifter: "#f06595", sine: "#9775fa", zigzag: "#ff922b", orbiter: "#74c0fc",
         charger: "#ff6b6b", splitter: "#69db7c", bomber: "#ffa94d", sniper: "#ff0000", swarm: "#adb5bd",
-        dreadnought: "#ff4444", tank: "#66d9ef",
+        dreadnought: "#ff4444", tank: "#66d9ef", miniboss: "#e040a0",
       };
-      addExplosion(
+      const killColor = EXPLOSION_COLORS[enemy.pattern] ?? "#9775fa";
+      const killScale = enemy.elite ? 3.2 : enemy.radius > 16 ? 2.6 : enemy.pattern === "swarm" ? 1.8 : 2.2;
+      const killShake = enemy.elite ? 2.8 : enemy.radius > 18 ? 2.1 : enemy.pattern === "swarm" ? 0.85 : 1.25;
+      const killShakeTime = enemy.elite ? 0.09 : enemy.pattern === "swarm" ? 0.045 : 0.06;
+
+      addExplosion(enemy.x, enemy.y, killColor, enemy.radius * (enemy.pattern === "swarm" ? 0.9 : 1.05), killScale);
+      addSparkBurst(
         enemy.x,
         enemy.y,
-        EXPLOSION_COLORS[enemy.pattern] ?? "#9775fa",
-        enemy.radius,
-        enemy.elite ? 3.2 : enemy.radius > 16 ? 2.6 : 2
+        enemy.elite ? "#ffffff" : killColor,
+        enemy.elite ? 12 : enemy.pattern === "swarm" ? 4 : 6,
+        enemy.elite ? 175 : enemy.pattern === "swarm" ? 85 : 110,
+        enemy.elite ? [2, 5] : [1, 3]
       );
+      addPulse(
+        enemy.x,
+        enemy.y,
+        killColor,
+        enemy.pattern === "swarm" ? 5 : 8,
+        enemy.pattern === "swarm" ? 120 : 150,
+        enemy.pattern === "swarm" ? 0.14 : 0.18,
+        1.4
+      );
+      shakePowerRef.current = Math.max(shakePowerRef.current, killShake);
+      shakeTimeRef.current = Math.max(shakeTimeRef.current, killShakeTime);
       addOverdrive(12, elapsedMs);
     };
 
