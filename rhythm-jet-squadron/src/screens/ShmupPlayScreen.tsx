@@ -651,7 +651,7 @@ export default function ShmupPlayScreen() {
   const [viewportBounds, setViewportBounds] = useState<ViewportBounds>(() => getViewportBounds());
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMobileDevice, setIsMobileDevice] = useState(() => isTouchGameplayDevice());
-  const [mobileLaunchAccepted, setMobileLaunchAccepted] = useState(true);
+  const [mobileLaunchAccepted, setMobileLaunchAccepted] = useState(() => !isTouchGameplayDevice());
   const gateWasVisibleRef = useRef(false);
   const gateRestorePausedRef = useRef(false);
   const mobileGateVisibleRef = useRef(false);
@@ -1026,7 +1026,7 @@ export default function ShmupPlayScreen() {
 
   const isPortraitViewport = viewportBounds.height > viewportBounds.width;
   const showMobileRotateGate = isMobileDevice && isPortraitViewport;
-  const showMobileLaunchGate = false;
+  const showMobileLaunchGate = isMobileDevice && !mobileLaunchAccepted && !isPortraitViewport;
   const mobileGateVisible = showMobileLaunchGate || showMobileRotateGate;
 
   useEffect(() => {
