@@ -2030,31 +2030,39 @@ export default function ShmupPlayScreen() {
           });
         }
         if (boss.phase >= 2) {
-          for (const vx of [-140, 0, 140]) {
-            pushEnemyBullet({
-              x: boss.x,
-              y: boss.y + boss.radius * 0.6,
-              vx,
-              vy: 220 + boss.phase * 12,
-              radius: 7,
-              color: "#ffa94d",
-              coreColor: "#fff4e6",
-              length: 18,
-              spriteKey: "bulletBoss",
-            });
+          for (const side of [-1, 1]) {
+            const wallX = side * (boss.phase === 3 ? 165 : 145);
+            for (const vy of [150, 210, 270]) {
+              pushEnemyBullet({
+                x: boss.x + side * boss.radius * 0.92,
+                y: boss.y + boss.radius * 0.42,
+                vx: wallX,
+                vy,
+                radius: boss.phase === 3 ? 7.5 : 6.5,
+                color: "#ffa94d",
+                coreColor: "#fff4e6",
+                length: 18,
+                spriteKey: "bulletBoss",
+              });
+            }
           }
         }
         return;
       }
 
       if (boss.archetype === "leviathan") {
-        const offsets = boss.phase === 1 ? [-90, -30, 30, 90] : boss.phase === 2 ? [-140, -84, -28, 28, 84, 140] : [-180, -126, -72, -18, 18, 72, 126, 180];
-        for (const offset of offsets) {
+        const laneCount = boss.phase === 1 ? 4 : boss.phase === 2 ? 5 : 6;
+        const stride = canvas.width / (laneCount + 1);
+        for (let index = 0; index < laneCount; index++) {
+          const targetX = stride * (index + 1);
+          const dxLane = targetX - boss.x;
+          const dyLane = canvas.height - boss.y;
+          const laneLen = Math.hypot(dxLane, dyLane) || 1;
           pushEnemyBullet({
-            x: boss.x,
+            x: boss.x + (index - (laneCount - 1) / 2) * 12,
             y: boss.y + boss.radius * 0.55,
-            vx: offset,
-            vy: 150 + boss.phase * 26,
+            vx: (dxLane / laneLen) * (boss.phase === 3 ? 210 : 180),
+            vy: (dyLane / laneLen) * (boss.phase === 3 ? 210 : 180),
             radius: boss.phase === 3 ? 7 : 6,
             color: activeMap.palette.bossShotColor,
             coreColor: activeMap.palette.bossShotCore,
@@ -2075,7 +2083,7 @@ export default function ShmupPlayScreen() {
         pushEnemyBullet({
           x: boss.x,
           y: boss.y + boss.radius * 0.7,
-          vx: baseVx + offset,
+          vx: baseVx * 0.55 + offset,
           vy: baseVy + 26,
           radius: shotRadius,
           color: shotColor,
@@ -2087,17 +2095,19 @@ export default function ShmupPlayScreen() {
 
       if (boss.phase >= 2) {
         for (const side of [-1, 1]) {
-          pushEnemyBullet({
-            x: boss.x + side * 30,
-            y: boss.y + 12,
-            vx: side * 150,
-            vy: 210,
-            radius: 6,
-            color: activeMap.palette.bossShotColor,
-            coreColor: activeMap.palette.bossShotCore,
-            length: 14,
-            spriteKey: "bulletBoss",
-          });
+          for (const drop of [0, 32]) {
+            pushEnemyBullet({
+              x: boss.x + side * (28 + drop * 0.1),
+              y: boss.y + 12 + drop,
+              vx: side * (boss.phase === 3 ? 175 : 145),
+              vy: 190 + drop * 0.8,
+              radius: 6,
+              color: activeMap.palette.bossShotColor,
+              coreColor: activeMap.palette.bossShotCore,
+              length: 14,
+              spriteKey: "bulletBoss",
+            });
+          }
         }
       }
     };
@@ -2105,63 +2115,55 @@ export default function ShmupPlayScreen() {
     const shootBossBurst = (boss: BossState) => {
       boss.attackTelegraph = 0.32;
       if (boss.archetype === "tyrant") {
-        const rings = boss.phase === 3 ? 2 : 1;
-        for (let ring = 0; ring < rings; ring++) {
-          const bulletCount = boss.phase === 1 ? 6 : boss.phase === 2 ? 8 : 10;
-          for (let index = 0; index < bulletCount; index++) {
-            const angle = (Math.PI * 0.22) + (Math.PI * 0.56 * index) / Math.max(1, bulletCount - 1) + ring * 0.08;
-            pushEnemyBullet({
-              x: boss.x,
-              y: boss.y + boss.radius * 0.45,
-              vx: Math.cos(angle) * (165 + ring * 18),
-              vy: Math.sin(angle) * (165 + ring * 18),
-              radius: 6,
-              color: "#ff922b",
-              coreColor: "#fff4e6",
-              length: 16,
-              spriteKey: "bulletBoss",
-            });
-          }
-        }
-        return;
-      }
-
-      if (boss.archetype === "leviathan") {
-        const bulletCount = boss.phase === 1 ? 8 : boss.phase === 2 ? 12 : 16;
-        for (let index = 0; index < bulletCount; index++) {
-          const ratio = index / Math.max(1, bulletCount - 1);
-          const angle = Math.PI * 0.1 + Math.PI * 0.8 * ratio;
-          const speed = boss.phase === 3 ? 225 : 190;
+        const columnOffsets = boss.phase === 1 ? [-120, -40, 40, 120] : boss.phase === 2 ? [-150, -75, 0, 75, 150] : [-180, -108, -36, 36, 108, 180];
+        for (const offset of columnOffsets) {
           pushEnemyBullet({
-            x: boss.x + Math.sin(ratio * Math.PI) * 12,
-            y: boss.y + boss.radius * 0.4,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * (speed * 0.9),
+            x: boss.x + offset * 0.18,
+            y: boss.y + boss.radius * 0.5,
+            vx: offset * 0.18,
+            vy: boss.phase === 3 ? 245 : 215,
             radius: boss.phase === 3 ? 7 : 6,
-            color: activeMap.palette.bossShotColor,
-            coreColor: activeMap.palette.bossShotCore,
-            length: 15,
+            color: "#ff922b",
+            coreColor: "#fff4e6",
+            length: 18,
             spriteKey: "bulletBoss",
           });
         }
         return;
       }
 
-      const startAngle = boss.phase === 1 ? Math.PI * 0.18 : Math.PI * 0.08;
-      const endAngle = Math.PI - startAngle;
-      const bulletCount = boss.phase === 1 ? 9 : boss.phase === 2 ? 13 : 18;
+      if (boss.archetype === "leviathan") {
+        const arcCount = boss.phase === 1 ? 2 : boss.phase === 2 ? 3 : 4;
+        for (let arc = 0; arc < arcCount; arc++) {
+          const side = arc % 2 === 0 ? -1 : 1;
+          const angle = Math.PI * (0.34 + arc * 0.08);
+          pushEnemyBullet({
+            x: boss.x + side * (boss.radius * 0.45),
+            y: boss.y + boss.radius * 0.2,
+            vx: Math.cos(angle) * 140 * side,
+            vy: 210 + arc * 18,
+            radius: boss.phase === 3 ? 7 : 6,
+            color: activeMap.palette.bossShotColor,
+            coreColor: activeMap.palette.bossShotCore,
+            length: 18,
+            spriteKey: "bulletBoss",
+          });
+        }
+        return;
+      }
+
+      const columnCount = boss.phase === 1 ? 5 : boss.phase === 2 ? 6 : 7;
+      const spacing = boss.phase === 3 ? 52 : boss.phase === 2 ? 58 : 64;
       const shotColor = boss.phase === 1 ? activeMap.palette.enemyShotColor : activeMap.palette.bossShotColor;
       const shotCore = boss.phase === 1 ? activeMap.palette.enemyShotCore : activeMap.palette.bossShotCore;
 
-      for (let index = 0; index < bulletCount; index++) {
-        const ratio = index / (bulletCount - 1);
-        const angle = startAngle + (endAngle - startAngle) * ratio;
-        const speed = boss.phase === 3 ? 210 : 185;
+      for (let index = 0; index < columnCount; index++) {
+        const offset = (index - (columnCount - 1) / 2) * spacing;
         pushEnemyBullet({
-          x: boss.x,
+          x: boss.x + offset * 0.15,
           y: boss.y + boss.radius * 0.55,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed,
+          vx: offset * 0.22,
+          vy: boss.phase === 3 ? 235 : 205,
           radius: boss.phase === 1 ? 5 : 6,
           color: shotColor,
           coreColor: shotCore,
