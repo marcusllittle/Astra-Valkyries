@@ -220,6 +220,7 @@ interface BossState {
   minionCooldown: number;
   phaseTransitionFlash: number;
   lastPhase: 1 | 2 | 3;
+  attackTelegraph: number;
 }
 
 interface PowerChip {
@@ -1706,6 +1707,7 @@ export default function ShmupPlayScreen() {
         minionCooldown: 8.0,
         phaseTransitionFlash: 0,
         lastPhase: 1,
+        attackTelegraph: 0,
       };
       activeWaveLabelRef.current = activeMap.bossName;
       waveIntensityRef.current = "boss";
@@ -2003,6 +2005,7 @@ export default function ShmupPlayScreen() {
       const length = Math.hypot(dx, dy) || 1;
       const baseVx = (dx / length) * 180;
       const baseVy = (dy / length) * 180;
+      boss.attackTelegraph = 0.22;
       addTelegraphPulse(
         boss.x,
         boss.y + boss.radius * 0.2,
@@ -2100,6 +2103,7 @@ export default function ShmupPlayScreen() {
     };
 
     const shootBossBurst = (boss: BossState) => {
+      boss.attackTelegraph = 0.32;
       if (boss.archetype === "tyrant") {
         const rings = boss.phase === 3 ? 2 : 1;
         for (let ring = 0; ring < rings; ring++) {
@@ -3455,6 +3459,9 @@ export default function ShmupPlayScreen() {
         if (boss.phaseTransitionFlash > 0) {
           boss.phaseTransitionFlash -= bossDelta;
         }
+        if (boss.attackTelegraph > 0) {
+          boss.attackTelegraph = Math.max(0, boss.attackTelegraph - bossDelta);
+        }
 
         const phaseConfig = phases?.[boss.phase - 1];
         const moveSpeed = phaseConfig?.moveSpeed ?? (boss.phase === 1 ? 0.95 : boss.phase === 2 ? 1.35 : 1.8);
@@ -4620,6 +4627,28 @@ export default function ShmupPlayScreen() {
           ctx.shadowColor = bossColor;
           ctx.shadowBlur = 24;
 
+          if (boss.attackTelegraph > 0) {
+            const telegraphAlpha = boss.attackTelegraph / 0.32;
+            const telegraphColor = boss.phase === 1
+              ? activeMap.palette.bossPrimary
+              : boss.phase === 2
+                ? activeMap.palette.bossSecondary
+                : "#ff4444";
+            ctx.save();
+            ctx.globalAlpha = Math.min(0.55, telegraphAlpha * 0.55);
+            ctx.strokeStyle = telegraphColor;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(0, 0, br * (1.5 + (1 - telegraphAlpha) * 0.4), 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.globalAlpha = Math.min(0.22, telegraphAlpha * 0.22);
+            ctx.fillStyle = telegraphColor;
+            ctx.beginPath();
+            ctx.arc(0, 0, br * 1.15, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+
           if (boss.archetype === "dreadnought") {
             // ─────────────────────────────────────────────────
             // AEGIS DREADNOUGHT — heavy armored patrol fortress
@@ -4710,6 +4739,17 @@ export default function ShmupPlayScreen() {
             ctx.moveTo(-br * 0.55, -br * 0.8); ctx.lineTo(-br * 0.3, br * 0.4); // left rib
             ctx.moveTo(br * 0.55, -br * 0.8); ctx.lineTo(br * 0.3, br * 0.4);   // right rib
             ctx.stroke();
+
+            if (boss.phase >= 2) {
+              ctx.strokeStyle = `rgba(255,140,60,${0.38 * bPulse})`;
+              ctx.lineWidth = 2.4;
+              ctx.setLineDash([10, 6]);
+              ctx.beginPath();
+              ctx.moveTo(-br * 1.15, br * 0.2);
+              ctx.lineTo(br * 1.15, br * 0.2);
+              ctx.stroke();
+              ctx.setLineDash([]);
+            }
 
           } else if (boss.archetype === "tyrant") {
             // ─────────────────────────────────────────────────
@@ -4824,6 +4864,17 @@ export default function ShmupPlayScreen() {
             ctx.moveTo(br * 0.45, -br * 0.3); ctx.lineTo(br * 1.4, -br * 0.6);
             ctx.stroke();
 
+            if (boss.phase >= 2) {
+              ctx.strokeStyle = `rgba(255,220,120,${0.45 * bPulse})`;
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.moveTo(-br * 0.2, br * 0.9);
+              ctx.lineTo(-br * 0.15, br * 1.45);
+              ctx.moveTo(br * 0.2, br * 0.9);
+              ctx.lineTo(br * 0.15, br * 1.45);
+              ctx.stroke();
+            }
+
           } else {
             // ─────────────────────────────────────────────────
             // CRYO LEVIATHAN — ancient deep-void entity
@@ -4913,6 +4964,15 @@ export default function ShmupPlayScreen() {
             ctx.ellipse(0, br * 0.1, br * 0.45 * bPulse, br * 0.32 * bPulse, 0, 0, Math.PI * 2);
             ctx.fill();
             ctx.shadowBlur = 0;
+
+            if (boss.phase >= 2) {
+              ctx.strokeStyle = `rgba(180,240,255,${0.38 * bPulse})`;
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.moveTo(-br * 0.45, br * 0.15);
+              ctx.lineTo(br * 0.45, br * 0.15);
+              ctx.stroke();
+            }
 
             // Ice crystal formations at wingtips
             ctx.fillStyle = `rgba(180,240,255,${0.65 * bPulse})`;
