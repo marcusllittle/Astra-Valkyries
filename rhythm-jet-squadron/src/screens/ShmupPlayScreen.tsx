@@ -221,6 +221,8 @@ interface BossState {
   phaseTransitionFlash: number;
   lastPhase: 1 | 2 | 3;
   attackTelegraph: number;
+  damageFlash: number;
+  emberTimer: number;
 }
 
 interface PowerChip {
@@ -1708,6 +1710,8 @@ export default function ShmupPlayScreen() {
         phaseTransitionFlash: 0,
         lastPhase: 1,
         attackTelegraph: 0,
+        damageFlash: 0,
+        emberTimer: 0,
       };
       activeWaveLabelRef.current = activeMap.bossName;
       waveIntensityRef.current = "boss";
@@ -3458,6 +3462,37 @@ export default function ShmupPlayScreen() {
         if (boss.attackTelegraph > 0) {
           boss.attackTelegraph = Math.max(0, boss.attackTelegraph - bossDelta);
         }
+        if (boss.damageFlash > 0) {
+          boss.damageFlash = Math.max(0, boss.damageFlash - bossDelta * 1.8);
+        }
+
+        const bossHealthRatio = clamp(boss.hp / boss.maxHp, 0, 1);
+        const damageState = 1 - bossHealthRatio;
+        boss.emberTimer -= bossDelta * (0.7 + damageState * 2.2);
+        if (boss.emberTimer <= 0 && damageState > 0.2) {
+          boss.emberTimer = 0.18 + Math.random() * (damageState > 0.65 ? 0.16 : 0.3);
+          const angle = Math.random() * Math.PI * 2;
+          const dist = boss.radius * (0.18 + Math.random() * 0.7);
+          const fx = boss.x + Math.cos(angle) * dist;
+          const fy = boss.y + Math.sin(angle) * dist;
+          addSparkBurst(
+            fx,
+            fy,
+            boss.archetype === "leviathan" ? "#a5d8ff" : boss.phase === 1 ? "#ff8787" : "#ffd43b",
+            damageState > 0.65 ? 5 : 3,
+            damageState > 0.65 ? 90 : 65,
+            [1.2, damageState > 0.65 ? 3.4 : 2.4]
+          );
+          if (damageState > 0.45 && Math.random() < 0.45) {
+            addExplosion(
+              fx,
+              fy,
+              boss.archetype === "leviathan" ? "#74c0fc" : boss.phase === 1 ? "#ff6b6b" : "#ff922b",
+              damageState > 0.75 ? 14 : 10,
+              damageState > 0.75 ? 1.9 : 1.2
+            );
+          }
+        }
 
         const phaseConfig = phases?.[boss.phase - 1];
         const moveSpeed = phaseConfig?.moveSpeed ?? (boss.phase === 1 ? 0.95 : boss.phase === 2 ? 1.35 : 1.8);
@@ -3687,6 +3722,7 @@ export default function ShmupPlayScreen() {
           }
 
           activeBoss.hp -= bullet.damage;
+          activeBoss.damageFlash = Math.min(0.22, activeBoss.damageFlash + 0.08);
           consumePlayerBullet(bulletIndex);
           addDamageNumber(bullet.x, bullet.y - 10, Math.round(bullet.damage * 10), "#ffd43b");
           addSparkBurst(bullet.x, bullet.y, activeBoss.phase === 1 ? "#ffa8a8" : "#ffd43b", 5, 96);
@@ -3699,6 +3735,15 @@ export default function ShmupPlayScreen() {
             0.1,
             1.5
           );
+          if (Math.random() < 0.18) {
+            addExplosion(
+              bullet.x + (Math.random() - 0.5) * 24,
+              bullet.y + (Math.random() - 0.5) * 20,
+              activeBoss.phase === 1 ? "#ff8787" : "#ffd43b",
+              10,
+              1.4
+            );
+          }
           addScreenShake(activeBoss.phase === 1 ? 0.35 : 0.55, 0.05);
           extendOverdrive(elapsedMs, OVERDRIVE_EXTENSION_PER_BOSS_HIT_MS);
 
@@ -4616,12 +4661,37 @@ export default function ShmupPlayScreen() {
             : boss.phase === 2
               ? activeMap.palette.bossSecondary
               : "#ff2222";
-          const bPulse = 0.88 + Math.sin(boss.age * 2.5) * 0.12;
+          const hpRatio = clamp(boss.hp / boss.maxHp, 0, 1);
+          const damageState = 1 - hpRatio;
+          const woundedSlow = damageState > 0.55 ? 1 - Math.min(0.16, (damageState - 0.55) * 0.22) : 1;
+          const bPulse = (0.88 + Math.sin(boss.age * 2.5 * woundedSlow) * 0.12) * (1 - damageState * 0.06);
           ctx.save();
           ctx.translate(boss.x, boss.y);
           ctx.scale(displayScale, displayScale);
           ctx.shadowColor = bossColor;
           ctx.shadowBlur = 24;
+
+          if (damageState > 0.3) {
+            ctx.save();
+            ctx.globalAlpha = Math.min(0.26, damageState * 0.28);
+            ctx.fillStyle = boss.archetype === "leviathan" ? "#bde0fe" : "rgba(40,40,40,0.9)";
+            for (const smoke of [-1, 1]) {
+              ctx.beginPath();
+              ctx.arc(smoke * br * 0.45, br * (0.1 + damageState * 0.15), br * (0.2 + damageState * 0.16), 0, Math.PI * 2);
+              ctx.fill();
+            }
+            ctx.restore();
+          }
+
+          if (boss.damageFlash > 0) {
+            ctx.save();
+            ctx.globalAlpha = boss.damageFlash;
+            ctx.fillStyle = "#ffffff";
+            ctx.beginPath();
+            ctx.arc(0, 0, br * 1.25, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
 
           if (boss.attackTelegraph > 0) {
             const telegraphAlpha = boss.attackTelegraph / 0.32;
