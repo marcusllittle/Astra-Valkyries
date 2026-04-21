@@ -327,6 +327,7 @@ interface HudState {
   timeSurvivedMs: number;
   multiplierSaveReady: boolean;
   waveLabel: string;
+  waveIntensity: "cooldown" | "rising" | "peak" | "boss";
   mapLabel: string;
   bossActive: boolean;
   bossLabel: string;
@@ -383,6 +384,8 @@ interface ScheduledWaveSpawn extends ShmupWaveEnemy {
   loop: number;
   spawnAtMs: number;
   waveLabel: string;
+  waveIndex: number;
+  waveCount: number;
 }
 
 type SpriteKey =
@@ -607,6 +610,7 @@ function createHudState(modifiers: ShmupModifiers, activeMap: ShmupMap): HudStat
     timeSurvivedMs: 0,
     multiplierSaveReady: modifiers.hasMultiplierSave,
     waveLabel: activeMap.waves[0]?.label ?? activeMap.name,
+    waveIntensity: "cooldown",
     mapLabel: activeMap.name,
     bossActive: false,
     bossLabel: "",
@@ -768,6 +772,7 @@ export default function ShmupPlayScreen() {
   const waveLoopRef = useRef(0);
   const nextWaveStartMsRef = useRef(800);
   const activeWaveLabelRef = useRef("Launch Window");
+  const waveIntensityRef = useRef<"cooldown" | "rising" | "peak" | "boss">("cooldown");
   const bossRef = useRef<BossState | null>(null);
   const bossIntroStartedRef = useRef(false);
   const bossWarningUntilRef = useRef(0);
@@ -1105,6 +1110,7 @@ export default function ShmupPlayScreen() {
     waveLoopRef.current = 0;
     nextWaveStartMsRef.current = 800;
     activeWaveLabelRef.current = activeMap.waves[0]?.label ?? activeMap.name;
+    waveIntensityRef.current = "cooldown";
     bossRef.current = null;
     bossIntroStartedRef.current = false;
     bossWarningUntilRef.current = 0;
@@ -1222,6 +1228,7 @@ export default function ShmupPlayScreen() {
         timeSurvivedMs: elapsedMs,
         multiplierSaveReady: multiplierSaveReadyRef.current,
         waveLabel: activeWaveLabelRef.current,
+        waveIntensity: waveIntensityRef.current,
         mapLabel: activeMap.name,
         bossActive: boss !== null,
         bossLabel: boss?.name ?? "",
@@ -1581,6 +1588,8 @@ export default function ShmupPlayScreen() {
       };
 
       activeWaveLabelRef.current = spawn.waveLabel;
+      const intensityRatio = spawn.waveCount <= 1 ? 1 : spawn.waveIndex / (spawn.waveCount - 1);
+      waveIntensityRef.current = intensityRatio >= 0.72 ? "peak" : intensityRatio >= 0.36 ? "rising" : "cooldown";
       enemiesRef.current.push({
         id: enemyIdRef.current++,
         pattern,
@@ -1634,17 +1643,22 @@ export default function ShmupPlayScreen() {
       const waveStartMs = nextWaveStartMsRef.current;
       const loop = waveLoopRef.current;
 
+      const waveCount = activeMap.waves.length;
       queuedWaveSpawnsRef.current.push(
         ...wave.enemies.map((enemy) => ({
           ...enemy,
           loop,
           spawnAtMs: waveStartMs + enemy.delayMs,
           waveLabel: wave.label,
+          waveIndex: waveCursorRef.current,
+          waveCount,
         }))
       );
       queuedWaveSpawnsRef.current.sort((left, right) => left.spawnAtMs - right.spawnAtMs);
 
-      nextWaveStartMsRef.current = waveStartMs + wave.durationMs + 1100;
+      const loopGapMs = loop === 0 ? 880 : 760;
+      const cadenceBiasMs = wave.durationMs >= 5000 ? 420 : wave.durationMs >= 3600 ? 280 : 140;
+      nextWaveStartMsRef.current = waveStartMs + wave.durationMs + Math.max(320, loopGapMs - cadenceBiasMs);
       waveCursorRef.current += 1;
       if (waveCursorRef.current >= activeMap.waves.length) {
         waveCursorRef.current = 0;
@@ -1660,6 +1674,7 @@ export default function ShmupPlayScreen() {
       bossWarningUntilRef.current = elapsedMs + activeMap.bossWarningMs;
       queuedWaveSpawnsRef.current = [];
       activeWaveLabelRef.current = "Boss Warning";
+      waveIntensityRef.current = "boss";
       enemyBulletsRef.current = [];
     };
 
@@ -1685,6 +1700,7 @@ export default function ShmupPlayScreen() {
         lastPhase: 1,
       };
       activeWaveLabelRef.current = activeMap.bossName;
+      waveIntensityRef.current = "boss";
     };
 
     const pushEnemyBullet = (b: EnemyBullet) => {
@@ -2993,7 +3009,7 @@ export default function ShmupPlayScreen() {
           startBossIntro(elapsedMs);
         }
 
-        while (!bossIntroStartedRef.current && elapsedMs + 2200 >= nextWaveStartMsRef.current) {
+        while (!bossIntroStartedRef.current && elapsedMs + 1700 >= nextWaveStartMsRef.current) {
           queueNextWave();
         }
       }
@@ -5511,7 +5527,7 @@ export default function ShmupPlayScreen() {
             ))}
           </div>
           <div className="shmup-subtitle">
-            Lv{hud.weaponLevel} {hud.weaponLabel} &middot; {hud.waveLabel}
+            Lv{hud.weaponLevel} {hud.weaponLabel} &middot; {hud.waveIntensity === "boss" ? "Boss engagement" : hud.waveIntensity === "peak" ? "Peak pressure" : hud.waveIntensity === "rising" ? "Escalation" : "Regroup"} &middot; {hud.waveLabel}
           </div>
         </div>
 
