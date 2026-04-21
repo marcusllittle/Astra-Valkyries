@@ -1789,8 +1789,8 @@ video.card-art-img {
 
 .shmup-touch-secondary {
   position: absolute;
-  right: calc(18px + env(safe-area-inset-right, 0px));
-  bottom: calc(11% + env(safe-area-inset-bottom, 0px));
+  right: max(28px, calc(18px + env(safe-area-inset-right, 0px)));
+  bottom: max(88px, calc(14px + env(safe-area-inset-bottom, 0px)));
   z-index: 20;
   width: 104px;
   height: 104px;
@@ -3759,8 +3759,8 @@ video.card-art-img {
   .shmup-touch-secondary {
     width: 92px;
     height: 92px;
-    right: calc(12px + env(safe-area-inset-right, 0px));
-    bottom: calc(12% + env(safe-area-inset-bottom, 0px));
+    right: max(20px, calc(12px + env(safe-area-inset-right, 0px)));
+    bottom: max(78px, calc(12px + env(safe-area-inset-bottom, 0px)));
     font-size: 0.66rem;
   }
 
@@ -4037,8 +4037,8 @@ video.card-art-img {
   .shmup-touch-secondary {
     width: 96px;
     height: 96px;
-    right: calc(10px + env(safe-area-inset-right, 0px));
-    bottom: calc(10% + env(safe-area-inset-bottom, 0px));
+    right: max(18px, calc(10px + env(safe-area-inset-right, 0px)));
+    bottom: max(74px, calc(10px + env(safe-area-inset-bottom, 0px)));
     font-size: 0.62rem;
   }
 
