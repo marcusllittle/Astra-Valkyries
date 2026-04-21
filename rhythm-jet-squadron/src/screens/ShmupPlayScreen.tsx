@@ -1226,15 +1226,27 @@ export default function ShmupPlayScreen() {
       // Read actual HUD height from DOM (CSS media queries may change it)
       const hudEl = canvas.parentElement?.querySelector(".play-hud") as HTMLElement | null;
       const actualHudH = hudEl ? hudEl.offsetHeight : HUD_HEIGHT;
-      const viewportWidth = window.visualViewport?.width
-        ?? containerRef.current?.clientWidth
-        ?? window.innerWidth;
-      const rawViewportHeight = window.visualViewport?.height ?? window.innerHeight;
-      const containerHeight = containerRef.current?.clientHeight ?? rawViewportHeight;
-      const mobileReservedSpace = showTouchControls ? MOBILE_CONTROL_SPACE : 0;
-      const usableViewportHeight = Math.min(containerHeight, rawViewportHeight) - actualHudH - mobileReservedSpace;
-      canvas.width = viewportWidth;
-      canvas.height = Math.max(0, usableViewportHeight);
+      const viewportWidth = Math.max(
+        window.visualViewport?.width ?? 0,
+        containerRef.current?.clientWidth ?? 0,
+        window.innerWidth,
+        viewportBounds.width
+      );
+      const rawViewportHeight = Math.max(
+        window.visualViewport?.height ?? 0,
+        containerRef.current?.clientHeight ?? 0,
+        window.innerHeight,
+        viewportBounds.height
+      );
+      const containerHeight = Math.max(containerRef.current?.clientHeight ?? 0, rawViewportHeight);
+      const mobileReservedSpace = showTouchControls && isMobileDevice ? MOBILE_CONTROL_SPACE * 0.55 : 0;
+      const safeHeight = Math.max(rawViewportHeight, containerHeight);
+      const usableViewportHeight = Math.max(
+        220,
+        safeHeight - actualHudH - mobileReservedSpace
+      );
+      canvas.width = Math.max(320, Math.round(viewportWidth));
+      canvas.height = Math.max(220, Math.round(usableViewportHeight));
       displayScale = Math.min(1, canvas.height / REFERENCE_HEIGHT);
       const playerBounds = getPlayerBounds(canvas.width, canvas.height, ship.radius, isMobileDevice);
       if (showTouchControls) {
