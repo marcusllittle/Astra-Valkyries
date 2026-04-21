@@ -280,20 +280,16 @@ body::after {
     linear-gradient(180deg, rgba(2, 8, 22, 0.3), rgba(2, 8, 22, 0.6));
 }
 
-/* Scanline overlay — very subtle CRT feel */
+/* Glass bloom overlay for the landing screen */
 .home-screen::after {
   content: "";
   position: fixed;
   inset: 0;
   z-index: 4;
   pointer-events: none;
-  background: repeating-linear-gradient(
-    to bottom,
-    transparent 0px,
-    transparent 2px,
-    rgba(0, 0, 0, 0.03) 2px,
-    rgba(0, 0, 0, 0.03) 4px
-  );
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.05), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.015), rgba(255, 255, 255, 0));
 }
 
 /* Mute button — fixed top-left corner */
@@ -567,101 +563,127 @@ body::after {
   box-shadow: 0 0 8px rgba(102, 180, 255, 0.5), 0 0 20px rgba(102, 126, 234, 0.3);
 }
 
-/* ─── PRESS START blink ──────────────────────────────── */
+/* ─── Home hero CTA ─────────────────────────────────── */
 
-.press-start {
-  font-size: 0.9rem;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.9);
-  text-shadow: 0 0 12px rgba(180, 220, 255, 0.5), 0 0 24px rgba(102, 126, 234, 0.2);
-  animation: blink 1.6s step-end infinite;
-  margin-top: 16px;
-  user-select: none;
-}
-
-@keyframes blink {
-  0%, 49% { opacity: 1; }
-  50%, 100% { opacity: 0; }
-}
-
-/* ─── Retro vertical menu ────────────────────────────── */
-
-.retro-menu {
+.home-hero-copy {
   display: flex;
   flex-direction: column;
-  align-items: stretch;
-  gap: 2px;
-  min-width: 300px;
-  margin-top: 12px;
-}
-
-.retro-menu-item {
-  display: flex;
   align-items: center;
   gap: 14px;
-  padding: 12px 20px;
-  font-size: 1.05rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
+  max-width: 720px;
+  text-align: center;
+}
+
+.home-hero-kicker {
+  font-size: 0.78rem;
+  letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: rgba(180, 200, 240, 0.55);
-  background: none;
-  border: none;
+  color: rgba(124, 220, 255, 0.9);
+}
+
+.home-hero-subtitle {
+  max-width: 640px;
+  font-size: clamp(1rem, 1.6vw, 1.15rem);
+  line-height: 1.6;
+  color: rgba(228, 237, 255, 0.82);
+}
+
+.home-enter-btn {
+  min-width: 220px;
+}
+
+/* ─── Command deck menu ─────────────────────────────── */
+
+.command-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(240px, 1fr));
+  gap: 14px;
+  width: min(860px, 92vw);
+  margin-top: 20px;
+}
+
+.command-menu-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 132px;
+  padding: 18px 20px;
+  border-radius: 20px;
+  border: 1px solid rgba(135, 165, 245, 0.22);
+  background:
+    linear-gradient(160deg, rgba(17, 30, 58, 0.88), rgba(10, 18, 36, 0.82)),
+    linear-gradient(120deg, rgba(255, 255, 255, 0.03), transparent 42%);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
   cursor: pointer;
-  transition: color 0.12s ease, transform 0.12s ease, text-shadow 0.12s ease;
-  min-height: 48px;
   text-align: left;
-  /* Staggered entrance */
+  color: var(--text-primary);
+  overflow: hidden;
   opacity: 0;
   animation: menuSlideIn 0.35s ease forwards;
-  animation-delay: calc(var(--i) * 60ms);
+  animation-delay: calc(var(--i) * 55ms);
+  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.command-menu-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), transparent 34%);
+  pointer-events: none;
+}
+
+.command-menu-card:hover,
+.command-menu-card.active {
+  transform: translateY(-3px);
+  border-color: rgba(162, 194, 255, 0.56);
+  box-shadow: 0 24px 52px rgba(0, 0, 0, 0.32);
+}
+
+.command-menu-card-primary {
+  background:
+    linear-gradient(160deg, rgba(22, 38, 74, 0.94), rgba(12, 22, 43, 0.86)),
+    linear-gradient(120deg, rgba(102, 217, 239, 0.08), transparent 42%);
+}
+
+.command-menu-card-kicker {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: rgba(124, 220, 255, 0.76);
+}
+
+.command-menu-card-label {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.command-menu-card-helper {
+  max-width: 20rem;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.command-menu-card-arrow {
+  position: absolute;
+  right: 18px;
+  bottom: 16px;
+  font-size: 1.2rem;
+  color: rgba(255, 255, 255, 0.72);
 }
 
 @keyframes menuSlideIn {
   from {
     opacity: 0;
-    transform: translateY(10px) translateX(-8px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) translateX(0);
+    transform: translateY(0);
   }
-}
-
-.retro-menu-item.active {
-  color: #ffffff;
-  text-shadow: 0 0 14px rgba(180, 220, 255, 0.6), 0 0 28px rgba(102, 126, 234, 0.25);
-  transform: translateX(6px);
-}
-
-.retro-menu-cursor {
-  display: inline-block;
-  font-size: 0.85em;
-  color: var(--gold);
-  min-width: 1.2em;
-  text-align: center;
-}
-
-.retro-menu-item.active .retro-menu-cursor {
-  animation: cursorBounce 1s ease-in-out infinite;
-}
-
-@keyframes cursorBounce {
-  0%, 100% { transform: translateX(0); }
-  50% { transform: translateX(3px); }
-}
-
-.retro-menu-label {
-  display: inline-block;
-}
-
-.retro-menu-helper {
-  margin-left: auto;
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: rgba(255, 220, 120, 0.9);
 }
 
 .hangar-first-run-tip,
@@ -3564,12 +3586,13 @@ video.card-art-img {
     height: 240px;
   }
 
-  .retro-menu {
-    min-width: 260px;
+  .command-menu-grid {
+    grid-template-columns: 1fr;
+    width: min(560px, 92vw);
   }
 
   .home-menu-phase .home-title-area {
-    transform: translateY(-8vh);
+    transform: translateY(-10vh);
   }
 
   .game-title {
@@ -3585,13 +3608,9 @@ video.card-art-img {
     letter-spacing: 2px;
   }
 
-  .retro-menu-item {
-    font-size: 0.95rem;
-    padding: 11px 16px;
-  }
-
-  .home-menu-phase .home-title-area {
-    transform: translateY(-10vh);
+  .command-menu-card {
+    min-height: 118px;
+    padding: 16px 18px;
   }
 
   .shmup-move-zone {

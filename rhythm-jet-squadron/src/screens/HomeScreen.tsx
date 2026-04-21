@@ -1,9 +1,9 @@
 /**
- * Home Screen — PS1/JRPG-style title screen.
+ * Home Screen - premium command deck entry.
  *
  * Two phases:
- *  1. "title" — atmospheric starfield + glowing title + blinking "PRESS START"
- *  2. "menu"  — title moves up, vertical menu with ▶ cursor + keyboard nav
+ *  1. "title" - atmospheric hero landing with a clear launch CTA
+ *  2. "menu"  - command deck navigation with modern action cards
  */
 
 import { useRef, useEffect, useCallback, useState } from "react";
@@ -327,41 +327,55 @@ export default function HomeScreen() {
         </h1>
         <div className="title-light-line" />
 
-        {/* PRESS START — only in title phase */}
+        {/* Hero CTA - only in title phase */}
         {phase === "title" && (
-          <p className="press-start">PRESS START</p>
+          <div className="home-hero-copy">
+            <p className="home-hero-kicker">Command deck online</p>
+            <p className="home-hero-subtitle">
+              High-speed squad combat, pilot chemistry, live economy, and a cleaner sci-fi command fantasy.
+            </p>
+            <button className="btn btn-primary btn-large home-enter-btn" onClick={enterMenu}>
+              Enter Command Deck
+            </button>
+          </div>
         )}
 
-        {/* Vertical menu — only in menu phase */}
+        {/* Command deck navigation - only in menu phase */}
         {phase === "menu" && menuVisible && (
-          <>
-            <nav className="retro-menu">
-              {MENU_ITEMS.map((item, i) => {
-                const targetRoute = isFirstRun ? (FIRST_RUN_ROUTE_OVERRIDES[item.route] ?? item.route) : item.route;
-                const helperText = null;
-                return (
-                  <button
-                    key={item.route}
-                    className={`retro-menu-item ${cursorIdx === i ? "active" : ""}`}
-                    style={{ "--i": i } as React.CSSProperties}
-                    onClick={() => { menuConfirm(); navigate(targetRoute); }}
-                    onMouseEnter={() => {
-                      if (cursorIdx !== i) {
-                        cursorMove();
-                        setCursorIdx(i);
-                      }
-                    }}
-                  >
-                    <span className="retro-menu-cursor" aria-hidden>
-                      {cursorIdx === i ? "▶" : "\u00A0\u00A0"}
-                    </span>
-                    <span className="retro-menu-label">{item.label}</span>
-                    {helperText ? <span className="retro-menu-helper">{helperText}</span> : null}
-                  </button>
-                );
-              })}
-            </nav>
-          </>
+          <div className="command-menu-grid">
+            {MENU_ITEMS.map((item, i) => {
+              const targetRoute = isFirstRun ? (FIRST_RUN_ROUTE_OVERRIDES[item.route] ?? item.route) : item.route;
+              const isPrimary = item.route === "/hangar" || item.route === "/spaceport";
+              const helperText =
+                item.route === "/hangar" ? "Loadout and launch" :
+                item.route === "/spaceport" ? "Squad hub and intel" :
+                item.route === "/missions" ? "Daily and weekly pressure" :
+                item.route === "/leaderboard" ? "Top runs and score chase" :
+                item.route === "/collection" ? "Outfits, stars, gallery" :
+                item.route === "/codex" ? "Lore, enemies, world intel" :
+                item.route === "/shop" ? "Pulls, drops, progression" :
+                "Audio, controls, tuning";
+              return (
+                <button
+                  key={item.route}
+                  className={`command-menu-card ${cursorIdx === i ? "active" : ""} ${isPrimary ? "command-menu-card-primary" : ""}`}
+                  style={{ "--i": i } as React.CSSProperties}
+                  onClick={() => { menuConfirm(); navigate(targetRoute); }}
+                  onMouseEnter={() => {
+                    if (cursorIdx !== i) {
+                      cursorMove();
+                      setCursorIdx(i);
+                    }
+                  }}
+                >
+                  <span className="command-menu-card-kicker">{isPrimary ? "Primary" : "System"}</span>
+                  <span className="command-menu-card-label">{item.label}</span>
+                  <span className="command-menu-card-helper">{helperText}</span>
+                  <span className="command-menu-card-arrow" aria-hidden="true">↗</span>
+                </button>
+              );
+            })}
+          </div>
         )}
       </div>
     </div>
