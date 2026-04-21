@@ -143,6 +143,10 @@ export default function ShopScreen() {
     setPreviewResult(null);
   };
 
+  const featuredPull = results
+    ? [...results].sort((left, right) => RARITY_RANK[right.outfit.rarity] - RARITY_RANK[left.outfit.rarity])[0] ?? null
+    : null;
+
   const srPityPct = Math.min(100, (pity.pullsSinceSR / PITY_THRESHOLD_SR) * 100);
   const ssrPityPct = Math.min(100, (pity.pullsSinceSSR / PITY_THRESHOLD_SSR) * 100);
 
@@ -291,18 +295,58 @@ export default function ShopScreen() {
       {results && (
         <div className="gacha-results-overlay" onClick={closeResults}>
           <div className="gacha-results-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Pull Results</h3>
+            <div className="gacha-results-head">
+              <span className="shop-section-kicker">Summon result</span>
+              <h3>{featuredPull?.isNew ? "You hit something worth keeping" : "Pull complete"}</h3>
+              <p className="shop-note">
+                {featuredPull
+                  ? `${featuredPull.outfit.name} landed as your top pull. ${featuredPull.isNew ? "New acquisition." : `Duplicate converted into +${featuredPull.shardsGained} shards.`}`
+                  : "Review the pull stack and inspect anything worth a second look."}
+              </p>
+            </div>
+
+            {featuredPull && (
+              <button
+                type="button"
+                className={`gacha-featured-result rarity-${featuredPull.outfit.rarity.toLowerCase()}`}
+                onClick={() => setPreviewResult(featuredPull)}
+              >
+                <CardArt
+                  title={featuredPull.outfit.name}
+                  artUrl={featuredPull.outfit.artUrl}
+                  artPlaceholder={featuredPull.outfit.artPlaceholder}
+                  rarity={featuredPull.outfit.rarity}
+                  className="shop-featured-art"
+                  motionMode="never"
+                />
+                <div className="gacha-featured-copy">
+                  <span className="shop-section-kicker">Top pull</span>
+                  <strong className="shop-featured-name">{featuredPull.outfit.name}</strong>
+                  <span className="rarity-text" style={{ color: RARITY_COLORS[featuredPull.outfit.rarity] }}>
+                    {featuredPull.outfit.rarity}
+                  </span>
+                  <div className="perk-label">{summarizeOutfitKit(featuredPull.outfit)}</div>
+                  {featuredPull.isNew ? (
+                    <span className="new-badge">NEW acquisition</span>
+                  ) : (
+                    <span className="shard-badge">Duplicate converted, +{featuredPull.shardsGained} shards</span>
+                  )}
+                </div>
+              </button>
+            )}
+
             <div className="gacha-results-grid">
               {results.map((r, i) => (
-                <div
+                <button
+                  type="button"
                   key={i}
-                  className={`gacha-result-card rarity-${r.outfit.rarity.toLowerCase()}`}
+                  className={`gacha-result-card rarity-${r.outfit.rarity.toLowerCase()} ${featuredPull === r ? "gacha-result-card-featured" : ""}`}
                   onClick={() => setPreviewResult(r)}
                 >
                   <CardArt
                     title={r.outfit.name}
                     artUrl={r.outfit.artUrl}
-                                        artPlaceholder={r.outfit.artPlaceholder}
+                    artPlaceholder={r.outfit.artPlaceholder}
                     rarity={r.outfit.rarity}
                     className="card-art-small"
                     motionMode="never"
@@ -314,17 +358,18 @@ export default function ShopScreen() {
                     >
                       {r.outfit.rarity}
                     </span>
+                    <strong className="gacha-result-name">{r.outfit.name}</strong>
                     {r.isNew ? (
-                      <span className="new-badge">NEW!</span>
+                      <span className="new-badge">NEW</span>
                     ) : (
                       <span className="shard-badge">+{r.shardsGained} shards</span>
                     )}
                   </div>
-                </div>
+                </button>
               ))}
             </div>
             <button className="btn btn-primary" onClick={closeResults}>
-              OK
+              Lock It In
             </button>
           </div>
         </div>

@@ -2349,30 +2349,55 @@ video.card-art-img {
 
 .gacha-results-modal {
   background: linear-gradient(160deg, rgba(13, 25, 52, 0.95), rgba(9, 19, 38, 0.95));
-  border-radius: 16px;
+  border-radius: 20px;
   border: 1px solid rgba(156, 181, 248, 0.3);
   padding: 24px;
-  max-width: 540px;
+  max-width: 760px;
   width: 100%;
-  max-height: 80vh;
+  max-height: 84vh;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  gap: 18px;
+}
+
+.gacha-results-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gacha-featured-result {
+  display: grid;
+  grid-template-columns: 120px 1fr;
   gap: 16px;
+  align-items: center;
+  width: 100%;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 212, 59, 0.2);
+  background: linear-gradient(135deg, rgba(255, 212, 59, 0.08), rgba(17, 29, 56, 0.76));
+  text-align: left;
+  cursor: pointer;
+}
+
+.gacha-featured-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .gacha-results-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(116px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  gap: 12px;
   width: 100%;
 }
 
 .gacha-result-card {
   background: rgba(18, 30, 58, 0.8);
   border: 1px solid rgba(158, 183, 245, 0.24);
-  border-radius: 11px;
+  border-radius: 13px;
   overflow: hidden;
   text-align: center;
   cursor: pointer;
@@ -2385,12 +2410,22 @@ video.card-art-img {
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.28);
 }
 
+.gacha-result-card-featured {
+  border-color: rgba(255, 212, 59, 0.32);
+}
+
 .gacha-result-info {
-  padding: 4px;
+  padding: 8px 8px 10px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   font-size: 0.75rem;
+}
+
+.gacha-result-name {
+  font-size: 0.82rem;
+  line-height: 1.3;
+  color: var(--text-primary);
 }
 
 .new-badge {
