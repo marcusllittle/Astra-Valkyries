@@ -247,90 +247,99 @@ export default function ShmupResultsScreen() {
 
   return (
     <div className="screen results-screen">
-      <h2>Arcade Run Complete!</h2>
+      <div className="results-atmosphere" aria-hidden="true" />
 
-      <div
-        className="grade-display"
-        style={{ color: GRADE_COLORS[grade] }}
-      >
-        {grade}
-      </div>
+      <section className="results-shell panel-surface">
+        <div className="results-grade-halo" style={{ color: GRADE_COLORS[grade] }} />
 
-      <div className="results-victory-copy">
-        {grade === "S"
-          ? "That was a command-level sortie."
-          : grade === "A"
-            ? "Strong clear, strong momentum."
-            : grade === "B"
-              ? "Solid run, room to sharpen the build."
-              : "You cleared it. Tighten one thing and go again."}
-      </div>
+        <header className="results-header">
+          <span className="results-kicker">Post-mission report</span>
+          <h1 className="results-map-name">{activeMap?.name ?? "Combat lane"}</h1>
+          <p className="results-victory-copy">
+            {grade === "S"
+              ? "That was a command-level sortie. You didn’t just survive the lane, you owned it."
+              : grade === "A"
+                ? "Strong clear, strong tempo. This run looked controlled instead of lucky."
+                : grade === "B"
+                  ? "Solid run. The build worked, but there’s still obvious headroom."
+                  : didWinRun
+                    ? "You got through it. Clean up one weak point and the next run gets sharper fast."
+                    : "The lane pushed back. Good. Now you know where it bites."}
+          </p>
+        </header>
 
-      <div className="results-grid">
-        <div className="result-item">
-          <span className="result-label">Score</span>
-          <span className="result-value">{displayScore.toLocaleString()}</span>
+        <div className="grade-display" style={{ color: GRADE_COLORS[grade] }}>
+          {grade}
         </div>
-        <div className="result-item">
-          <span className="result-label">Kills</span>
-          <span className="result-value">{shmupResult.kills}</span>
-        </div>
-        <div className="result-item">
-          <span className="result-label">Time Survived</span>
-          <span className="result-value">{formatTime(shmupResult.timeSurvivedMs)}</span>
-        </div>
-        <div className="result-item">
-          <span className="result-label">Boss Defeated</span>
-          <span className="result-value">{shmupResult.bossDefeated ? "Yes" : "No"}</span>
-        </div>
-        <div className="result-item">
-          <span className="result-label">Stage</span>
-          <span className="result-value">{shmupResult.stage ?? 1}</span>
-        </div>
-        <div className="result-item">
-          <span className="result-label">Max Weapon</span>
-          <span className="result-value">{shmupResult.maxWeaponLevel ?? 1}</span>
-        </div>
-      </div>
 
-      <div className="credits-earned">
-        <span className="credit-icon">✦</span> +{creditsEarned} Credits
-      </div>
-
-      {sharedReward !== null && sharedReward > 0 && (
-        <div className="credits-earned credits-earned-shared">
-          <span className="shared-icon">&#x26A1;</span> +{sharedReward} HavnAI Credits
+        <div className="results-grid">
+          <div className="result-item result-item-score">
+            <span className="result-label">Score</span>
+            <span className="result-value">{displayScore.toLocaleString()}</span>
+          </div>
+          <div className="result-item">
+            <span className="result-label">Kills</span>
+            <span className="result-value">{shmupResult.kills}</span>
+          </div>
+          <div className="result-item">
+            <span className="result-label">Time survived</span>
+            <span className="result-value">{formatTime(shmupResult.timeSurvivedMs)}</span>
+          </div>
+          <div className="result-item">
+            <span className="result-label">Boss status</span>
+            <span className="result-value">{shmupResult.bossDefeated ? "Eliminated" : "Still active"}</span>
+          </div>
+          <div className="result-item">
+            <span className="result-label">Stage reached</span>
+            <span className="result-value">{shmupResult.stage ?? 1}</span>
+          </div>
+          <div className="result-item">
+            <span className="result-label">Weapon peak</span>
+            <span className="result-value">Lv.{shmupResult.maxWeaponLevel ?? 1}</span>
+          </div>
         </div>
-      )}
 
-      <div className="results-focus-pill">
-        <span className="result-label">Next Focus</span>
-        <strong>{isFirstRun ? "Refine loadout" : "Push a cleaner grade"}</strong>
-      </div>
-      {wallet.status !== "connected" && (
-        <div className="reward-status-note">Wallet rewards available when connected</div>
-      )}
-      {rewardStatus && (
-        <div className="reward-status-note">
-          {rewardStatus === "daily_cap_reached" && "Daily HavnAI earn cap reached"}
-          {rewardStatus === "cooldown" && "HavnAI reward on cooldown — wait and play again"}
-          {rewardStatus === "score_too_low" && "Score below 5,000 — no HavnAI credits earned"}
-          {rewardStatus === "run_too_short" && "Run too short — survive longer to earn credits"}
-          {rewardStatus === "duplicate_run" && "Duplicate run detected"}
-          {rewardStatus === "network_error" && "Could not reach HavnAI server — credits will sync next run"}
-          {!['daily_cap_reached', 'cooldown', 'score_too_low', 'run_too_short', 'duplicate_run', 'network_error'].includes(rewardStatus) && `HavnAI: ${rewardStatus}`}
-        </div>
-      )}
+        <div className="results-reward-strip">
+          <div className="credits-earned">
+            <span className="credit-icon">✦</span> +{creditsEarned} Credits
+          </div>
 
-      {isFirstRun ? (
-        <div className="results-next-step-callout">
-          <strong>Loadout updated.</strong> Choose your next route from the port.
+          {sharedReward !== null && sharedReward > 0 && (
+            <div className="credits-earned credits-earned-shared">
+              <span className="shared-icon">&#x26A1;</span> +{sharedReward} HavnAI Credits
+            </div>
+          )}
         </div>
-      ) : null}
+
+        <div className="results-focus-pill">
+          <span className="result-label">Next focus</span>
+          <strong>
+            {didWinRun
+              ? isFirstRun
+                ? "Lock the next loadout and push harder"
+                : "Push a cleaner grade on the next sortie"
+              : "Fix the weak point and run it back"}
+          </strong>
+        </div>
+
+        {wallet.status !== "connected" && (
+          <div className="reward-status-note">Wallet rewards unlock when connected</div>
+        )}
+        {rewardStatus && (
+          <div className="reward-status-note">
+            {rewardStatus === "daily_cap_reached" && "Daily HavnAI earn cap reached"}
+            {rewardStatus === "cooldown" && "HavnAI reward on cooldown, wait and go again"}
+            {rewardStatus === "score_too_low" && "Score below 5,000, no HavnAI credits earned"}
+            {rewardStatus === "run_too_short" && "Run too short, survive longer to earn credits"}
+            {rewardStatus === "duplicate_run" && "Duplicate run detected"}
+            {rewardStatus === "network_error" && "Could not reach HavnAI server, credits will sync next run"}
+            {!['daily_cap_reached', 'cooldown', 'score_too_low', 'run_too_short', 'duplicate_run', 'network_error'].includes(rewardStatus) && `HavnAI: ${rewardStatus}`}
+          </div>
+        )}
 
         {isFirstRun ? (
           <div className="results-next-step-callout">
-            <strong>Loadout updated.</strong> Choose your next route from the port.
+            <strong>Loadout updated.</strong> Choose the next route from the port and keep building the squad.
           </div>
         ) : null}
 
@@ -343,18 +352,19 @@ export default function ShmupResultsScreen() {
                 setShowDebrief(true);
               }}
             >
-              Continue to Debrief
+              Open Debrief
             </button>
           ) : null}
 
           <button className="btn btn-primary" onClick={() => navigate(isFirstRun ? "/hangar" : "/shmup")}>
-            {isFirstRun ? "Open Loadout" : "Play Again"}
+            {isFirstRun ? "Open Loadout" : "Run It Back"}
           </button>
 
           <button className="btn btn-secondary" onClick={handleReturnToPort}>
             Return to Port
           </button>
         </div>
-      </div>
+      </section>
+    </div>
   );
 }
