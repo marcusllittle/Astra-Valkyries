@@ -401,6 +401,8 @@ type SpriteKey =
   | "player"
   | "enemyDrifter"
   | "enemySine"
+  | "enemyElite"
+  | "enemyMiniboss"
   | "boss"
   | "chip"
   | "bulletPlayer"
@@ -409,13 +411,30 @@ type SpriteKey =
   | "impactBurst"
   | "pulseRing";
 
+const MAP_BACKGROUND_PATHS: Record<string, { far: string; near: string }> = {
+  "nebula-runway": {
+    far: "/assets/maps/nebula-runway.png",
+    near: "/assets/maps/nebula-runway.png",
+  },
+  "solar-rift": {
+    far: "/assets/maps/solar-rift.png",
+    near: "/assets/maps/solar-rift.png",
+  },
+  "abyss-crown": {
+    far: "/assets/maps/abyss-crown.png",
+    near: "/assets/maps/abyss-crown.png",
+  },
+};
+
 const SPRITE_PATHS: Record<SpriteKey, string> = {
   backgroundFar: "/assets/shmup/background_far.svg",
   backgroundNear: "/assets/shmup/background_near.svg",
   player: "/assets/shmup/player_ship.svg",
-  enemyDrifter: "/assets/shmup/enemy_drifter.svg",
-  enemySine: "/assets/shmup/enemy_sine.svg",
-  boss: "/assets/shmup/boss_dreadnought.svg",
+  enemyDrifter: "/assets/enemies/light/drifter-concept.png",
+  enemySine: "/assets/enemies/elite/lancer-concept.png",
+  enemyElite: "/assets/enemies/elite/lancer-concept.png",
+  enemyMiniboss: "/assets/enemies/miniboss/warden-concept.png",
+  boss: "/assets/bosses/abyss-crown-gameplay.png",
   chip: "/assets/shmup/power_chip.svg",
   bulletPlayer: "/assets/shmup/bullet_player.svg",
   bulletEnemy: "/assets/shmup/bullet_enemy.svg",
@@ -447,6 +466,8 @@ function createSpriteStore(): Record<SpriteKey, HTMLImageElement | null> {
     player: null,
     enemyDrifter: null,
     enemySine: null,
+    enemyElite: null,
+    enemyMiniboss: null,
     boss: null,
     chip: null,
     bulletPlayer: null,
@@ -839,6 +860,10 @@ export default function ShmupPlayScreen() {
   const ownedOutfit = save.ownedOutfits.find((item) => item.outfitId === save.selectedOutfitId);
   const outfitKit = getSelectedOutfitKit(save.selectedPilotId, save.selectedOutfitId, outfits);
   const playerSpritePath = getPlayerShipSpritePath(save.selectedPilotId, selectedShip);
+  const mapBackgroundPaths = MAP_BACKGROUND_PATHS[activeMap.id] ?? {
+    far: SPRITE_PATHS.backgroundFar,
+    near: SPRITE_PATHS.backgroundNear,
+  };
   const modifiers = buildModifiers(pilot, selectedShip, outfit, ownedOutfit, outfitKit);
   const {
     comboBonus,
@@ -1175,11 +1200,20 @@ export default function ShmupPlayScreen() {
       spriteStore.player = playerImage;
       playerSpriteLoadedPathRef.current = resolvedPlayerSpritePath;
     }
-    for (const key of Object.keys(SPRITE_PATHS) as SpriteKey[]) {
+    const runtimeSpritePaths: Record<SpriteKey, string> = {
+      ...SPRITE_PATHS,
+      backgroundFar: mapBackgroundPaths.far,
+      backgroundNear: mapBackgroundPaths.near,
+    };
+    for (const key of Object.keys(runtimeSpritePaths) as SpriteKey[]) {
       if (key === "player") continue;
-      if (spriteStore[key]) continue;
+      const resolvedPath = resolveAssetUrl(runtimeSpritePaths[key]) ?? runtimeSpritePaths[key];
+      const current = spriteStore[key];
+      const loadedPath = current?.dataset?.src;
+      if (current && loadedPath === resolvedPath) continue;
       const image = new Image();
-      image.src = resolveAssetUrl(SPRITE_PATHS[key]) ?? SPRITE_PATHS[key];
+      image.src = resolvedPath;
+      image.dataset.src = resolvedPath;
       spriteStore[key] = image;
     }
 
@@ -3902,8 +3936,8 @@ export default function ShmupPlayScreen() {
       ctx.fillStyle = background;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      drawTiledBackground(getSprite("backgroundFar"), elapsedMs, 12, 0.8);
-      drawTiledBackground(getSprite("backgroundNear"), elapsedMs, 34, 0.64);
+      drawTiledBackground(getSprite("backgroundFar"), elapsedMs, 6, 0.78);
+      drawTiledBackground(getSprite("backgroundNear"), elapsedMs, 14, 0.28);
 
       // Parallax background debris/asteroids
       for (const debris of backgroundDebrisRef.current) {
@@ -4138,7 +4172,15 @@ export default function ShmupPlayScreen() {
       }
 
       for (const enemy of enemiesRef.current) {
-        const sprite = getSprite(enemy.pattern === "drifter" ? "enemyDrifter" : "enemySine");
+        const enemySpriteKey: SpriteKey =
+          enemy.pattern === "drifter" || enemy.pattern === "swarm"
+            ? "enemyDrifter"
+            : enemy.pattern === "tank" || enemy.pattern === "miniboss"
+              ? "enemyMiniboss"
+              : enemy.pattern === "dreadnought"
+                ? "boss"
+                : "enemyElite";
+        const sprite = getSprite(enemySpriteKey);
         const ENEMY_COLORS: Record<string, string> = {
           drifter: "#f06595", sine: "#845ef7", zigzag: "#ff922b", orbiter: "#74c0fc",
           charger: "#ff6b6b", splitter: "#69db7c", bomber: "#ffa94d", sniper: "#ff0000", swarm: "#adb5bd",
@@ -4162,7 +4204,15 @@ export default function ShmupPlayScreen() {
           ctx.arc(enemy.x, enemy.y, eGlowR, 0, Math.PI * 2);
           ctx.fill();
           ctx.restore();
-          drawSpriteCentered(sprite, enemy.x, enemy.y, enemy.radius * 3.5, enemy.radius * 3.5);
+          const scaleMultiplier =
+            enemy.pattern === "swarm"
+              ? 2.6
+              : enemy.pattern === "tank" || enemy.pattern === "miniboss"
+                ? 4.4
+                : enemy.pattern === "dreadnought"
+                  ? 5.2
+                  : 3.8;
+          drawSpriteCentered(sprite, enemy.x, enemy.y, enemy.radius * scaleMultiplier, enemy.radius * scaleMultiplier);
         } else {
           const r = enemy.radius;
           const pulse = 0.92 + Math.sin(enemy.age * 4.5) * 0.08;
@@ -4652,7 +4702,10 @@ export default function ShmupPlayScreen() {
             Math.sin(boss.age * 0.8) * 0.03
           );
         } else {
-          const br = boss.radius;
+          const bossArt = getSprite("boss");
+          const bossAspect = bossArt && bossArt.naturalWidth > 0 ? bossArt.naturalHeight / bossArt.naturalWidth : 0.78;
+          const bossWidth = boss.radius * 6.2;
+          const bossHeight = bossWidth * bossAspect;
           const bossColor = boss.phase === 1
             ? activeMap.palette.bossPrimary
             : boss.phase === 2
@@ -4660,414 +4713,64 @@ export default function ShmupPlayScreen() {
               : "#ff2222";
           const hpRatio = clamp(boss.hp / boss.maxHp, 0, 1);
           const damageState = 1 - hpRatio;
-          const woundedSlow = damageState > 0.55 ? 1 - Math.min(0.16, (damageState - 0.55) * 0.22) : 1;
-          const bPulse = (0.88 + Math.sin(boss.age * 2.5 * woundedSlow) * 0.12) * (1 - damageState * 0.06);
-          ctx.save();
-          ctx.translate(boss.x, boss.y);
-          ctx.scale(displayScale, displayScale);
-          ctx.shadowColor = bossColor;
-          ctx.shadowBlur = 24;
+          const telegraphAlpha = boss.attackTelegraph > 0 ? boss.attackTelegraph / 0.32 : 0;
 
-          if (damageState > 0.3) {
+          ctx.save();
+          const glow = ctx.createRadialGradient(boss.x, boss.y, 10, boss.x, boss.y, boss.radius * 4.6);
+          glow.addColorStop(0, `${bossColor}40`);
+          glow.addColorStop(0.55, `${bossColor}18`);
+          glow.addColorStop(1, "rgba(255, 80, 80, 0)");
+          ctx.fillStyle = glow;
+          ctx.beginPath();
+          ctx.arc(boss.x, boss.y, boss.radius * 4.6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+
+          if (bossArt) {
             ctx.save();
-            ctx.globalAlpha = Math.min(0.26, damageState * 0.28);
-            ctx.fillStyle = boss.archetype === "leviathan" ? "#bde0fe" : "rgba(40,40,40,0.9)";
-            for (const smoke of [-1, 1]) {
-              ctx.beginPath();
-              ctx.arc(smoke * br * 0.45, br * (0.1 + damageState * 0.15), br * (0.2 + damageState * 0.16), 0, Math.PI * 2);
-              ctx.fill();
-            }
+            ctx.globalAlpha = Math.max(0.72, 1 - damageState * 0.12);
+            drawSpriteCentered(
+              bossArt,
+              boss.x,
+              boss.y,
+              bossWidth,
+              bossHeight,
+              Math.sin(boss.age * 0.8) * 0.02,
+            );
             ctx.restore();
           }
 
-          if (boss.damageFlash > 0) {
+          if (damageState > 0.25) {
             ctx.save();
-            ctx.globalAlpha = boss.damageFlash;
-            ctx.fillStyle = "#ffffff";
+            ctx.globalAlpha = Math.min(0.24, damageState * 0.24);
+            ctx.fillStyle = "rgba(255,255,255,0.95)";
             ctx.beginPath();
-            ctx.arc(0, 0, br * 1.25, 0, Math.PI * 2);
+            ctx.arc(boss.x, boss.y, boss.radius * (1.25 + damageState * 0.45), 0, Math.PI * 2);
             ctx.fill();
             ctx.restore();
           }
 
-          if (boss.attackTelegraph > 0) {
-            const telegraphAlpha = boss.attackTelegraph / 0.32;
-            const telegraphColor = boss.phase === 1
-              ? activeMap.palette.bossPrimary
-              : boss.phase === 2
-                ? activeMap.palette.bossSecondary
-                : "#ff4444";
+          if (telegraphAlpha > 0) {
             ctx.save();
-            ctx.globalAlpha = Math.min(0.55, telegraphAlpha * 0.55);
-            ctx.strokeStyle = telegraphColor;
+            ctx.globalAlpha = Math.min(0.45, telegraphAlpha * 0.45);
+            ctx.strokeStyle = bossColor;
             ctx.lineWidth = 3;
             ctx.beginPath();
-            ctx.arc(0, 0, br * (1.5 + (1 - telegraphAlpha) * 0.4), 0, Math.PI * 2);
+            ctx.arc(boss.x, boss.y, boss.radius * (1.9 + (1 - telegraphAlpha) * 0.5), 0, Math.PI * 2);
             ctx.stroke();
-            ctx.globalAlpha = Math.min(0.22, telegraphAlpha * 0.22);
-            ctx.fillStyle = telegraphColor;
-            ctx.beginPath();
-            ctx.arc(0, 0, br * 1.15, 0, Math.PI * 2);
-            ctx.fill();
             ctx.restore();
           }
 
-          if (boss.archetype === "dreadnought") {
-            // ─────────────────────────────────────────────────
-            // AEGIS DREADNOUGHT — heavy armored patrol fortress
-            // Wide flat hull, quad turret batteries, command dome
-            // Zone: Nebula Runway — blockade enforcer
-            // ─────────────────────────────────────────────────
-            const hullGrad = ctx.createLinearGradient(0, -br * 1.0, 0, br * 1.1);
-            hullGrad.addColorStop(0, bossColor);
-            hullGrad.addColorStop(0.55, "#1a1040");
-            hullGrad.addColorStop(1, "#0b0820");
-            ctx.fillStyle = hullGrad;
-            // Wide armored hull — blocky, fortified, wide/flat ratio
-            ctx.beginPath();
-            ctx.moveTo(0, -br * 1.0);
-            ctx.lineTo(br * 0.55, -br * 0.82);
-            ctx.lineTo(br * 1.3, -br * 0.35);
-            ctx.lineTo(br * 1.45, br * 0.15);
-            ctx.lineTo(br * 1.15, br * 0.65);
-            ctx.lineTo(br * 0.5, br * 0.9);
-            ctx.lineTo(0, br * 0.75);
-            ctx.lineTo(-br * 0.5, br * 0.9);
-            ctx.lineTo(-br * 1.15, br * 0.65);
-            ctx.lineTo(-br * 1.45, br * 0.15);
-            ctx.lineTo(-br * 1.3, -br * 0.35);
-            ctx.lineTo(-br * 0.55, -br * 0.82);
-            ctx.closePath();
-            ctx.fill();
-            ctx.shadowBlur = 0;
-
-            // Shoulder armor plates
-            const shoulderGrad = ctx.createLinearGradient(0, -br * 0.3, 0, br * 0.4);
-            shoulderGrad.addColorStop(0, `${bossColor}88`);
-            shoulderGrad.addColorStop(1, `${bossColor}22`);
-            ctx.fillStyle = shoulderGrad;
-            ctx.beginPath(); // right
-            ctx.moveTo(br * 1.15, -br * 0.1);
-            ctx.lineTo(br * 1.62, -br * 0.28);
-            ctx.lineTo(br * 1.72, br * 0.28);
-            ctx.lineTo(br * 1.3, br * 0.55);
-            ctx.lineTo(br * 1.1, br * 0.22);
-            ctx.closePath();
-            ctx.fill();
-            ctx.beginPath(); // left
-            ctx.moveTo(-br * 1.15, -br * 0.1);
-            ctx.lineTo(-br * 1.62, -br * 0.28);
-            ctx.lineTo(-br * 1.72, br * 0.28);
-            ctx.lineTo(-br * 1.3, br * 0.55);
-            ctx.lineTo(-br * 1.1, br * 0.22);
-            ctx.closePath();
-            ctx.fill();
-
-            // Quad turret batteries
-            ctx.fillStyle = `rgba(255,255,255,${0.45 * bPulse})`;
-            for (const tx of [-br * 0.72, -br * 0.24, br * 0.24, br * 0.72]) {
-              ctx.beginPath();
-              ctx.ellipse(tx, -br * 0.45, br * 0.13, br * 0.09, 0, 0, Math.PI * 2);
-              ctx.fill();
-              ctx.fillStyle = `rgba(200,220,255,${0.5 * bPulse})`;
-              ctx.fillRect(tx - br * 0.03, -br * 0.65, br * 0.06, br * 0.22);
-              ctx.fillStyle = `rgba(255,255,255,${0.45 * bPulse})`;
-            }
-
-            // Central command dome
-            const domeGrad = ctx.createRadialGradient(0, -br * 0.1, 1, 0, -br * 0.1, br * 0.42);
-            domeGrad.addColorStop(0, "#ffffff");
-            domeGrad.addColorStop(0.25, bossColor);
-            domeGrad.addColorStop(0.7, `${bossColor}55`);
-            domeGrad.addColorStop(1, `${bossColor}00`);
-            ctx.fillStyle = domeGrad;
-            ctx.beginPath();
-            ctx.ellipse(0, -br * 0.1, br * 0.42 * bPulse, br * 0.28 * bPulse, 0, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Engine exhaust array
-            ctx.fillStyle = `rgba(160,200,255,${0.7 * bPulse})`;
-            for (const ex of [-br * 0.55, 0, br * 0.55]) {
-              ctx.beginPath();
-              ctx.ellipse(ex, br * 0.85, br * 0.09, br * 0.18, 0, 0, Math.PI * 2);
-              ctx.fill();
-            }
-
-            // Hull armor panel lines
-            ctx.strokeStyle = `${bossColor}66`;
-            ctx.lineWidth = 1.2;
-            ctx.beginPath();
-            ctx.moveTo(0, -br * 0.8); ctx.lineTo(0, br * 0.65);       // spine
-            ctx.moveTo(-br * 0.8, -br * 0.2); ctx.lineTo(br * 0.8, -br * 0.2); // cross brace
-            ctx.moveTo(-br * 0.55, -br * 0.8); ctx.lineTo(-br * 0.3, br * 0.4); // left rib
-            ctx.moveTo(br * 0.55, -br * 0.8); ctx.lineTo(br * 0.3, br * 0.4);   // right rib
-            ctx.stroke();
-
-            if (boss.phase >= 2) {
-              ctx.strokeStyle = `rgba(255,140,60,${0.38 * bPulse})`;
-              ctx.lineWidth = 2.4;
-              ctx.setLineDash([10, 6]);
-              ctx.beginPath();
-              ctx.moveTo(-br * 1.15, br * 0.2);
-              ctx.lineTo(br * 1.15, br * 0.2);
-              ctx.stroke();
-              ctx.setLineDash([]);
-            }
-
-          } else if (boss.archetype === "tyrant") {
-            // ─────────────────────────────────────────────────
-            // HELIOS TYRANT — solar-powered weapons platform
-            // Diamond core, forward-swept wings, twin cannon array
-            // Zone: Solar Rift — thermal fortress siege engine
-            // ─────────────────────────────────────────────────
-            const hullGrad = ctx.createLinearGradient(0, -br * 1.3, 0, br * 1.4);
-            hullGrad.addColorStop(0, bossColor);
-            hullGrad.addColorStop(0.4, "#2e0c00");
-            hullGrad.addColorStop(1, "#140500");
-            ctx.fillStyle = hullGrad;
-            // Diamond core body — aggressive forward-pointing silhouette
-            ctx.beginPath();
-            ctx.moveTo(0, -br * 1.3);           // nose
-            ctx.lineTo(br * 0.55, -br * 0.5);
-            ctx.lineTo(br * 0.65, br * 0.3);
-            ctx.lineTo(br * 0.3, br * 0.9);
-            ctx.lineTo(0, br * 1.0);
-            ctx.lineTo(-br * 0.3, br * 0.9);
-            ctx.lineTo(-br * 0.65, br * 0.3);
-            ctx.lineTo(-br * 0.55, -br * 0.5);
-            ctx.closePath();
-            ctx.fill();
-            ctx.shadowBlur = 0;
-
-            // Forward-swept weapon wings
-            const wingGrad = ctx.createLinearGradient(0, -br * 0.3, br * 2.0, br * 0.6);
-            wingGrad.addColorStop(0, `${bossColor}cc`);
-            wingGrad.addColorStop(0.5, `${bossColor}55`);
-            wingGrad.addColorStop(1, `${bossColor}11`);
-            ctx.fillStyle = wingGrad;
-            ctx.beginPath(); // right wing
-            ctx.moveTo(br * 0.5, -br * 0.4);
-            ctx.lineTo(br * 1.9, -br * 0.9);
-            ctx.lineTo(br * 2.0, -br * 0.3);
-            ctx.lineTo(br * 1.6, br * 0.5);
-            ctx.lineTo(br * 0.6, br * 0.25);
-            ctx.closePath();
-            ctx.fill();
-            ctx.beginPath(); // left wing
-            ctx.moveTo(-br * 0.5, -br * 0.4);
-            ctx.lineTo(-br * 1.9, -br * 0.9);
-            ctx.lineTo(-br * 2.0, -br * 0.3);
-            ctx.lineTo(-br * 1.6, br * 0.5);
-            ctx.lineTo(-br * 0.6, br * 0.25);
-            ctx.closePath();
-            ctx.fill();
-
-            // Solar turbine rings on wingtips
-            for (const wx of [-br * 1.75, br * 1.75]) {
-              ctx.strokeStyle = `rgba(255,200,80,${0.7 * bPulse})`;
-              ctx.lineWidth = br * 0.08;
-              ctx.shadowColor = "#ffaa00";
-              ctx.shadowBlur = 12;
-              ctx.beginPath();
-              ctx.arc(wx, -br * 0.12, br * 0.32, 0, Math.PI * 2);
-              ctx.stroke();
-              ctx.fillStyle = `rgba(255,220,120,${0.9 * bPulse})`;
-              ctx.shadowBlur = 0;
-              ctx.beginPath();
-              ctx.arc(wx, -br * 0.12, br * 0.14, 0, Math.PI * 2);
-              ctx.fill();
-            }
-            ctx.shadowBlur = 0;
-
-            // Twin cannon barrels pointing down at player
-            ctx.fillStyle = `rgba(255,180,60,${0.8 * bPulse})`;
-            ctx.beginPath();
-            ctx.rect(-br * 0.22, br * 0.6, br * 0.14, br * 0.8);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.rect(br * 0.08, br * 0.6, br * 0.14, br * 0.8);
-            ctx.fill();
-            // Cannon muzzle glow
-            ctx.shadowColor = "#ffff00";
-            ctx.shadowBlur = 14;
-            ctx.fillStyle = `rgba(255,255,100,${bPulse})`;
-            for (const cx of [-br * 0.15, br * 0.15]) {
-              ctx.beginPath();
-              ctx.arc(cx, br * 1.35, br * 0.1 * bPulse, 0, Math.PI * 2);
-              ctx.fill();
-            }
-            ctx.shadowBlur = 0;
-
-            // Targeting array at nose
-            ctx.strokeStyle = `rgba(255,220,100,${0.6 * bPulse})`;
-            ctx.lineWidth = 1.2;
-            ctx.beginPath();
-            ctx.moveTo(0, -br * 1.3); ctx.lineTo(-br * 0.2, -br * 0.9);
-            ctx.moveTo(0, -br * 1.3); ctx.lineTo(br * 0.2, -br * 0.9);
-            ctx.stroke();
-            ctx.fillStyle = `rgba(255,255,100,${bPulse})`;
-            ctx.beginPath();
-            ctx.arc(0, -br * 1.2, br * 0.07 * bPulse, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Hot exhaust vents along stern
-            ctx.fillStyle = `rgba(255,120,30,${0.65 * bPulse})`;
-            for (const vx of [-br * 0.55, -br * 0.25, br * 0.25, br * 0.55]) {
-              ctx.beginPath();
-              ctx.ellipse(vx, br * 0.85, br * 0.07, br * 0.14, 0, 0, Math.PI * 2);
-              ctx.fill();
-            }
-
-            // Wing panel lines
-            ctx.strokeStyle = `${bossColor}55`;
-            ctx.lineWidth = 1.0;
-            ctx.beginPath();
-            ctx.moveTo(0, -br * 1.0); ctx.lineTo(0, br * 0.7);
-            ctx.moveTo(-br * 0.45, -br * 0.3); ctx.lineTo(-br * 1.4, -br * 0.6);
-            ctx.moveTo(br * 0.45, -br * 0.3); ctx.lineTo(br * 1.4, -br * 0.6);
-            ctx.stroke();
-
-            if (boss.phase >= 2) {
-              ctx.strokeStyle = `rgba(255,220,120,${0.45 * bPulse})`;
-              ctx.lineWidth = 2;
-              ctx.beginPath();
-              ctx.moveTo(-br * 0.2, br * 0.9);
-              ctx.lineTo(-br * 0.15, br * 1.45);
-              ctx.moveTo(br * 0.2, br * 0.9);
-              ctx.lineTo(br * 0.15, br * 1.45);
-              ctx.stroke();
-            }
-
-          } else {
-            // ─────────────────────────────────────────────────
-            // CRYO LEVIATHAN — ancient deep-void entity
-            // Organic body, void wings, crystal spines, multi-eye cluster
-            // Zone: Abyss Crown — the void doesn't build ships, it becomes them
-            // ─────────────────────────────────────────────────
-            const hullGrad = ctx.createLinearGradient(0, -br * 1.6, 0, br * 1.5);
-            hullGrad.addColorStop(0, `${bossColor}cc`);
-            hullGrad.addColorStop(0.35, "#071528");
-            hullGrad.addColorStop(0.75, "#03101f");
-            hullGrad.addColorStop(1, bossColor);
-            ctx.fillStyle = hullGrad;
-            // Elongated organic body — bezier curves, not straight lines
-            ctx.beginPath();
-            ctx.moveTo(0, -br * 1.6);
-            ctx.bezierCurveTo(br * 0.4, -br * 1.3, br * 0.55, -br * 0.5, br * 0.45, br * 0.4);
-            ctx.bezierCurveTo(br * 0.35, br * 1.0, br * 0.2, br * 1.4, 0, br * 1.6);
-            ctx.bezierCurveTo(-br * 0.2, br * 1.4, -br * 0.35, br * 1.0, -br * 0.45, br * 0.4);
-            ctx.bezierCurveTo(-br * 0.55, -br * 0.5, -br * 0.4, -br * 1.3, 0, -br * 1.6);
-            ctx.closePath();
-            ctx.fill();
-            ctx.shadowBlur = 0;
-
-            // Void wings — massive organic manta-ray sweep
-            const voidWingGrad = ctx.createLinearGradient(0, -br * 0.3, br * 2.6, br * 1.0);
-            voidWingGrad.addColorStop(0, `${bossColor}aa`);
-            voidWingGrad.addColorStop(0.4, `${bossColor}44`);
-            voidWingGrad.addColorStop(1, `${bossColor}08`);
-            ctx.fillStyle = voidWingGrad;
-            ctx.beginPath(); // right wing
-            ctx.moveTo(br * 0.35, -br * 0.6);
-            ctx.bezierCurveTo(br * 1.2, -br * 1.2, br * 2.5, -br * 0.8, br * 2.6, br * 0.1);
-            ctx.bezierCurveTo(br * 2.4, br * 0.8, br * 1.4, br * 1.1, br * 0.4, br * 0.7);
-            ctx.closePath();
-            ctx.fill();
-            ctx.beginPath(); // left wing
-            ctx.moveTo(-br * 0.35, -br * 0.6);
-            ctx.bezierCurveTo(-br * 1.2, -br * 1.2, -br * 2.5, -br * 0.8, -br * 2.6, br * 0.1);
-            ctx.bezierCurveTo(-br * 2.4, br * 0.8, -br * 1.4, br * 1.1, -br * 0.4, br * 0.7);
-            ctx.closePath();
-            ctx.fill();
-
-            // Crystal spine array along dorsal surface
-            ctx.fillStyle = `rgba(160,230,255,${0.85 * bPulse})`;
-            ctx.shadowColor = "#a0e8ff";
-            ctx.shadowBlur = 10;
-            const spineYs = [-br * 1.1, -br * 0.65, -br * 0.2, br * 0.25, br * 0.7, br * 1.1];
-            for (let si = 0; si < spineYs.length; si++) {
-              const sy = spineYs[si];
-              const sh = br * (0.22 + 0.12 * Math.sin(si * 1.4));
-              ctx.beginPath();
-              ctx.moveTo(0, sy);
-              ctx.lineTo(-br * 0.08, sy + sh * 0.6);
-              ctx.lineTo(0, sy + sh);
-              ctx.lineTo(br * 0.08, sy + sh * 0.6);
-              ctx.closePath();
-              ctx.fill();
-            }
-            ctx.shadowBlur = 0;
-
-            // Multi-eye clusters
-            const eyePos: [number, number][] = [
-              [-br * 0.18, -br * 1.1], [br * 0.18, -br * 1.1],
-              [-br * 0.25, -br * 0.4], [br * 0.25, -br * 0.4],
-            ];
-            for (const [ex, ey] of eyePos) {
-              const eg = ctx.createRadialGradient(ex, ey, 0, ex, ey, br * 0.13);
-              eg.addColorStop(0, "#ffffff");
-              eg.addColorStop(0.3, bossColor);
-              eg.addColorStop(1, `${bossColor}00`);
-              ctx.fillStyle = eg;
-              ctx.beginPath();
-              ctx.arc(ex, ey, br * 0.13 * bPulse, 0, Math.PI * 2);
-              ctx.fill();
-            }
-
-            // Central void-mouth weapon port
-            const voidGrad = ctx.createRadialGradient(0, br * 0.1, 2, 0, br * 0.1, br * 0.45);
-            voidGrad.addColorStop(0, "#000000");
-            voidGrad.addColorStop(0.4, `${bossColor}88`);
-            voidGrad.addColorStop(0.7, `${bossColor}33`);
-            voidGrad.addColorStop(1, `${bossColor}00`);
-            ctx.fillStyle = voidGrad;
-            ctx.shadowColor = bossColor;
-            ctx.shadowBlur = 20;
-            ctx.beginPath();
-            ctx.ellipse(0, br * 0.1, br * 0.45 * bPulse, br * 0.32 * bPulse, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.shadowBlur = 0;
-
-            if (boss.phase >= 2) {
-              ctx.strokeStyle = `rgba(180,240,255,${0.38 * bPulse})`;
-              ctx.lineWidth = 2;
-              ctx.beginPath();
-              ctx.moveTo(-br * 0.45, br * 0.15);
-              ctx.lineTo(br * 0.45, br * 0.15);
-              ctx.stroke();
-            }
-
-            // Ice crystal formations at wingtips
-            ctx.fillStyle = `rgba(180,240,255,${0.65 * bPulse})`;
-            ctx.shadowColor = "#b4f0ff";
-            ctx.shadowBlur = 8;
-            for (const [wxBase, dir] of [[br * 2.2, 1], [-br * 2.2, -1]] as [number, number][]) {
-              for (let ci = 0; ci < 3; ci++) {
-                const angle = (ci - 1) * 0.4 + (dir === 1 ? 0.2 : -0.2);
-                const cLen = br * (0.25 + ci * 0.08);
-                ctx.beginPath();
-                ctx.moveTo(wxBase, -br * 0.05);
-                ctx.lineTo(wxBase + dir * Math.cos(angle) * cLen, -br * 0.05 + Math.sin(angle) * cLen);
-                ctx.lineTo(wxBase + dir * Math.cos(angle) * cLen * 0.4, -br * 0.05 + Math.sin(angle + 0.6) * cLen * 0.3);
-                ctx.closePath();
-                ctx.fill();
-              }
-            }
-            ctx.shadowBlur = 0;
-
-            // Bio-luminescent wing streaks
-            ctx.strokeStyle = `rgba(100,210,255,${0.35 * bPulse})`;
-            ctx.lineWidth = 1.0;
-            ctx.beginPath();
-            ctx.moveTo(br * 0.3, -br * 0.4);
-            ctx.bezierCurveTo(br * 0.9, -br * 0.6, br * 1.6, -br * 0.4, br * 2.0, br * 0.2);
-            ctx.moveTo(-br * 0.3, -br * 0.4);
-            ctx.bezierCurveTo(-br * 0.9, -br * 0.6, -br * 1.6, -br * 0.4, -br * 2.0, br * 0.2);
-            ctx.stroke();
-          }
-
+          ctx.save();
+          ctx.strokeStyle = `${bossColor}66`;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(boss.x - boss.radius * 1.2, boss.y + boss.radius * 1.12);
+          ctx.lineTo(boss.x + boss.radius * 1.2, boss.y + boss.radius * 1.12);
+          ctx.stroke();
           ctx.restore();
-        }
+
+                              }
 
         // Sweep laser beam
         if (boss.sweepActive) {
