@@ -54,7 +54,8 @@ export default function LeaderboardScreen() {
   const localBest = save.highScores[SHMUP_TRACK_ID] ?? 0;
 
   return (
-    <div className="screen leaderboard-screen">
+    <div className="screen leaderboard-screen premium-screen leaderboard-screen-premium">
+      <div className="leaderboard-key-art" aria-hidden="true" />
       <div className="leaderboard-header">
         <button className="btn btn-small" onClick={() => navigate("/")}>
           Back

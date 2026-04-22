@@ -300,6 +300,7 @@ export default function ShmupResultsScreen() {
         </div>
 
         <div className="results-reward-strip">
+          <div className="results-reward-art" aria-hidden="true" />
           <div className="credits-earned">
             <span className="credit-icon">✦</span> +{creditsEarned} Credits
           </div>

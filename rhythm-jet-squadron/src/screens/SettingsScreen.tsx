@@ -38,7 +38,8 @@ export default function SettingsScreen() {
 
   return (
     <div className="screen settings-screen">
-      <div className="screen-header">
+      <div className="settings-key-art" aria-hidden="true" />
+      <div className="screen-header settings-header-premium">
         <button className="btn btn-back" onClick={() => navigate("/")}>← Back</button>
         <h2>Settings</h2>
       </div>

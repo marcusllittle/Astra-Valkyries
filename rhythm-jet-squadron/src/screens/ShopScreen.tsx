@@ -151,7 +151,8 @@ export default function ShopScreen() {
   const ssrPityPct = Math.min(100, (pity.pullsSinceSSR / PITY_THRESHOLD_SSR) * 100);
 
   return (
-    <div className="screen shop-screen">
+    <div className="screen shop-screen premium-screen">
+      <div className="shop-key-art" aria-hidden="true" />
       <header className="shop-hero panel-surface">
         <div className="shop-hero-copy">
           <button className="btn btn-back" onClick={() => navigate("/")}>← Back</button>

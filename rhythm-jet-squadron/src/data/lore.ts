@@ -36,7 +36,7 @@ export const LORE_ENTRIES: LoreEntry[] = [
     category: "zone",
     title: "Nebula Runway",
     content: "A vast corridor of ionized gas clouds that serves as the primary shipping lane between core worlds. Since the invasion, it has become a gauntlet of enemy patrols and automated defense drones.",
-    imageUrl: "/assets/shmup/boss_dreadnought.svg",
+    imageUrl: "/assets/maps/nebula-runway.png",
   },
   {
     id: "lore-solar",
@@ -50,7 +50,7 @@ export const LORE_ENTRIES: LoreEntry[] = [
     category: "zone",
     title: "Abyss Crown",
     content: "The deepest region of charted space, where temperatures plunge to near absolute zero. Ancient alien structures dot the void, and the terrifying Cryo Leviathan guards the sector's secrets.",
-    imageUrl: "/assets/shmup/enemy_drifter.svg",
+    imageUrl: "/assets/maps/abyss-crown.png",
   },
   // Bosses
   {
@@ -80,20 +80,21 @@ export const LORE_ENTRIES: LoreEntry[] = [
     category: "enemy",
     title: "Drifter Drone",
     content: "Mass-produced patrol units with basic targeting systems. What they lack in individual threat, they make up for in numbers.",
-    imageUrl: "/assets/shmup/enemy_drifter.svg",
+    imageUrl: "/assets/enemies/light/drifter-concept.png",
   },
   {
     id: "lore-tank",
     category: "enemy",
     title: "Tank Fortress",
     content: "Heavily armored mobile platforms with regenerating shield generators. Taking one down requires sustained firepower and careful timing around its shield cycles.",
+    imageUrl: "/assets/enemies/miniboss/warden-concept.png",
   },
   {
     id: "lore-dreadnought-enemy",
     category: "enemy",
     title: "Dreadnought",
     content: "Miniature capital ships that anchor in position and unleash devastating multi-phase attacks. Their beam weapons can sweep entire sectors.",
-    imageUrl: "/assets/shmup/boss_dreadnought.svg",
+    imageUrl: "/assets/bosses/abyss-crown-gameplay.png",
   },
   // Factions
   {

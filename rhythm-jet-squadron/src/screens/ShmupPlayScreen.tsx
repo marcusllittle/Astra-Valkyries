@@ -5736,7 +5736,10 @@ export default function ShmupPlayScreen() {
 
       {/* ── Boss bar (only when boss active) ────────── */}
       {hud.bossWarning ? (
-        <div className="boss-warning-banner">Warning: {activeMap.bossName} incoming</div>
+        <div className="boss-warning-banner">
+          <img className="boss-warning-art" src="/assets/ui/key-art/boss-warning.png" alt="" aria-hidden="true" />
+          <span className="boss-warning-text">Warning: {activeMap.bossName} incoming</span>
+        </div>
       ) : null}
 
       {hud.bossActive ? (

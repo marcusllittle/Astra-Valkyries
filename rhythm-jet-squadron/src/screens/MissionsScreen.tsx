@@ -66,6 +66,7 @@ export default function MissionsScreen() {
   return (
     <div className="screen missions-screen">
       <div className="missions-atmosphere" aria-hidden="true" />
+      <div className="missions-key-art" aria-hidden="true" />
 
       <div className="missions-shell panel-surface">
         <header className="missions-command-bar">
