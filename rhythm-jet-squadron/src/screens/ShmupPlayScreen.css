@@ -1,0 +1,919 @@
+.premium-shmup-screen {
+  width: 100%;
+  max-width: 100%;
+  padding: 0;
+  gap: 0;
+  background: linear-gradient(180deg, #020611 0%, #050c19 100%);
+}
+
+.premium-shmup-arena {
+  --player-glow: rgba(122, 229, 255, 0.42);
+  --enemy-glow: rgba(217, 64, 126, 0.28);
+  --boss-glow: rgba(197, 92, 255, 0.28);
+}
+
+.shmup-slice-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 8;
+  padding: 18px 18px 10px;
+  pointer-events: none;
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.shmup-slice-header h1 {
+  font-size: clamp(2rem, 5vw, 3.05rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.shmup-slice-kicker {
+  margin-bottom: 6px;
+  color: #8abfff;
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.shmup-slice-copy {
+  margin-top: 8px;
+  max-width: 38rem;
+  color: rgba(230, 238, 255, 0.78);
+  font-size: 0.95rem;
+}
+
+.shmup-hud {
+  min-width: 188px;
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  align-items: flex-end;
+}
+
+.shmup-wave-label,
+.shmup-score-label,
+.shmup-weapon-label,
+.shmup-briefing-label {
+  color: rgba(233, 241, 255, 0.86);
+  font-size: 0.8rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.shmup-wave-label {
+  color: #9fd4ff;
+}
+
+.shmup-briefing-label {
+  color: rgba(198, 212, 241, 0.74);
+  font-size: 0.7rem;
+}
+
+.shmup-weapon-label {
+  color: #ffe29f;
+}
+
+.shmup-hp-bar,
+.shmup-secondary-meter-shell,
+.shmup-overdrive-shell {
+  width: 172px;
+  max-width: 40vw;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.11);
+  border: 1px solid rgba(152, 180, 245, 0.18);
+}
+
+.shmup-hp-bar {
+  height: 10px;
+}
+
+.shmup-secondary-meter-shell,
+.shmup-overdrive-shell {
+  height: 6px;
+}
+
+.shmup-hp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4fd4d5 0%, #8ff3ff 100%);
+  box-shadow: 0 0 14px rgba(97, 244, 255, 0.42);
+}
+
+.shmup-secondary-meter-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #7addff 0%, #4f8fff 100%);
+  box-shadow: 0 0 12px rgba(126, 214, 255, 0.35);
+}
+
+.shmup-overdrive-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffd56a 0%, #ff8d6e 100%);
+  box-shadow: 0 0 12px rgba(255, 174, 107, 0.35);
+}
+
+.shmup-hp-label,
+.shmup-overdrive-label {
+  color: rgba(231, 242, 255, 0.82);
+  font-size: 0.8rem;
+  text-align: right;
+}
+
+.shmup-overdrive-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+}
+
+.shmup-overdrive-label.is-live {
+  color: #ffe59f;
+}
+
+.shmup-secondary-button {
+  pointer-events: auto;
+  min-width: 172px;
+}
+
+.shmup-slice-arena {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: transform 40ms linear;
+  isolation: isolate;
+}
+
+.shmup-boss-active {
+  background: radial-gradient(circle at 50% 14%, rgba(255, 100, 161, 0.06), transparent 28%);
+}
+
+.overdrive-live {
+  box-shadow: inset 0 0 90px rgba(97, 198, 255, 0.09);
+}
+
+.shmup-bg-layer,
+.shmup-slice-lower-zone,
+.shmup-hit-flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.shmup-bg-layer {
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.shmup-bg-deep-space {
+  background-image:
+    var(--asset-background-deep-space),
+    radial-gradient(circle at 20% 14%, rgba(83, 129, 255, 0.14), transparent 28%),
+    radial-gradient(circle at 80% 26%, rgba(113, 73, 255, 0.12), transparent 24%),
+    linear-gradient(180deg, #01040c 0%, #050916 44%, #02050d 100%);
+  animation: shmup-bg-drift-slow 30s linear infinite;
+}
+
+.shmup-bg-nebula {
+  background-image:
+    var(--asset-background-nebula-layer),
+    radial-gradient(circle at 30% 40%, rgba(75, 141, 255, 0.12), transparent 28%),
+    radial-gradient(circle at 68% 18%, rgba(124, 86, 255, 0.1), transparent 24%),
+    radial-gradient(circle at 56% 74%, rgba(54, 97, 197, 0.08), transparent 30%);
+  opacity: 0.72;
+  animation: shmup-bg-drift-medium 24s linear infinite;
+}
+
+.shmup-bg-grid {
+  background-image:
+    linear-gradient(rgba(90, 126, 206, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(90, 126, 206, 0.08) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(83, 128, 207, 0.08), rgba(4, 8, 17, 0));
+  background-size: 100% 66px, 66px 100%, 100% 100%;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.9));
+  opacity: 0.6;
+}
+
+.shmup-bg-orbitals {
+  background-image:
+    var(--asset-background-orbital-silhouette),
+    linear-gradient(180deg, transparent 0%, rgba(8, 14, 28, 0.42) 100%),
+    radial-gradient(circle at 20% 64%, rgba(34, 56, 112, 0.14), transparent 24%);
+  background-position: center 64%, center, center;
+  background-size: cover, cover, cover;
+  opacity: 0.42;
+  animation: shmup-bg-drift-fast 18s linear infinite;
+}
+
+.shmup-bg-stars {
+  background-image:
+    radial-gradient(circle at 12% 8%, rgba(255, 255, 255, 0.68) 0 1px, transparent 1.4px),
+    radial-gradient(circle at 72% 18%, rgba(255, 255, 255, 0.6) 0 1px, transparent 1.4px),
+    radial-gradient(circle at 58% 62%, rgba(188, 225, 255, 0.44) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 84% 42%, rgba(255, 255, 255, 0.5) 0 1px, transparent 1.4px),
+    radial-gradient(circle at 24% 72%, rgba(163, 212, 255, 0.38) 0 1px, transparent 1.5px);
+  opacity: 0.8;
+  animation: shmup-bg-stars 20s linear infinite;
+}
+
+.shmup-slice-lower-zone {
+  top: 42%;
+  background: linear-gradient(180deg, rgba(80, 114, 184, 0), rgba(80, 114, 184, 0.12));
+  border-top: 1px solid rgba(128, 160, 245, 0.18);
+}
+
+.shmup-hit-flash {
+  z-index: 2;
+  background: radial-gradient(circle at 50% 72%, rgba(255, 211, 142, 0.24), rgba(255, 87, 121, 0.08), transparent 64%);
+}
+
+.shmup-boss-banner {
+  position: absolute;
+  top: 84px;
+  left: 50%;
+  z-index: 4;
+  transform: translateX(-50%);
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 155, 196, 0.32);
+  background: rgba(20, 8, 24, 0.7);
+  color: #ffd7e8;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.76rem;
+}
+
+.shmup-boss-hp-shell {
+  position: absolute;
+  top: 122px;
+  left: 50%;
+  z-index: 4;
+  transform: translateX(-50%);
+  width: min(360px, calc(100vw - 48px));
+  height: 12px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 161, 195, 0.26);
+}
+
+.shmup-boss-hp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff7ea9 0%, #ffb56f 100%);
+  box-shadow: 0 0 18px rgba(255, 112, 176, 0.35);
+}
+
+.shmup-boss-telegraph {
+  position: absolute;
+  left: 50%;
+  top: 140px;
+  z-index: 3;
+  width: 280px;
+  height: 280px;
+  transform: translateX(-50%);
+  opacity: 0.66;
+}
+
+.telegraph-core,
+.telegraph-wing {
+  position: absolute;
+  display: block;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 133, 176, 0.68), rgba(255, 106, 229, 0));
+}
+
+.telegraph-core {
+  left: 50%;
+  top: 76px;
+  width: 14px;
+  height: 180px;
+  transform: translateX(-50%);
+}
+
+.telegraph-wing {
+  top: 96px;
+  width: 10px;
+  height: 160px;
+}
+
+.telegraph-wing-left {
+  left: 82px;
+  transform: rotate(11deg);
+}
+
+.telegraph-wing-right {
+  right: 82px;
+  transform: rotate(-11deg);
+}
+
+.telegraph-center .telegraph-wing,
+.telegraph-fan .telegraph-core,
+.telegraph-mixed .telegraph-core,
+.telegraph-mixed .telegraph-wing {
+  opacity: 1;
+}
+
+.player-bullet,
+.enemy-bullet,
+.enemy-drone,
+.shmup-boss,
+.player-ship,
+.shmup-effect {
+  position: absolute;
+  pointer-events: none;
+}
+
+.player-bullet {
+  width: 10px;
+  height: 34px;
+  z-index: 4;
+  filter: drop-shadow(0 0 12px rgba(117, 226, 255, 0.56));
+}
+
+.player-bullet-core {
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  background-image:
+    var(--asset-bullet-player-energy),
+    linear-gradient(180deg, rgba(236, 247, 255, 0.98), rgba(91, 213, 255, 0.88), rgba(65, 132, 255, 0));
+  background-size: cover, cover;
+  background-position: center;
+  box-shadow: 0 0 18px rgba(109, 214, 255, 0.46);
+}
+
+.player-bullet::after {
+  content: "";
+  position: absolute;
+  top: 22px;
+  left: 50%;
+  width: 2px;
+  height: 18px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, rgba(132, 226, 255, 0.58), transparent);
+}
+
+.player-bullet-lance {
+  width: 12px;
+  height: 42px;
+  filter: drop-shadow(0 0 16px rgba(142, 228, 255, 0.65));
+}
+
+.player-bullet-overdrive {
+  filter: drop-shadow(0 0 16px rgba(255, 225, 154, 0.58));
+}
+
+.enemy-bullet {
+  z-index: 4;
+  filter: drop-shadow(0 0 10px rgba(255, 93, 139, 0.36));
+}
+
+.enemy-bullet-core {
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  background-image:
+    var(--asset-bullet-enemy-null),
+    radial-gradient(circle at 35% 35%, #ffeff7 0%, #ff75b2 48%, #6f1140 100%);
+  background-size: cover, cover;
+  background-position: center;
+  box-shadow: 0 0 14px rgba(255, 94, 154, 0.42);
+}
+
+.enemy-bullet-boss .enemy-bullet-core {
+  background-image:
+    var(--asset-bullet-enemy-null),
+    radial-gradient(circle at 35% 35%, #fff0fb 0%, #ff93d7 42%, #7d2cff 100%);
+  box-shadow: 0 0 18px rgba(215, 118, 255, 0.5);
+}
+
+.enemy-drone {
+  z-index: 5;
+  filter: drop-shadow(0 0 16px var(--enemy-glow));
+}
+
+.enemy-drone-core {
+  position: absolute;
+  inset: 4px 7px 7px;
+  border-radius: 18px 18px 14px 14px;
+  background-image:
+    var(--asset-enemy-scout),
+    radial-gradient(circle at 50% 26%, rgba(255, 210, 223, 0.14), rgba(92, 10, 38, 0) 34%),
+    linear-gradient(180deg, #1c1021 0%, #090a12 58%, #1d0f19 100%);
+  clip-path: polygon(50% 0%, 86% 16%, 100% 52%, 80% 86%, 50% 100%, 20% 86%, 0% 52%, 14% 16%);
+  box-shadow: inset 0 0 12px rgba(255, 127, 170, 0.12);
+}
+
+.enemy-drone-scout .enemy-drone-core {
+  background-image:
+    var(--asset-enemy-scout),
+    radial-gradient(circle at 50% 26%, rgba(255, 160, 197, 0.22), rgba(92, 10, 38, 0) 34%),
+    linear-gradient(180deg, #17111d 0%, #07080f 58%, #220d18 100%);
+}
+
+.enemy-drone-striker .enemy-drone-core {
+  background-image:
+    var(--asset-enemy-striker),
+    radial-gradient(circle at 50% 26%, rgba(255, 170, 205, 0.22), rgba(92, 10, 38, 0) 34%),
+    linear-gradient(180deg, #120e18 0%, #05060d 58%, #250f19 100%);
+}
+
+.enemy-drone-wing,
+.enemy-drone-emitter {
+  position: absolute;
+}
+
+.enemy-drone-wing {
+  top: 12px;
+  width: 18px;
+  height: 16px;
+  background: linear-gradient(180deg, rgba(123, 31, 77, 0.98), rgba(27, 10, 20, 0.96));
+}
+
+.enemy-drone-wing-left {
+  left: -2px;
+  clip-path: polygon(100% 0, 0 50%, 100% 100%);
+}
+
+.enemy-drone-wing-right {
+  right: -2px;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+.enemy-drone-emitter {
+  left: 50%;
+  bottom: 4px;
+  width: 10px;
+  height: 12px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 120, 172, 0.9) 0%, rgba(76, 10, 44, 0) 80%);
+}
+
+.enemy-drone-hp {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: -8px;
+  height: 4px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.enemy-drone-hp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff8bbd 0%, #ff5d74 100%);
+}
+
+.shmup-boss {
+  z-index: 5;
+  filter: drop-shadow(0 0 28px var(--boss-glow));
+  animation: boss-hover 2.6s ease-in-out infinite;
+}
+
+.shmup-boss-core {
+  position: absolute;
+  inset: 12px 18px 18px;
+  border-radius: 36px 36px 24px 24px;
+  background-image:
+    var(--asset-boss-null-seraph),
+    radial-gradient(circle at 50% 32%, rgba(255, 182, 213, 0.14), rgba(255, 120, 182, 0) 32%),
+    linear-gradient(180deg, #110d1a 0%, #07080f 50%, #190d18 100%);
+  clip-path: polygon(50% 0%, 82% 10%, 100% 44%, 90% 86%, 50% 100%, 10% 86%, 0% 44%, 18% 10%);
+  box-shadow: inset 0 0 16px rgba(255, 126, 182, 0.12);
+}
+
+.shmup-boss-wing,
+.shmup-boss-spine,
+.shmup-boss-cannon,
+.shmup-boss-weak-core,
+.shmup-boss-emitter {
+  position: absolute;
+}
+
+.shmup-boss-wing {
+  top: 28px;
+  width: 44px;
+  height: 60px;
+  background: linear-gradient(180deg, rgba(79, 22, 63, 0.98), rgba(19, 9, 18, 0.98));
+}
+
+.shmup-boss-wing-left {
+  left: -4px;
+  clip-path: polygon(100% 0, 0 24%, 18% 100%, 100% 80%);
+}
+
+.shmup-boss-wing-right {
+  right: -4px;
+  clip-path: polygon(0 0, 100% 24%, 82% 100%, 0 80%);
+}
+
+.shmup-boss-spine {
+  left: 50%;
+  top: 4px;
+  width: 18px;
+  height: 30px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 144, 192, 0.8), rgba(74, 24, 82, 0));
+}
+
+.shmup-boss-cannon {
+  left: 50%;
+  bottom: -12px;
+  width: 18px;
+  height: 36px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 213, 233, 0.96), rgba(255, 92, 156, 0.18));
+}
+
+.shmup-boss-weak-core {
+  left: 50%;
+  top: 34px;
+  width: 26px;
+  height: 26px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff4fb 0%, #ff89bd 34%, #76153e 78%);
+  box-shadow: 0 0 22px rgba(255, 109, 171, 0.48);
+}
+
+.shmup-boss-emitter {
+  top: 66px;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 123, 188, 0.92) 0%, rgba(77, 18, 61, 0) 76%);
+}
+
+.shmup-boss-emitter-left {
+  left: 16px;
+}
+
+.shmup-boss-emitter-right {
+  right: 16px;
+}
+
+.shmup-boss-phase-two {
+  filter: drop-shadow(0 0 34px rgba(214, 116, 255, 0.38));
+}
+
+.shmup-boss-phase-two .shmup-boss-core {
+  background-image:
+    var(--asset-boss-null-seraph),
+    radial-gradient(circle at 50% 32%, rgba(255, 198, 242, 0.16), rgba(255, 120, 182, 0) 32%),
+    linear-gradient(180deg, #120e1a 0%, #090912 50%, #21103a 100%);
+}
+
+.shmup-boss-phase-three {
+  filter: drop-shadow(0 0 40px rgba(255, 104, 174, 0.42));
+}
+
+.shmup-boss-phase-three .shmup-boss-weak-core {
+  background: radial-gradient(circle, #fff5fc 0%, #ff6e9b 32%, #5f0d2d 72%);
+  box-shadow: 0 0 28px rgba(255, 94, 148, 0.62);
+}
+
+.player-ship {
+  width: 52px;
+  height: 52px;
+  z-index: 6;
+  filter: drop-shadow(0 0 18px var(--player-glow));
+  transition: opacity 120ms ease;
+  animation: ship-idle 2.2s ease-in-out infinite;
+}
+
+.player-ship-invulnerable {
+  opacity: 0.5;
+}
+
+.player-ship-defeated {
+  opacity: 0.2;
+}
+
+.player-ship-overdrive {
+  filter: drop-shadow(0 0 24px rgba(255, 216, 132, 0.56));
+}
+
+.player-ship-core,
+.player-ship-wing,
+.player-ship-cannon,
+.player-ship-engine {
+  position: absolute;
+}
+
+.player-ship-core {
+  inset: 6px 10px 8px;
+  border-radius: 18px 18px 12px 12px;
+  background-image:
+    var(--asset-player-ship),
+    radial-gradient(circle at 50% 24%, rgba(255, 255, 255, 0.82), rgba(119, 233, 255, 0.08) 34%),
+    linear-gradient(180deg, #eef6ff 0%, #80d7ff 34%, #1d76ff 72%, #10316d 100%);
+  clip-path: polygon(50% 0%, 84% 18%, 100% 74%, 50% 100%, 0% 74%, 16% 18%);
+  box-shadow: 0 0 24px rgba(132, 208, 255, 0.28), inset 0 0 12px rgba(255, 255, 255, 0.34);
+}
+
+.player-ship-wing {
+  bottom: 10px;
+  width: 20px;
+  height: 24px;
+  background: linear-gradient(180deg, rgba(209, 246, 255, 0.96), rgba(48, 104, 243, 0.94));
+}
+
+.player-ship-wing-left {
+  left: 2px;
+  clip-path: polygon(100% 0, 0 40%, 10% 100%, 100% 86%);
+}
+
+.player-ship-wing-right {
+  right: 2px;
+  clip-path: polygon(0 0, 100% 40%, 90% 100%, 0 86%);
+}
+
+.player-ship-cannon {
+  bottom: 24px;
+  width: 6px;
+  height: 16px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(101, 207, 255, 0.2));
+}
+
+.player-ship-cannon-left {
+  left: 10px;
+}
+
+.player-ship-cannon-right {
+  right: 10px;
+}
+
+.player-ship-engine {
+  left: 50%;
+  bottom: -8px;
+  width: 12px;
+  height: 20px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(178, 244, 255, 0.96), rgba(52, 195, 255, 0));
+  filter: blur(0.3px);
+  animation: thruster-pulse 0.8s ease-in-out infinite;
+}
+
+.player-ship-engine-secondary {
+  width: 8px;
+  height: 14px;
+  bottom: -3px;
+  left: calc(50% - 13px);
+  animation-delay: 0.12s;
+}
+
+.shmup-effect {
+  z-index: 3;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.42);
+}
+
+.shmup-effect-blue {
+  border-color: rgba(113, 218, 255, 0.8);
+  box-shadow: 0 0 20px rgba(113, 218, 255, 0.28);
+}
+
+.shmup-effect-pink {
+  border-color: rgba(255, 142, 181, 0.86);
+  box-shadow: 0 0 24px rgba(255, 110, 166, 0.32);
+}
+
+.shmup-effect-gold {
+  border-color: rgba(255, 224, 136, 0.92);
+  box-shadow: 0 0 32px rgba(255, 202, 92, 0.34);
+}
+
+.shmup-effect-crimson {
+  border-color: rgba(255, 94, 137, 0.9);
+  box-shadow: 0 0 28px rgba(255, 72, 126, 0.34);
+}
+
+.shmup-mobile-actions {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 7;
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shmup-fab-secondary,
+.shmup-fab-overdrive {
+  min-width: 0;
+  padding-inline: 16px;
+  display: inline-flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.shmup-fab-secondary span {
+  font-size: 0.8rem;
+  opacity: 0.9;
+}
+
+.shmup-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(3, 7, 18, 0.66);
+  backdrop-filter: blur(7px);
+}
+
+.shmup-overlay-card {
+  pointer-events: auto;
+  min-width: min(340px, 92vw);
+  padding: 26px;
+  border-radius: 20px;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(18, 28, 52, 0.94), rgba(8, 14, 28, 0.96));
+  border: 1px solid rgba(147, 177, 255, 0.2);
+  box-shadow: 0 20px 54px rgba(0, 0, 0, 0.46);
+}
+
+.shmup-overlay-card h2 {
+  margin-bottom: 8px;
+}
+
+.shmup-overlay-card p {
+  margin-bottom: 16px;
+  color: rgba(229, 239, 255, 0.8);
+}
+
+.shmup-summary-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.shmup-grade-badge {
+  width: 66px;
+  height: 66px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 1.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.shmup-grade-s {
+  background: radial-gradient(circle, #fff1be 0%, #ffbf4d 100%);
+  color: #392200;
+}
+
+.shmup-grade-a {
+  background: radial-gradient(circle, #ffe2f4 0%, #ff86cb 100%);
+  color: #441430;
+}
+
+.shmup-grade-b {
+  background: radial-gradient(circle, #e1f1ff 0%, #7ac6ff 100%);
+  color: #112c45;
+}
+
+.shmup-grade-c,
+.shmup-grade-d {
+  background: radial-gradient(circle, #eef1f8 0%, #9da8c2 100%);
+  color: #202839;
+}
+
+.shmup-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 18px 0 20px;
+}
+
+.shmup-summary-grid div {
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(160, 184, 255, 0.12);
+}
+
+.shmup-summary-grid span {
+  display: block;
+  color: rgba(214, 225, 248, 0.72);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.shmup-summary-grid strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 1.05rem;
+}
+
+@keyframes shmup-bg-drift-slow {
+  from { transform: translateY(0); }
+  to { transform: translateY(18px); }
+}
+
+@keyframes shmup-bg-drift-medium {
+  from { transform: translateY(0) translateX(0); }
+  to { transform: translateY(28px) translateX(-6px); }
+}
+
+@keyframes shmup-bg-drift-fast {
+  from { transform: translateY(0) translateX(0); }
+  to { transform: translateY(44px) translateX(6px); }
+}
+
+@keyframes shmup-bg-stars {
+  from { transform: translateY(0); }
+  to { transform: translateY(22px); }
+}
+
+@keyframes ship-idle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-1px); }
+}
+
+@keyframes thruster-pulse {
+  0%, 100% { opacity: 0.75; transform: translateX(-50%) scaleY(0.9); }
+  50% { opacity: 1; transform: translateX(-50%) scaleY(1.08); }
+}
+
+@keyframes boss-hover {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@media (max-width: 720px) {
+  .shmup-slice-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .shmup-hud {
+    align-items: flex-start;
+    width: min(280px, calc(100vw - 36px));
+  }
+
+  .shmup-hp-label,
+  .shmup-wave-label,
+  .shmup-score-label,
+  .shmup-weapon-label,
+  .shmup-briefing-label,
+  .shmup-overdrive-label {
+    text-align: left;
+  }
+
+  .shmup-secondary-button,
+  .shmup-secondary-meter-shell,
+  .shmup-overdrive-shell,
+  .shmup-hp-bar {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .shmup-secondary-button,
+  .shmup-overdrive-row {
+    display: none;
+  }
+
+  .shmup-mobile-actions {
+    display: flex;
+  }
+
+  .shmup-boss-banner {
+    top: 144px;
+  }
+
+  .shmup-boss-hp-shell {
+    top: 182px;
+    width: calc(100vw - 32px);
+  }
+
+  .shmup-boss-telegraph {
+    top: 176px;
+    width: 240px;
+    height: 240px;
+  }
+
+  .shmup-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
