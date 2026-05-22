@@ -22,36 +22,103 @@ type EnemyBullet = {
   y: number;
   vx: number;
   vy: number;
+  radius: number;
 };
 
+type EnemyKind = "drifter" | "sweeper" | "burst";
+
 type Enemy = {
+  id: number;
+  kind: EnemyKind;
+  x: number;
+  y: number;
+  originX: number;
+  age: number;
+  radius: number;
+  hp: number;
+  maxHp: number;
+  speed: number;
+  fireAt: number;
+  fireInterval: number;
+  scoreValue: number;
+  swayAmplitude: number;
+  swayFrequency: number;
+};
+
+type HitEffect = {
   id: number;
   x: number;
   y: number;
   radius: number;
-  hp: number;
-  fireAt: number;
+  maxRadius: number;
+  life: number;
+  maxLife: number;
+  color: "blue" | "pink" | "gold";
+};
+
+type WaveSpawn = {
+  delayMs: number;
+  lane: number;
+  kind: EnemyKind;
+};
+
+type Wave = {
+  name: string;
+  spawns: WaveSpawn[];
 };
 
 const PLAYER_RADIUS = 26;
 const PLAYER_MAX_HP = 5;
 const PLAYER_INVULNERABLE_MS = 850;
+const PLAYER_SECONDARY_MAX = 2;
+const PLAYER_SECONDARY_RECHARGE_MS = 6500;
 const HORIZONTAL_MARGIN = 16;
-const TOP_PLAY_AREA_RATIO = 0.45;
+const TOP_PLAY_AREA_RATIO = 0.42;
 const TOP_MARGIN = 24;
 const BOTTOM_MARGIN = 24;
 const FOLLOW_LERP = 0.22;
 const FIRE_INTERVAL_MS = 180;
-const ENEMY_SPAWN_INTERVAL_MS = 900;
-const ENEMY_FIRE_INTERVAL_MS = 1100;
 const BULLET_SPEED = 760;
-const ENEMY_SPEED = 150;
-const ENEMY_BULLET_SPEED = 280;
 const BULLET_RADIUS = 4;
-const ENEMY_BULLET_RADIUS = 7;
 const BULLET_DESPAWN_PADDING = 40;
-const ENEMY_RADIUS = 22;
-const ENEMY_DESPAWN_PADDING = 50;
+const ENEMY_DESPAWN_PADDING = 60;
+const WAVE_PAUSE_MS = 1500;
+const SECONDARY_BLAST_RADIUS = 170;
+const SECONDARY_DAMAGE = 3;
+
+const WAVES: Wave[] = [
+  {
+    name: "Scout Pass",
+    spawns: [
+      { delayMs: 300, lane: 0.2, kind: "drifter" },
+      { delayMs: 260, lane: 0.5, kind: "drifter" },
+      { delayMs: 260, lane: 0.8, kind: "drifter" },
+      { delayMs: 420, lane: 0.35, kind: "sweeper" },
+      { delayMs: 280, lane: 0.65, kind: "sweeper" },
+    ],
+  },
+  {
+    name: "Cross Current",
+    spawns: [
+      { delayMs: 250, lane: 0.18, kind: "sweeper" },
+      { delayMs: 220, lane: 0.82, kind: "sweeper" },
+      { delayMs: 220, lane: 0.32, kind: "drifter" },
+      { delayMs: 220, lane: 0.68, kind: "drifter" },
+      { delayMs: 420, lane: 0.5, kind: "burst" },
+    ],
+  },
+  {
+    name: "Pressure Wave",
+    spawns: [
+      { delayMs: 260, lane: 0.25, kind: "burst" },
+      { delayMs: 200, lane: 0.75, kind: "burst" },
+      { delayMs: 220, lane: 0.5, kind: "sweeper" },
+      { delayMs: 220, lane: 0.15, kind: "drifter" },
+      { delayMs: 220, lane: 0.85, kind: "drifter" },
+      { delayMs: 320, lane: 0.5, kind: "burst" },
+    ],
+  },
+];
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -61,12 +128,17 @@ function distance(aX: number, aY: number, bX: number, bY: number) {
   return Math.hypot(aX - bX, aY - bY);
 }
 
+function laneToX(bounds: ArenaBounds, lane: number, radius: number) {
+  const minX = radius + HORIZONTAL_MARGIN;
+  const maxX = bounds.width - radius - HORIZONTAL_MARGIN;
+  return clamp(minX + (maxX - minX) * lane, minX, maxX);
+}
+
 function getPlayableBounds(bounds: ArenaBounds) {
   const minX = PLAYER_RADIUS + HORIZONTAL_MARGIN;
   const maxX = bounds.width - PLAYER_RADIUS - HORIZONTAL_MARGIN;
   const minY = Math.max(bounds.height * TOP_PLAY_AREA_RATIO, PLAYER_RADIUS + TOP_MARGIN);
   const maxY = bounds.height - PLAYER_RADIUS - BOTTOM_MARGIN;
-
   return { minX, maxX, minY, maxY };
 }
 
@@ -78,15 +150,63 @@ function createStartPosition(bounds: ArenaBounds): PlayerPosition {
   };
 }
 
-function resetCombatState(bounds: ArenaBounds) {
+function createEnemy(bounds: ArenaBounds, spawn: WaveSpawn, id: number, now: number): Enemy {
+  if (spawn.kind === "sweeper") {
+    return {
+      id,
+      kind: spawn.kind,
+      x: laneToX(bounds, spawn.lane, 20),
+      y: -28,
+      originX: laneToX(bounds, spawn.lane, 20),
+      age: 0,
+      radius: 20,
+      hp: 3,
+      maxHp: 3,
+      speed: 140,
+      fireAt: now + 800,
+      fireInterval: 1450,
+      scoreValue: 120,
+      swayAmplitude: Math.min(90, bounds.width * 0.16),
+      swayFrequency: 2.1,
+    };
+  }
+
+  if (spawn.kind === "burst") {
+    return {
+      id,
+      kind: spawn.kind,
+      x: laneToX(bounds, spawn.lane, 24),
+      y: -32,
+      originX: laneToX(bounds, spawn.lane, 24),
+      age: 0,
+      radius: 24,
+      hp: 5,
+      maxHp: 5,
+      speed: 112,
+      fireAt: now + 900,
+      fireInterval: 1650,
+      scoreValue: 220,
+      swayAmplitude: Math.min(44, bounds.width * 0.08),
+      swayFrequency: 1.5,
+    };
+  }
+
   return {
-    position: createStartPosition(bounds),
-    bullets: [] as PlayerBullet[],
-    enemyBullets: [] as EnemyBullet[],
-    enemies: [] as Enemy[],
-    hp: PLAYER_MAX_HP,
-    invulnerableUntil: 0,
-    defeated: false,
+    id,
+    kind: spawn.kind,
+    x: laneToX(bounds, spawn.lane, 18),
+    y: -24,
+    originX: laneToX(bounds, spawn.lane, 18),
+    age: 0,
+    radius: 18,
+    hp: 2,
+    maxHp: 2,
+    speed: 170,
+    fireAt: now + 950,
+    fireInterval: 1600,
+    scoreValue: 80,
+    swayAmplitude: 0,
+    swayFrequency: 0,
   };
 }
 
@@ -96,47 +216,84 @@ export default function ShmupPlayScreen() {
   const dragPointerIdRef = useRef<number | null>(null);
   const lastFrameTimeRef = useRef<number | null>(null);
   const lastShotAtRef = useRef(0);
-  const lastEnemySpawnAtRef = useRef(0);
+  const nextSecondaryChargeAtRef = useRef(0);
   const bulletIdRef = useRef(0);
   const enemyBulletIdRef = useRef(0);
   const enemyIdRef = useRef(0);
+  const effectIdRef = useRef(0);
+  const waveIndexRef = useRef(0);
+  const waveSpawnIndexRef = useRef(0);
+  const nextWaveSpawnAtRef = useRef(0);
   const targetRef = useRef<PlayerPosition>({ x: 0, y: 0 });
   const positionRef = useRef<PlayerPosition>({ x: 0, y: 0 });
   const bulletsRef = useRef<PlayerBullet[]>([]);
   const enemyBulletsRef = useRef<EnemyBullet[]>([]);
   const enemiesRef = useRef<Enemy[]>([]);
+  const effectsRef = useRef<HitEffect[]>([]);
   const hpRef = useRef(PLAYER_MAX_HP);
   const invulnerableUntilRef = useRef(0);
+  const scoreRef = useRef(0);
+  const secondaryChargesRef = useRef(PLAYER_SECONDARY_MAX);
   const defeatedRef = useRef(false);
   const [arenaBounds, setArenaBounds] = useState<ArenaBounds>({ width: 390, height: 844 });
   const [playerPosition, setPlayerPosition] = useState<PlayerPosition>(() => createStartPosition({ width: 390, height: 844 }));
   const [bullets, setBullets] = useState<PlayerBullet[]>([]);
   const [enemyBullets, setEnemyBullets] = useState<EnemyBullet[]>([]);
   const [enemies, setEnemies] = useState<Enemy[]>([]);
+  const [effects, setEffects] = useState<HitEffect[]>([]);
   const [playerHp, setPlayerHp] = useState(PLAYER_MAX_HP);
   const [playerInvulnerable, setPlayerInvulnerable] = useState(false);
   const [isDefeated, setIsDefeated] = useState(false);
+  const [score, setScore] = useState(0);
+  const [secondaryCharges, setSecondaryCharges] = useState(PLAYER_SECONDARY_MAX);
+  const [waveName, setWaveName] = useState(WAVES[0].name);
 
-  const syncCombatState = useCallback((bounds: ArenaBounds) => {
-    const next = resetCombatState(bounds);
-    positionRef.current = next.position;
-    targetRef.current = next.position;
-    bulletsRef.current = next.bullets;
-    enemyBulletsRef.current = next.enemyBullets;
-    enemiesRef.current = next.enemies;
-    hpRef.current = next.hp;
-    invulnerableUntilRef.current = next.invulnerableUntil;
-    defeatedRef.current = next.defeated;
+  const pushEffect = useCallback((x: number, y: number, color: HitEffect["color"], maxRadius: number) => {
+    effectsRef.current = [
+      ...effectsRef.current,
+      {
+        id: effectIdRef.current++,
+        x,
+        y,
+        radius: 12,
+        maxRadius,
+        life: 0.42,
+        maxLife: 0.42,
+        color,
+      },
+    ];
+  }, []);
+
+  const resetRun = useCallback((bounds: ArenaBounds) => {
+    const start = createStartPosition(bounds);
+    positionRef.current = start;
+    targetRef.current = start;
+    bulletsRef.current = [];
+    enemyBulletsRef.current = [];
+    enemiesRef.current = [];
+    effectsRef.current = [];
+    hpRef.current = PLAYER_MAX_HP;
+    invulnerableUntilRef.current = 0;
+    scoreRef.current = 0;
+    secondaryChargesRef.current = PLAYER_SECONDARY_MAX;
+    nextSecondaryChargeAtRef.current = 0;
+    defeatedRef.current = false;
     lastFrameTimeRef.current = null;
     lastShotAtRef.current = 0;
-    lastEnemySpawnAtRef.current = 0;
-    setPlayerPosition(next.position);
-    setBullets(next.bullets);
-    setEnemyBullets(next.enemyBullets);
-    setEnemies(next.enemies);
-    setPlayerHp(next.hp);
+    waveIndexRef.current = 0;
+    waveSpawnIndexRef.current = 0;
+    nextWaveSpawnAtRef.current = 400;
+    setPlayerPosition(start);
+    setBullets([]);
+    setEnemyBullets([]);
+    setEnemies([]);
+    setEffects([]);
+    setPlayerHp(PLAYER_MAX_HP);
     setPlayerInvulnerable(false);
     setIsDefeated(false);
+    setScore(0);
+    setSecondaryCharges(PLAYER_SECONDARY_MAX);
+    setWaveName(WAVES[0].name);
   }, []);
 
   const measureArena = useCallback(() => {
@@ -162,6 +319,40 @@ export default function ShmupPlayScreen() {
     setPlayerPosition(nextPosition);
   }, []);
 
+  const useSecondary = useCallback(() => {
+    if (defeatedRef.current || secondaryChargesRef.current <= 0) return;
+
+    secondaryChargesRef.current -= 1;
+    setSecondaryCharges(secondaryChargesRef.current);
+    if (secondaryChargesRef.current < PLAYER_SECONDARY_MAX && nextSecondaryChargeAtRef.current === 0) {
+      nextSecondaryChargeAtRef.current = performance.now() + PLAYER_SECONDARY_RECHARGE_MS;
+    }
+
+    pushEffect(positionRef.current.x, positionRef.current.y, "gold", SECONDARY_BLAST_RADIUS);
+
+    const remainingEnemies: Enemy[] = [];
+    for (const enemy of enemiesRef.current) {
+      const nextEnemy = { ...enemy };
+      if (distance(nextEnemy.x, nextEnemy.y, positionRef.current.x, positionRef.current.y) <= SECONDARY_BLAST_RADIUS) {
+        nextEnemy.hp -= SECONDARY_DAMAGE;
+      }
+      if (nextEnemy.hp > 0) {
+        remainingEnemies.push(nextEnemy);
+      } else {
+        scoreRef.current += nextEnemy.scoreValue;
+        pushEffect(nextEnemy.x, nextEnemy.y, "pink", nextEnemy.radius * 2.4);
+      }
+    }
+
+    enemiesRef.current = remainingEnemies;
+    enemyBulletsRef.current = enemyBulletsRef.current.filter(
+      (bullet) => distance(bullet.x, bullet.y, positionRef.current.x, positionRef.current.y) > SECONDARY_BLAST_RADIUS,
+    );
+    setEnemies(enemiesRef.current);
+    setEnemyBullets(enemyBulletsRef.current);
+    setScore(scoreRef.current);
+  }, [pushEffect]);
+
   useEffect(() => {
     document.documentElement.classList.add("shmup-active");
     document.body.classList.add("shmup-active");
@@ -180,8 +371,23 @@ export default function ShmupPlayScreen() {
   }, [measureArena]);
 
   useEffect(() => {
-    syncCombatState(arenaBounds);
-  }, [arenaBounds, syncCombatState]);
+    resetRun(arenaBounds);
+  }, [arenaBounds, resetRun]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.code === "Space" || event.code === "ShiftLeft" || event.code === "ShiftRight") {
+        event.preventDefault();
+        useSecondary();
+      }
+      if (event.code === "KeyR" && isDefeated) {
+        resetRun(arenaBounds);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [arenaBounds, isDefeated, resetRun, useSecondary]);
 
   useEffect(() => {
     const tick = (timestamp: number) => {
@@ -189,13 +395,26 @@ export default function ShmupPlayScreen() {
       const deltaSeconds = Math.min((timestamp - previousTime) / 1000, 0.05);
       lastFrameTimeRef.current = timestamp;
 
-      const nowInvulnerable = timestamp < invulnerableUntilRef.current;
-      if (playerInvulnerable !== nowInvulnerable) {
-        setPlayerInvulnerable(nowInvulnerable);
+      const currentlyInvulnerable = timestamp < invulnerableUntilRef.current;
+      if (currentlyInvulnerable !== playerInvulnerable) {
+        setPlayerInvulnerable(currentlyInvulnerable);
+      }
+
+      if (
+        secondaryChargesRef.current < PLAYER_SECONDARY_MAX &&
+        nextSecondaryChargeAtRef.current > 0 &&
+        timestamp >= nextSecondaryChargeAtRef.current
+      ) {
+        secondaryChargesRef.current += 1;
+        setSecondaryCharges(secondaryChargesRef.current);
+        nextSecondaryChargeAtRef.current =
+          secondaryChargesRef.current < PLAYER_SECONDARY_MAX ? timestamp + PLAYER_SECONDARY_RECHARGE_MS : 0;
       }
 
       const current = positionRef.current;
       const target = targetRef.current;
+
+      // Smooth pointer follow keeps desktop and touch drag feeling direct without jitter.
       const nextPosition = {
         x: current.x + (target.x - current.x) * FOLLOW_LERP,
         y: current.y + (target.y - current.y) * FOLLOW_LERP,
@@ -207,31 +426,26 @@ export default function ShmupPlayScreen() {
         lastShotAtRef.current = timestamp;
         bulletsRef.current = [
           ...bulletsRef.current,
-          {
-            id: bulletIdRef.current++,
-            x: nextPosition.x,
-            y: nextPosition.y - PLAYER_RADIUS,
-          },
+          { id: bulletIdRef.current++, x: nextPosition.x, y: nextPosition.y - PLAYER_RADIUS },
         ];
       }
 
-      if (!defeatedRef.current && timestamp - lastEnemySpawnAtRef.current >= ENEMY_SPAWN_INTERVAL_MS) {
-        lastEnemySpawnAtRef.current = timestamp;
-        enemiesRef.current = [
-          ...enemiesRef.current,
-          {
-            id: enemyIdRef.current++,
-            x: clamp(
-              HORIZONTAL_MARGIN + ENEMY_RADIUS + Math.random() * (arenaBounds.width - (HORIZONTAL_MARGIN + ENEMY_RADIUS) * 2),
-              ENEMY_RADIUS + HORIZONTAL_MARGIN,
-              arenaBounds.width - ENEMY_RADIUS - HORIZONTAL_MARGIN,
-            ),
-            y: -ENEMY_RADIUS,
-            radius: ENEMY_RADIUS,
-            hp: 3,
-            fireAt: timestamp + 450 + Math.random() * ENEMY_FIRE_INTERVAL_MS,
-          },
-        ];
+      const currentWave = WAVES[waveIndexRef.current];
+      if (!defeatedRef.current && timestamp >= nextWaveSpawnAtRef.current) {
+        const spawn = currentWave.spawns[waveSpawnIndexRef.current];
+        if (spawn) {
+          enemiesRef.current = [
+            ...enemiesRef.current,
+            createEnemy(arenaBounds, spawn, enemyIdRef.current++, timestamp),
+          ];
+          waveSpawnIndexRef.current += 1;
+          nextWaveSpawnAtRef.current = timestamp + spawn.delayMs;
+        } else {
+          waveIndexRef.current = (waveIndexRef.current + 1) % WAVES.length;
+          waveSpawnIndexRef.current = 0;
+          nextWaveSpawnAtRef.current = timestamp + WAVE_PAUSE_MS;
+          setWaveName(WAVES[waveIndexRef.current].name);
+        }
       }
 
       bulletsRef.current = bulletsRef.current
@@ -241,20 +455,63 @@ export default function ShmupPlayScreen() {
       const spawnedEnemyBullets: EnemyBullet[] = [];
       enemiesRef.current = enemiesRef.current
         .map((enemy) => {
-          const movedEnemy = { ...enemy, y: enemy.y + ENEMY_SPEED * deltaSeconds };
+          const movedEnemy = { ...enemy, age: enemy.age + deltaSeconds };
+          if (enemy.kind === "sweeper") {
+            movedEnemy.y += movedEnemy.speed * deltaSeconds;
+            movedEnemy.x = clamp(
+              movedEnemy.originX + Math.sin(movedEnemy.age * movedEnemy.swayFrequency) * movedEnemy.swayAmplitude,
+              movedEnemy.radius + HORIZONTAL_MARGIN,
+              arenaBounds.width - movedEnemy.radius - HORIZONTAL_MARGIN,
+            );
+          } else if (enemy.kind === "burst") {
+            movedEnemy.y += movedEnemy.speed * deltaSeconds;
+            movedEnemy.x = clamp(
+              movedEnemy.originX + Math.sin(movedEnemy.age * movedEnemy.swayFrequency) * movedEnemy.swayAmplitude,
+              movedEnemy.radius + HORIZONTAL_MARGIN,
+              arenaBounds.width - movedEnemy.radius - HORIZONTAL_MARGIN,
+            );
+          } else {
+            movedEnemy.y += movedEnemy.speed * deltaSeconds;
+          }
 
           if (!defeatedRef.current && timestamp >= movedEnemy.fireAt) {
-            const dx = nextPosition.x - movedEnemy.x;
-            const dy = nextPosition.y - movedEnemy.y;
-            const length = Math.max(Math.hypot(dx, dy), 1);
-            spawnedEnemyBullets.push({
-              id: enemyBulletIdRef.current++,
-              x: movedEnemy.x,
-              y: movedEnemy.y + movedEnemy.radius * 0.7,
-              vx: (dx / length) * ENEMY_BULLET_SPEED,
-              vy: (dy / length) * ENEMY_BULLET_SPEED,
-            });
-            movedEnemy.fireAt = timestamp + ENEMY_FIRE_INTERVAL_MS + Math.random() * 450;
+            if (movedEnemy.kind === "burst") {
+              const baseAngles = [-0.28, 0, 0.28];
+              for (const angleOffset of baseAngles) {
+                const angle = Math.PI / 2 + angleOffset;
+                spawnedEnemyBullets.push({
+                  id: enemyBulletIdRef.current++,
+                  x: movedEnemy.x,
+                  y: movedEnemy.y + movedEnemy.radius * 0.8,
+                  vx: Math.cos(angle) * 230,
+                  vy: Math.sin(angle) * 230,
+                  radius: 7,
+                });
+              }
+            } else if (movedEnemy.kind === "sweeper") {
+              const dx = nextPosition.x - movedEnemy.x;
+              const dy = nextPosition.y - movedEnemy.y;
+              const length = Math.max(Math.hypot(dx, dy), 1);
+              spawnedEnemyBullets.push({
+                id: enemyBulletIdRef.current++,
+                x: movedEnemy.x,
+                y: movedEnemy.y + movedEnemy.radius * 0.8,
+                vx: (dx / length) * 250,
+                vy: (dy / length) * 250,
+                radius: 6,
+              });
+            } else {
+              spawnedEnemyBullets.push({
+                id: enemyBulletIdRef.current++,
+                x: movedEnemy.x,
+                y: movedEnemy.y + movedEnemy.radius * 0.8,
+                vx: 0,
+                vy: 280,
+                radius: 6,
+              });
+            }
+
+            movedEnemy.fireAt = timestamp + movedEnemy.fireInterval;
           }
 
           return movedEnemy;
@@ -275,7 +532,7 @@ export default function ShmupPlayScreen() {
             bullet.y < arenaBounds.height + BULLET_DESPAWN_PADDING,
         );
 
-      const bulletsAfterHits: PlayerBullet[] = [];
+      const remainingBullets: PlayerBullet[] = [];
       const enemiesAfterHits = enemiesRef.current.map((enemy) => ({ ...enemy }));
       for (const bullet of bulletsRef.current) {
         const hitEnemy = enemiesAfterHits.find(
@@ -284,26 +541,44 @@ export default function ShmupPlayScreen() {
 
         if (hitEnemy) {
           hitEnemy.hp -= 1;
+          pushEffect(bullet.x, bullet.y, "blue", 24);
           continue;
         }
 
-        bulletsAfterHits.push(bullet);
+        remainingBullets.push(bullet);
       }
-      bulletsRef.current = bulletsAfterHits;
+
+      const defeatedEnemies = enemiesAfterHits.filter((enemy) => enemy.hp <= 0);
+      for (const enemy of defeatedEnemies) {
+        scoreRef.current += enemy.scoreValue;
+        pushEffect(enemy.x, enemy.y, "pink", enemy.radius * 2.5);
+      }
+
+      bulletsRef.current = remainingBullets;
       enemiesRef.current = enemiesAfterHits.filter((enemy) => enemy.hp > 0);
 
       if (!defeatedRef.current) {
-        const hitByEnemyBullet = enemyBulletsRef.current.find(
-          (bullet) => distance(bullet.x, bullet.y, nextPosition.x, nextPosition.y) <= PLAYER_RADIUS + ENEMY_BULLET_RADIUS,
+        const touchingEnemy = enemiesRef.current.find(
+          (enemy) => distance(enemy.x, enemy.y, nextPosition.x, nextPosition.y) <= enemy.radius + PLAYER_RADIUS - 4,
+        );
+        const touchingEnemyBullet = enemyBulletsRef.current.find(
+          (bullet) => distance(bullet.x, bullet.y, nextPosition.x, nextPosition.y) <= bullet.radius + PLAYER_RADIUS,
         );
 
-        if (hitByEnemyBullet && timestamp >= invulnerableUntilRef.current) {
-          // Brief invulnerability prevents unfair instant multi-hit chains.
+        if ((touchingEnemy || touchingEnemyBullet) && timestamp >= invulnerableUntilRef.current) {
           hpRef.current = Math.max(0, hpRef.current - 1);
           invulnerableUntilRef.current = timestamp + PLAYER_INVULNERABLE_MS;
-          enemyBulletsRef.current = enemyBulletsRef.current.filter((bullet) => bullet.id !== hitByEnemyBullet.id);
           setPlayerHp(hpRef.current);
           setPlayerInvulnerable(true);
+          pushEffect(nextPosition.x, nextPosition.y, "gold", 60);
+
+          if (touchingEnemyBullet) {
+            enemyBulletsRef.current = enemyBulletsRef.current.filter((bullet) => bullet.id !== touchingEnemyBullet.id);
+          }
+
+          if (touchingEnemy) {
+            touchingEnemy.hp = 0;
+          }
 
           if (hpRef.current <= 0) {
             defeatedRef.current = true;
@@ -312,9 +587,20 @@ export default function ShmupPlayScreen() {
         }
       }
 
+      effectsRef.current = effectsRef.current
+        .map((effect) => ({
+          ...effect,
+          life: effect.life - deltaSeconds,
+          radius: effect.radius + ((effect.maxRadius - effect.radius) * deltaSeconds) / Math.max(effect.life, 0.1),
+        }))
+        .filter((effect) => effect.life > 0);
+
       setBullets(bulletsRef.current);
       setEnemyBullets(enemyBulletsRef.current);
       setEnemies(enemiesRef.current);
+      setEffects(effectsRef.current);
+      setScore(scoreRef.current);
+
       animationRef.current = window.requestAnimationFrame(tick);
     };
 
@@ -324,14 +610,15 @@ export default function ShmupPlayScreen() {
         window.cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [arenaBounds, playerInvulnerable]);
+  }, [arenaBounds, playerInvulnerable, pushEffect]);
 
   const updateTargetFromPointer = useCallback((clientX: number, clientY: number) => {
     const arena = arenaRef.current;
     if (!arena) return;
-
     const rect = arena.getBoundingClientRect();
     const playable = getPlayableBounds(arenaBounds);
+
+    // Clamp pointer targets so movement stays readable and inside the visible arena.
     targetRef.current = {
       x: clamp(clientX - rect.left, playable.minX, playable.maxX),
       y: clamp(clientY - rect.top, playable.minY, playable.maxY),
@@ -362,17 +649,22 @@ export default function ShmupPlayScreen() {
       <header className="shmup-slice-header">
         <div>
           <p className="shmup-slice-kicker">Astra Valkyries MVP</p>
-          <h1>Combat Slice</h1>
+          <h1>Playable Combat Slice</h1>
           <p className="shmup-slice-copy">
-            Drag to move, auto-fire to shoot, and dodge enemy return fire while the first survivability loop comes online.
+            Drag to move, auto-fire through patterned micro-waves, and use Nova Pulse to clear pressure when the screen gets messy.
           </p>
         </div>
 
         <div className="shmup-hud">
+          <p className="shmup-wave-label">{waveName}</p>
+          <p className="shmup-score-label">Score {score.toString().padStart(5, "0")}</p>
           <div className="shmup-hp-bar">
             <div className="shmup-hp-fill" style={{ width: `${(playerHp / PLAYER_MAX_HP) * 100}%` }} />
           </div>
           <p className="shmup-hp-label">Hull {playerHp}/{PLAYER_MAX_HP}</p>
+          <button className="btn btn-secondary shmup-secondary-button" onClick={useSecondary} disabled={secondaryCharges <= 0 || isDefeated}>
+            Nova Pulse ({secondaryCharges})
+          </button>
         </div>
       </header>
 
@@ -388,12 +680,21 @@ export default function ShmupPlayScreen() {
         <div className="shmup-slice-grid" aria-hidden="true" />
         <div className="shmup-slice-lower-zone" aria-hidden="true" />
 
-        {bullets.map((bullet) => (
+        {effects.map((effect) => (
           <div
-            key={bullet.id}
-            className="player-bullet"
-            style={{ transform: `translate(${bullet.x - BULLET_RADIUS}px, ${bullet.y - 16}px)` }}
-          >
+            key={effect.id}
+            className={`shmup-effect shmup-effect-${effect.color}`}
+            style={{
+              width: effect.radius * 2,
+              height: effect.radius * 2,
+              opacity: effect.life / effect.maxLife,
+              transform: `translate(${effect.x - effect.radius}px, ${effect.y - effect.radius}px)`,
+            }}
+          />
+        ))}
+
+        {bullets.map((bullet) => (
+          <div key={bullet.id} className="player-bullet" style={{ transform: `translate(${bullet.x - BULLET_RADIUS}px, ${bullet.y - 16}px)` }}>
             <div className="player-bullet-core" />
           </div>
         ))}
@@ -402,7 +703,11 @@ export default function ShmupPlayScreen() {
           <div
             key={bullet.id}
             className="enemy-bullet"
-            style={{ transform: `translate(${bullet.x - ENEMY_BULLET_RADIUS}px, ${bullet.y - ENEMY_BULLET_RADIUS}px)` }}
+            style={{
+              width: bullet.radius * 2,
+              height: bullet.radius * 2,
+              transform: `translate(${bullet.x - bullet.radius}px, ${bullet.y - bullet.radius}px)`,
+            }}
           >
             <div className="enemy-bullet-core" />
           </div>
@@ -411,7 +716,7 @@ export default function ShmupPlayScreen() {
         {enemies.map((enemy) => (
           <div
             key={enemy.id}
-            className="enemy-drone"
+            className={`enemy-drone enemy-drone-${enemy.kind}`}
             style={{
               width: enemy.radius * 2,
               height: enemy.radius * 2,
@@ -421,6 +726,9 @@ export default function ShmupPlayScreen() {
             <div className="enemy-drone-core" />
             <div className="enemy-drone-wing enemy-drone-wing-left" />
             <div className="enemy-drone-wing enemy-drone-wing-right" />
+            <div className="enemy-drone-hp">
+              <div className="enemy-drone-hp-fill" style={{ width: `${(enemy.hp / enemy.maxHp) * 100}%` }} />
+            </div>
           </div>
         ))}
 
@@ -437,10 +745,10 @@ export default function ShmupPlayScreen() {
         {isDefeated && (
           <div className="shmup-overlay">
             <div className="shmup-overlay-card">
-              <h2>Ship Down</h2>
-              <p>Tap restart and jump back into the dodge loop.</p>
-              <button className="btn btn-primary" onClick={() => syncCombatState(arenaBounds)}>
-                Restart
+              <h2>Run Ended</h2>
+              <p>You scored {score.toString().padStart(5, "0")}. Tap restart to jump back into the wave loop.</p>
+              <button className="btn btn-primary" onClick={() => resetRun(arenaBounds)}>
+                Restart Run
               </button>
             </div>
           </div>

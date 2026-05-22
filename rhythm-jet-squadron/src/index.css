@@ -141,8 +141,24 @@ body::after {
 }
 
 .shmup-hud {
-  min-width: 140px;
+  min-width: 160px;
   padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.shmup-wave-label,
+.shmup-score-label {
+  color: rgba(231, 242, 255, 0.84);
+  font-size: 0.82rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.shmup-wave-label {
+  color: #9fd0ff;
 }
 
 .shmup-hp-bar {
@@ -162,10 +178,14 @@ body::after {
 }
 
 .shmup-hp-label {
-  margin-top: 6px;
   color: rgba(231, 242, 255, 0.82);
   font-size: 0.82rem;
   text-align: right;
+}
+
+.shmup-secondary-button {
+  pointer-events: auto;
+  min-width: 160px;
 }
 
 .shmup-slice-arena {
@@ -194,9 +214,31 @@ body::after {
 }
 
 .shmup-slice-lower-zone {
-  top: 45%;
+  top: 42%;
   background: linear-gradient(180deg, rgba(78, 108, 171, 0), rgba(78, 108, 171, 0.16));
   border-top: 1px solid rgba(120, 155, 255, 0.22);
+}
+
+.shmup-effect {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+}
+
+.shmup-effect-blue {
+  border-color: rgba(113, 218, 255, 0.8);
+  box-shadow: 0 0 20px rgba(113, 218, 255, 0.28);
+}
+
+.shmup-effect-pink {
+  border-color: rgba(255, 142, 181, 0.88);
+  box-shadow: 0 0 24px rgba(255, 110, 166, 0.32);
+}
+
+.shmup-effect-gold {
+  border-color: rgba(255, 224, 136, 0.92);
+  box-shadow: 0 0 32px rgba(255, 202, 92, 0.34);
 }
 
 .player-bullet {
@@ -217,8 +259,6 @@ body::after {
 
 .enemy-bullet {
   position: absolute;
-  width: 14px;
-  height: 14px;
   pointer-events: none;
   filter: drop-shadow(0 0 10px rgba(255, 166, 118, 0.38));
 }
@@ -245,6 +285,14 @@ body::after {
   box-shadow: inset 0 0 12px rgba(255, 255, 255, 0.32);
 }
 
+.enemy-drone-sweeper .enemy-drone-core {
+  background: radial-gradient(circle at 50% 35%, #f1e9ff 0%, #b590ff 42%, #6d4fe0 100%);
+}
+
+.enemy-drone-burst .enemy-drone-core {
+  background: radial-gradient(circle at 50% 35%, #fff3df 0%, #ffc47b 42%, #f06e3f 100%);
+}
+
 .enemy-drone-wing {
   position: absolute;
   top: 12px;
@@ -261,6 +309,22 @@ body::after {
 .enemy-drone-wing-right {
   right: -2px;
   clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+.enemy-drone-hp {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: -8px;
+  height: 4px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.enemy-drone-hp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffe186 0%, #ff8d68 100%);
 }
 
 .player-ship {
@@ -352,6 +416,28 @@ body::after {
 .shmup-overlay-card p {
   margin-bottom: 16px;
   color: rgba(229, 239, 255, 0.8);
+}
+
+@media (max-width: 720px) {
+  .shmup-slice-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .shmup-hud {
+    align-items: flex-start;
+  }
+
+  .shmup-hp-label,
+  .shmup-wave-label,
+  .shmup-score-label {
+    text-align: left;
+  }
+
+  .shmup-secondary-button {
+    min-width: 0;
+    width: 100%;
+  }
 }
 
 /* ─── App container ───────────────────────────────────── */
