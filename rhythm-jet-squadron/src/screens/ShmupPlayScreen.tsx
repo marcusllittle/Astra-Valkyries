@@ -10,12 +10,22 @@ type ArenaBounds = {
   height: number;
 };
 
+type PlayerBullet = {
+  id: number;
+  x: number;
+  y: number;
+};
+
 const PLAYER_RADIUS = 26;
 const HORIZONTAL_MARGIN = 16;
 const TOP_PLAY_AREA_RATIO = 0.45;
 const TOP_MARGIN = 24;
 const BOTTOM_MARGIN = 24;
 const FOLLOW_LERP = 0.22;
+const FIRE_INTERVAL_MS = 180;
+const BULLET_SPEED = 760;
+const BULLET_RADIUS = 4;
+const BULLET_DESPAWN_PADDING = 40;
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -42,10 +52,15 @@ export default function ShmupPlayScreen() {
   const arenaRef = useRef<HTMLDivElement | null>(null);
   const animationRef = useRef<number | null>(null);
   const dragPointerIdRef = useRef<number | null>(null);
+  const lastFrameTimeRef = useRef<number | null>(null);
+  const lastShotAtRef = useRef(0);
+  const bulletIdRef = useRef(0);
+  const bulletsRef = useRef<PlayerBullet[]>([]);
   const targetRef = useRef<PlayerPosition>({ x: 0, y: 0 });
   const positionRef = useRef<PlayerPosition>({ x: 0, y: 0 });
   const [arenaBounds, setArenaBounds] = useState<ArenaBounds>({ width: 390, height: 844 });
   const [playerPosition, setPlayerPosition] = useState<PlayerPosition>(() => createStartPosition({ width: 390, height: 844 }));
+  const [bullets, setBullets] = useState<PlayerBullet[]>([]);
 
   const measureArena = useCallback(() => {
     const arena = arenaRef.current;
@@ -88,18 +103,44 @@ export default function ShmupPlayScreen() {
   }, [measureArena]);
 
   useEffect(() => {
-    const tick = () => {
+    const tick = (timestamp: number) => {
+      const previousTime = lastFrameTimeRef.current ?? timestamp;
+      const deltaSeconds = Math.min((timestamp - previousTime) / 1000, 0.05);
+      lastFrameTimeRef.current = timestamp;
+
       const current = positionRef.current;
       const target = targetRef.current;
 
       // Smooth follow keeps drag responsive without feeling jittery on touch.
-      const next = {
+      const nextPosition = {
         x: current.x + (target.x - current.x) * FOLLOW_LERP,
         y: current.y + (target.y - current.y) * FOLLOW_LERP,
       };
+      positionRef.current = nextPosition;
+      setPlayerPosition(nextPosition);
 
-      positionRef.current = next;
-      setPlayerPosition(next);
+      // Auto-fire is time-based so it stays steady on both fast and slow devices.
+      if (timestamp - lastShotAtRef.current >= FIRE_INTERVAL_MS) {
+        lastShotAtRef.current = timestamp;
+        bulletsRef.current = [
+          ...bulletsRef.current,
+          {
+            id: bulletIdRef.current++,
+            x: nextPosition.x,
+            y: nextPosition.y - PLAYER_RADIUS,
+          },
+        ];
+      }
+
+      // Move bullets upward each frame and drop them once they leave the arena.
+      bulletsRef.current = bulletsRef.current
+        .map((bullet) => ({
+          ...bullet,
+          y: bullet.y - BULLET_SPEED * deltaSeconds,
+        }))
+        .filter((bullet) => bullet.y > -BULLET_DESPAWN_PADDING);
+
+      setBullets(bulletsRef.current);
       animationRef.current = window.requestAnimationFrame(tick);
     };
 
@@ -153,7 +194,7 @@ export default function ShmupPlayScreen() {
           <p className="shmup-slice-kicker">Astra Valkyries MVP</p>
           <h1>Control Slice</h1>
           <p className="shmup-slice-copy">
-            Drag the ship with mouse or touch. This slice is only movement and bounds so shooting and combat can layer in next.
+            Drag the ship with mouse or touch. The ship now auto-fires upward so combat systems can layer in next.
           </p>
         </div>
       </header>
@@ -169,6 +210,18 @@ export default function ShmupPlayScreen() {
       >
         <div className="shmup-slice-grid" aria-hidden="true" />
         <div className="shmup-slice-lower-zone" aria-hidden="true" />
+
+        {bullets.map((bullet) => (
+          <div
+            key={bullet.id}
+            className="player-bullet"
+            style={{
+              transform: `translate(${bullet.x - BULLET_RADIUS}px, ${bullet.y - 16}px)`,
+            }}
+          >
+            <div className="player-bullet-core" />
+          </div>
+        ))}
 
         <div
           className="player-ship"
