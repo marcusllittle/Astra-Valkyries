@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 
 type PlayerPosition = {
   x: number;
@@ -14,6 +14,8 @@ type PlayerBullet = {
   id: number;
   x: number;
   y: number;
+  radius: number;
+  damage: number;
 };
 
 type EnemyBullet = {
@@ -84,6 +86,14 @@ type Wave = {
 
 type RunPhase = "waves" | "boss" | "victory";
 
+type RunSummary = {
+  score: number;
+  kills: number;
+  survivalMs: number;
+  bossDefeated: boolean;
+  grade: string;
+};
+
 const PLAYER_RADIUS = 26;
 const PLAYER_MAX_HP = 5;
 const PLAYER_INVULNERABLE_MS = 850;
@@ -94,9 +104,7 @@ const TOP_PLAY_AREA_RATIO = 0.42;
 const TOP_MARGIN = 24;
 const BOTTOM_MARGIN = 24;
 const FOLLOW_LERP = 0.22;
-const FIRE_INTERVAL_MS = 180;
 const BULLET_SPEED = 760;
-const BULLET_RADIUS = 4;
 const BULLET_DESPAWN_PADDING = 40;
 const ENEMY_DESPAWN_PADDING = 60;
 const WAVE_PAUSE_MS = 1500;
@@ -247,6 +255,31 @@ function createBoss(bounds: ArenaBounds, now: number): Boss {
   };
 }
 
+function getPrimaryProfile(score: number) {
+  if (score >= 3600) {
+    return { name: "Astra Tri-Lance", intervalMs: 135, offsets: [-18, 0, 18], damage: 1, radius: 4 };
+  }
+  if (score >= 1400) {
+    return { name: "Twin Lance", intervalMs: 155, offsets: [-10, 10], damage: 1, radius: 4 };
+  }
+  return { name: "Pulse Lance", intervalMs: 180, offsets: [0], damage: 1, radius: 4 };
+}
+
+function formatTime(ms: number) {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
+function computeGrade(summary: Omit<RunSummary, "grade">) {
+  if (summary.bossDefeated && summary.score >= 5200) return "S";
+  if (summary.bossDefeated) return "A";
+  if (summary.score >= 2400) return "B";
+  if (summary.score >= 1200) return "C";
+  return "D";
+}
+
 export default function ShmupPlayScreen() {
   const arenaRef = useRef<HTMLDivElement | null>(null);
   const animationRef = useRef<number | null>(null);
@@ -265,6 +298,9 @@ export default function ShmupPlayScreen() {
   const bossRef = useRef<Boss | null>(null);
   const shakeRef = useRef(0);
   const flashRef = useRef(0);
+  const runStartedAtRef = useRef(0);
+  const killsRef = useRef(0);
+  const summaryRef = useRef<RunSummary | null>(null);
   const targetRef = useRef<PlayerPosition>({ x: 0, y: 0 });
   const positionRef = useRef<PlayerPosition>({ x: 0, y: 0 });
   const bulletsRef = useRef<PlayerBullet[]>([]);
@@ -289,24 +325,21 @@ export default function ShmupPlayScreen() {
   const [isDefeated, setIsDefeated] = useState(false);
   const [isVictory, setIsVictory] = useState(false);
   const [score, setScore] = useState(0);
+  const [kills, setKills] = useState(0);
   const [secondaryCharges, setSecondaryCharges] = useState(PLAYER_SECONDARY_MAX);
   const [waveName, setWaveName] = useState(WAVES[0].name);
   const [shakeOffset, setShakeOffset] = useState({ x: 0, y: 0 });
   const [flashOpacity, setFlashOpacity] = useState(0);
+  const [summary, setSummary] = useState<RunSummary | null>(null);
+  const primaryProfile = useMemo(() => getPrimaryProfile(score), [score]);
+  const secondaryRechargeProgress = secondaryCharges >= PLAYER_SECONDARY_MAX || nextSecondaryChargeAtRef.current === 0
+    ? 1
+    : clamp(1 - ((nextSecondaryChargeAtRef.current - performance.now()) / PLAYER_SECONDARY_RECHARGE_MS), 0, 1);
 
   const pushEffect = useCallback((x: number, y: number, color: HitEffect["color"], maxRadius: number) => {
     effectsRef.current = [
       ...effectsRef.current,
-      {
-        id: effectIdRef.current++,
-        x,
-        y,
-        radius: 12,
-        maxRadius,
-        life: 0.42,
-        maxLife: 0.42,
-        color,
-      },
+      { id: effectIdRef.current++, x, y, radius: 12, maxRadius, life: 0.42, maxLife: 0.42, color },
     ];
   }, []);
 
@@ -316,6 +349,25 @@ export default function ShmupPlayScreen() {
 
   const triggerFlash = useCallback((opacity: number) => {
     flashRef.current = Math.max(flashRef.current, opacity);
+  }, []);
+
+  const finalizeRun = useCallback((bossDefeated: boolean) => {
+    const base = {
+      score: scoreRef.current,
+      kills: killsRef.current,
+      survivalMs: Math.max(0, performance.now() - runStartedAtRef.current),
+      bossDefeated,
+    };
+    const full = { ...base, grade: computeGrade(base) };
+    summaryRef.current = full;
+    setSummary(full);
+  }, []);
+
+  const registerKill = useCallback((scoreValue: number) => {
+    scoreRef.current += scoreValue;
+    killsRef.current += 1;
+    setScore(scoreRef.current);
+    setKills(killsRef.current);
   }, []);
 
   const resetRun = useCallback((bounds: ArenaBounds) => {
@@ -330,6 +382,7 @@ export default function ShmupPlayScreen() {
     hpRef.current = PLAYER_MAX_HP;
     invulnerableUntilRef.current = 0;
     scoreRef.current = 0;
+    killsRef.current = 0;
     secondaryChargesRef.current = PLAYER_SECONDARY_MAX;
     nextSecondaryChargeAtRef.current = 0;
     defeatedRef.current = false;
@@ -341,6 +394,8 @@ export default function ShmupPlayScreen() {
     waveIndexRef.current = 0;
     waveSpawnIndexRef.current = 0;
     nextWaveSpawnAtRef.current = 400;
+    runStartedAtRef.current = performance.now();
+    summaryRef.current = null;
     setPlayerPosition(start);
     setBullets([]);
     setEnemyBullets([]);
@@ -352,20 +407,19 @@ export default function ShmupPlayScreen() {
     setIsDefeated(false);
     setIsVictory(false);
     setScore(0);
+    setKills(0);
     setSecondaryCharges(PLAYER_SECONDARY_MAX);
     setWaveName(WAVES[0].name);
     setShakeOffset({ x: 0, y: 0 });
     setFlashOpacity(0);
+    setSummary(null);
   }, []);
 
   const measureArena = useCallback(() => {
     const arena = arenaRef.current;
     if (!arena) return;
     const rect = arena.getBoundingClientRect();
-    const nextBounds = {
-      width: Math.max(320, rect.width),
-      height: Math.max(520, rect.height),
-    };
+    const nextBounds = { width: Math.max(320, rect.width), height: Math.max(520, rect.height) };
     const playable = getPlayableBounds(nextBounds);
     const fallback = createStartPosition(nextBounds);
     const nextPosition = {
@@ -380,13 +434,11 @@ export default function ShmupPlayScreen() {
 
   const useSecondary = useCallback(() => {
     if (defeatedRef.current || runPhaseRef.current === "victory" || secondaryChargesRef.current <= 0) return;
-
     secondaryChargesRef.current -= 1;
     setSecondaryCharges(secondaryChargesRef.current);
     if (secondaryChargesRef.current < PLAYER_SECONDARY_MAX && nextSecondaryChargeAtRef.current === 0) {
       nextSecondaryChargeAtRef.current = performance.now() + PLAYER_SECONDARY_RECHARGE_MS;
     }
-
     pushEffect(positionRef.current.x, positionRef.current.y, "gold", SECONDARY_BLAST_RADIUS);
     addShake(12);
     triggerFlash(0.22);
@@ -400,7 +452,7 @@ export default function ShmupPlayScreen() {
       if (nextEnemy.hp > 0) {
         remainingEnemies.push(nextEnemy);
       } else {
-        scoreRef.current += nextEnemy.scoreValue;
+        registerKill(nextEnemy.scoreValue);
         pushEffect(nextEnemy.x, nextEnemy.y, "pink", nextEnemy.radius * 2.4);
       }
     }
@@ -417,8 +469,7 @@ export default function ShmupPlayScreen() {
     setEnemies(enemiesRef.current);
     setEnemyBullets(enemyBulletsRef.current);
     setBoss(bossRef.current);
-    setScore(scoreRef.current);
-  }, [addShake, pushEffect, triggerFlash]);
+  }, [addShake, pushEffect, registerKill, triggerFlash]);
 
   useEffect(() => {
     document.documentElement.classList.add("shmup-active");
@@ -460,9 +511,7 @@ export default function ShmupPlayScreen() {
       lastFrameTimeRef.current = timestamp;
 
       const currentlyInvulnerable = timestamp < invulnerableUntilRef.current;
-      if (currentlyInvulnerable !== playerInvulnerable) {
-        setPlayerInvulnerable(currentlyInvulnerable);
-      }
+      if (currentlyInvulnerable !== playerInvulnerable) setPlayerInvulnerable(currentlyInvulnerable);
 
       if (secondaryChargesRef.current < PLAYER_SECONDARY_MAX && nextSecondaryChargeAtRef.current > 0 && timestamp >= nextSecondaryChargeAtRef.current) {
         secondaryChargesRef.current += 1;
@@ -472,24 +521,26 @@ export default function ShmupPlayScreen() {
 
       shakeRef.current = Math.max(0, shakeRef.current - deltaSeconds * 34);
       flashRef.current = Math.max(0, flashRef.current - deltaSeconds * 1.8);
-      setShakeOffset({
-        x: shakeRef.current > 0 ? (Math.random() - 0.5) * shakeRef.current : 0,
-        y: shakeRef.current > 0 ? (Math.random() - 0.5) * shakeRef.current : 0,
-      });
+      setShakeOffset({ x: shakeRef.current > 0 ? (Math.random() - 0.5) * shakeRef.current : 0, y: shakeRef.current > 0 ? (Math.random() - 0.5) * shakeRef.current : 0 });
       setFlashOpacity(flashRef.current);
 
       const current = positionRef.current;
       const target = targetRef.current;
-      const nextPosition = {
-        x: current.x + (target.x - current.x) * FOLLOW_LERP,
-        y: current.y + (target.y - current.y) * FOLLOW_LERP,
-      };
+      const nextPosition = { x: current.x + (target.x - current.x) * FOLLOW_LERP, y: current.y + (target.y - current.y) * FOLLOW_LERP };
       positionRef.current = nextPosition;
       setPlayerPosition(nextPosition);
 
-      if (!defeatedRef.current && runPhaseRef.current !== "victory" && timestamp - lastShotAtRef.current >= FIRE_INTERVAL_MS) {
+      if (!defeatedRef.current && runPhaseRef.current !== "victory" && timestamp - lastShotAtRef.current >= primaryProfile.intervalMs) {
         lastShotAtRef.current = timestamp;
-        bulletsRef.current = [...bulletsRef.current, { id: bulletIdRef.current++, x: nextPosition.x, y: nextPosition.y - PLAYER_RADIUS }];
+        const nextBullets = primaryProfile.offsets.map((offset) => ({
+          id: bulletIdRef.current++,
+          x: nextPosition.x + offset,
+          y: nextPosition.y - PLAYER_RADIUS,
+          radius: primaryProfile.radius,
+          damage: primaryProfile.damage,
+        }));
+        bulletsRef.current = [...bulletsRef.current, ...nextBullets];
+        for (const bullet of nextBullets) pushEffect(bullet.x, bullet.y, "blue", 12);
       }
 
       if (!defeatedRef.current && runPhaseRef.current === "waves" && timestamp >= nextWaveSpawnAtRef.current) {
@@ -504,6 +555,7 @@ export default function ShmupPlayScreen() {
           waveSpawnIndexRef.current = 0;
           nextWaveSpawnAtRef.current = timestamp + WAVE_PAUSE_MS;
           setWaveName(WAVES[waveIndexRef.current].name);
+          triggerFlash(0.1);
         } else if (enemiesRef.current.length === 0) {
           runPhaseRef.current = "boss";
           bossRef.current = createBoss(arenaBounds, timestamp);
@@ -524,50 +576,21 @@ export default function ShmupPlayScreen() {
           const movedEnemy = { ...enemy, age: enemy.age + deltaSeconds };
           movedEnemy.y += movedEnemy.speed * deltaSeconds;
           if (enemy.kind !== "drifter") {
-            movedEnemy.x = clamp(
-              movedEnemy.originX + Math.sin(movedEnemy.age * movedEnemy.swayFrequency) * movedEnemy.swayAmplitude,
-              movedEnemy.radius + HORIZONTAL_MARGIN,
-              arenaBounds.width - movedEnemy.radius - HORIZONTAL_MARGIN,
-            );
+            movedEnemy.x = clamp(movedEnemy.originX + Math.sin(movedEnemy.age * movedEnemy.swayFrequency) * movedEnemy.swayAmplitude, movedEnemy.radius + HORIZONTAL_MARGIN, arenaBounds.width - movedEnemy.radius - HORIZONTAL_MARGIN);
           }
-
           if (!defeatedRef.current && timestamp >= movedEnemy.fireAt) {
             if (movedEnemy.kind === "burst") {
               for (const angleOffset of [-0.28, 0, 0.28]) {
                 const angle = Math.PI / 2 + angleOffset;
-                spawnedEnemyBullets.push({
-                  id: enemyBulletIdRef.current++,
-                  x: movedEnemy.x,
-                  y: movedEnemy.y + movedEnemy.radius * 0.8,
-                  vx: Math.cos(angle) * 230,
-                  vy: Math.sin(angle) * 230,
-                  radius: 7,
-                  hostile: "enemy",
-                });
+                spawnedEnemyBullets.push({ id: enemyBulletIdRef.current++, x: movedEnemy.x, y: movedEnemy.y + movedEnemy.radius * 0.8, vx: Math.cos(angle) * 230, vy: Math.sin(angle) * 230, radius: 7, hostile: "enemy" });
               }
             } else if (movedEnemy.kind === "sweeper") {
               const dx = nextPosition.x - movedEnemy.x;
               const dy = nextPosition.y - movedEnemy.y;
               const length = Math.max(Math.hypot(dx, dy), 1);
-              spawnedEnemyBullets.push({
-                id: enemyBulletIdRef.current++,
-                x: movedEnemy.x,
-                y: movedEnemy.y + movedEnemy.radius * 0.8,
-                vx: (dx / length) * 250,
-                vy: (dy / length) * 250,
-                radius: 6,
-                hostile: "enemy",
-              });
+              spawnedEnemyBullets.push({ id: enemyBulletIdRef.current++, x: movedEnemy.x, y: movedEnemy.y + movedEnemy.radius * 0.8, vx: (dx / length) * 250, vy: (dy / length) * 250, radius: 6, hostile: "enemy" });
             } else {
-              spawnedEnemyBullets.push({
-                id: enemyBulletIdRef.current++,
-                x: movedEnemy.x,
-                y: movedEnemy.y + movedEnemy.radius * 0.8,
-                vx: 0,
-                vy: 280,
-                radius: 6,
-                hostile: "enemy",
-              });
+              spawnedEnemyBullets.push({ id: enemyBulletIdRef.current++, x: movedEnemy.x, y: movedEnemy.y + movedEnemy.radius * 0.8, vx: 0, vy: 280, radius: 6, hostile: "enemy" });
             }
             movedEnemy.fireAt = timestamp + movedEnemy.fireInterval;
           }
@@ -594,15 +617,7 @@ export default function ShmupPlayScreen() {
             const spreadCount = nextBoss.phase === 1 ? 5 : 7;
             for (let index = 0; index < spreadCount; index += 1) {
               const angle = Math.PI / 2 + (index - (spreadCount - 1) / 2) * (nextBoss.phase === 1 ? 0.14 : 0.11);
-              spawnedEnemyBullets.push({
-                id: enemyBulletIdRef.current++,
-                x: nextBoss.x,
-                y: nextBoss.y + nextBoss.radius * 0.7,
-                vx: Math.cos(angle) * (nextBoss.phase === 1 ? 210 : 250),
-                vy: Math.sin(angle) * (nextBoss.phase === 1 ? 210 : 250),
-                radius: nextBoss.phase === 1 ? 8 : 9,
-                hostile: "boss",
-              });
+              spawnedEnemyBullets.push({ id: enemyBulletIdRef.current++, x: nextBoss.x, y: nextBoss.y + nextBoss.radius * 0.7, vx: Math.cos(angle) * (nextBoss.phase === 1 ? 210 : 250), vy: Math.sin(angle) * (nextBoss.phase === 1 ? 210 : 250), radius: nextBoss.phase === 1 ? 8 : 9, hostile: "boss" });
             }
             nextBoss.fireAt = timestamp + (nextBoss.phase === 1 ? 1100 : 780);
             addShake(6);
@@ -613,17 +628,10 @@ export default function ShmupPlayScreen() {
             const dy = nextPosition.y - nextBoss.y;
             const length = Math.max(Math.hypot(dx, dy), 1);
             for (const offset of [-36, 0, 36]) {
-              spawnedEnemyBullets.push({
-                id: enemyBulletIdRef.current++,
-                x: nextBoss.x + offset,
-                y: nextBoss.y + nextBoss.radius * 0.8,
-                vx: (dx / length) * 300 + offset * 0.6,
-                vy: (dy / length) * 300,
-                radius: 7,
-                hostile: "boss",
-              });
+              spawnedEnemyBullets.push({ id: enemyBulletIdRef.current++, x: nextBoss.x + offset, y: nextBoss.y + nextBoss.radius * 0.8, vx: (dx / length) * 300 + offset * 0.6, vy: (dy / length) * 300, radius: 7, hostile: "boss" });
             }
             nextBoss.volleyAt = timestamp + (nextBoss.phase === 1 ? 1650 : 1200);
+            triggerFlash(nextBoss.phase === 2 ? 0.1 : 0.06);
           }
         }
         bossRef.current = nextBoss;
@@ -638,14 +646,14 @@ export default function ShmupPlayScreen() {
       let bossAfterHits = bossRef.current ? { ...bossRef.current } : null;
 
       for (const bullet of bulletsRef.current) {
-        const hitEnemy = enemiesAfterHits.find((enemy) => enemy.hp > 0 && distance(bullet.x, bullet.y, enemy.x, enemy.y) <= enemy.radius + BULLET_RADIUS);
+        const hitEnemy = enemiesAfterHits.find((enemy) => enemy.hp > 0 && distance(bullet.x, bullet.y, enemy.x, enemy.y) <= enemy.radius + bullet.radius);
         if (hitEnemy) {
-          hitEnemy.hp -= 1;
+          hitEnemy.hp -= bullet.damage;
           pushEffect(bullet.x, bullet.y, "blue", 24);
           continue;
         }
-        if (bossAfterHits && distance(bullet.x, bullet.y, bossAfterHits.x, bossAfterHits.y) <= bossAfterHits.radius + BULLET_RADIUS) {
-          bossAfterHits.hp = Math.max(0, bossAfterHits.hp - 1);
+        if (bossAfterHits && distance(bullet.x, bullet.y, bossAfterHits.x, bossAfterHits.y) <= bossAfterHits.radius + bullet.radius) {
+          bossAfterHits.hp = Math.max(0, bossAfterHits.hp - bullet.damage);
           pushEffect(bullet.x, bullet.y, "blue", 30);
           if (bossAfterHits.phase === 2) addShake(2);
           continue;
@@ -654,8 +662,8 @@ export default function ShmupPlayScreen() {
       }
 
       for (const enemy of enemiesAfterHits.filter((enemy) => enemy.hp <= 0)) {
-        scoreRef.current += enemy.scoreValue;
-        pushEffect(enemy.x, enemy.y, "pink", enemy.radius * 2.5);
+        registerKill(enemy.scoreValue);
+        pushEffect(enemy.x, enemy.y, "pink", enemy.radius * 2.7);
         addShake(6);
       }
 
@@ -663,8 +671,8 @@ export default function ShmupPlayScreen() {
       bulletsRef.current = remainingBullets;
 
       if (bossAfterHits && bossAfterHits.hp <= 0) {
-        scoreRef.current += BOSS_SCORE_VALUE;
-        pushEffect(bossAfterHits.x, bossAfterHits.y, "gold", bossAfterHits.radius * 3.2);
+        registerKill(BOSS_SCORE_VALUE);
+        pushEffect(bossAfterHits.x, bossAfterHits.y, "gold", bossAfterHits.radius * 3.4);
         addShake(20);
         triggerFlash(0.34);
         bossAfterHits = null;
@@ -672,6 +680,7 @@ export default function ShmupPlayScreen() {
         runPhaseRef.current = "victory";
         setIsVictory(true);
         setWaveName("Boss Defeated");
+        finalizeRun(true);
       } else {
         bossRef.current = bossAfterHits;
       }
@@ -689,24 +698,18 @@ export default function ShmupPlayScreen() {
           pushEffect(nextPosition.x, nextPosition.y, "gold", 60);
           addShake(16);
           triggerFlash(0.28);
-
-          if (touchingEnemyBullet) {
-            enemyBulletsRef.current = enemyBulletsRef.current.filter((bullet) => bullet.id !== touchingEnemyBullet.id);
-          }
+          if (touchingEnemyBullet) enemyBulletsRef.current = enemyBulletsRef.current.filter((bullet) => bullet.id !== touchingEnemyBullet.id);
           if (touchingEnemy) touchingEnemy.hp = 0;
           if (hpRef.current <= 0) {
             defeatedRef.current = true;
             setIsDefeated(true);
+            finalizeRun(false);
           }
         }
       }
 
       effectsRef.current = effectsRef.current
-        .map((effect) => ({
-          ...effect,
-          life: effect.life - deltaSeconds,
-          radius: effect.radius + ((effect.maxRadius - effect.radius) * deltaSeconds) / Math.max(effect.life, 0.1),
-        }))
+        .map((effect) => ({ ...effect, life: effect.life - deltaSeconds, radius: effect.radius + ((effect.maxRadius - effect.radius) * deltaSeconds) / Math.max(effect.life, 0.1) }))
         .filter((effect) => effect.life > 0);
 
       setBullets(bulletsRef.current);
@@ -714,7 +717,6 @@ export default function ShmupPlayScreen() {
       setEnemies(enemiesRef.current);
       setEffects(effectsRef.current);
       setBoss(bossRef.current);
-      setScore(scoreRef.current);
 
       animationRef.current = window.requestAnimationFrame(tick);
     };
@@ -723,17 +725,14 @@ export default function ShmupPlayScreen() {
     return () => {
       if (animationRef.current != null) window.cancelAnimationFrame(animationRef.current);
     };
-  }, [addShake, arenaBounds, playerInvulnerable, pushEffect, triggerFlash]);
+  }, [addShake, arenaBounds, finalizeRun, playerInvulnerable, primaryProfile, pushEffect, registerKill, triggerFlash]);
 
   const updateTargetFromPointer = useCallback((clientX: number, clientY: number) => {
     const arena = arenaRef.current;
     if (!arena) return;
     const rect = arena.getBoundingClientRect();
     const playable = getPlayableBounds(arenaBounds);
-    targetRef.current = {
-      x: clamp(clientX - rect.left, playable.minX, playable.maxX),
-      y: clamp(clientY - rect.top, playable.minY, playable.maxY),
-    };
+    targetRef.current = { x: clamp(clientX - rect.left, playable.minX, playable.maxX), y: clamp(clientY - rect.top, playable.minY, playable.maxY) };
   }, [arenaBounds]);
 
   const handlePointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
@@ -758,19 +757,23 @@ export default function ShmupPlayScreen() {
       <header className="shmup-slice-header">
         <div>
           <p className="shmup-slice-kicker">Astra Valkyries MVP</p>
-          <h1>Boss Run Slice</h1>
+          <h1>Premium Run Slice</h1>
           <p className="shmup-slice-copy">
-            Clear the micro-waves, break the Astra Nemesis boss, and use Nova Pulse when the screen starts to collapse around you.
+            Clear the micro-waves, break Astra Nemesis, and manage evolving weapons instead of just surviving a rough prototype loop.
           </p>
         </div>
 
         <div className="shmup-hud">
           <p className="shmup-wave-label">{waveName}</p>
           <p className="shmup-score-label">Score {score.toString().padStart(5, "0")}</p>
+          <p className="shmup-weapon-label">Primary {primaryProfile.name}</p>
           <div className="shmup-hp-bar">
             <div className="shmup-hp-fill" style={{ width: `${(playerHp / PLAYER_MAX_HP) * 100}%` }} />
           </div>
           <p className="shmup-hp-label">Hull {playerHp}/{PLAYER_MAX_HP}</p>
+          <div className="shmup-secondary-meter-shell">
+            <div className="shmup-secondary-meter-fill" style={{ width: `${secondaryRechargeProgress * 100}%` }} />
+          </div>
           <button className="btn btn-secondary shmup-secondary-button" onClick={useSecondary} disabled={secondaryCharges <= 0 || isDefeated || isVictory}>
             Nova Pulse ({secondaryCharges})
           </button>
@@ -804,45 +807,24 @@ export default function ShmupPlayScreen() {
           <div
             key={effect.id}
             className={`shmup-effect shmup-effect-${effect.color}`}
-            style={{
-              width: effect.radius * 2,
-              height: effect.radius * 2,
-              opacity: effect.life / effect.maxLife,
-              transform: `translate(${effect.x - effect.radius}px, ${effect.y - effect.radius}px)`,
-            }}
+            style={{ width: effect.radius * 2, height: effect.radius * 2, opacity: effect.life / effect.maxLife, transform: `translate(${effect.x - effect.radius}px, ${effect.y - effect.radius}px)` }}
           />
         ))}
 
         {bullets.map((bullet) => (
-          <div key={bullet.id} className="player-bullet" style={{ transform: `translate(${bullet.x - BULLET_RADIUS}px, ${bullet.y - 16}px)` }}>
+          <div key={bullet.id} className="player-bullet" style={{ transform: `translate(${bullet.x - bullet.radius}px, ${bullet.y - 16}px)` }}>
             <div className="player-bullet-core" />
           </div>
         ))}
 
         {enemyBullets.map((bullet) => (
-          <div
-            key={bullet.id}
-            className={`enemy-bullet enemy-bullet-${bullet.hostile}`}
-            style={{
-              width: bullet.radius * 2,
-              height: bullet.radius * 2,
-              transform: `translate(${bullet.x - bullet.radius}px, ${bullet.y - bullet.radius}px)`,
-            }}
-          >
+          <div key={bullet.id} className={`enemy-bullet enemy-bullet-${bullet.hostile}`} style={{ width: bullet.radius * 2, height: bullet.radius * 2, transform: `translate(${bullet.x - bullet.radius}px, ${bullet.y - bullet.radius}px)` }}>
             <div className="enemy-bullet-core" />
           </div>
         ))}
 
         {enemies.map((enemy) => (
-          <div
-            key={enemy.id}
-            className={`enemy-drone enemy-drone-${enemy.kind}`}
-            style={{
-              width: enemy.radius * 2,
-              height: enemy.radius * 2,
-              transform: `translate(${enemy.x - enemy.radius}px, ${enemy.y - enemy.radius}px)`,
-            }}
-          >
+          <div key={enemy.id} className={`enemy-drone enemy-drone-${enemy.kind}`} style={{ width: enemy.radius * 2, height: enemy.radius * 2, transform: `translate(${enemy.x - enemy.radius}px, ${enemy.y - enemy.radius}px)` }}>
             <div className="enemy-drone-core" />
             <div className="enemy-drone-wing enemy-drone-wing-left" />
             <div className="enemy-drone-wing enemy-drone-wing-right" />
@@ -853,14 +835,7 @@ export default function ShmupPlayScreen() {
         ))}
 
         {boss && (
-          <div
-            className={`shmup-boss${boss.phase === 2 ? " shmup-boss-phase-two" : ""}`}
-            style={{
-              width: boss.radius * 2,
-              height: boss.radius * 2,
-              transform: `translate(${boss.x - boss.radius}px, ${boss.y - boss.radius}px)`,
-            }}
-          >
+          <div className={`shmup-boss${boss.phase === 2 ? " shmup-boss-phase-two" : ""}`} style={{ width: boss.radius * 2, height: boss.radius * 2, transform: `translate(${boss.x - boss.radius}px, ${boss.y - boss.radius}px)` }}>
             <div className="shmup-boss-core" />
             <div className="shmup-boss-wing shmup-boss-wing-left" />
             <div className="shmup-boss-wing shmup-boss-wing-right" />
@@ -868,28 +843,30 @@ export default function ShmupPlayScreen() {
           </div>
         )}
 
-        <div
-          className={`player-ship${playerInvulnerable ? " player-ship-invulnerable" : ""}${isDefeated ? " player-ship-defeated" : ""}`}
-          style={{ transform: `translate(${playerPosition.x - PLAYER_RADIUS}px, ${playerPosition.y - PLAYER_RADIUS}px)` }}
-        >
+        <div className={`player-ship${playerInvulnerable ? " player-ship-invulnerable" : ""}${isDefeated ? " player-ship-defeated" : ""}`} style={{ transform: `translate(${playerPosition.x - PLAYER_RADIUS}px, ${playerPosition.y - PLAYER_RADIUS}px)` }}>
           <div className="player-ship-core" />
           <div className="player-ship-wing player-ship-wing-left" />
           <div className="player-ship-wing player-ship-wing-right" />
           <div className="player-ship-engine" />
         </div>
 
-        {(isDefeated || isVictory) && (
+        <button className="btn btn-primary shmup-fab-secondary" onClick={useSecondary} disabled={secondaryCharges <= 0 || isDefeated || isVictory}>
+          Pulse {secondaryCharges}
+        </button>
+
+        {(isDefeated || isVictory) && summary && (
           <div className="shmup-overlay">
-            <div className="shmup-overlay-card">
+            <div className="shmup-overlay-card shmup-summary-card">
+              <div className={`shmup-grade-badge shmup-grade-${summary.grade.toLowerCase()}`}>{summary.grade}</div>
               <h2>{isVictory ? "Boss Defeated" : "Run Ended"}</h2>
-              <p>
-                {isVictory
-                  ? `Premium slice cleared. Final score ${score.toString().padStart(5, "0")}.`
-                  : `You scored ${score.toString().padStart(5, "0")}. Tap restart and try the boss again.`}
-              </p>
-              <button className="btn btn-primary" onClick={() => resetRun(arenaBounds)}>
-                Restart Run
-              </button>
+              <p>{isVictory ? "That feels like a real vertical slice now." : "Solid run, but there’s still room to sharpen the route."}</p>
+              <div className="shmup-summary-grid">
+                <div><span>Score</span><strong>{summary.score.toString().padStart(5, "0")}</strong></div>
+                <div><span>Kills</span><strong>{summary.kills}</strong></div>
+                <div><span>Time</span><strong>{formatTime(summary.survivalMs)}</strong></div>
+                <div><span>Boss</span><strong>{summary.bossDefeated ? "Down" : "Alive"}</strong></div>
+              </div>
+              <button className="btn btn-primary" onClick={() => resetRun(arenaBounds)}>Restart Run</button>
             </div>
           </div>
         )}

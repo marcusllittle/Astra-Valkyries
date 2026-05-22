@@ -150,7 +150,8 @@ body::after {
 }
 
 .shmup-wave-label,
-.shmup-score-label {
+.shmup-score-label,
+.shmup-weapon-label {
   color: rgba(231, 242, 255, 0.84);
   font-size: 0.82rem;
   letter-spacing: 0.1em;
@@ -159,6 +160,10 @@ body::after {
 
 .shmup-wave-label {
   color: #9fd0ff;
+}
+
+.shmup-weapon-label {
+  color: #ffd996;
 }
 
 .shmup-hp-bar {
@@ -186,6 +191,21 @@ body::after {
 .shmup-secondary-button {
   pointer-events: auto;
   min-width: 160px;
+}
+
+.shmup-secondary-meter-shell {
+  width: 160px;
+  max-width: 40vw;
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.shmup-secondary-meter-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffd56a 0%, #ff9f6b 100%);
+  box-shadow: 0 0 12px rgba(255, 186, 91, 0.35);
 }
 
 .shmup-slice-arena {
@@ -301,6 +321,17 @@ body::after {
   border-radius: 999px;
   background: linear-gradient(180deg, rgba(224, 248, 255, 0.95), rgba(66, 214, 255, 0.82), rgba(66, 214, 255, 0));
   box-shadow: 0 0 16px rgba(118, 226, 255, 0.55);
+}
+
+.player-bullet::after {
+  content: "";
+  position: absolute;
+  top: 22px;
+  left: 50%;
+  width: 2px;
+  height: 16px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, rgba(117, 224, 255, 0.45), transparent);
 }
 
 .enemy-bullet {
@@ -426,6 +457,10 @@ body::after {
   filter: drop-shadow(0 0 34px rgba(196, 108, 255, 0.38));
 }
 
+.shmup-boss-phase-two .shmup-boss-core {
+  background: radial-gradient(circle at 50% 28%, #fff0fb 0%, #d69eff 42%, #7a3fdb 100%);
+}
+
 .player-ship {
   position: absolute;
   width: 52px;
@@ -517,6 +552,82 @@ body::after {
   color: rgba(229, 239, 255, 0.8);
 }
 
+.shmup-summary-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.shmup-grade-badge {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 1.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.shmup-grade-s {
+  background: radial-gradient(circle, #ffeeb0 0%, #ffbf4d 100%);
+  color: #392200;
+}
+
+.shmup-grade-a {
+  background: radial-gradient(circle, #ffe2f4 0%, #ff86cb 100%);
+  color: #441430;
+}
+
+.shmup-grade-b {
+  background: radial-gradient(circle, #e1f1ff 0%, #7ac6ff 100%);
+  color: #112c45;
+}
+
+.shmup-grade-c,
+.shmup-grade-d {
+  background: radial-gradient(circle, #eef1f8 0%, #9da8c2 100%);
+  color: #202839;
+}
+
+.shmup-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 18px 0 20px;
+}
+
+.shmup-summary-grid div {
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(160, 184, 255, 0.12);
+}
+
+.shmup-summary-grid span {
+  display: block;
+  color: rgba(214, 225, 248, 0.72);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.shmup-summary-grid strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 1.05rem;
+}
+
+.shmup-fab-secondary {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  z-index: 5;
+  display: none;
+  min-width: 0;
+  padding-inline: 16px;
+}
+
 @media (max-width: 720px) {
   .shmup-slice-header {
     flex-direction: column;
@@ -529,13 +640,24 @@ body::after {
 
   .shmup-hp-label,
   .shmup-wave-label,
-  .shmup-score-label {
+  .shmup-score-label,
+  .shmup-weapon-label {
     text-align: left;
   }
 
-  .shmup-secondary-button {
+  .shmup-secondary-button,
+  .shmup-secondary-meter-shell {
     min-width: 0;
     width: 100%;
+    max-width: 100%;
+  }
+
+  .shmup-secondary-button {
+    display: none;
+  }
+
+  .shmup-fab-secondary {
+    display: inline-flex;
   }
 
   .shmup-boss-banner {
@@ -545,6 +667,10 @@ body::after {
   .shmup-boss-hp-shell {
     top: 170px;
     width: calc(100vw - 32px);
+  }
+
+  .shmup-summary-grid {
+    grid-template-columns: 1fr;
   }
 }
 
