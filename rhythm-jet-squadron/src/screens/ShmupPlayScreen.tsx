@@ -128,16 +128,19 @@ const TELEGRAPH_MS = 260;
 
 const SHMUP_ASSET_BASE = "/assets/shmup";
 const ASSET_HOOKS = {
-  playerShip: `${SHMUP_ASSET_BASE}/player_ship_astra.png`,
-  enemyScout: `${SHMUP_ASSET_BASE}/enemy_scout_null.png`,
-  enemyStriker: `${SHMUP_ASSET_BASE}/enemy_striker_null.png`,
-  bossNullSeraph: `${SHMUP_ASSET_BASE}/boss_null_seraph.png`,
-  backgroundDeepSpace: `${SHMUP_ASSET_BASE}/background_deep_space.png`,
-  backgroundNebulaLayer: `${SHMUP_ASSET_BASE}/background_nebula_layer.png`,
-  backgroundOrbitalSilhouette: `${SHMUP_ASSET_BASE}/background_orbital_silhouette.png`,
-  bulletPlayerEnergy: `${SHMUP_ASSET_BASE}/bullet_player_energy.png`,
-  bulletEnemyNull: `${SHMUP_ASSET_BASE}/bullet_enemy_null.png`,
-  pickupPowerCore: `${SHMUP_ASSET_BASE}/pickup_power_core.png`,
+  playerShip: `${SHMUP_ASSET_BASE}/ships/astra_interceptor_sprite.svg`,
+  enemyScout: `${SHMUP_ASSET_BASE}/enemy_drifter.svg`,
+  enemyStriker: `${SHMUP_ASSET_BASE}/enemy_sine.svg`,
+  bossNullSeraph: `${SHMUP_ASSET_BASE}/boss_dreadnought.svg`,
+  backgroundDeepSpace: `${SHMUP_ASSET_BASE}/background_far.svg`,
+  backgroundNebulaLayer: `${SHMUP_ASSET_BASE}/background_near.svg`,
+  backgroundOrbitalSilhouette: `${SHMUP_ASSET_BASE}/background_near.svg`,
+  bulletPlayerEnergy: `${SHMUP_ASSET_BASE}/bullet_player.svg`,
+  bulletEnemyNull: `${SHMUP_ASSET_BASE}/bullet_enemy.svg`,
+  bulletBoss: `${SHMUP_ASSET_BASE}/bullet_boss.svg`,
+  impactBurst: `${SHMUP_ASSET_BASE}/impact_burst.svg`,
+  pickupPowerCore: `${SHMUP_ASSET_BASE}/power_chip.svg`,
+  pulseRing: `${SHMUP_ASSET_BASE}/pulse_ring.svg`,
 } as const;
 
 const WAVES: Wave[] = [
@@ -1043,6 +1046,10 @@ export default function ShmupPlayScreen() {
           ["--asset-background-orbital-silhouette" as string]: `url(${ASSET_HOOKS.backgroundOrbitalSilhouette})`,
           ["--asset-bullet-player-energy" as string]: `url(${ASSET_HOOKS.bulletPlayerEnergy})`,
           ["--asset-bullet-enemy-null" as string]: `url(${ASSET_HOOKS.bulletEnemyNull})`,
+          ["--asset-bullet-boss" as string]: `url(${ASSET_HOOKS.bulletBoss})`,
+          ["--asset-impact-burst" as string]: `url(${ASSET_HOOKS.impactBurst})`,
+          ["--asset-pickup-power-core" as string]: `url(${ASSET_HOOKS.pickupPowerCore})`,
+          ["--asset-pulse-ring" as string]: `url(${ASSET_HOOKS.pulseRing})`,
         } as React.CSSProperties}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}

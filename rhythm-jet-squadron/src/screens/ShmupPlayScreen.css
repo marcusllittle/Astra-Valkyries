@@ -390,7 +390,7 @@
 
 .enemy-bullet-boss .enemy-bullet-core {
   background-image:
-    var(--asset-bullet-enemy-null),
+    var(--asset-bullet-boss),
     radial-gradient(circle at 35% 35%, #fff0fb 0%, #ff93d7 42%, #7d2cff 100%);
   box-shadow: 0 0 18px rgba(215, 118, 255, 0.5);
 }
@@ -680,6 +680,10 @@
   z-index: 3;
   border-radius: 999px;
   border: 2px solid rgba(255, 255, 255, 0.42);
+  background-image: var(--asset-impact-burst);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
 }
 
 .shmup-effect-blue {
