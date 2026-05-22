@@ -23,6 +23,7 @@ type EnemyBullet = {
   vx: number;
   vy: number;
   radius: number;
+  hostile: "enemy" | "boss";
 };
 
 type EnemyKind = "drifter" | "sweeper" | "burst";
@@ -43,6 +44,20 @@ type Enemy = {
   scoreValue: number;
   swayAmplitude: number;
   swayFrequency: number;
+};
+
+type Boss = {
+  x: number;
+  y: number;
+  targetY: number;
+  radius: number;
+  hp: number;
+  maxHp: number;
+  age: number;
+  fireAt: number;
+  volleyAt: number;
+  phase: 1 | 2;
+  introDone: boolean;
 };
 
 type HitEffect = {
@@ -67,6 +82,8 @@ type Wave = {
   spawns: WaveSpawn[];
 };
 
+type RunPhase = "waves" | "boss" | "victory";
+
 const PLAYER_RADIUS = 26;
 const PLAYER_MAX_HP = 5;
 const PLAYER_INVULNERABLE_MS = 850;
@@ -85,6 +102,7 @@ const ENEMY_DESPAWN_PADDING = 60;
 const WAVE_PAUSE_MS = 1500;
 const SECONDARY_BLAST_RADIUS = 170;
 const SECONDARY_DAMAGE = 3;
+const BOSS_SCORE_VALUE = 2000;
 
 const WAVES: Wave[] = [
   {
@@ -152,12 +170,13 @@ function createStartPosition(bounds: ArenaBounds): PlayerPosition {
 
 function createEnemy(bounds: ArenaBounds, spawn: WaveSpawn, id: number, now: number): Enemy {
   if (spawn.kind === "sweeper") {
+    const x = laneToX(bounds, spawn.lane, 20);
     return {
       id,
       kind: spawn.kind,
-      x: laneToX(bounds, spawn.lane, 20),
+      x,
       y: -28,
-      originX: laneToX(bounds, spawn.lane, 20),
+      originX: x,
       age: 0,
       radius: 20,
       hp: 3,
@@ -172,12 +191,13 @@ function createEnemy(bounds: ArenaBounds, spawn: WaveSpawn, id: number, now: num
   }
 
   if (spawn.kind === "burst") {
+    const x = laneToX(bounds, spawn.lane, 24);
     return {
       id,
       kind: spawn.kind,
-      x: laneToX(bounds, spawn.lane, 24),
+      x,
       y: -32,
-      originX: laneToX(bounds, spawn.lane, 24),
+      originX: x,
       age: 0,
       radius: 24,
       hp: 5,
@@ -191,12 +211,13 @@ function createEnemy(bounds: ArenaBounds, spawn: WaveSpawn, id: number, now: num
     };
   }
 
+  const x = laneToX(bounds, spawn.lane, 18);
   return {
     id,
     kind: spawn.kind,
-    x: laneToX(bounds, spawn.lane, 18),
+    x,
     y: -24,
-    originX: laneToX(bounds, spawn.lane, 18),
+    originX: x,
     age: 0,
     radius: 18,
     hp: 2,
@@ -207,6 +228,22 @@ function createEnemy(bounds: ArenaBounds, spawn: WaveSpawn, id: number, now: num
     scoreValue: 80,
     swayAmplitude: 0,
     swayFrequency: 0,
+  };
+}
+
+function createBoss(bounds: ArenaBounds, now: number): Boss {
+  return {
+    x: bounds.width / 2,
+    y: -120,
+    targetY: Math.max(100, bounds.height * 0.18),
+    radius: 64,
+    hp: 80,
+    maxHp: 80,
+    age: 0,
+    fireAt: now + 1200,
+    volleyAt: now + 1900,
+    phase: 1,
+    introDone: false,
   };
 }
 
@@ -224,6 +261,10 @@ export default function ShmupPlayScreen() {
   const waveIndexRef = useRef(0);
   const waveSpawnIndexRef = useRef(0);
   const nextWaveSpawnAtRef = useRef(0);
+  const runPhaseRef = useRef<RunPhase>("waves");
+  const bossRef = useRef<Boss | null>(null);
+  const shakeRef = useRef(0);
+  const flashRef = useRef(0);
   const targetRef = useRef<PlayerPosition>({ x: 0, y: 0 });
   const positionRef = useRef<PlayerPosition>({ x: 0, y: 0 });
   const bulletsRef = useRef<PlayerBullet[]>([]);
@@ -235,18 +276,23 @@ export default function ShmupPlayScreen() {
   const scoreRef = useRef(0);
   const secondaryChargesRef = useRef(PLAYER_SECONDARY_MAX);
   const defeatedRef = useRef(false);
+
   const [arenaBounds, setArenaBounds] = useState<ArenaBounds>({ width: 390, height: 844 });
   const [playerPosition, setPlayerPosition] = useState<PlayerPosition>(() => createStartPosition({ width: 390, height: 844 }));
   const [bullets, setBullets] = useState<PlayerBullet[]>([]);
   const [enemyBullets, setEnemyBullets] = useState<EnemyBullet[]>([]);
   const [enemies, setEnemies] = useState<Enemy[]>([]);
   const [effects, setEffects] = useState<HitEffect[]>([]);
+  const [boss, setBoss] = useState<Boss | null>(null);
   const [playerHp, setPlayerHp] = useState(PLAYER_MAX_HP);
   const [playerInvulnerable, setPlayerInvulnerable] = useState(false);
   const [isDefeated, setIsDefeated] = useState(false);
+  const [isVictory, setIsVictory] = useState(false);
   const [score, setScore] = useState(0);
   const [secondaryCharges, setSecondaryCharges] = useState(PLAYER_SECONDARY_MAX);
   const [waveName, setWaveName] = useState(WAVES[0].name);
+  const [shakeOffset, setShakeOffset] = useState({ x: 0, y: 0 });
+  const [flashOpacity, setFlashOpacity] = useState(0);
 
   const pushEffect = useCallback((x: number, y: number, color: HitEffect["color"], maxRadius: number) => {
     effectsRef.current = [
@@ -264,6 +310,14 @@ export default function ShmupPlayScreen() {
     ];
   }, []);
 
+  const addShake = useCallback((amount: number) => {
+    shakeRef.current = Math.max(shakeRef.current, amount);
+  }, []);
+
+  const triggerFlash = useCallback((opacity: number) => {
+    flashRef.current = Math.max(flashRef.current, opacity);
+  }, []);
+
   const resetRun = useCallback((bounds: ArenaBounds) => {
     const start = createStartPosition(bounds);
     positionRef.current = start;
@@ -272,12 +326,16 @@ export default function ShmupPlayScreen() {
     enemyBulletsRef.current = [];
     enemiesRef.current = [];
     effectsRef.current = [];
+    bossRef.current = null;
     hpRef.current = PLAYER_MAX_HP;
     invulnerableUntilRef.current = 0;
     scoreRef.current = 0;
     secondaryChargesRef.current = PLAYER_SECONDARY_MAX;
     nextSecondaryChargeAtRef.current = 0;
     defeatedRef.current = false;
+    runPhaseRef.current = "waves";
+    shakeRef.current = 0;
+    flashRef.current = 0;
     lastFrameTimeRef.current = null;
     lastShotAtRef.current = 0;
     waveIndexRef.current = 0;
@@ -288,31 +346,32 @@ export default function ShmupPlayScreen() {
     setEnemyBullets([]);
     setEnemies([]);
     setEffects([]);
+    setBoss(null);
     setPlayerHp(PLAYER_MAX_HP);
     setPlayerInvulnerable(false);
     setIsDefeated(false);
+    setIsVictory(false);
     setScore(0);
     setSecondaryCharges(PLAYER_SECONDARY_MAX);
     setWaveName(WAVES[0].name);
+    setShakeOffset({ x: 0, y: 0 });
+    setFlashOpacity(0);
   }, []);
 
   const measureArena = useCallback(() => {
     const arena = arenaRef.current;
     if (!arena) return;
-
     const rect = arena.getBoundingClientRect();
     const nextBounds = {
       width: Math.max(320, rect.width),
       height: Math.max(520, rect.height),
     };
-
     const playable = getPlayableBounds(nextBounds);
     const fallback = createStartPosition(nextBounds);
     const nextPosition = {
       x: clamp(positionRef.current.x || fallback.x, playable.minX, playable.maxX),
       y: clamp(positionRef.current.y || fallback.y, playable.minY, playable.maxY),
     };
-
     setArenaBounds(nextBounds);
     positionRef.current = nextPosition;
     targetRef.current = nextPosition;
@@ -320,7 +379,7 @@ export default function ShmupPlayScreen() {
   }, []);
 
   const useSecondary = useCallback(() => {
-    if (defeatedRef.current || secondaryChargesRef.current <= 0) return;
+    if (defeatedRef.current || runPhaseRef.current === "victory" || secondaryChargesRef.current <= 0) return;
 
     secondaryChargesRef.current -= 1;
     setSecondaryCharges(secondaryChargesRef.current);
@@ -329,6 +388,8 @@ export default function ShmupPlayScreen() {
     }
 
     pushEffect(positionRef.current.x, positionRef.current.y, "gold", SECONDARY_BLAST_RADIUS);
+    addShake(12);
+    triggerFlash(0.22);
 
     const remainingEnemies: Enemy[] = [];
     for (const enemy of enemiesRef.current) {
@@ -343,25 +404,29 @@ export default function ShmupPlayScreen() {
         pushEffect(nextEnemy.x, nextEnemy.y, "pink", nextEnemy.radius * 2.4);
       }
     }
-
     enemiesRef.current = remainingEnemies;
+
+    if (bossRef.current && distance(bossRef.current.x, bossRef.current.y, positionRef.current.x, positionRef.current.y) <= SECONDARY_BLAST_RADIUS + bossRef.current.radius) {
+      bossRef.current = { ...bossRef.current, hp: Math.max(0, bossRef.current.hp - 6) };
+      pushEffect(bossRef.current.x, bossRef.current.y, "gold", bossRef.current.radius * 1.6);
+    }
+
     enemyBulletsRef.current = enemyBulletsRef.current.filter(
       (bullet) => distance(bullet.x, bullet.y, positionRef.current.x, positionRef.current.y) > SECONDARY_BLAST_RADIUS,
     );
     setEnemies(enemiesRef.current);
     setEnemyBullets(enemyBulletsRef.current);
+    setBoss(bossRef.current);
     setScore(scoreRef.current);
-  }, [pushEffect]);
+  }, [addShake, pushEffect, triggerFlash]);
 
   useEffect(() => {
     document.documentElement.classList.add("shmup-active");
     document.body.classList.add("shmup-active");
     const root = document.getElementById("root");
     root?.classList.add("shmup-active");
-
     measureArena();
     window.addEventListener("resize", measureArena);
-
     return () => {
       document.documentElement.classList.remove("shmup-active");
       document.body.classList.remove("shmup-active");
@@ -380,14 +445,13 @@ export default function ShmupPlayScreen() {
         event.preventDefault();
         useSecondary();
       }
-      if (event.code === "KeyR" && isDefeated) {
+      if (event.code === "KeyR" && (isDefeated || isVictory)) {
         resetRun(arenaBounds);
       }
     };
-
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [arenaBounds, isDefeated, resetRun, useSecondary]);
+  }, [arenaBounds, isDefeated, isVictory, resetRun, useSecondary]);
 
   useEffect(() => {
     const tick = (timestamp: number) => {
@@ -400,21 +464,22 @@ export default function ShmupPlayScreen() {
         setPlayerInvulnerable(currentlyInvulnerable);
       }
 
-      if (
-        secondaryChargesRef.current < PLAYER_SECONDARY_MAX &&
-        nextSecondaryChargeAtRef.current > 0 &&
-        timestamp >= nextSecondaryChargeAtRef.current
-      ) {
+      if (secondaryChargesRef.current < PLAYER_SECONDARY_MAX && nextSecondaryChargeAtRef.current > 0 && timestamp >= nextSecondaryChargeAtRef.current) {
         secondaryChargesRef.current += 1;
         setSecondaryCharges(secondaryChargesRef.current);
-        nextSecondaryChargeAtRef.current =
-          secondaryChargesRef.current < PLAYER_SECONDARY_MAX ? timestamp + PLAYER_SECONDARY_RECHARGE_MS : 0;
+        nextSecondaryChargeAtRef.current = secondaryChargesRef.current < PLAYER_SECONDARY_MAX ? timestamp + PLAYER_SECONDARY_RECHARGE_MS : 0;
       }
+
+      shakeRef.current = Math.max(0, shakeRef.current - deltaSeconds * 34);
+      flashRef.current = Math.max(0, flashRef.current - deltaSeconds * 1.8);
+      setShakeOffset({
+        x: shakeRef.current > 0 ? (Math.random() - 0.5) * shakeRef.current : 0,
+        y: shakeRef.current > 0 ? (Math.random() - 0.5) * shakeRef.current : 0,
+      });
+      setFlashOpacity(flashRef.current);
 
       const current = positionRef.current;
       const target = targetRef.current;
-
-      // Smooth pointer follow keeps desktop and touch drag feeling direct without jitter.
       const nextPosition = {
         x: current.x + (target.x - current.x) * FOLLOW_LERP,
         y: current.y + (target.y - current.y) * FOLLOW_LERP,
@@ -422,29 +487,30 @@ export default function ShmupPlayScreen() {
       positionRef.current = nextPosition;
       setPlayerPosition(nextPosition);
 
-      if (!defeatedRef.current && timestamp - lastShotAtRef.current >= FIRE_INTERVAL_MS) {
+      if (!defeatedRef.current && runPhaseRef.current !== "victory" && timestamp - lastShotAtRef.current >= FIRE_INTERVAL_MS) {
         lastShotAtRef.current = timestamp;
-        bulletsRef.current = [
-          ...bulletsRef.current,
-          { id: bulletIdRef.current++, x: nextPosition.x, y: nextPosition.y - PLAYER_RADIUS },
-        ];
+        bulletsRef.current = [...bulletsRef.current, { id: bulletIdRef.current++, x: nextPosition.x, y: nextPosition.y - PLAYER_RADIUS }];
       }
 
-      const currentWave = WAVES[waveIndexRef.current];
-      if (!defeatedRef.current && timestamp >= nextWaveSpawnAtRef.current) {
+      if (!defeatedRef.current && runPhaseRef.current === "waves" && timestamp >= nextWaveSpawnAtRef.current) {
+        const currentWave = WAVES[waveIndexRef.current];
         const spawn = currentWave.spawns[waveSpawnIndexRef.current];
         if (spawn) {
-          enemiesRef.current = [
-            ...enemiesRef.current,
-            createEnemy(arenaBounds, spawn, enemyIdRef.current++, timestamp),
-          ];
+          enemiesRef.current = [...enemiesRef.current, createEnemy(arenaBounds, spawn, enemyIdRef.current++, timestamp)];
           waveSpawnIndexRef.current += 1;
           nextWaveSpawnAtRef.current = timestamp + spawn.delayMs;
-        } else {
-          waveIndexRef.current = (waveIndexRef.current + 1) % WAVES.length;
+        } else if (waveIndexRef.current < WAVES.length - 1) {
+          waveIndexRef.current += 1;
           waveSpawnIndexRef.current = 0;
           nextWaveSpawnAtRef.current = timestamp + WAVE_PAUSE_MS;
           setWaveName(WAVES[waveIndexRef.current].name);
+        } else if (enemiesRef.current.length === 0) {
+          runPhaseRef.current = "boss";
+          bossRef.current = createBoss(arenaBounds, timestamp);
+          setBoss(bossRef.current);
+          setWaveName("Astra Nemesis");
+          addShake(10);
+          triggerFlash(0.18);
         }
       }
 
@@ -456,28 +522,18 @@ export default function ShmupPlayScreen() {
       enemiesRef.current = enemiesRef.current
         .map((enemy) => {
           const movedEnemy = { ...enemy, age: enemy.age + deltaSeconds };
-          if (enemy.kind === "sweeper") {
-            movedEnemy.y += movedEnemy.speed * deltaSeconds;
+          movedEnemy.y += movedEnemy.speed * deltaSeconds;
+          if (enemy.kind !== "drifter") {
             movedEnemy.x = clamp(
               movedEnemy.originX + Math.sin(movedEnemy.age * movedEnemy.swayFrequency) * movedEnemy.swayAmplitude,
               movedEnemy.radius + HORIZONTAL_MARGIN,
               arenaBounds.width - movedEnemy.radius - HORIZONTAL_MARGIN,
             );
-          } else if (enemy.kind === "burst") {
-            movedEnemy.y += movedEnemy.speed * deltaSeconds;
-            movedEnemy.x = clamp(
-              movedEnemy.originX + Math.sin(movedEnemy.age * movedEnemy.swayFrequency) * movedEnemy.swayAmplitude,
-              movedEnemy.radius + HORIZONTAL_MARGIN,
-              arenaBounds.width - movedEnemy.radius - HORIZONTAL_MARGIN,
-            );
-          } else {
-            movedEnemy.y += movedEnemy.speed * deltaSeconds;
           }
 
           if (!defeatedRef.current && timestamp >= movedEnemy.fireAt) {
             if (movedEnemy.kind === "burst") {
-              const baseAngles = [-0.28, 0, 0.28];
-              for (const angleOffset of baseAngles) {
+              for (const angleOffset of [-0.28, 0, 0.28]) {
                 const angle = Math.PI / 2 + angleOffset;
                 spawnedEnemyBullets.push({
                   id: enemyBulletIdRef.current++,
@@ -486,6 +542,7 @@ export default function ShmupPlayScreen() {
                   vx: Math.cos(angle) * 230,
                   vy: Math.sin(angle) * 230,
                   radius: 7,
+                  hostile: "enemy",
                 });
               }
             } else if (movedEnemy.kind === "sweeper") {
@@ -499,6 +556,7 @@ export default function ShmupPlayScreen() {
                 vx: (dx / length) * 250,
                 vy: (dy / length) * 250,
                 radius: 6,
+                hostile: "enemy",
               });
             } else {
               spawnedEnemyBullets.push({
@@ -508,78 +566,134 @@ export default function ShmupPlayScreen() {
                 vx: 0,
                 vy: 280,
                 radius: 6,
+                hostile: "enemy",
               });
             }
-
             movedEnemy.fireAt = timestamp + movedEnemy.fireInterval;
           }
-
           return movedEnemy;
         })
-        .filter((enemy) => enemy.y < arenaBounds.height + ENEMY_DESPAWN_PADDING);
+        .filter((enemy) => enemy.y < arenaBounds.height + ENEMY_DESPAWN_PADDING && enemy.hp > 0);
+
+      if (bossRef.current && !defeatedRef.current && runPhaseRef.current === "boss") {
+        const nextBoss = { ...bossRef.current, age: bossRef.current.age + deltaSeconds };
+        if (!nextBoss.introDone) {
+          nextBoss.y += 180 * deltaSeconds;
+          if (nextBoss.y >= nextBoss.targetY) {
+            nextBoss.y = nextBoss.targetY;
+            nextBoss.introDone = true;
+            nextBoss.fireAt = timestamp + 800;
+            nextBoss.volleyAt = timestamp + 1400;
+          }
+        } else {
+          nextBoss.x = arenaBounds.width / 2 + Math.sin(nextBoss.age * (nextBoss.phase === 1 ? 1.2 : 1.8)) * Math.min(120, arenaBounds.width * 0.22);
+          nextBoss.y = nextBoss.targetY + Math.sin(nextBoss.age * 1.8) * 12;
+          if (nextBoss.hp <= nextBoss.maxHp * 0.45) nextBoss.phase = 2;
+
+          if (timestamp >= nextBoss.fireAt) {
+            const spreadCount = nextBoss.phase === 1 ? 5 : 7;
+            for (let index = 0; index < spreadCount; index += 1) {
+              const angle = Math.PI / 2 + (index - (spreadCount - 1) / 2) * (nextBoss.phase === 1 ? 0.14 : 0.11);
+              spawnedEnemyBullets.push({
+                id: enemyBulletIdRef.current++,
+                x: nextBoss.x,
+                y: nextBoss.y + nextBoss.radius * 0.7,
+                vx: Math.cos(angle) * (nextBoss.phase === 1 ? 210 : 250),
+                vy: Math.sin(angle) * (nextBoss.phase === 1 ? 210 : 250),
+                radius: nextBoss.phase === 1 ? 8 : 9,
+                hostile: "boss",
+              });
+            }
+            nextBoss.fireAt = timestamp + (nextBoss.phase === 1 ? 1100 : 780);
+            addShake(6);
+          }
+
+          if (timestamp >= nextBoss.volleyAt) {
+            const dx = nextPosition.x - nextBoss.x;
+            const dy = nextPosition.y - nextBoss.y;
+            const length = Math.max(Math.hypot(dx, dy), 1);
+            for (const offset of [-36, 0, 36]) {
+              spawnedEnemyBullets.push({
+                id: enemyBulletIdRef.current++,
+                x: nextBoss.x + offset,
+                y: nextBoss.y + nextBoss.radius * 0.8,
+                vx: (dx / length) * 300 + offset * 0.6,
+                vy: (dy / length) * 300,
+                radius: 7,
+                hostile: "boss",
+              });
+            }
+            nextBoss.volleyAt = timestamp + (nextBoss.phase === 1 ? 1650 : 1200);
+          }
+        }
+        bossRef.current = nextBoss;
+      }
 
       enemyBulletsRef.current = [...enemyBulletsRef.current, ...spawnedEnemyBullets]
-        .map((bullet) => ({
-          ...bullet,
-          x: bullet.x + bullet.vx * deltaSeconds,
-          y: bullet.y + bullet.vy * deltaSeconds,
-        }))
-        .filter(
-          (bullet) =>
-            bullet.x > -BULLET_DESPAWN_PADDING &&
-            bullet.x < arenaBounds.width + BULLET_DESPAWN_PADDING &&
-            bullet.y > -BULLET_DESPAWN_PADDING &&
-            bullet.y < arenaBounds.height + BULLET_DESPAWN_PADDING,
-        );
+        .map((bullet) => ({ ...bullet, x: bullet.x + bullet.vx * deltaSeconds, y: bullet.y + bullet.vy * deltaSeconds }))
+        .filter((bullet) => bullet.x > -BULLET_DESPAWN_PADDING && bullet.x < arenaBounds.width + BULLET_DESPAWN_PADDING && bullet.y > -BULLET_DESPAWN_PADDING && bullet.y < arenaBounds.height + BULLET_DESPAWN_PADDING);
 
       const remainingBullets: PlayerBullet[] = [];
       const enemiesAfterHits = enemiesRef.current.map((enemy) => ({ ...enemy }));
-      for (const bullet of bulletsRef.current) {
-        const hitEnemy = enemiesAfterHits.find(
-          (enemy) => enemy.hp > 0 && distance(bullet.x, bullet.y, enemy.x, enemy.y) <= enemy.radius + BULLET_RADIUS,
-        );
+      let bossAfterHits = bossRef.current ? { ...bossRef.current } : null;
 
+      for (const bullet of bulletsRef.current) {
+        const hitEnemy = enemiesAfterHits.find((enemy) => enemy.hp > 0 && distance(bullet.x, bullet.y, enemy.x, enemy.y) <= enemy.radius + BULLET_RADIUS);
         if (hitEnemy) {
           hitEnemy.hp -= 1;
           pushEffect(bullet.x, bullet.y, "blue", 24);
           continue;
         }
-
+        if (bossAfterHits && distance(bullet.x, bullet.y, bossAfterHits.x, bossAfterHits.y) <= bossAfterHits.radius + BULLET_RADIUS) {
+          bossAfterHits.hp = Math.max(0, bossAfterHits.hp - 1);
+          pushEffect(bullet.x, bullet.y, "blue", 30);
+          if (bossAfterHits.phase === 2) addShake(2);
+          continue;
+        }
         remainingBullets.push(bullet);
       }
 
-      const defeatedEnemies = enemiesAfterHits.filter((enemy) => enemy.hp <= 0);
-      for (const enemy of defeatedEnemies) {
+      for (const enemy of enemiesAfterHits.filter((enemy) => enemy.hp <= 0)) {
         scoreRef.current += enemy.scoreValue;
         pushEffect(enemy.x, enemy.y, "pink", enemy.radius * 2.5);
+        addShake(6);
       }
 
-      bulletsRef.current = remainingBullets;
       enemiesRef.current = enemiesAfterHits.filter((enemy) => enemy.hp > 0);
+      bulletsRef.current = remainingBullets;
 
-      if (!defeatedRef.current) {
-        const touchingEnemy = enemiesRef.current.find(
-          (enemy) => distance(enemy.x, enemy.y, nextPosition.x, nextPosition.y) <= enemy.radius + PLAYER_RADIUS - 4,
-        );
-        const touchingEnemyBullet = enemyBulletsRef.current.find(
-          (bullet) => distance(bullet.x, bullet.y, nextPosition.x, nextPosition.y) <= bullet.radius + PLAYER_RADIUS,
-        );
+      if (bossAfterHits && bossAfterHits.hp <= 0) {
+        scoreRef.current += BOSS_SCORE_VALUE;
+        pushEffect(bossAfterHits.x, bossAfterHits.y, "gold", bossAfterHits.radius * 3.2);
+        addShake(20);
+        triggerFlash(0.34);
+        bossAfterHits = null;
+        bossRef.current = null;
+        runPhaseRef.current = "victory";
+        setIsVictory(true);
+        setWaveName("Boss Defeated");
+      } else {
+        bossRef.current = bossAfterHits;
+      }
 
-        if ((touchingEnemy || touchingEnemyBullet) && timestamp >= invulnerableUntilRef.current) {
+      if (!defeatedRef.current && runPhaseRef.current !== "victory") {
+        const touchingEnemy = enemiesRef.current.find((enemy) => distance(enemy.x, enemy.y, nextPosition.x, nextPosition.y) <= enemy.radius + PLAYER_RADIUS - 4);
+        const touchingEnemyBullet = enemyBulletsRef.current.find((bullet) => distance(bullet.x, bullet.y, nextPosition.x, nextPosition.y) <= bullet.radius + PLAYER_RADIUS);
+        const touchingBoss = bossRef.current && distance(bossRef.current.x, bossRef.current.y, nextPosition.x, nextPosition.y) <= bossRef.current.radius + PLAYER_RADIUS - 8;
+
+        if ((touchingEnemy || touchingEnemyBullet || touchingBoss) && timestamp >= invulnerableUntilRef.current) {
           hpRef.current = Math.max(0, hpRef.current - 1);
           invulnerableUntilRef.current = timestamp + PLAYER_INVULNERABLE_MS;
           setPlayerHp(hpRef.current);
           setPlayerInvulnerable(true);
           pushEffect(nextPosition.x, nextPosition.y, "gold", 60);
+          addShake(16);
+          triggerFlash(0.28);
 
           if (touchingEnemyBullet) {
             enemyBulletsRef.current = enemyBulletsRef.current.filter((bullet) => bullet.id !== touchingEnemyBullet.id);
           }
-
-          if (touchingEnemy) {
-            touchingEnemy.hp = 0;
-          }
-
+          if (touchingEnemy) touchingEnemy.hp = 0;
           if (hpRef.current <= 0) {
             defeatedRef.current = true;
             setIsDefeated(true);
@@ -599,6 +713,7 @@ export default function ShmupPlayScreen() {
       setEnemyBullets(enemyBulletsRef.current);
       setEnemies(enemiesRef.current);
       setEffects(effectsRef.current);
+      setBoss(bossRef.current);
       setScore(scoreRef.current);
 
       animationRef.current = window.requestAnimationFrame(tick);
@@ -606,19 +721,15 @@ export default function ShmupPlayScreen() {
 
     animationRef.current = window.requestAnimationFrame(tick);
     return () => {
-      if (animationRef.current != null) {
-        window.cancelAnimationFrame(animationRef.current);
-      }
+      if (animationRef.current != null) window.cancelAnimationFrame(animationRef.current);
     };
-  }, [arenaBounds, playerInvulnerable, pushEffect]);
+  }, [addShake, arenaBounds, playerInvulnerable, pushEffect, triggerFlash]);
 
   const updateTargetFromPointer = useCallback((clientX: number, clientY: number) => {
     const arena = arenaRef.current;
     if (!arena) return;
     const rect = arena.getBoundingClientRect();
     const playable = getPlayableBounds(arenaBounds);
-
-    // Clamp pointer targets so movement stays readable and inside the visible arena.
     targetRef.current = {
       x: clamp(clientX - rect.left, playable.minX, playable.maxX),
       y: clamp(clientY - rect.top, playable.minY, playable.maxY),
@@ -639,9 +750,7 @@ export default function ShmupPlayScreen() {
   const endPointerDrag = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
     if (dragPointerIdRef.current !== event.pointerId) return;
     dragPointerIdRef.current = null;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   }, []);
 
   return (
@@ -649,9 +758,9 @@ export default function ShmupPlayScreen() {
       <header className="shmup-slice-header">
         <div>
           <p className="shmup-slice-kicker">Astra Valkyries MVP</p>
-          <h1>Playable Combat Slice</h1>
+          <h1>Boss Run Slice</h1>
           <p className="shmup-slice-copy">
-            Drag to move, auto-fire through patterned micro-waves, and use Nova Pulse to clear pressure when the screen gets messy.
+            Clear the micro-waves, break the Astra Nemesis boss, and use Nova Pulse when the screen starts to collapse around you.
           </p>
         </div>
 
@@ -662,7 +771,7 @@ export default function ShmupPlayScreen() {
             <div className="shmup-hp-fill" style={{ width: `${(playerHp / PLAYER_MAX_HP) * 100}%` }} />
           </div>
           <p className="shmup-hp-label">Hull {playerHp}/{PLAYER_MAX_HP}</p>
-          <button className="btn btn-secondary shmup-secondary-button" onClick={useSecondary} disabled={secondaryCharges <= 0 || isDefeated}>
+          <button className="btn btn-secondary shmup-secondary-button" onClick={useSecondary} disabled={secondaryCharges <= 0 || isDefeated || isVictory}>
             Nova Pulse ({secondaryCharges})
           </button>
         </div>
@@ -670,7 +779,8 @@ export default function ShmupPlayScreen() {
 
       <section
         ref={arenaRef}
-        className="shmup-slice-arena"
+        className={`shmup-slice-arena${boss ? " shmup-boss-active" : ""}`}
+        style={{ transform: `translate(${shakeOffset.x}px, ${shakeOffset.y}px)` }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={endPointerDrag}
@@ -679,6 +789,16 @@ export default function ShmupPlayScreen() {
       >
         <div className="shmup-slice-grid" aria-hidden="true" />
         <div className="shmup-slice-lower-zone" aria-hidden="true" />
+        <div className="shmup-hit-flash" style={{ opacity: flashOpacity }} aria-hidden="true" />
+
+        {boss && (
+          <>
+            <div className="shmup-boss-banner">Boss Encounter</div>
+            <div className="shmup-boss-hp-shell">
+              <div className="shmup-boss-hp-fill" style={{ width: `${(boss.hp / boss.maxHp) * 100}%` }} />
+            </div>
+          </>
+        )}
 
         {effects.map((effect) => (
           <div
@@ -702,7 +822,7 @@ export default function ShmupPlayScreen() {
         {enemyBullets.map((bullet) => (
           <div
             key={bullet.id}
-            className="enemy-bullet"
+            className={`enemy-bullet enemy-bullet-${bullet.hostile}`}
             style={{
               width: bullet.radius * 2,
               height: bullet.radius * 2,
@@ -732,6 +852,22 @@ export default function ShmupPlayScreen() {
           </div>
         ))}
 
+        {boss && (
+          <div
+            className={`shmup-boss${boss.phase === 2 ? " shmup-boss-phase-two" : ""}`}
+            style={{
+              width: boss.radius * 2,
+              height: boss.radius * 2,
+              transform: `translate(${boss.x - boss.radius}px, ${boss.y - boss.radius}px)`,
+            }}
+          >
+            <div className="shmup-boss-core" />
+            <div className="shmup-boss-wing shmup-boss-wing-left" />
+            <div className="shmup-boss-wing shmup-boss-wing-right" />
+            <div className="shmup-boss-cannon" />
+          </div>
+        )}
+
         <div
           className={`player-ship${playerInvulnerable ? " player-ship-invulnerable" : ""}${isDefeated ? " player-ship-defeated" : ""}`}
           style={{ transform: `translate(${playerPosition.x - PLAYER_RADIUS}px, ${playerPosition.y - PLAYER_RADIUS}px)` }}
@@ -742,11 +878,15 @@ export default function ShmupPlayScreen() {
           <div className="player-ship-engine" />
         </div>
 
-        {isDefeated && (
+        {(isDefeated || isVictory) && (
           <div className="shmup-overlay">
             <div className="shmup-overlay-card">
-              <h2>Run Ended</h2>
-              <p>You scored {score.toString().padStart(5, "0")}. Tap restart to jump back into the wave loop.</p>
+              <h2>{isVictory ? "Boss Defeated" : "Run Ended"}</h2>
+              <p>
+                {isVictory
+                  ? `Premium slice cleared. Final score ${score.toString().padStart(5, "0")}.`
+                  : `You scored ${score.toString().padStart(5, "0")}. Tap restart and try the boss again.`}
+              </p>
               <button className="btn btn-primary" onClick={() => resetRun(arenaBounds)}>
                 Restart Run
               </button>
