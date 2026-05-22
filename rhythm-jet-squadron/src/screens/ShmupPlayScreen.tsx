@@ -16,6 +16,14 @@ type PlayerBullet = {
   y: number;
 };
 
+type Enemy = {
+  id: number;
+  x: number;
+  y: number;
+  radius: number;
+  hp: number;
+};
+
 const PLAYER_RADIUS = 26;
 const HORIZONTAL_MARGIN = 16;
 const TOP_PLAY_AREA_RATIO = 0.45;
@@ -23,12 +31,20 @@ const TOP_MARGIN = 24;
 const BOTTOM_MARGIN = 24;
 const FOLLOW_LERP = 0.22;
 const FIRE_INTERVAL_MS = 180;
+const ENEMY_SPAWN_INTERVAL_MS = 900;
 const BULLET_SPEED = 760;
+const ENEMY_SPEED = 150;
 const BULLET_RADIUS = 4;
 const BULLET_DESPAWN_PADDING = 40;
+const ENEMY_RADIUS = 22;
+const ENEMY_DESPAWN_PADDING = 50;
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
+}
+
+function distance(aX: number, aY: number, bX: number, bY: number) {
+  return Math.hypot(aX - bX, aY - bY);
 }
 
 function getPlayableBounds(bounds: ArenaBounds) {
@@ -54,13 +70,17 @@ export default function ShmupPlayScreen() {
   const dragPointerIdRef = useRef<number | null>(null);
   const lastFrameTimeRef = useRef<number | null>(null);
   const lastShotAtRef = useRef(0);
+  const lastEnemySpawnAtRef = useRef(0);
   const bulletIdRef = useRef(0);
+  const enemyIdRef = useRef(0);
   const bulletsRef = useRef<PlayerBullet[]>([]);
+  const enemiesRef = useRef<Enemy[]>([]);
   const targetRef = useRef<PlayerPosition>({ x: 0, y: 0 });
   const positionRef = useRef<PlayerPosition>({ x: 0, y: 0 });
   const [arenaBounds, setArenaBounds] = useState<ArenaBounds>({ width: 390, height: 844 });
   const [playerPosition, setPlayerPosition] = useState<PlayerPosition>(() => createStartPosition({ width: 390, height: 844 }));
   const [bullets, setBullets] = useState<PlayerBullet[]>([]);
+  const [enemies, setEnemies] = useState<Enemy[]>([]);
 
   const measureArena = useCallback(() => {
     const arena = arenaRef.current;
@@ -132,7 +152,25 @@ export default function ShmupPlayScreen() {
         ];
       }
 
-      // Move bullets upward each frame and drop them once they leave the arena.
+      // Spawn simple enemies from the top so we can validate the core loop first.
+      if (timestamp - lastEnemySpawnAtRef.current >= ENEMY_SPAWN_INTERVAL_MS) {
+        lastEnemySpawnAtRef.current = timestamp;
+        enemiesRef.current = [
+          ...enemiesRef.current,
+          {
+            id: enemyIdRef.current++,
+            x: clamp(
+              HORIZONTAL_MARGIN + ENEMY_RADIUS + Math.random() * (arenaBounds.width - (HORIZONTAL_MARGIN + ENEMY_RADIUS) * 2),
+              ENEMY_RADIUS + HORIZONTAL_MARGIN,
+              arenaBounds.width - ENEMY_RADIUS - HORIZONTAL_MARGIN,
+            ),
+            y: -ENEMY_RADIUS,
+            radius: ENEMY_RADIUS,
+            hp: 3,
+          },
+        ];
+      }
+
       bulletsRef.current = bulletsRef.current
         .map((bullet) => ({
           ...bullet,
@@ -140,7 +178,35 @@ export default function ShmupPlayScreen() {
         }))
         .filter((bullet) => bullet.y > -BULLET_DESPAWN_PADDING);
 
+      enemiesRef.current = enemiesRef.current
+        .map((enemy) => ({
+          ...enemy,
+          y: enemy.y + ENEMY_SPEED * deltaSeconds,
+        }))
+        .filter((enemy) => enemy.y < arenaBounds.height + ENEMY_DESPAWN_PADDING);
+
+      const bulletsAfterHits: PlayerBullet[] = [];
+      const enemiesAfterHits = enemiesRef.current.map((enemy) => ({ ...enemy }));
+
+      // Bullet collision is isolated here so damage, crits, and secondary effects can plug in later.
+      for (const bullet of bulletsRef.current) {
+        const hitEnemy = enemiesAfterHits.find(
+          (enemy) => enemy.hp > 0 && distance(bullet.x, bullet.y, enemy.x, enemy.y) <= enemy.radius + BULLET_RADIUS,
+        );
+
+        if (hitEnemy) {
+          hitEnemy.hp -= 1;
+          continue;
+        }
+
+        bulletsAfterHits.push(bullet);
+      }
+
+      bulletsRef.current = bulletsAfterHits;
+      enemiesRef.current = enemiesAfterHits.filter((enemy) => enemy.hp > 0);
+
       setBullets(bulletsRef.current);
+      setEnemies(enemiesRef.current);
       animationRef.current = window.requestAnimationFrame(tick);
     };
 
@@ -150,7 +216,7 @@ export default function ShmupPlayScreen() {
         window.cancelAnimationFrame(animationRef.current);
       }
     };
-  }, []);
+  }, [arenaBounds.height, arenaBounds.width]);
 
   const updateTargetFromPointer = useCallback((clientX: number, clientY: number) => {
     const arena = arenaRef.current;
@@ -192,9 +258,9 @@ export default function ShmupPlayScreen() {
       <header className="shmup-slice-header">
         <div>
           <p className="shmup-slice-kicker">Astra Valkyries MVP</p>
-          <h1>Control Slice</h1>
+          <h1>Combat Slice</h1>
           <p className="shmup-slice-copy">
-            Drag the ship with mouse or touch. The ship now auto-fires upward so combat systems can layer in next.
+            Drag to move, auto-fire to shoot, and clear simple enemies dropping in from the top.
           </p>
         </div>
       </header>
@@ -220,6 +286,22 @@ export default function ShmupPlayScreen() {
             }}
           >
             <div className="player-bullet-core" />
+          </div>
+        ))}
+
+        {enemies.map((enemy) => (
+          <div
+            key={enemy.id}
+            className="enemy-drone"
+            style={{
+              width: enemy.radius * 2,
+              height: enemy.radius * 2,
+              transform: `translate(${enemy.x - enemy.radius}px, ${enemy.y - enemy.radius}px)`,
+            }}
+          >
+            <div className="enemy-drone-core" />
+            <div className="enemy-drone-wing enemy-drone-wing-left" />
+            <div className="enemy-drone-wing enemy-drone-wing-right" />
           </div>
         ))}
 
