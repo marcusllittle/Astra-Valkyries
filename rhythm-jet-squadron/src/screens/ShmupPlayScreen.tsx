@@ -392,6 +392,8 @@ type SpriteKey =
   | "enemyDrifter"
   | "enemySine"
   | "boss"
+  | "bossTyrant"
+  | "bossLeviathan"
   | "chip"
   | "bulletPlayer"
   | "bulletEnemy"
@@ -405,8 +407,10 @@ const SPRITE_PATHS: Record<SpriteKey, string> = {
   player: "/assets/shmup/player_ship.svg",
   enemyDrifter: "/assets/shmup/enemy_drifter.png",
   enemySine: "/assets/shmup/enemy_sine.png",
-  boss: "/assets/shmup/boss_dreadnought.png",
-  chip: "/assets/shmup/power_chip.svg",
+  boss: "/assets/shmup/boss_aegis_dreadnought.png",
+  bossTyrant: "/assets/shmup/boss_helios_tyrant.png",
+  bossLeviathan: "/assets/shmup/boss_cryo_leviathan.png",
+  chip: "/assets/shmup/power_chip.png",
   bulletPlayer: "/assets/shmup/bullet_player.svg",
   bulletEnemy: "/assets/shmup/bullet_enemy.svg",
   bulletBoss: "/assets/shmup/bullet_boss.svg",
@@ -438,6 +442,8 @@ function createSpriteStore(): Record<SpriteKey, HTMLImageElement | null> {
     enemyDrifter: null,
     enemySine: null,
     boss: null,
+    bossTyrant: null,
+    bossLeviathan: null,
     chip: null,
     bulletPlayer: null,
     bulletEnemy: null,
@@ -1640,7 +1646,7 @@ export default function ShmupPlayScreen() {
         archetype: activeMap.bossArchetype,
         x: canvas.width / 2,
         y: -96,
-        radius: activeMap.bossArchetype === "leviathan" ? 34 : activeMap.bossArchetype === "tyrant" ? 28 : 30,
+        radius: activeMap.bossArchetype === "leviathan" ? 42 : activeMap.bossArchetype === "tyrant" ? 36 : 38,
         hp: activeMap.bossMaxHp,
         maxHp: activeMap.bossMaxHp,
         age: 0,
@@ -4453,8 +4459,14 @@ export default function ShmupPlayScreen() {
 
       if (bossRef.current) {
         const boss = bossRef.current;
-        // Bosses are rendered procedurally per archetype — distinct designs per zone
-        const sprite: HTMLImageElement | null = null;
+        // Distinct rendered sprite per archetype; canvas-procedural fallback below
+        const sprite = getSprite(
+          boss.archetype === "tyrant"
+            ? "bossTyrant"
+            : boss.archetype === "leviathan"
+              ? "bossLeviathan"
+              : "boss"
+        );
 
         // Phase transition flash
         if (boss.phaseTransitionFlash > 0) {
@@ -4483,8 +4495,8 @@ export default function ShmupPlayScreen() {
             sprite,
             boss.x,
             boss.y,
-            boss.radius * 5.5,
-            boss.radius * 4.2,
+            boss.radius * 6.0,
+            boss.radius * 4.6,
             Math.sin(boss.age * 0.8) * 0.03
           );
         } else {
