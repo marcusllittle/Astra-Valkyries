@@ -36,7 +36,7 @@ export const LORE_ENTRIES: LoreEntry[] = [
     category: "zone",
     title: "Nebula Runway",
     content: "A vast corridor of ionized gas clouds that serves as the primary shipping lane between core worlds. Since the invasion, it has become a gauntlet of enemy patrols and automated defense drones.",
-    imageUrl: "/assets/shmup/boss_dreadnought.svg",
+    imageUrl: "/assets/cutins/scenes/nebula_runway_briefing.png",
   },
   {
     id: "lore-solar",
@@ -50,7 +50,7 @@ export const LORE_ENTRIES: LoreEntry[] = [
     category: "zone",
     title: "Abyss Crown",
     content: "The deepest region of charted space, where temperatures plunge to near absolute zero. Ancient alien structures dot the void, and the terrifying Cryo Leviathan guards the sector's secrets.",
-    imageUrl: "/assets/shmup/enemy_drifter.svg",
+    imageUrl: "/assets/cutins/scenes/abyss_crown_briefing.png",
   },
   // Bosses
   {
