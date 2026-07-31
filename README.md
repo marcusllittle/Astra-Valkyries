@@ -1,8 +1,8 @@
-# Astra-Valkyries
+# Astra Valkyries
 
 Astra Valkyries is a stylized arcade action game built with React, TypeScript, and Vite.
 
-The current project is no longer a tiny rhythm prototype. It now plays more like a character-driven space-combat game with shmup combat, loadouts, progression, narrative sequences, missions, and optional HavnAI wallet-linked rewards.
+The game combines shmup combat with character-driven progression, narrative sequences, missions, and optional HavnAI wallet-linked rewards.
 
 ## What the game includes
 
@@ -11,65 +11,51 @@ The current project is no longer a tiny rhythm prototype. It now plays more like
 - **Progression systems** including pilot XP, levels, achievements, and unlock tracking
 - **Mission structure** with daily and weekly objectives
 - **Narrative presentation** via briefing, debrief, codex, inbox, and cutscene screens
-- **Spaceport hub flow** for navigating the game’s broader systems
-- **Optional HavnAI integration** for wallet connection, shared balance display, leaderboard, and reward hooks
-- **Web, desktop, and mobile packaging paths** through Vite, Electron, and Capacitor
+- **Spaceport hub flow** for navigating the game's broader systems
+- **HavnAI integration** for wallet connection, shared balance display, leaderboard, and HAI rewards
+- **Web, desktop, and mobile packaging** through Vite, Electron, and Capacitor
 
 ## Project structure
 
-The playable app lives in:
-
-```text
-rhythm-jet-squadron/
-```
-
-That folder name is legacy. The actual game and product identity are **Astra Valkyries**.
-
-Top-level notable files:
+The playable app lives in `rhythm-jet-squadron/`. That folder name is a legacy artifact — the product identity is **Astra Valkyries**. A rename is planned but deferred to avoid breaking Vercel's build cache.
 
 ```text
 README.md
 vercel.json
 docs/
 rhythm-jet-squadron/
+  src/
+    components/    # overlays, dialogue, tutorials, toasts, UI helpers
+    context/       # GameContext and WalletContext
+    data/          # pilots, ships, outfits, lore, dialogue, modifiers
+    lib/           # combat systems, progression, missions, API helpers
+    screens/       # all game screens and hub destinations
+    App.tsx        # route wiring
+    main.tsx       # app entry point
+    index.css      # core styling and responsive layout rules
+  electron/        # desktop wrapper
+  public/          # static assets, cutins, art, audio
+  capacitor.config.ts
+  package.json
 ```
 
-Inside the app:
+## Main routes
 
-```text
-rhythm-jet-squadron/
-├── src/
-│   ├── components/          # overlays, dialogue, tutorials, toasts, UI helpers
-│   ├── context/             # game state and wallet state
-│   ├── data/                # pilots, ships, outfits, lore, dialogue, modifiers
-│   ├── lib/                 # combat systems, progression, missions, API helpers
-│   ├── screens/             # game screens and hub destinations
-│   ├── App.tsx              # route wiring
-│   ├── main.tsx             # app entry point
-│   └── index.css            # core styling and responsive layout rules
-├── electron/                # desktop wrapper entry
-├── public/                  # static assets, cutins, art, audio
-├── capacitor.config.ts      # mobile wrapper config
-└── package.json
-```
-
-## Main routes/screens
-
-The current app includes these primary screens:
-
-- `/` — title screen and main menu
-- `/hangar` — pilot, ship, outfit, and map loadout selection
-- `/shmup` — active combat run
-- `/shmup-results` — post-run grading and rewards
-- `/spaceport` — command hub for surrounding systems
-- `/missions` — daily and weekly objectives
-- `/collection` — unlock and reward browsing
-- `/leaderboard` — HavnAI-linked online rankings
-- `/codex` — lore and world reference
-- `/briefing` — pre-mission dialogue flow
-- `/video-cutscene` — cinematic transitions
-- `/shop` — progression/shop loop
-- `/settings` — audio, controls, and utility settings
+| Route | Screen |
+|---|---|
+| `/` | Title screen / main menu |
+| `/hangar` | Pilot, ship, outfit, map loadout |
+| `/shmup` | Active combat run |
+| `/shmup-results` | Post-run grading and HAI rewards |
+| `/spaceport` | Command hub |
+| `/missions` | Daily and weekly objectives |
+| `/collection` | Unlock and reward browsing |
+| `/leaderboard` | HavnAI-linked online rankings |
+| `/codex` | Lore and world reference |
+| `/briefing` | Pre-mission dialogue |
+| `/video-cutscene` | Cinematic transitions |
+| `/shop` | Progression shop |
+| `/settings` | Audio, controls, utility |
 
 ## Quick start
 
@@ -79,15 +65,11 @@ npm install
 npm run dev
 ```
 
-Then open:
+Then open `http://localhost:5173`.
 
-```text
-http://localhost:5173
-```
+## HavnAI integration
 
-## HavnAI integration notes
-
-If you want Astra to talk to a local `havnai-core` during development:
+To connect to a local `havnai-core` during development:
 
 ```bash
 cd rhythm-jet-squadron
@@ -95,25 +77,27 @@ cp .env.example .env
 npm run dev
 ```
 
-By default, local browser development proxies `/api` to:
+By default the dev server proxies `/api` to `http://127.0.0.1:5001`. HAI rewards require a MetaMask wallet connected in-game.
 
-```text
-http://127.0.0.1:5001
-```
+## CI
 
-Relevant env values live in:
+GitHub Actions runs on every push and PR to `main`:
 
-- `rhythm-jet-squadron/.env.example`
+1. `npm ci` — install dependencies
+2. `tsc -b --noEmit` — full type check
+3. `npm run build` — Vite production build
 
-## Packaging targets
+See `.github/workflows/ci.yml`.
+
+## Packaging
 
 ### Desktop
 
 ```bash
-npm run desktop:start
-npm run desktop:build:mac
-npm run desktop:build:win
-npm run desktop:build
+npm run desktop:start          # dev run with Electron
+npm run desktop:build:mac      # macOS DMG
+npm run desktop:build:win      # Windows NSIS installer
+npm run desktop:build          # both
 ```
 
 ### Mobile
@@ -126,55 +110,18 @@ npm run mobile:android
 npm run mobile:ios
 ```
 
-Notes:
-- Windows installers are best built on Windows
-- iOS builds require macOS + Xcode + signing
-- Android builds require Android Studio + SDK setup
+Notes: Windows installers build best on Windows. iOS requires macOS + Xcode + signing. Android requires Android Studio + SDK.
 
-## Current architecture notes
+## Architecture
 
 ### State
 
-The app primarily uses two top-level contexts:
-
-- **GameContext**
-  - local save data
-  - credits
-  - inventory/loadout
-  - progression
-  - missions
-  - achievements
-  - persistence
-
-- **WalletContext**
-  - MetaMask connection
-  - wallet restore/connect/disconnect
-  - shared HavnAI credit balance
+- **GameContext** — local save data, credits, inventory, loadout, progression, missions, achievements, persistence
+- **WalletContext** — MetaMask connection, wallet restore/connect/disconnect, shared HavnAI credit balance
 
 ### Data-driven systems
 
-A lot of the game is configured through source data files, including:
+Most game config lives in source data files:
 
-- `pilots.json`
-- `ships.json`
-- `outfits.json`
-- `dialogues.ts`
-- `lore.ts`
-- `modifiers.ts`
-- `skillTrees.ts`
-
-## Known product reality
-
-This repo still contains some naming and structural leftovers from an earlier rhythm-game prototype phase. The current codebase has moved well beyond that.
-
-If you are new to the repo, trust the code and current routes over the old prototype language.
-
-## Recommended next cleanup
-
-High-value follow-up improvements for the repo itself:
-
-- align folder naming with Astra Valkyries branding
-- keep README and in-app architecture docs current
-- continue improving mobile control ergonomics on real devices
-- tighten onboarding for first-time players
-- keep gameplay balancing separate from narrative/hub polish where possible
+- `pilots.json` / `ships.json` / `outfits.json`
+- `dialogues.ts` / `lore.ts` / `modifiers.ts` / `skillTrees.ts`
