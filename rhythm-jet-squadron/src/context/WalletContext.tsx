@@ -23,8 +23,9 @@ import {
   persistAddress,
   shortAddress,
   getActiveProvider,
+  signMessage,
 } from "../lib/wallet";
-import { fetchCreditBalance } from "../lib/havnApi";
+import { fetchCreditBalance, clearAstraSession, ensureAstraSession } from "../lib/havnApi";
 
 interface WalletContextValue {
   /** Connection status */
@@ -45,6 +46,11 @@ interface WalletContextValue {
   disconnect: () => void;
   /** Refresh shared balance */
   refreshBalance: () => Promise<void>;
+  /**
+   * Sign a message with the connected wallet. Passed to the economy API
+   * calls, which use it to establish a session on first use.
+   */
+  sign: (address: string, message: string) => Promise<string>;
 }
 
 const WalletContext = createContext<WalletContextValue | null>(null);
@@ -93,6 +99,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     if (!provider?.on) return;
     const handler = (...args: unknown[]) => {
       const accounts = args[0] as string[];
+      // The session token is bound to the previous address server-side.
+      clearAstraSession();
       if (accounts.length === 0) {
         setAddress(null);
         setSharedBalance(null);
@@ -118,6 +126,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       setAddress(addr);
       setStatus("connected");
       persistAddress(addr);
+      // Establish the economy session now, while the player is already in a
+      // wallet interaction. One signature here means run starts and gacha
+      // pulls never surface a popup mid-game.
+      void ensureAstraSession(addr, signMessage).catch(() => {});
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Wallet connection failed";
       setError(msg);
@@ -127,6 +139,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   // ─── Disconnect ──────────────────────────────────────────
   const disconnect = useCallback(() => {
+    clearAstraSession();
     setAddress(null);
     setSharedBalance(null);
     setStatus("disconnected");
@@ -146,6 +159,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         connect,
         disconnect,
         refreshBalance,
+        sign: signMessage,
       }}
     >
       {children}

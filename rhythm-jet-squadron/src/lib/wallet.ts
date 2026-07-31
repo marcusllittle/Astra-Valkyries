@@ -120,6 +120,25 @@ export async function connectWallet(): Promise<string> {
   return accounts[0].toLowerCase();
 }
 
+/**
+ * Sign a plain-text message (personal_sign).
+ *
+ * Used once per session to prove wallet ownership to the HavnAI backend.
+ * Signing every spend would mean a wallet popup per gacha pull.
+ */
+export async function signMessage(address: string, message: string): Promise<string> {
+  const provider = await resolveProvider();
+  if (!provider) {
+    throw new Error("No wallet provider available.");
+  }
+  const signature = (await provider.request({
+    method: "personal_sign",
+    params: [message, address],
+  })) as string;
+  if (!signature) throw new Error("Signature request returned nothing.");
+  return signature;
+}
+
 /** Read currently connected accounts without prompting */
 export async function readAccounts(): Promise<string[]> {
   const provider = await resolveProvider();

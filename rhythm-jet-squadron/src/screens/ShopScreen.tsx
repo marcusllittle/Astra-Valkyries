@@ -85,7 +85,9 @@ export default function ShopScreen() {
       if ((wallet.sharedBalance ?? 0) < cost) return;
       setSpending(true);
       try {
-        const res = await astraSpend(wallet.address, action);
+        // Unique key per pull attempt: a network retry replays the original
+        // charge server-side instead of deducting twice.
+        const res = await astraSpend(wallet.address, action, wallet.sign, crypto.randomUUID());
         if (!res.ok) { setSpending(false); return; }
         wallet.refreshBalance();
       } catch {

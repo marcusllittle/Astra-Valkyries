@@ -11,6 +11,8 @@ import {
 } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGame } from "../context/GameContext";
+import { useWallet } from "../context/WalletContext";
+import { astraStartRun, hasAstraSession } from "../lib/havnApi";
 import { resolveAssetUrl } from "../lib/assetUrl";
 import { BASE_SHMUP_HP, buildShmupLoadout } from "../lib/loadout";
 import { getSelectedOutfitKit } from "../lib/outfitKits";
@@ -635,6 +637,12 @@ function createHudState(modifiers: ShmupModifiers, activeMap: ShmupMap): HudStat
 export default function ShmupPlayScreen() {
   const navigate = useNavigate();
   const { save, submitResult } = useGame();
+  const wallet = useWallet();
+  // Read through refs inside the game loop so wallet state changes never
+  // re-run the loop effect (which would restart the run mid-flight).
+  const walletRef = useRef(wallet);
+  walletRef.current = wallet;
+  const runTokenRef = useRef<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [viewportBounds, setViewportBounds] = useState<ViewportBounds>(() => getViewportBounds());
@@ -1068,6 +1076,17 @@ export default function ShmupPlayScreen() {
     // Start level music
     const mapId = activeMap?.id ?? "nebula-runway";
     playLevelMusic(mapId);
+
+    // Open a server-side run so the reward submission is credible. Gated on
+    // an existing session: never a wallet popup at launch. No session means
+    // no shared-credit reward for this run, which the results screen reports.
+    runTokenRef.current = null;
+    const w = walletRef.current;
+    if (w.status === "connected" && w.address && hasAstraSession(w.address)) {
+      void astraStartRun(w.address, mapId, w.sign).then((run) => {
+        if (run) runTokenRef.current = run.run_token;
+      });
+    }
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -2587,7 +2606,9 @@ export default function ShmupPlayScreen() {
       syncHud(elapsedMs);
       submitResult(scoreRecord);
       window.setTimeout(() => {
-        navigate("/shmup-results", { state: { shmupResult, mapId: activeMap?.id } });
+        navigate("/shmup-results", {
+          state: { shmupResult, mapId: activeMap?.id, runToken: runTokenRef.current },
+        });
       }, bossDefeated ? 650 : 400);
     };
 
