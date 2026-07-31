@@ -400,12 +400,12 @@ type SpriteKey =
   | "pulseRing";
 
 const SPRITE_PATHS: Record<SpriteKey, string> = {
-  backgroundFar: "/assets/shmup/background_far.svg",
-  backgroundNear: "/assets/shmup/background_near.svg",
+  backgroundFar: "/assets/shmup/background_far.png",
+  backgroundNear: "/assets/shmup/background_near.png",
   player: "/assets/shmup/player_ship.svg",
-  enemyDrifter: "/assets/shmup/enemy_drifter.svg",
-  enemySine: "/assets/shmup/enemy_sine.svg",
-  boss: "/assets/shmup/boss_dreadnought.svg",
+  enemyDrifter: "/assets/shmup/enemy_drifter.png",
+  enemySine: "/assets/shmup/enemy_sine.png",
+  boss: "/assets/shmup/boss_dreadnought.png",
   chip: "/assets/shmup/power_chip.svg",
   bulletPlayer: "/assets/shmup/bullet_player.svg",
   bulletEnemy: "/assets/shmup/bullet_enemy.svg",
