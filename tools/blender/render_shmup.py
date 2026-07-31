@@ -78,6 +78,23 @@ P = {
     "chip_gold": "#FFD43B",
     "chip_hot":  "#FFF7C2",
     "chip_deep": "#9A6400",
+    # tank fortress miniboss - matches the game's tank enemy cyan #66d9ef
+    "k_hull":    "#33454F",
+    "k_deck":    "#4A616E",
+    "k_dark":    "#101B21",
+    "k_glow":    "#66D9EF",
+    "k_hot":     "#D4F6FF",
+    # zone background palettes (solar-rift / abyss-crown from shmupWaves)
+    "sol_void":  "#120402",
+    "sol_mid":   "#3B1007",
+    "sol_hi":    "#8A3A1C",
+    "sol_star":  "#FFE9D9",
+    "sol_star2": "#FFA94D",
+    "aby_void":  "#02060D",
+    "aby_mid":   "#0A1C33",
+    "aby_hi":    "#1E4A73",
+    "aby_star":  "#D0EBFF",
+    "aby_star2": "#74C0FC",
     # space
     "void":      "#050912",
     "neb_mid":   "#132048",
@@ -687,6 +704,63 @@ def boss_leviathan(outdir):
     render(s, outdir, "boss_cryo_leviathan", 640, 480)
 
 
+# --------------------------------------------------------------- miniboss
+def enemy_tank(outdir):
+    """Tank Fortress - the lore's 'heavily armored mobile platform with
+    regenerating shield generators'. Serves the tank and miniboss wave
+    patterns. Cyan shield tech on dark gunmetal, guns toward the player.
+    """
+    s = new_scene()
+    hull = mat("hull", "k_hull", 0.88, 0.32)
+    deck = mat("deck", "k_deck", 0.90, 0.26)
+    drk = mat("drk", "k_dark", 0.85, 0.40)
+    shld = mat("shld", "k_dark", 0.35, 0.20, emit="k_glow", emit_str=5.0)
+    glow = mat("glow", "k_dark", 0.35, 0.20, emit="k_hot", emit_str=8.0)
+
+    # octagonal armored platform
+    body = cyl((0, 0, 0), 1.55, 0.55, hull, verts=8, bev=0.07)
+    body.rotation_euler = (0, 0, math.radians(22.5))
+    inner = cyl((0, 0, 0.24), 1.10, 0.38, deck, verts=8, bev=0.05)
+    inner.rotation_euler = (0, 0, math.radians(22.5))
+
+    # four shield generator pylons on the diagonals - the regen system
+    for a in range(4):
+        ang = math.radians(90 * a + 45)
+        px, py = math.cos(ang) * 1.28, math.sin(ang) * 1.28
+        cyl((px, py, 0.42), 0.20, 0.55, drk, verts=8)
+        cyl((px, py, 0.74), 0.13, 0.18, shld, verts=8, bev=0)
+
+    # central turret with twin cannons toward the player
+    cyl((0, 0, 0.52), 0.52, 0.35, drk, verts=10)
+    for bx in (-0.2, 0.2):
+        cyl((bx, -0.95, 0.55), 0.10, 1.1, deck, rot=FWD, verts=8, bev=0)
+        cyl((bx, -1.52, 0.55), 0.14, 0.12, glow, verts=8, bev=0)
+
+    # front armor chevron
+    ch = box((0.62, -1.32, 0.10), (0.55, 0.38, 0.30), hull,
+             rot=(0, 0, math.radians(35)), bev=0.05)
+    mx(ch)
+    # rear thruster blocks
+    rt = box((0.55, 1.42, 0.05), (0.42, 0.5, 0.32), drk, bev=0.05)
+    mx(rt)
+    cyl((0, 1.55, 0.1), 0.16, 0.2, shld, rot=FWD, verts=8, bev=0)
+
+    # deck greebles
+    random.seed(31)
+    for _ in range(18):
+        ang = random.uniform(0, TAU)
+        d = random.uniform(0.55, 1.25)
+        box((math.cos(ang) * d, math.sin(ang) * d, 0.46),
+            (random.uniform(0.08, 0.2), random.uniform(0.08, 0.22),
+             random.uniform(0.04, 0.08)),
+            drk if random.random() < 0.5 else deck, bev=0.008)
+
+    camera(s, 4.6)
+    lights(tint=(0.75, 0.95, 1.0), power=1.2)
+    glare(s)
+    render(s, outdir, "enemy_tank_fortress", 256, 256)
+
+
 # --------------------------------------------------------------- power-up
 def power_chip(outdir):
     """Gold energy cell pickup - replaces the flat yellow chicklet."""
@@ -789,8 +863,12 @@ def _star_layer(nt, vec, scale, threshold, color_key):
     return r
 
 
-def background_far(outdir):
-    """Opaque nebula + dense fine stars. Tiles seamlessly in Y."""
+def _nebula_bg(outdir, name, void_k, mid_k, hi_k, star_k, star2_k, seed_off=0.0):
+    """Opaque nebula + dense fine stars. Tiles seamlessly in Y.
+
+    Parameterized per zone so each map gets its own sky in its own
+    palette; seed_off shifts the noise so zones don't share cloud shapes.
+    """
     s = new_scene()
     bpy.ops.mesh.primitive_plane_add(size=12)
     pl = bpy.context.object
@@ -807,19 +885,21 @@ def background_far(outdir):
     neb.inputs["Scale"].default_value = 1.1
     neb.inputs["Detail"].default_value = 9.0
     neb.inputs["Roughness"].default_value = 0.62
+    neb.noise_dimensions = "4D"  # must switch before the W input exists
+    neb.inputs["W"].default_value = seed_off
     nt.links.new(vec, neb.inputs["Vector"])
 
     ramp = nt.nodes.new("ShaderNodeValToRGB")
     ramp.color_ramp.interpolation = "EASE"
     ramp.color_ramp.elements[0].position = 0.30
-    ramp.color_ramp.elements[0].color = C("void")
+    ramp.color_ramp.elements[0].color = C(void_k)
     ramp.color_ramp.elements[1].position = 0.74
-    ramp.color_ramp.elements[1].color = C("neb_hi")
-    ramp.color_ramp.elements.new(0.54).color = C("neb_mid")
+    ramp.color_ramp.elements[1].color = C(hi_k)
+    ramp.color_ramp.elements.new(0.54).color = C(mid_k)
     nt.links.new(neb.outputs["Fac"], ramp.inputs["Fac"])
 
-    stars = _star_layer(nt, vec, 30.0, 0.76, "star")
-    faint = _star_layer(nt, vec, 52.0, 0.79, "star_cool")
+    stars = _star_layer(nt, vec, 30.0, 0.76, star_k)
+    faint = _star_layer(nt, vec, 52.0, 0.79, star2_k)
 
     a1 = nt.nodes.new("ShaderNodeMixRGB")
     a1.blend_type = "ADD"
@@ -839,7 +919,25 @@ def background_far(outdir):
 
     camera(s, 12.0)
     glare(s, threshold=0.8, size=6, mix=-0.4)
-    render(s, outdir, "background_far", 512, 512, transparent=False)
+    render(s, outdir, name, 512, 512, transparent=False)
+
+
+def background_far(outdir):
+    """Nebula Runway - the default blue-violet sky."""
+    _nebula_bg(outdir, "background_far", "void", "neb_mid", "neb_hi",
+               "star", "star_cool")
+
+
+def background_far_solar(outdir):
+    """Solar Rift - ember nebula near the binary star."""
+    _nebula_bg(outdir, "background_far_solar", "sol_void", "sol_mid",
+               "sol_hi", "sol_star", "sol_star2", seed_off=7.3)
+
+
+def background_far_abyss(outdir):
+    """Abyss Crown - near-black deep void, sparse icy stars."""
+    _nebula_bg(outdir, "background_far_abyss", "aby_void", "aby_mid",
+               "aby_hi", "aby_star", "aby_star2", seed_off=13.9)
 
 
 def background_near(outdir):
@@ -880,10 +978,11 @@ def background_near(outdir):
 # --------------------------------------------------------------- main
 TARGETS = (
     astra_interceptor, valkyrie_lancer, seraph_guard,
-    enemy_drifter, enemy_sine,
+    enemy_drifter, enemy_sine, enemy_tank,
     boss_aegis, boss_tyrant, boss_leviathan,
     power_chip,
-    background_far, background_near,
+    background_far, background_far_solar, background_far_abyss,
+    background_near,
 )
 
 if __name__ == "__main__":

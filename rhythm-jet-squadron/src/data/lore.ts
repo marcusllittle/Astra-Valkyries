@@ -87,6 +87,7 @@ export const LORE_ENTRIES: LoreEntry[] = [
     category: "enemy",
     title: "Tank Fortress",
     content: "Heavily armored mobile platforms with regenerating shield generators. Taking one down requires sustained firepower and careful timing around its shield cycles.",
+    imageUrl: "/assets/shmup/enemy_tank_fortress.png",
   },
   {
     id: "lore-dreadnought-enemy",
