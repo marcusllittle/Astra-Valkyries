@@ -829,6 +829,54 @@ video.card-art-img {
   font-weight: 600;
 }
 
+/* Run modifier toggles */
+.modifier-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 200px;
+  max-width: 260px;
+  padding: 12px;
+  text-align: left;
+  background: var(--bg-card);
+  border: 1px solid transparent;
+  border-radius: var(--card-radius);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.modifier-card:hover {
+  border-color: var(--accent-soft);
+}
+
+.modifier-card.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text-primary);
+}
+
+.modifier-icon {
+  font-size: 1.2rem;
+  line-height: 1.2;
+}
+
+.modifier-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.modifier-name {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.modifier-desc {
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
 .star-display {
   color: var(--gold);
   font-size: 0.85rem;
