@@ -74,7 +74,7 @@ function formatTime(timeMs: number): string {
 export default function ShmupResultsScreen() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { addCredits, save } = useGame();
+  const { addCredits, save, submitRunStats } = useGame();
   const wallet = useWallet();
   const isFirstRun = save.totalRuns <= 1;
   const awardAppliedRef = useRef(false);
@@ -164,15 +164,25 @@ export default function ShmupResultsScreen() {
   }, [shmupResult]);
 
   useEffect(() => {
-    if (!shmupResult || !rewardKey || awardAppliedRef.current) return;
+    if (!shmupResult || !rewardKey || !grade || awardAppliedRef.current) return;
     if (sessionStorage.getItem(rewardKey) === "1") {
       awardAppliedRef.current = true;
       return;
     }
     addCredits(creditsEarned);
+    // Progression rides the same guard as the credit award: one application
+    // per run, surviving StrictMode double-invoke and a revisit via back.
+    submitRunStats({
+      pilotId: save.selectedPilotId ?? pilotsData[0].id,
+      mapId: mapId ?? "nebula-runway",
+      score: shmupResult.score,
+      kills: shmupResult.kills,
+      grade,
+      bossDefeated: shmupResult.bossDefeated ?? false,
+    });
     sessionStorage.setItem(rewardKey, "1");
     awardAppliedRef.current = true;
-  }, [addCredits, creditsEarned, rewardKey, shmupResult]);
+  }, [addCredits, creditsEarned, rewardKey, shmupResult, grade, mapId, submitRunStats, save.selectedPilotId]);
 
   useEffect(() => {
     if (!shmupResult || !grade || !wallet.address || wallet.status !== "connected") return;
