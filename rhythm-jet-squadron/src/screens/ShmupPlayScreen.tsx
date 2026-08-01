@@ -4,6 +4,7 @@
 
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   useCallback,
@@ -12,6 +13,11 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useGame } from "../context/GameContext";
 import { useWallet } from "../context/WalletContext";
+import {
+  combineModifierEffects,
+  NEUTRAL_MODIFIER_EFFECTS,
+  type CombinedModifierEffects,
+} from "../data/modifiers";
 import { astraStartRun, hasAstraSession } from "../lib/havnApi";
 import { resolveAssetUrl } from "../lib/assetUrl";
 import { BASE_SHMUP_HP, buildShmupLoadout } from "../lib/loadout";
@@ -379,6 +385,12 @@ interface ShmupModifiers {
   regenDelayMs: number;
   shotColor: string | null;
   outfitKit: ShmupKit | null;
+  /** Run-modifier effects, applied by the sim at spawn and score time. */
+  runEnemyHpMult: number;
+  runEnemySpeedMult: number;
+  runScoreMult: number;
+  runEnemyBulletSpeedMult: number;
+  runSpawnRateMult: number;
 }
 
 interface ScheduledWaveSpawn extends ShmupWaveEnemy {
@@ -530,7 +542,8 @@ function buildModifiers(
   ship: Ship | undefined,
   outfit: Outfit | undefined,
   ownedOutfit: OwnedOutfit | undefined,
-  outfitKit: ShmupKit | null
+  outfitKit: ShmupKit | null,
+  runMods: CombinedModifierEffects = NEUTRAL_MODIFIER_EFFECTS
 ): ShmupModifiers {
   const loadout = buildShmupLoadout(pilot, ship, outfit, ownedOutfit);
   const primaryKey = resolvePrimaryKey(outfitKit?.primary);
@@ -554,7 +567,12 @@ function buildModifiers(
   const hpFromPassives =
     (hasExtraShield ? SHMUP_BALANCE.passives.extraShieldHp : 0) -
     (hasAggressiveRoute ? SHMUP_BALANCE.passives.aggressiveRoute.hpPenalty : 0);
-  const baseHp = Math.max(1, loadout.shipHp + hpFromPassives);
+  // Run modifiers scale the assembled loadout. Floor of 1 keeps
+  // "One Hit Wonder" (playerHpMult 0) at exactly one hit rather than zero.
+  const baseHp = Math.max(
+    1,
+    Math.round((loadout.shipHp + hpFromPassives) * runMods.playerHpMult),
+  );
 
   return {
     maxHp: baseHp,
@@ -584,7 +602,15 @@ function buildModifiers(
       : 1,
     weaponDamageMultiplier:
       (hasPrecisionRoute ? SHMUP_BALANCE.passives.precisionRoute.damageMult : 1) *
-      (hasAggressiveRoute ? SHMUP_BALANCE.passives.aggressiveRoute.damageMult : 1),
+      (hasAggressiveRoute ? SHMUP_BALANCE.passives.aggressiveRoute.damageMult : 1) *
+      runMods.playerDamageMult,
+    // Run-modifier effects the sim applies at spawn/score time. Kept separate
+    // from the loadout multipliers above, which describe the player's own kit.
+    runEnemyHpMult: runMods.enemyHpMult,
+    runEnemySpeedMult: runMods.enemySpeedMult,
+    runScoreMult: runMods.scoreMult,
+    runEnemyBulletSpeedMult: runMods.bulletSpeedMult,
+    runSpawnRateMult: runMods.spawnRateMult,
     damageTakenMultiplier: hasAggressiveRoute
       ? SHMUP_BALANCE.passives.aggressiveRoute.damageTakenMult
       : 1,
@@ -832,7 +858,11 @@ export default function ShmupPlayScreen() {
   const ownedOutfit = save.ownedOutfits.find((item) => item.outfitId === save.selectedOutfitId);
   const outfitKit = getSelectedOutfitKit(save.selectedPilotId, save.selectedOutfitId, outfits);
   const playerSpritePath = getPlayerShipSpritePath(save.selectedPilotId, selectedShip);
-  const modifiers = buildModifiers(pilot, selectedShip, outfit, ownedOutfit, outfitKit);
+  const runMods = useMemo(
+    () => combineModifierEffects(save.selectedModifiers),
+    [save.selectedModifiers],
+  );
+  const modifiers = buildModifiers(pilot, selectedShip, outfit, ownedOutfit, outfitKit, runMods);
   const {
     comboBonus,
     hasMultiplierSave,
@@ -858,6 +888,11 @@ export default function ShmupPlayScreen() {
     shotColor,
     spreadMultiplier,
     weaponDamageMultiplier,
+    runEnemyHpMult,
+    runEnemySpeedMult,
+    runScoreMult,
+    runEnemyBulletSpeedMult,
+    runSpawnRateMult,
   } = modifiers;
   const passiveKeySignature = passiveKeys.join("|");
 
@@ -1577,9 +1612,14 @@ export default function ShmupPlayScreen() {
         y: spawn.y ?? -24,
         originX: spawnX,
         vx: ((spawn.vx ?? 0) + vxJitter) * loopDifficulty,
-        vy: (spawn.vy ?? (defaultVy[pattern] ?? 92)) * loopDifficulty * velRand,
+        vy: (spawn.vy ?? (defaultVy[pattern] ?? 92)) * loopDifficulty * velRand * runEnemySpeedMult,
         radius: spawn.radius ?? def.radius,
-        hp: Math.max(1, Math.round(((spawn.hp ?? def.hp) + spawn.loop * 0.15) * (isElite ? 1.8 : 1))),
+        hp: Math.max(
+          1,
+          Math.round(
+            ((spawn.hp ?? def.hp) + spawn.loop * 0.15) * (isElite ? 1.8 : 1) * runEnemyHpMult,
+          ),
+        ),
         scoreValue: Math.round(((spawn.scoreValue ?? def.score) * (1 + spawn.loop * 0.12)) * (isElite ? 1.5 : 1)),
         fireCooldown: Math.max(0.3, ((spawn.fireCooldown ?? def.fireCooldown) - spawn.loop * 0.03) / timeDifficultyScale),
         age: 0,
@@ -1633,7 +1673,11 @@ export default function ShmupPlayScreen() {
       );
       queuedWaveSpawnsRef.current.sort((left, right) => left.spawnAtMs - right.spawnAtMs);
 
-      nextWaveStartMsRef.current = waveStartMs + wave.durationMs + 1100;
+      // Swarm-type modifiers compress the gap between waves rather than
+      // duplicating spawns, so authored wave shapes stay intact and the
+      // extra pressure comes from overlap.
+      nextWaveStartMsRef.current =
+        waveStartMs + (wave.durationMs + 1100) / runSpawnRateMult;
       waveCursorRef.current += 1;
       if (waveCursorRef.current >= activeMap.waves.length) {
         waveCursorRef.current = 0;
@@ -1679,6 +1723,12 @@ export default function ShmupPlayScreen() {
     const pushEnemyBullet = (b: EnemyBullet) => {
       b.radius *= ENTITY_SCALE;
       b.length *= ENTITY_SCALE;
+      // Single chokepoint for every enemy bullet, so the run modifier
+      // applies to boss patterns and minion fire alike.
+      if (runEnemyBulletSpeedMult !== 1) {
+        b.vx *= runEnemyBulletSpeedMult;
+        b.vy *= runEnemyBulletSpeedMult;
+      }
       enemyBulletsRef.current.push(b);
     };
 
@@ -2133,7 +2183,9 @@ export default function ShmupPlayScreen() {
       }
       const totalMultiplier = getScoreMultiplier(elapsedMs);
       bestMultiplierRef.current = Math.max(bestMultiplierRef.current, totalMultiplier);
-      scoreRef.current += Math.round((enemy.scoreValue + scoreFlatBonus) * totalMultiplier);
+      scoreRef.current += Math.round(
+        (enemy.scoreValue + scoreFlatBonus) * totalMultiplier * runScoreMult,
+      );
       extendOverdrive(elapsedMs, OVERDRIVE_EXTENSION_PER_KILL_MS);
 
       // Dreadnought: spawn full mini-wave on death
@@ -2294,7 +2346,7 @@ export default function ShmupPlayScreen() {
       streakRef.current += 3;
       const totalMultiplier = getScoreMultiplier(elapsedMs);
       bestMultiplierRef.current = Math.max(bestMultiplierRef.current, totalMultiplier);
-      scoreRef.current += Math.round((4200 + scoreFlatBonus) * totalMultiplier);
+      scoreRef.current += Math.round((4200 + scoreFlatBonus) * totalMultiplier * runScoreMult);
       enemyBulletsRef.current = [];
       bomberZonesRef.current = [];
       // Multi-stage boss death explosion sequence
