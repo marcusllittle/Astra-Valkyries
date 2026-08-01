@@ -86,6 +86,7 @@ export default function ShmupResultsScreen() {
 
   const shmupResult = (location.state as { shmupResult?: ShmupRunResult } | undefined)?.shmupResult;
   const mapId = (location.state as { mapId?: string } | undefined)?.mapId;
+  const runToken = (location.state as { runToken?: string | null } | undefined)?.runToken ?? null;
   const grade = shmupResult ? gradeShmupRun(shmupResult) : null;
   const creditsEarned = grade ? creditsForGrade(grade) : 0;
   const activeOutfit = outfitsData.find((o) => o.id === save.selectedOutfitId);
@@ -175,9 +176,11 @@ export default function ShmupResultsScreen() {
   useEffect(() => {
     if (!shmupResult || !grade || !wallet.address || wallet.status !== "connected") return;
     if (sessionStorage.getItem(`${rewardKey}:shared`) === "1") return;
+    // No run token means no server-side run was opened (no session at
+    // launch); rendered as a derived hint below rather than state.
+    if (!runToken) return;
     const durationS = (shmupResult.timeSurvivedMs ?? 0) / 1000;
-    const mapId = "shmup_arcade";
-    astraReward(wallet.address, shmupResult.score, grade, durationS, mapId)
+    astraReward(wallet.address, shmupResult.score, grade, durationS, mapId ?? "unknown", runToken, wallet.sign)
       .then((res) => {
         if (res.ok && res.reward && res.reward > 0) {
           sessionStorage.setItem(`${rewardKey}:shared`, "1");
@@ -185,13 +188,15 @@ export default function ShmupResultsScreen() {
           wallet.refreshBalance();
         } else if (!res.ok) {
           setRewardStatus(res.reason ?? "not_eligible");
-          if (res.reason === "duplicate_run" || res.reason === "daily_cap_reached") {
+          // The run token is single-use and burned on first submission, so
+          // every server verdict is final for this run -- never resubmit.
+          if (res.reason !== "session_required") {
             sessionStorage.setItem(`${rewardKey}:shared`, "1");
           }
         }
       })
       .catch(() => { setRewardStatus("network_error"); });
-  }, [shmupResult, grade, wallet.address, wallet.status, rewardKey, wallet]);
+  }, [shmupResult, grade, wallet.address, wallet.status, rewardKey, wallet, runToken, mapId]);
 
   if (showDebrief && debriefLines.length > 0 && debriefLineIdx < debriefLines.length) {
     return (
@@ -315,6 +320,11 @@ export default function ShmupResultsScreen() {
       </div>
       {wallet.status !== "connected" && (
         <div className="reward-status-note">Wallet rewards available when connected</div>
+      )}
+      {wallet.status === "connected" && !runToken && !sharedReward && (
+        <div className="reward-status-note">
+          Reconnect your wallet before launching to earn HavnAI credits
+        </div>
       )}
       {rewardStatus && (
         <div className="reward-status-note">
