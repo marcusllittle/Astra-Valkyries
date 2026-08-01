@@ -823,6 +823,12 @@ video.card-art-img {
   color: var(--text-secondary);
 }
 
+/* The pilot perk's actual effect, emphasised over the axis label. */
+.stat-delta {
+  color: var(--accent);
+  font-weight: 600;
+}
+
 .star-display {
   color: var(--gold);
   font-size: 0.85rem;

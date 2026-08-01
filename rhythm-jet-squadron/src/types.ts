@@ -2,6 +2,13 @@
 
 // ─── Data types ──────────────────────────────────────────
 
+/**
+ * Legacy rhythm-game key names, kept because outfits.json shares this union.
+ * What they actually drive in the shmup (see lib/loadout.ts):
+ *   perfectWindow -> hitbox scale   (tighter hurtbox)
+ *   comboBonus    -> chain growth   (score ramp on kill streaks)
+ *   feverDuration -> overdrive time (longer overdrive window)
+ */
 export interface PilotPerk {
   type: "perfectWindow" | "comboBonus" | "feverDuration";
   label: string;
@@ -12,7 +19,6 @@ export interface Pilot {
   id: string;
   name: string;
   description: string;
-  stats: { accuracy: number; rhythm: number; endurance: number };
   perk: PilotPerk;
   artPlaceholder: string;
   artUrl?: string;
@@ -70,7 +76,6 @@ export interface Ship {
   className: string;
   manufacturer: string;
   description: string;
-  stats: { mobility: number; firepower: number; control: number };
   artPlaceholder: string;
   artUrl?: string;
   spriteUrl?: string;

@@ -9,7 +9,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGame } from "../context/GameContext";
-import { buildShmupLoadout } from "../lib/loadout";
+import { buildShmupLoadout, describePilotPerk, describeShipModifiers } from "../lib/loadout";
 import { SHMUP_MAPS } from "../lib/shmupWaves";
 import {
   isOutfitPilotLocked,
@@ -168,11 +168,18 @@ export default function HangarScreen() {
               />
               <div className="card-info">
                 <strong className="card-title">{pilot.name}</strong>
-                <div className="stats-row">
-                  <span>ACC {pilot.stats.accuracy}</span>
-                  <span>RHY {pilot.stats.rhythm}</span>
-                  <span>END {pilot.stats.endurance}</span>
-                </div>
+                {(() => {
+                  // Derived from the same loadout math the sim runs, so this
+                  // can never drift from what the pilot actually does.
+                  const line = describePilotPerk(pilot);
+                  if (!line) return null;
+                  return (
+                    <div className="stats-row" title={line.detail}>
+                      <span>{line.stat}</span>
+                      <span className="stat-delta">{line.delta}</span>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           ))}
@@ -201,8 +208,11 @@ export default function HangarScreen() {
                 <strong className="card-title">{ship.name}</strong>
                 <div className="rarity-badge">{ship.className}</div>
                 <div className="stats-row">
-                  <span>MOB {ship.stats.mobility}</span>
-                  <span>FIR {ship.stats.firepower}</span>
+                  {describeShipModifiers(ship, 2).map((line) => (
+                    <span key={line.stat} title={line.detail}>
+                      {line.stat} <span className="stat-delta">{line.delta}</span>
+                    </span>
+                  ))}
                 </div>
               </div>
             </div>
