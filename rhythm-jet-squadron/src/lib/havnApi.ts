@@ -305,29 +305,63 @@ export async function fetchLeaderboard(limit = 50): Promise<LeaderboardFetchResu
 }
 
 // ─── Reward Images & Gallery ────────────────────────────────
+// The flywheel: finish a run, the network generates art for YOUR pilot.
+// The client sends IDs only — prompts are composed server-side from
+// locked templates, so there is nothing to inject.
 
-/** Generate a reward image for game context */
-export async function generateRewardImage(wallet: string, pilotId: string, context: string): Promise<{ imageUrl: string } | null> {
+export interface GenerateRewardResult {
+  ok: boolean;
+  reason?: string;
+  job_id?: string;
+  status?: "queued" | "existing";
+}
+
+/** Request a personalized reward image for a completed, rewarded run. */
+export async function generateRewardImage(
+  wallet: string,
+  runId: string,
+  pilotId: string,
+  outfitId: string,
+  mapId: string,
+  sign: SignFn,
+): Promise<GenerateRewardResult> {
   try {
-    const res = await fetch(`${API_BASE}/astra/generate-reward`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ wallet, pilotId, context }),
-    });
-    if (!res.ok) return null;
+    const res = await authorizedPost(
+      "/astra/generate-reward",
+      { run_id: runId, pilot_id: pilotId, outfit_id: outfitId, map_id: mapId },
+      wallet,
+      sign,
+    );
+    if (!res) return { ok: false, reason: "session_required" };
     return await res.json();
   } catch {
-    return null;
+    return { ok: false, reason: "network_error" };
   }
 }
 
-/** Fetch player's earned game images */
-export async function fetchGalleryImages(wallet: string): Promise<{ images: Array<{ id: string; imageUrl: string; pilotId: string; context: string; createdAt: string }> }> {
+export interface GalleryImage {
+  run_id: string;
+  job_id: string;
+  pilot_id: string;
+  outfit_id: string;
+  map_id: string;
+  grade: string;
+  status: "pending" | "completed" | "failed";
+  created_at: number;
+  image_url?: string;
+  preview_url?: string;
+}
+
+/** Fetch the player's generated reward images (pending, completed, failed). */
+export async function fetchGalleryImages(
+  wallet: string,
+): Promise<{ images: GalleryImage[]; offline: boolean }> {
   try {
     const res = await fetch(`${API_BASE}/astra/gallery?wallet=${encodeURIComponent(wallet)}`);
-    if (!res.ok) return { images: [] };
-    return await res.json();
+    if (!res.ok) return { images: [], offline: true };
+    const data = await res.json();
+    return { images: Array.isArray(data.images) ? data.images : [], offline: false };
   } catch {
-    return { images: [] };
+    return { images: [], offline: true };
   }
 }

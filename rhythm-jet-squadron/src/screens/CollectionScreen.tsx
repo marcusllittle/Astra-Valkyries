@@ -9,7 +9,7 @@ import { useGame } from "../context/GameContext";
 import { useWallet } from "../context/WalletContext";
 import { canUpgrade, SHARD_THRESHOLDS } from "../lib/gacha";
 import { summarizeOutfitKit } from "../lib/outfitKits";
-import { fetchGalleryImages } from "../lib/havnApi";
+import { fetchGalleryImages, type GalleryImage } from "../lib/havnApi";
 import CardArt from "../components/CardArt";
 import type { Outfit, OwnedOutfit, Pilot } from "../types";
 import outfitsData from "../data/outfits.json";
@@ -32,13 +32,7 @@ const RARITY_ORDER: Record<string, number> = {
 type FilterTab = "all" | string;
 type ViewTab = "collection" | "gallery";
 
-interface GalleryImage {
-  id: string;
-  imageUrl: string;
-  pilotId: string;
-  context: string;
-  createdAt: string;
-}
+const GALLERY_POLL_MS = 15000;
 
 export default function CollectionScreen() {
   const navigate = useNavigate();
@@ -51,12 +45,33 @@ export default function CollectionScreen() {
   const [galleryLoading, setGalleryLoading] = useState(false);
 
   useEffect(() => {
-    if (viewTab === "gallery" && wallet.address) {
-      setGalleryLoading(true);
-      fetchGalleryImages(wallet.address)
-        .then((data) => setGalleryImages(data.images))
-        .finally(() => setGalleryLoading(false));
-    }
+    if (viewTab !== "gallery" || !wallet.address) return;
+    const address = wallet.address;
+    let cancelled = false;
+    let timer: number | undefined;
+
+    const load = (initial: boolean) => {
+      if (initial) setGalleryLoading(true);
+      fetchGalleryImages(address)
+        .then((data) => {
+          if (cancelled) return;
+          setGalleryImages(data.images);
+          // Keep polling while any render is still in flight so the image
+          // appears without the player having to leave and come back.
+          if (data.images.some((img) => img.status === "pending")) {
+            timer = window.setTimeout(() => load(false), GALLERY_POLL_MS);
+          }
+        })
+        .finally(() => {
+          if (!cancelled && initial) setGalleryLoading(false);
+        });
+    };
+
+    load(true);
+    return () => {
+      cancelled = true;
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
   }, [viewTab, wallet.address]);
 
   const allOutfits = outfitsData as Outfit[];
@@ -134,29 +149,46 @@ export default function CollectionScreen() {
           {galleryLoading ? (
             <p className="empty-msg">Loading gallery...</p>
           ) : galleryImages.length === 0 ? (
-            <p className="empty-msg">No reward images yet. Earn images by completing missions!</p>
+            <p className="empty-msg">
+              No reward art yet. Win a mission with your wallet connected and the
+              HavnAI network paints your pilot&apos;s victory.
+            </p>
           ) : (
             <div className="collection-scroll-row">
-              {galleryImages.map((img) => (
-                <div key={img.id} className="card outfit-card" style={{ cursor: "pointer" }}>
-                  <div style={{ width: "100%", aspectRatio: "3/4", overflow: "hidden", borderRadius: "6px 6px 0 0" }}>
-                    <img
-                      src={img.imageUrl}
-                      alt={img.context}
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                    />
-                  </div>
-                  <div className="card-info">
-                    <strong className="card-title">{img.context || "Reward Image"}</strong>
-                    <span className="rarity-text" style={{ color: "#66d9ef" }}>
-                      {img.pilotId}
-                    </span>
-                    <div className="perk-label">
-                      {new Date(img.createdAt).toLocaleDateString()}
+              {galleryImages.map((img) => {
+                const pilotName = pilotNameById.get(img.pilot_id) ?? img.pilot_id;
+                const imageUrl = img.image_url ?? img.preview_url;
+                return (
+                  <div key={img.run_id} className="card outfit-card">
+                    <div style={{ width: "100%", aspectRatio: "3/4", overflow: "hidden", borderRadius: "6px 6px 0 0", display: "flex", alignItems: "center", justifyContent: "center", background: "#0b1018" }}>
+                      {img.status === "completed" && imageUrl ? (
+                        <img
+                          src={imageUrl}
+                          alt={`${pilotName} reward art`}
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        />
+                      ) : img.status === "failed" ? (
+                        <span className="empty-msg" style={{ padding: "8px", textAlign: "center" }}>
+                          Render failed — this one got away
+                        </span>
+                      ) : (
+                        <span className="empty-msg" style={{ padding: "8px", textAlign: "center" }}>
+                          &#x1F3A8; Rendering on the network…
+                        </span>
+                      )}
+                    </div>
+                    <div className="card-info">
+                      <strong className="card-title">{pilotName} — Grade {img.grade}</strong>
+                      <span className="rarity-text" style={{ color: "#66d9ef" }}>
+                        {img.map_id.replace(/-/g, " ")}
+                      </span>
+                      <div className="perk-label">
+                        {new Date(img.created_at * 1000).toLocaleDateString()}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </section>
