@@ -17,6 +17,58 @@ export interface RunModifier {
   };
 }
 
+/** Every effect a run modifier can apply, with no-op defaults. */
+export interface CombinedModifierEffects {
+  enemyHpMult: number;
+  enemySpeedMult: number;
+  playerDamageMult: number;
+  playerHpMult: number;
+  scoreMult: number;
+  bulletSpeedMult: number;
+  spawnRateMult: number;
+}
+
+export const NEUTRAL_MODIFIER_EFFECTS: CombinedModifierEffects = {
+  enemyHpMult: 1,
+  enemySpeedMult: 1,
+  playerDamageMult: 1,
+  playerHpMult: 1,
+  scoreMult: 1,
+  bulletSpeedMult: 1,
+  spawnRateMult: 1,
+};
+
+export function getModifierById(id: string): RunModifier | undefined {
+  return RUN_MODIFIERS.find((m) => m.id === id);
+}
+
+/**
+ * Fold the selected modifiers into one set of multipliers.
+ *
+ * Stacked modifiers multiply, so picking two score-boosting ones compounds
+ * rather than taking the larger. Unknown ids are ignored so a stale save
+ * cannot break a run.
+ */
+export function combineModifierEffects(ids: string[] | undefined): CombinedModifierEffects {
+  const combined = { ...NEUTRAL_MODIFIER_EFFECTS };
+  if (!ids?.length) return combined;
+
+  for (const id of ids) {
+    const mod = getModifierById(id);
+    if (!mod) continue;
+    for (const key of Object.keys(combined) as (keyof CombinedModifierEffects)[]) {
+      const value = mod.effects[key];
+      if (typeof value === "number") combined[key] *= value;
+    }
+  }
+  return combined;
+}
+
+/** Net score swing from the selected modifiers, as a signed percentage. */
+export function getScoreSwingPercent(ids: string[] | undefined): number {
+  return Math.round((combineModifierEffects(ids).scoreMult - 1) * 100);
+}
+
 export const RUN_MODIFIERS: RunModifier[] = [
   {
     id: "double-trouble",

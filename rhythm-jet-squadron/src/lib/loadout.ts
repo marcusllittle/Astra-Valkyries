@@ -25,6 +25,125 @@ function formatPercent(value: number): string {
   return `${value >= 0 ? "+" : ""}${value}%`;
 }
 
+export interface PilotStatline {
+  /** Axis the perk moves, e.g. "HITBOX". */
+  stat: string;
+  /** Signed effect as the player sees it, e.g. "-10%". */
+  delta: string;
+  /** What it means during a run. */
+  detail: string;
+}
+
+/**
+ * Describe a pilot's perk in terms of what it actually changes in combat.
+ *
+ * Derived by diffing buildShmupLoadout with and without the pilot, so the
+ * Hangar cannot drift from the numbers the sim consumes. The Hangar
+ * previously showed hand-authored accuracy/rhythm/endurance values that
+ * nothing in the game read.
+ *
+ * The perk `type` keys are legacy rhythm-game names, kept because
+ * outfits.json shares the same union. What they really map to:
+ *   perfectWindow -> hitbox scale    (tighter hurtbox)
+ *   comboBonus    -> chain growth    (score ramp on streaks)
+ *   feverDuration -> overdrive time  (longer overdrive window)
+ */
+export function describePilotPerk(pilot: Pilot | undefined): PilotStatline | null {
+  if (!pilot) return null;
+
+  const base = buildShmupLoadout(undefined, undefined, undefined, undefined);
+  const withPilot = buildShmupLoadout(pilot, undefined, undefined, undefined);
+
+  switch (pilot.perk.type) {
+    case "perfectWindow": {
+      const pct = Math.round((1 - withPilot.hitboxScale / base.hitboxScale) * 100);
+      return {
+        stat: "HITBOX",
+        delta: `-${pct}%`,
+        detail: "Tighter hurtbox — thread narrower bullet gaps",
+      };
+    }
+    case "comboBonus": {
+      const delta = withPilot.comboBonus - base.comboBonus;
+      return {
+        stat: "CHAIN",
+        delta: formatPercent(delta),
+        detail: "Faster score-chain growth on kill streaks",
+      };
+    }
+    case "feverDuration": {
+      const seconds = Math.round(
+        (withPilot.overdriveDurationMs - base.overdriveDurationMs) / 1000,
+      );
+      return {
+        stat: "OVERDRIVE",
+        delta: `+${seconds}s`,
+        detail: "Longer overdrive window once charged",
+      };
+    }
+    default:
+      return null;
+  }
+}
+
+/**
+ * Describe a ship by the modifiers it actually applies, strongest first.
+ *
+ * The Hangar previously showed hand-authored mobility/firepower scores.
+ * Mobility at least tracked moveSpeedPct, but "firepower" was fiction --
+ * ships do not affect damage at all; the weapon kit does.
+ */
+export function describeShipModifiers(ship: Ship | undefined, limit = 3): PilotStatline[] {
+  if (!ship) return [];
+  const m = ship.modifiers;
+
+  const candidates: Array<PilotStatline & { weight: number }> = [
+    {
+      stat: "SPEED",
+      delta: formatPercent(m.moveSpeedPct ?? 0),
+      detail: "Strafe speed against the base frame",
+      weight: Math.abs(m.moveSpeedPct ?? 0),
+    },
+    {
+      stat: "HULL",
+      delta: `+${m.maxHp ?? 0}`,
+      detail: "Extra hit points before the run ends",
+      // HP is scarce (base is 5), so a single point outranks small percentages.
+      weight: (m.maxHp ?? 0) * 20,
+    },
+    {
+      stat: "SCORE",
+      delta: formatPercent(m.scoreMult ?? 0),
+      detail: "Passive score multiplier",
+      weight: Math.abs(m.scoreMult ?? 0),
+    },
+    {
+      stat: "CHAIN",
+      delta: formatPercent(m.comboBonus ?? 0),
+      detail: "Score-chain growth on kill streaks",
+      weight: Math.abs(m.comboBonus ?? 0),
+    },
+    {
+      stat: "OD FILL",
+      delta: formatPercent(m.overdriveRate ?? 0),
+      detail: "How fast overdrive charges",
+      weight: Math.abs(m.overdriveRate ?? 0),
+    },
+    {
+      stat: "OD TIME",
+      delta: `+${m.overdriveDuration ?? 0}s`,
+      detail: "How long overdrive stays open",
+      weight: (m.overdriveDuration ?? 0) * 10,
+    },
+  ];
+
+  return candidates
+    .filter((c) => c.weight > 0)
+    .sort((a, b) => b.weight - a.weight)
+    .slice(0, limit)
+    .map(({ stat, delta, detail }) => ({ stat, delta, detail }));
+}
+
 export function buildShmupLoadout(
   pilot: Pilot | undefined,
   ship: Ship | undefined,
