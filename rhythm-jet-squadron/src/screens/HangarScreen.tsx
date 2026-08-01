@@ -9,7 +9,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGame } from "../context/GameContext";
-import { buildShmupLoadout } from "../lib/loadout";
+import { buildShmupLoadout, describePilotPerk, describeShipModifiers } from "../lib/loadout";
+import { RUN_MODIFIERS, getScoreSwingPercent } from "../data/modifiers";
 import { SHMUP_MAPS } from "../lib/shmupWaves";
 import {
   isOutfitPilotLocked,
@@ -25,7 +26,7 @@ const SHOW_ALL_OUTFITS_STORAGE_KEY = "astra.showAllPilotOutfits";
 
 export default function HangarScreen() {
   const navigate = useNavigate();
-  const { save, selectPilot, selectShip, selectMap, selectOutfit } = useGame();
+  const { save, selectPilot, selectShip, selectMap, selectOutfit, setSelectedModifiers } = useGame();
   const isFirstRun = save.totalRuns === 0;
   const [kitWarning, setKitWarning] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
@@ -38,6 +39,16 @@ export default function HangarScreen() {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(SHOW_ALL_OUTFITS_STORAGE_KEY, showAllOutfits ? "1" : "0");
   }, [showAllOutfits]);
+
+  const activeModifiers = save.selectedModifiers ?? [];
+  const scoreSwing = getScoreSwingPercent(activeModifiers);
+  const toggleModifier = (id: string) => {
+    setSelectedModifiers(
+      activeModifiers.includes(id)
+        ? activeModifiers.filter((active) => active !== id)
+        : [...activeModifiers, id],
+    );
+  };
 
   const pilots = pilotsData as Pilot[];
   const ships = shipsData as Ship[];
@@ -168,11 +179,18 @@ export default function HangarScreen() {
               />
               <div className="card-info">
                 <strong className="card-title">{pilot.name}</strong>
-                <div className="stats-row">
-                  <span>ACC {pilot.stats.accuracy}</span>
-                  <span>RHY {pilot.stats.rhythm}</span>
-                  <span>END {pilot.stats.endurance}</span>
-                </div>
+                {(() => {
+                  // Derived from the same loadout math the sim runs, so this
+                  // can never drift from what the pilot actually does.
+                  const line = describePilotPerk(pilot);
+                  if (!line) return null;
+                  return (
+                    <div className="stats-row" title={line.detail}>
+                      <span>{line.stat}</span>
+                      <span className="stat-delta">{line.delta}</span>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           ))}
@@ -201,8 +219,11 @@ export default function HangarScreen() {
                 <strong className="card-title">{ship.name}</strong>
                 <div className="rarity-badge">{ship.className}</div>
                 <div className="stats-row">
-                  <span>MOB {ship.stats.mobility}</span>
-                  <span>FIR {ship.stats.firepower}</span>
+                  {describeShipModifiers(ship, 2).map((line) => (
+                    <span key={line.stat} title={line.detail}>
+                      {line.stat} <span className="stat-delta">{line.delta}</span>
+                    </span>
+                  ))}
                 </div>
               </div>
             </div>
@@ -237,6 +258,38 @@ export default function HangarScreen() {
               </div>
             </button>
           ))}
+        </div>
+      </section>
+
+      {/* Run modifiers — optional difficulty trades, applied by the sim */}
+      <section className="hangar-section">
+        <div className="section-head">
+          <h3>Run Modifiers</h3>
+          <span className="section-selected">
+            {activeModifiers.length === 0
+              ? "None"
+              : `${scoreSwing >= 0 ? "+" : ""}${scoreSwing}% score`}
+          </span>
+        </div>
+        <div className="hangar-strip hangar-strip-wrap">
+          {RUN_MODIFIERS.map((mod) => {
+            const active = activeModifiers.includes(mod.id);
+            return (
+              <button
+                key={mod.id}
+                type="button"
+                className={`modifier-card ${active ? "selected" : ""}`}
+                onClick={() => toggleModifier(mod.id)}
+                aria-pressed={active}
+              >
+                <span className="modifier-icon" aria-hidden="true">{mod.icon}</span>
+                <span className="modifier-body">
+                  <strong className="modifier-name">{mod.name}</strong>
+                  <span className="modifier-desc">{mod.description}</span>
+                </span>
+              </button>
+            );
+          })}
         </div>
       </section>
 
