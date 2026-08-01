@@ -4,7 +4,7 @@
  */
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
-import type { SaveData, OwnedOutfit, GameSettings, GameResult, GachaResult } from "../types";
+import type { SaveData, OwnedOutfit, GameSettings, GameResult, GachaResult, EquippedBanner } from "../types";
 import pilotsData from "../data/pilots.json";
 import shipsData from "../data/ships.json";
 import outfitsData from "../data/outfits.json";
@@ -80,6 +80,7 @@ function getDefaultSave(): SaveData {
     seenCutscenes: [],
     zoneClears: {},
     pilotSkills: {},
+    equippedBanner: null,
   };
 }
 
@@ -136,6 +137,8 @@ interface GameContextValue {
   recordZoneClear: (mapId: string) => void;
   // Skill tree
   unlockSkill: (pilotId: string, skillId: string) => void;
+  // JoinHavn-owned cosmetics (never gameplay-affecting)
+  equipBanner: (banner: EquippedBanner | null) => void;
   // Reset
   resetSave: () => void;
   // Achievements
@@ -380,6 +383,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const equipBanner = useCallback((banner: EquippedBanner | null) => {
+    setSave((s) => {
+      if (s.equippedBanner?.jobId === banner?.jobId) return s;
+      return { ...s, equippedBanner: banner };
+    });
+  }, []);
+
   const resetSave = useCallback(() => {
     setSave(getDefaultSave());
   }, []);
@@ -405,6 +415,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         markCutsceneSeen,
         recordZoneClear,
         unlockSkill,
+        equipBanner,
         resetSave,
         unlockedAchievements,
         pendingAchievement,

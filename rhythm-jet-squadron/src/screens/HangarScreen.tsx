@@ -159,6 +159,15 @@ export default function HangarScreen() {
         <h2 className="hangar-title">Loadout</h2>
       </div>
 
+      {/* A JoinHavn asset the player owns, flying over the hangar. Decor
+          only — nothing below reads it. Equipped from Collection > Owned. */}
+      {save.equippedBanner && (
+        <div className="hangar-banner" title={save.equippedBanner.title}>
+          <img src={save.equippedBanner.url} alt={save.equippedBanner.title} />
+          <span className="hangar-banner-label">{save.equippedBanner.title}</span>
+        </div>
+      )}
+
       {/* Pilot selection — horizontal strip on mobile */}
       <section className="hangar-section">
         <div className="section-head">

@@ -9,7 +9,7 @@ import { useGame } from "../context/GameContext";
 import { useWallet } from "../context/WalletContext";
 import { canUpgrade, SHARD_THRESHOLDS } from "../lib/gacha";
 import { summarizeOutfitKit } from "../lib/outfitKits";
-import { fetchGalleryImages, type GalleryImage } from "../lib/havnApi";
+import { fetchGalleryImages, fetchOwnedAssets, type GalleryImage, type OwnedAsset } from "../lib/havnApi";
 import CardArt from "../components/CardArt";
 import type { Outfit, OwnedOutfit, Pilot } from "../types";
 import outfitsData from "../data/outfits.json";
@@ -30,19 +30,22 @@ const RARITY_ORDER: Record<string, number> = {
 };
 
 type FilterTab = "all" | string;
-type ViewTab = "collection" | "gallery";
+type ViewTab = "collection" | "gallery" | "owned";
 
 const GALLERY_POLL_MS = 15000;
 
 export default function CollectionScreen() {
   const navigate = useNavigate();
-  const { save, upgradeOutfit } = useGame();
+  const { save, upgradeOutfit, equipBanner } = useGame();
   const wallet = useWallet();
   const [previewOutfitId, setPreviewOutfitId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterTab>("all");
   const [viewTab, setViewTab] = useState<ViewTab>("collection");
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [galleryLoading, setGalleryLoading] = useState(false);
+  const [ownedAssets, setOwnedAssets] = useState<OwnedAsset[]>([]);
+  const [ownedLoading, setOwnedLoading] = useState(false);
+  const [ownedOffline, setOwnedOffline] = useState(false);
 
   useEffect(() => {
     if (viewTab !== "gallery" || !wallet.address) return;
@@ -73,6 +76,37 @@ export default function CollectionScreen() {
       if (timer !== undefined) window.clearTimeout(timer);
     };
   }, [viewTab, wallet.address]);
+
+  // Assets owned on JoinHavn, usable in Astra as hangar decor and nothing
+  // else. Ownership is transferable on the marketplace, so this also acts
+  // as the check that retires a banner the player has since sold. An
+  // offline response is treated as "unverified", not "sold" — losing your
+  // connection must not strip your hangar.
+  useEffect(() => {
+    if (viewTab !== "owned" || !wallet.address) return;
+    const address = wallet.address;
+    let cancelled = false;
+    setOwnedLoading(true);
+    fetchOwnedAssets(address)
+      .then(({ assets, offline }) => {
+        if (cancelled) return;
+        setOwnedAssets(assets);
+        setOwnedOffline(offline);
+        const equipped = save.equippedBanner;
+        if (!offline && equipped && !assets.some((a) => a.job_id === equipped.jobId)) {
+          equipBanner(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setOwnedLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // save.equippedBanner is read but must not retrigger the fetch, or
+    // clearing the banner below would loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewTab, wallet.address, equipBanner]);
 
   const allOutfits = outfitsData as Outfit[];
   const pilots = pilotsData as Pilot[];
@@ -123,8 +157,20 @@ export default function CollectionScreen() {
       <div className="screen-header">
         <button className="btn btn-back" onClick={() => navigate("/")}>← Back</button>
         <div className="header-title-stack">
-          <h2>{viewTab === "collection" ? `Collection (${ownedCount}/${allOutfits.length})` : "Gallery"}</h2>
-          <p>{viewTab === "collection" ? "Review wardrobe progression and upgrade owned pilot kits." : "Your earned reward images."}</p>
+          <h2>
+            {viewTab === "collection"
+              ? `Collection (${ownedCount}/${allOutfits.length})`
+              : viewTab === "gallery"
+              ? "Gallery"
+              : "Owned Assets"}
+          </h2>
+          <p>
+            {viewTab === "collection"
+              ? "Review wardrobe progression and upgrade owned pilot kits."
+              : viewTab === "gallery"
+              ? "Your earned reward images."
+              : "Assets you own on JoinHavn. Fly them as hangar decor."}
+          </p>
         </div>
       </div>
 
@@ -141,6 +187,12 @@ export default function CollectionScreen() {
           onClick={() => setViewTab("gallery")}
         >
           GALLERY
+        </button>
+        <button
+          className={`collection-tab ${viewTab === "owned" ? "active" : ""}`}
+          onClick={() => setViewTab("owned")}
+        >
+          OWNED
         </button>
       </div>
 
@@ -190,6 +242,79 @@ export default function CollectionScreen() {
                 );
               })}
             </div>
+          )}
+        </section>
+      )}
+
+      {viewTab === "owned" && (
+        <section className="collection-pilot-section">
+          {!wallet.address ? (
+            <p className="empty-msg">
+              Connect your wallet to see the assets you own on JoinHavn.
+            </p>
+          ) : ownedLoading ? (
+            <p className="empty-msg">Checking your JoinHavn Collection...</p>
+          ) : ownedOffline ? (
+            <p className="empty-msg">
+              Could not reach JoinHavn. Your hangar keeps whatever it was
+              already flying.
+            </p>
+          ) : ownedAssets.length === 0 ? (
+            <p className="empty-msg">
+              Nothing claimed yet. Assets you claim on JoinHavn show up here
+              and can be flown as hangar decor.
+            </p>
+          ) : (
+            <>
+              <p className="perk-label" style={{ padding: "0 12px 8px" }}>
+                Hangar decor only — owned assets never change a stat.
+              </p>
+              <div className="collection-scroll-row">
+                {ownedAssets.map((asset) => {
+                  const url = asset.image_url ?? asset.preview_url;
+                  const isEquipped = save.equippedBanner?.jobId === asset.job_id;
+                  return (
+                    <div key={asset.job_id} className="card outfit-card">
+                      <div style={{ width: "100%", aspectRatio: "3/4", overflow: "hidden", borderRadius: "6px 6px 0 0", display: "flex", alignItems: "center", justifyContent: "center", background: "#0b1018" }}>
+                        {url ? (
+                          <img
+                            src={url}
+                            alt={asset.title}
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          />
+                        ) : (
+                          <span className="empty-msg" style={{ padding: "8px", textAlign: "center" }}>
+                            Preview unavailable
+                          </span>
+                        )}
+                      </div>
+                      <div className="card-info">
+                        <strong className="card-title">{asset.title}</strong>
+                        {asset.category && (
+                          <span className="rarity-text" style={{ color: "#66d9ef" }}>
+                            {asset.category}
+                          </span>
+                        )}
+                        <button
+                          className="btn btn-small"
+                          style={{ marginTop: "6px", width: "100%" }}
+                          disabled={!url}
+                          onClick={() =>
+                            equipBanner(
+                              isEquipped
+                                ? null
+                                : { jobId: asset.job_id, title: asset.title, url: url! },
+                            )
+                          }
+                        >
+                          {isEquipped ? "Remove from hangar" : "Fly in hangar"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           )}
         </section>
       )}
