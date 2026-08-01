@@ -5462,24 +5462,26 @@ export default function ShmupPlayScreen() {
         </div>
 
         {/* ── Overdrive meter (inline in HUD) ─────────── */}
-        <div className="fever-bar-container fever-bar-container--landscape">
-          <div
-            className={`fever-bar ${hud.overdriveActive ? "fever-active" : ""}`}
-            style={{
-              width: `${hud.overdriveActive ? 100 : hud.overdriveMeter}%`,
-              boxShadow: hud.overdriveActive
-                ? "0 0 12px rgba(255,212,59,0.8), 0 0 24px rgba(255,212,59,0.4)"
-                : hud.overdriveMeter >= 80
-                  ? "0 0 8px rgba(69,199,255,0.5)"
-                  : "none",
-              transition: "box-shadow 0.3s ease",
-            }}
-          />
+        <div className="fever-bar-group">
           <span className="fever-label" style={{
             textShadow: hud.overdriveActive ? "0 0 8px rgba(255,212,59,0.8)" : "none",
           }}>
             {hud.overdriveActive ? "OVERDRIVE" : `OD ${Math.round(hud.overdriveMeter)}%`}
           </span>
+          <div className="fever-bar-container fever-bar-container--landscape">
+            <div
+              className={`fever-bar ${hud.overdriveActive ? "fever-active" : ""}`}
+              style={{
+                width: `${hud.overdriveActive ? 100 : hud.overdriveMeter}%`,
+                boxShadow: hud.overdriveActive
+                  ? "0 0 12px rgba(255,212,59,0.8), 0 0 24px rgba(255,212,59,0.4)"
+                  : hud.overdriveMeter >= 80
+                    ? "0 0 8px rgba(69,199,255,0.5)"
+                    : "none",
+                transition: "box-shadow 0.3s ease",
+              }}
+            />
+          </div>
         </div>
 
         <div className="hud-right hud-stat-stack hud-stat-stack--row hud-stat-stack-right">
