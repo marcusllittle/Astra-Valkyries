@@ -285,7 +285,7 @@ export default function ShmupResultsScreen() {
 
   return (
     <div className="screen results-screen">
-      <h2>Arcade Run Complete!</h2>
+      <h2>{didWinRun ? "Mission Complete!" : "Run Ended"}</h2>
 
       <div
         className={`grade-display grade-stamp grade-stamp--${grade.toLowerCase()}`}
@@ -295,13 +295,17 @@ export default function ShmupResultsScreen() {
       </div>
 
       <div className="results-victory-copy">
-        {grade === "S"
-          ? "That was a command-level sortie."
-          : grade === "A"
-            ? "Strong clear, strong momentum."
-            : grade === "B"
-              ? "Solid run, room to sharpen the build."
-              : "You cleared it. Tighten one thing and go again."}
+        {didWinRun
+          ? grade === "S"
+            ? "That was a command-level sortie."
+            : grade === "A"
+              ? "Strong clear, strong momentum."
+              : grade === "B"
+                ? "Solid run, room to sharpen the build."
+                : "You cleared it. Tighten one thing and go again."
+          : (shmupResult.stage ?? 1) > 1
+            ? "You went down deep in the run. Adjust the build and push further."
+            : "Shot down early. Reset, re-read the pattern, and go again."}
       </div>
 
       <div className="results-grid">

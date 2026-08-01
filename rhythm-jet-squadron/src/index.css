@@ -1019,6 +1019,9 @@ video.card-art-img {
   border-radius: 12px;
   border: 1px solid rgba(145, 171, 239, 0.28);
   background: rgba(15, 27, 53, 0.82);
+  /* This card is a <button>, which does not inherit colour from the page and
+     would otherwise fall back to the UA's near-black `buttontext`. */
+  color: var(--text-primary);
   padding: 0;
   text-align: left;
   cursor: pointer;
@@ -1075,6 +1078,9 @@ video.card-art-img {
 .map-card-title {
   font-size: 0.88rem;
   line-height: 1.1;
+  color: var(--text-primary);
+  /* Keeps the name readable over the brighter zone palettes (Solar Rift). */
+  text-shadow: 0 1px 3px rgba(4, 11, 28, 0.7);
 }
 
 .map-card-meta {
@@ -1369,14 +1375,27 @@ video.card-art-img {
   to { opacity: 1; }
 }
 
+/* Label sits beside the track, not inside it: the track is only 4-7px tall and
+   clips its overflow, so an absolutely-positioned label was cut off and washed
+   out by the fill gradient sliding underneath it. */
+.fever-bar-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  max-width: 264px;
+}
+
 .fever-label {
-  position: absolute;
-  top: -1px;
-  right: 8px;
+  flex: none;
+  /* Reserve the widest state ("OVERDRIVE") so the bar doesn't jitter as OD climbs. */
+  min-width: 64px;
   font-size: 0.55rem;
-  color: rgba(255,255,255,0.5);
+  color: rgba(255,255,255,0.78);
   text-transform: uppercase;
   letter-spacing: 1px;
+  white-space: nowrap;
 }
 
 .boss-warning-banner {
@@ -4316,13 +4335,15 @@ video.card-art-img {
 .achievement-toast {
   position: fixed;
   top: -80px;
-  left: 50%;
-  transform: translateX(-50%);
+  right: 20px;
   z-index: 2000;
   display: flex;
   align-items: center;
   gap: 12px;
-  background: linear-gradient(135deg, rgba(17, 29, 56, 0.95), rgba(106, 141, 255, 0.15));
+  /* Opaque base under the tint so page content never reads through the toast. */
+  background:
+    linear-gradient(135deg, rgba(17, 29, 56, 0.95), rgba(106, 141, 255, 0.15)),
+    #0b1428;
   border: 1px solid rgba(106, 141, 255, 0.35);
   border-radius: 16px;
   padding: 12px 22px;
@@ -4334,7 +4355,9 @@ video.card-art-img {
 }
 
 .achievement-toast-visible {
-  top: 20px;
+  /* 76px clears every screen's top-right furniture: the home wallet row and the
+     shmup pause/exit buttons both end at 40px, the barrel-roll readout at 62px. */
+  top: 76px;
 }
 
 .achievement-toast-orbit {
@@ -4757,6 +4780,10 @@ video.card-art-img {
   margin: 4px 0;
   text-transform: uppercase;
   font-size: clamp(1.6rem, 3vw, 2.5rem);
+  /* Only the title reaches up into the absolutely-positioned Skip button's row,
+     so reserve that lane here rather than on the whole copy block -- padding the
+     container also wrapped the loadout pill and broke its rounded background. */
+  padding-right: 88px;
 }
 
 .briefing-subtitle {
