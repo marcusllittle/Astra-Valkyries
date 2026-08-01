@@ -17,7 +17,7 @@ import {
   type UnlockedAchievements,
 } from "../lib/achievements";
 import { getLevelForXp, calculateRunXp } from "../lib/progression";
-import { getDailyMissions, getWeeklyMissions } from "../lib/missions";
+import { getDailyMissions, getWeeklyMissions, advanceMissionProgress, gradeMeets } from "../lib/missions";
 
 const STORAGE_KEY = "astra-valkyries-save";
 
@@ -276,16 +276,47 @@ export function GameProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  /**
+   * Apply everything a finished run changes, in one atomic update: pilot XP
+   * and level, best grade for the map, lifetime totals, zone clears on a boss
+   * kill, and progress on every active mission.
+   *
+   * This is the single write point for run progression -- splitting it across
+   * several setSave calls would let a mid-sequence unmount leave the save
+   * half-advanced.
+   */
   const submitRunStats = useCallback((stats: { pilotId: string; mapId: string; score: number; kills: number; grade: string; bossDefeated: boolean }) => {
     const xpEarned = calculateRunXp(stats.score, stats.kills, stats.grade, stats.bossDefeated);
+    const activeMissions = [...getDailyMissions(), ...getWeeklyMissions()];
+    const run = {
+      score: stats.score,
+      kills: stats.kills,
+      grade: stats.grade,
+      bossDefeated: stats.bossDefeated,
+    };
+
     setSave((s) => {
       const newXp = (s.pilotXp[stats.pilotId] ?? 0) + xpEarned;
       const newLevel = getLevelForXp(newXp);
       const currentBestGrade = s.bestGrades[stats.mapId];
-      const gradeOrder = ["S", "A", "B", "C", "D"];
-      const newGradeIdx = gradeOrder.indexOf(stats.grade);
-      const oldGradeIdx = currentBestGrade ? gradeOrder.indexOf(currentBestGrade) : 999;
-      const bestGrade = newGradeIdx <= oldGradeIdx ? stats.grade : (currentBestGrade ?? stats.grade);
+      const bestGrade = !currentBestGrade || gradeMeets(stats.grade, currentBestGrade)
+        ? stats.grade
+        : currentBestGrade;
+
+      const missionProgress = { ...s.missionProgress };
+      for (const mission of activeMissions) {
+        missionProgress[mission.id] = advanceMissionProgress(
+          mission,
+          missionProgress[mission.id] ?? 0,
+          run,
+        );
+      }
+
+      // A zone counts as cleared only when its boss goes down.
+      const zoneClears = stats.bossDefeated
+        ? { ...s.zoneClears, [stats.mapId]: (s.zoneClears[stats.mapId] ?? 0) + 1 }
+        : s.zoneClears;
+
       return {
         ...s,
         pilotXp: { ...s.pilotXp, [stats.pilotId]: newXp },
@@ -294,6 +325,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
         totalRuns: s.totalRuns + 1,
         totalKills: s.totalKills + stats.kills,
         totalBossKills: s.totalBossKills + (stats.bossDefeated ? 1 : 0),
+        missionProgress,
+        zoneClears,
       };
     });
   }, []);
