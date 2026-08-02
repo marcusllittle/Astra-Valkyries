@@ -430,7 +430,10 @@ type SpriteKey =
   | "player"
   | "enemyDrifter"
   | "enemySine"
+  | "enemyTank"
   | "boss"
+  | "bossTyrant"
+  | "bossLeviathan"
   | "chip"
   | "bulletPlayer"
   | "bulletEnemy"
@@ -444,13 +447,22 @@ const SPRITE_PATHS: Record<SpriteKey, string> = {
   player: "/assets/shmup/player_ship.svg",
   enemyDrifter: "/assets/shmup/enemy_drifter.png",
   enemySine: "/assets/shmup/enemy_sine.png",
-  boss: "/assets/shmup/boss_dreadnought.png",
-  chip: "/assets/shmup/power_chip.svg",
+  enemyTank: "/assets/shmup/enemy_tank_fortress.png",
+  boss: "/assets/shmup/boss_aegis_dreadnought.png",
+  bossTyrant: "/assets/shmup/boss_helios_tyrant.png",
+  bossLeviathan: "/assets/shmup/boss_cryo_leviathan.png",
+  chip: "/assets/shmup/power_chip.png",
   bulletPlayer: "/assets/shmup/bullet_player.svg",
   bulletEnemy: "/assets/shmup/bullet_enemy.svg",
   bulletBoss: "/assets/shmup/bullet_boss.svg",
   impactBurst: "/assets/shmup/impact_burst.svg",
   pulseRing: "/assets/shmup/pulse_ring.svg",
+};
+
+// Per-zone far background; maps not listed fall back to SPRITE_PATHS.backgroundFar
+const MAP_BACKGROUND_FAR_PATHS: Record<string, string> = {
+  "solar-rift": "/assets/shmup/background_far_solar.png",
+  "abyss-crown": "/assets/shmup/background_far_abyss.png",
 };
 
 const PILOT_SHIP_ART_PATHS: Record<string, string> = {
@@ -476,7 +488,10 @@ function createSpriteStore(): Record<SpriteKey, HTMLImageElement | null> {
     player: null,
     enemyDrifter: null,
     enemySine: null,
+    enemyTank: null,
     boss: null,
+    bossTyrant: null,
+    bossLeviathan: null,
     chip: null,
     bulletPlayer: null,
     bulletEnemy: null,
@@ -819,6 +834,7 @@ export default function ShmupPlayScreen() {
   }, []);
   const spritesRef = useRef<Record<SpriteKey, HTMLImageElement | null>>(createSpriteStore());
   const playerSpriteLoadedPathRef = useRef<string | null>(null);
+  const backgroundFarLoadedPathRef = useRef<string | null>(null);
   const animationRef = useRef(0);
   const shipRef = useRef<ShipState>({
     x: window.innerWidth / 2,
@@ -1292,8 +1308,17 @@ export default function ShmupPlayScreen() {
       spriteStore.player = playerImage;
       playerSpriteLoadedPathRef.current = resolvedPlayerSpritePath;
     }
+    // Far background varies per zone, so reload whenever the path changes
+    const mapFarPath = MAP_BACKGROUND_FAR_PATHS[activeMap.id] ?? SPRITE_PATHS.backgroundFar;
+    const resolvedFarPath = resolveAssetUrl(mapFarPath) ?? mapFarPath;
+    if (!spriteStore.backgroundFar || backgroundFarLoadedPathRef.current !== resolvedFarPath) {
+      const farImage = new Image();
+      farImage.src = resolvedFarPath;
+      spriteStore.backgroundFar = farImage;
+      backgroundFarLoadedPathRef.current = resolvedFarPath;
+    }
     for (const key of Object.keys(SPRITE_PATHS) as SpriteKey[]) {
-      if (key === "player") continue;
+      if (key === "player" || key === "backgroundFar") continue;
       if (spriteStore[key]) continue;
       const image = new Image();
       image.src = resolveAssetUrl(SPRITE_PATHS[key]) ?? SPRITE_PATHS[key];
@@ -1803,7 +1828,7 @@ export default function ShmupPlayScreen() {
         archetype: activeMap.bossArchetype,
         x: canvas.width / 2,
         y: -96,
-        radius: activeMap.bossArchetype === "leviathan" ? 34 : activeMap.bossArchetype === "tyrant" ? 28 : 30,
+        radius: activeMap.bossArchetype === "leviathan" ? 42 : activeMap.bossArchetype === "tyrant" ? 36 : 38,
         hp: activeMap.bossMaxHp,
         maxHp: activeMap.bossMaxHp,
         age: 0,
@@ -4216,7 +4241,13 @@ export default function ShmupPlayScreen() {
       }
 
       for (const enemy of enemiesRef.current) {
-        const sprite = getSprite(enemy.pattern === "drifter" ? "enemyDrifter" : "enemySine");
+        const sprite = getSprite(
+          enemy.pattern === "drifter"
+            ? "enemyDrifter"
+            : enemy.pattern === "tank" || enemy.pattern === "miniboss"
+              ? "enemyTank"
+              : "enemySine"
+        );
         const ENEMY_COLORS: Record<string, string> = {
           drifter: "#f06595", sine: "#845ef7", zigzag: "#ff922b", orbiter: "#74c0fc",
           charger: "#ff6b6b", splitter: "#69db7c", bomber: "#ffa94d", sniper: "#ff0000", swarm: "#adb5bd",
@@ -4690,8 +4721,14 @@ export default function ShmupPlayScreen() {
 
       if (bossRef.current) {
         const boss = bossRef.current;
-        // Bosses are rendered procedurally per archetype — distinct designs per zone
-        const sprite: HTMLImageElement | null = null;
+        // Distinct rendered sprite per archetype; canvas-procedural fallback below
+        const sprite = getSprite(
+          boss.archetype === "tyrant"
+            ? "bossTyrant"
+            : boss.archetype === "leviathan"
+              ? "bossLeviathan"
+              : "boss"
+        );
 
         // Phase transition flash
         if (boss.phaseTransitionFlash > 0) {
@@ -4720,8 +4757,8 @@ export default function ShmupPlayScreen() {
             sprite,
             boss.x,
             boss.y,
-            boss.radius * 5.5,
-            boss.radius * 4.2,
+            boss.radius * 6.0,
+            boss.radius * 4.6,
             Math.sin(boss.age * 0.8) * 0.03
           );
         } else {

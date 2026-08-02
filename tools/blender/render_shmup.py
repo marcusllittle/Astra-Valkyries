@@ -51,11 +51,50 @@ P = {
     "s_panel":   "#3D1A73",
     "s_shell":   "#160922",
     "s_deep":    "#26104E",
-    # boss (boss_dreadnought.svg)
-    "b_lit":     "#FFE9D9",
-    "b_mid":     "#FFB076",
-    "b_low":     "#88452A",
-    "b_dark":    "#24161B",
+    # bosses - palettes match each map's bossPrimary/bossSecondary in
+    # shmupWaves.ts so the sprite sits inside the zone's color language
+    # Aegis Dreadnought (nebula-runway): violet fortress, pink/orange power
+    "a_hull":    "#3A2A5E",
+    "a_deck":    "#55407F",
+    "a_dark":    "#140C2E",
+    "a_prime":   "#FF6B9D",
+    "a_second":  "#FF922B",
+    "a_hot":     "#FFF4E6",
+    # Helios Tyrant (solar-rift): scorched platform, solar gold/red
+    "t_hull":    "#5E1F10",
+    "t_deck":    "#8A3A1C",
+    "t_dark":    "#1E0906",
+    "t_prime":   "#FF6B6B",
+    "t_second":  "#FFA94D",
+    "t_hot":     "#FFD166",
+    # Cryo Leviathan (abyss-crown): biomech ice, cyan power
+    "l_body":    "#22405E",
+    "l_plate":   "#3A6690",
+    "l_dark":    "#081422",
+    "l_prime":   "#4DABF7",
+    "l_second":  "#74C0FC",
+    "l_hot":     "#D0EBFF",
+    # power chip (power_chip.svg)
+    "chip_gold": "#FFD43B",
+    "chip_hot":  "#FFF7C2",
+    "chip_deep": "#9A6400",
+    # tank fortress miniboss - matches the game's tank enemy cyan #66d9ef
+    "k_hull":    "#33454F",
+    "k_deck":    "#4A616E",
+    "k_dark":    "#101B21",
+    "k_glow":    "#66D9EF",
+    "k_hot":     "#D4F6FF",
+    # zone background palettes (solar-rift / abyss-crown from shmupWaves)
+    "sol_void":  "#120402",
+    "sol_mid":   "#3B1007",
+    "sol_hi":    "#8A3A1C",
+    "sol_star":  "#FFE9D9",
+    "sol_star2": "#FFA94D",
+    "aby_void":  "#02060D",
+    "aby_mid":   "#0A1C33",
+    "aby_hi":    "#1E4A73",
+    "aby_star":  "#D0EBFF",
+    "aby_star2": "#74C0FC",
     # space
     "void":      "#050912",
     "neb_mid":   "#132048",
@@ -263,25 +302,25 @@ def astra_interceptor(outdir):
     cnp = mat("cnp", "#243048", 0.4, 0.10, emit="canopy", emit_str=2.2)
     thr = mat("thr", "#0A1626", 0.2, 0.4, emit="thrust", emit_str=9.0)
 
-    box((0, 0.10, 0), (0.46, 2.6, 0.30), lit, bev=0.05)          # spine
-    cone((0, 1.92, 0), 0.24, 0.02, 1.1, lit, rot=NOSE, verts=14)  # nose
-    box((0, 1.30, 0.12), (0.20, 1.0, 0.10), low, bev=0.025)       # dorsal strake
-    sphere((0, 0.60, 0.20), (0.24, 0.58, 0.17), cnp)              # canopy
+    box((0, 0.10, 0), (0.62, 2.6, 0.40), lit, bev=0.06)          # spine
+    cone((0, 1.92, 0), 0.31, 0.03, 1.1, lit, rot=NOSE, verts=14)  # nose
+    box((0, 1.30, 0.16), (0.28, 1.0, 0.12), low, bev=0.03)        # dorsal strake
+    sphere((0, 0.60, 0.26), (0.30, 0.64, 0.20), cnp)              # canopy
 
-    w = box((0.92, -0.30, -0.01), (1.5, 1.15, 0.085), lit,
-            rot=(0, 0, math.radians(-21)), bev=0.03)
+    w = box((0.98, -0.30, -0.01), (1.6, 1.4, 0.14), lit,
+            rot=(0, 0, math.radians(-21)), bev=0.04)
     mx(w)
-    t = box((0.98, 0.20, 0.035), (1.2, 0.16, 0.055), low,
-            rot=(0, 0, math.radians(-21)), bev=0.018)
+    t = box((1.04, 0.28, 0.07), (1.3, 0.22, 0.08), low,
+            rot=(0, 0, math.radians(-21)), bev=0.02)
     mx(t)
-    p = box((1.58, -0.62, 0.0), (0.13, 0.9, 0.12), drk, bev=0.025)
+    p = box((1.68, -0.62, 0.0), (0.19, 1.05, 0.17), drk, bev=0.03)
     mx(p)
 
-    n = cyl((0.42, -1.38, 0), 0.24, 1.45, low, rot=FWD, verts=14)
+    n = cyl((0.50, -1.38, 0), 0.30, 1.45, low, rot=FWD, verts=14)
     mx(n)
-    ns = box((0.42, -1.38, 0.22), (0.16, 1.2, 0.06), drk, bev=0.015)  # top strip
+    ns = box((0.50, -1.38, 0.27), (0.20, 1.2, 0.07), drk, bev=0.015)  # top strip
     mx(ns)
-    exhaust(0.42, -2.10, thr, radius=0.19, length=0.55)
+    exhaust(0.50, -2.10, thr, radius=0.24, length=0.60)
     f = box((0.26, -1.98, 0.20), (0.085, 0.58, 0.40), low,
             rot=(math.radians(15), 0, 0), bev=0.018)
     mx(f)
@@ -302,31 +341,31 @@ def valkyrie_lancer(outdir):
     cnp = mat("cnp", "#243048", 0.4, 0.10, emit="canopy", emit_str=2.0)
     thr = mat("thr", "#180A04", 0.2, 0.4, emit="lance_hot", emit_str=9.0)
 
-    box((0, -0.05, 0), (0.60, 2.5, 0.36), lit, bev=0.055)          # spine
-    box((0, 1.15, 0.06), (0.42, 1.3, 0.30), low, bev=0.04)         # forward deck
-    cone((0, 2.35, 0.02), 0.13, 0.01, 1.5, acc, rot=NOSE, verts=12)  # the lance
-    cyl((0, 1.70, 0.02), 0.19, 0.55, drk, rot=FWD, verts=12)        # lance collar
-    sphere((0, 0.45, 0.24), (0.26, 0.52, 0.18), cnp)
+    box((0, -0.05, 0), (0.78, 2.5, 0.46), lit, bev=0.065)          # spine
+    box((0, 1.15, 0.08), (0.56, 1.3, 0.38), low, bev=0.05)         # forward deck
+    cone((0, 2.35, 0.02), 0.16, 0.01, 1.5, acc, rot=NOSE, verts=12)  # the lance
+    cyl((0, 1.70, 0.02), 0.24, 0.55, drk, rot=FWD, verts=12)        # lance collar
+    sphere((0, 0.45, 0.30), (0.32, 0.58, 0.21), cnp)
 
     # forward-swept wings
-    w = box((1.00, -0.15, -0.01), (1.55, 1.30, 0.10), lit,
-            rot=(0, 0, math.radians(16)), bev=0.032)
+    w = box((1.06, -0.15, -0.01), (1.65, 1.55, 0.16), lit,
+            rot=(0, 0, math.radians(16)), bev=0.045)
     mx(w)
-    st = box((1.05, -0.62, 0.05), (1.25, 0.18, 0.07), acc,
-             rot=(0, 0, math.radians(16)), bev=0.02)
+    st = box((1.11, -0.66, 0.09), (1.35, 0.24, 0.09), acc,
+             rot=(0, 0, math.radians(16)), bev=0.022)
     mx(st)
 
     # underslung gun pods
-    g = cyl((1.30, 0.62, -0.02), 0.20, 1.5, low, rot=FWD, verts=12)
+    g = cyl((1.38, 0.62, -0.02), 0.26, 1.5, low, rot=FWD, verts=12)
     mx(g)
-    gm = cone((1.30, 1.46, -0.02), 0.115, 0.02, 0.28, acc, rot=NOSE, verts=12)
+    gm = cone((1.38, 1.48, -0.02), 0.15, 0.02, 0.30, acc, rot=NOSE, verts=12)
     mx(gm)
 
-    n = cyl((0.52, -1.42, 0), 0.29, 1.55, low, rot=FWD, verts=14)
+    n = cyl((0.60, -1.42, 0), 0.35, 1.55, low, rot=FWD, verts=14)
     mx(n)
-    ns = box((0.52, -1.42, 0.26), (0.18, 1.25, 0.06), drk, bev=0.015)
+    ns = box((0.60, -1.42, 0.31), (0.22, 1.25, 0.07), drk, bev=0.015)
     mx(ns)
-    exhaust(0.52, -2.20, thr, radius=0.23, length=0.60)
+    exhaust(0.60, -2.22, thr, radius=0.28, length=0.65)
     f = box((0.30, -2.00, 0.24), (0.10, 0.62, 0.46), acc,
             rot=(math.radians(17), 0, 0), bev=0.02)
     mx(f)
@@ -347,31 +386,31 @@ def seraph_guard(outdir):
     cnp = mat("cnp", "#243048", 0.4, 0.10, emit="seraph", emit_str=2.4)
     thr = mat("thr", "#04201C", 0.2, 0.4, emit="seraph", emit_str=8.0)
 
-    box((0, 0.0, 0), (0.86, 2.45, 0.44), lit, bev=0.07)            # broad hull
-    box((0, 1.30, 0.16), (0.62, 1.05, 0.34), low, bev=0.05)
-    cone((0, 2.05, 0.04), 0.30, 0.06, 0.95, lit, rot=NOSE, verts=14)
-    sphere((0, 0.50, 0.30), (0.32, 0.55, 0.20), cnp)
+    box((0, 0.0, 0), (1.02, 2.45, 0.54), lit, bev=0.08)            # broad hull
+    box((0, 1.30, 0.20), (0.76, 1.05, 0.42), low, bev=0.06)
+    cone((0, 2.05, 0.05), 0.38, 0.08, 0.95, lit, rot=NOSE, verts=14)
+    sphere((0, 0.50, 0.38), (0.38, 0.60, 0.23), cnp)
     # shoulder armor
-    sh = box((0.80, 0.85, 0.10), (0.55, 1.5, 0.34), low, bev=0.045)
+    sh = box((0.92, 0.85, 0.14), (0.66, 1.5, 0.42), low, bev=0.055)
     mx(sh)
 
     # wide shielding wings, layered
-    w = box((1.35, -0.35, -0.02), (2.05, 1.75, 0.13), lit,
-            rot=(0, 0, math.radians(-9)), bev=0.04)
+    w = box((1.45, -0.35, -0.02), (2.15, 1.95, 0.20), lit,
+            rot=(0, 0, math.radians(-9)), bev=0.05)
     mx(w)
-    w2 = box((1.45, 0.15, 0.08), (1.6, 0.55, 0.11), acc,
-             rot=(0, 0, math.radians(-9)), bev=0.028)
+    w2 = box((1.55, 0.20, 0.13), (1.7, 0.65, 0.14), acc,
+             rot=(0, 0, math.radians(-9)), bev=0.032)
     mx(w2)
-    edge = box((2.28, -0.75, 0.0), (0.20, 1.35, 0.20), drk, bev=0.035)
+    edge = box((2.42, -0.80, 0.0), (0.26, 1.5, 0.26), drk, bev=0.04)
     mx(edge)
 
     # four engines
-    for x in (0.42, 1.05):
-        n = cyl((x, -1.42, 0), 0.26, 1.45, low, rot=FWD, verts=14)
+    for x in (0.48, 1.16):
+        n = cyl((x, -1.42, 0), 0.31, 1.45, low, rot=FWD, verts=14)
         mx(n)
-        ns = box((x, -1.42, 0.24), (0.17, 1.15, 0.06), drk, bev=0.015)
+        ns = box((x, -1.42, 0.28), (0.20, 1.15, 0.07), drk, bev=0.015)
         mx(ns)
-        exhaust(x, -2.14, thr, radius=0.20, length=0.52, hot=0.11)
+        exhaust(x, -2.16, thr, radius=0.24, length=0.56, hot=0.13)
     f = box((0.24, -1.95, 0.26), (0.10, 0.60, 0.48), acc,
             rot=(math.radians(15), 0, 0), bev=0.02)
     mx(f)
@@ -427,57 +466,330 @@ def enemy_sine(outdir):
                "s_core", "s_hot", (0.82, 0.76, 1.0))
 
 
-# --------------------------------------------------------------- boss
-def boss(outdir):
+# --------------------------------------------------------------- bosses
+# All bosses hang at the top of the screen facing the player, so weapons
+# point -Y (down) and engines point +Y - the opposite of player ships.
+
+def boss_aegis(outdir):
+    """Aegis Dreadnought - armored patrol fortress, layered shields.
+
+    Lore: 'massive capital ship bristling with weapons... layered shield
+    system'. Violet fortress hull, pink reactor, orange gun glow.
+    """
     s = new_scene()
-    lit = mat("lit", "b_mid", 0.92, 0.24)
-    low = mat("low", "b_low", 0.90, 0.30)
-    drk = mat("drk", "b_dark", 0.86, 0.38)
-    core = mat("core", "#3A1E14", 0.30, 0.20, emit="b_mid", emit_str=8.0)
-    glow = mat("glow", "b_dark", 0.40, 0.30, emit="b_lit", emit_str=5.0)
+    lit = mat("lit", "a_deck", 0.92, 0.26)
+    low = mat("low", "a_hull", 0.90, 0.32)
+    drk = mat("drk", "a_dark", 0.86, 0.38)
+    core = mat("core", "a_dark", 0.30, 0.20, emit="a_prime", emit_str=9.0)
+    guns = mat("guns", "a_dark", 0.40, 0.30, emit="a_second", emit_str=6.0)
+    shld = mat("shld", "a_dark", 0.40, 0.25, emit="a_prime", emit_str=3.0)
 
-    box((0, 0, 0), (1.5, 4.4, 0.78), low, bev=0.09)
-    box((0, 1.95, 0.34), (1.05, 1.45, 0.52), lit, bev=0.06)
-    box((0, -1.60, 0.28), (1.25, 1.45, 0.56), drk, bev=0.06)
+    # central spine, prow toward the player (-Y)
+    box((0, 0.2, 0), (1.6, 4.6, 0.92), low, bev=0.10)
+    box((0, -1.75, 0.30), (1.15, 1.55, 0.60), lit, bev=0.07)   # forward deck
+    cone((0, -3.0, 0.10), 0.62, 0.16, 1.3, drk, rot=FWD, verts=8)  # ram prow
+    box((0, 1.85, 0.36), (1.3, 1.5, 0.58), drk, bev=0.07)      # aft castle
+    sphere((0, 1.2, 0.72), (0.52, 0.52, 0.38), lit)            # command dome
 
-    a1 = box((2.05, 0.55, -0.04), (2.5, 3.0, 0.54), low,
-             rot=(0, 0, math.radians(-8)), bev=0.07)
+    # layered armor shoulders
+    a1 = box((2.15, 0.35, -0.04), (2.6, 3.2, 0.58), low,
+             rot=(0, 0, math.radians(8)), bev=0.08)
     mx(a1)
-    a2 = box((2.45, 1.25, 0.26), (1.7, 1.45, 0.28), lit,
-             rot=(0, 0, math.radians(-8)), bev=0.045)
+    a2 = box((2.55, -0.45, 0.28), (1.8, 1.6, 0.30), lit,
+             rot=(0, 0, math.radians(8)), bev=0.05)
     mx(a2)
-    a3 = box((3.28, -0.78, 0.02), (1.0, 2.3, 0.44), drk,
-             rot=(0, 0, math.radians(6)), bev=0.05)
+    a3 = box((3.45, 0.85, 0.02), (1.05, 2.4, 0.48), drk,
+             rot=(0, 0, math.radians(-6)), bev=0.05)
     mx(a3)
 
-    g = cyl((2.15, 2.35, 0.16), 0.42, 1.7, drk, rot=FWD, verts=14)
-    mx(g)
-    gm = cyl((2.15, 3.14, 0.16), 0.20, 0.28, glow, rot=FWD, verts=12, bev=0)
-    mx(gm)
+    # quad turret batteries, barrels toward player
+    for tx, ty in ((1.35, -1.5), (2.5, -0.35)):
+        tb = cyl((tx, ty, 0.45), 0.44, 0.4, drk, verts=10)
+        mx(tb)
+        for bx in (-0.16, 0.16):
+            br = cyl((tx + bx, ty - 0.75, 0.5), 0.09, 1.1, lit, rot=FWD,
+                     verts=8, bev=0)
+            mx(br)
+        mz = cyl((tx, ty - 1.32, 0.5), 0.15, 0.14, guns, verts=8, bev=0)
+        mx(mz)
 
-    cyl((0, 0.10, 0.52), 1.0, 0.46, core, verts=8, bev=0.03)
-    cyl((0, 0.10, 0.40), 1.28, 0.26, lit, verts=8, bev=0.04)
+    # pink reactor octagon amidships
+    cyl((0, 0.10, 0.56), 1.05, 0.48, core, verts=8, bev=0.03)
+    cyl((0, 0.10, 0.44), 1.35, 0.26, lit, verts=8, bev=0.04)
 
-    for x in (-1.5, -0.5, 0.5, 1.5):
-        cyl((x, -2.48, 0), 0.34, 0.9, drk, rot=FWD, verts=12)
-        cyl((x, -2.95, 0), 0.26, 0.15, glow, rot=FWD, verts=12, bev=0)
+    # shield emitter posts along the leading edge - the 'layered shields'
+    for ex in (0.55, 1.35, 2.15):
+        em = cyl((ex, -2.35 + ex * 0.28, 0.42), 0.13, 0.5, shld, verts=8, bev=0)
+        mx(em)
 
-    # greebles - small panels that sell scale at sprite size
-    random.seed(7)
-    for _ in range(52):
-        gx = random.uniform(0.18, 3.10)
-        gy = random.uniform(-2.2, 2.4)
-        gz = 0.42 if gx < 0.72 else 0.26
+    # engine bank aft (+Y), tucked against the stern castle
+    for x in (-1.6, -0.55, 0.55, 1.6):
+        cyl((x, 2.42, 0), 0.36, 0.9, drk, rot=FWD, verts=12)
+        cyl((x, 2.90, 0), 0.27, 0.15, guns, rot=FWD, verts=12, bev=0)
+
+    # greebles constrained to actual hull decks so none float in space
+    random.seed(11)
+    for _ in range(60):
+        gx = random.uniform(0.2, 2.95)
+        if gx < 0.78:
+            gy, gz = random.uniform(-1.9, 2.2), 0.48      # spine deck
+        else:
+            gy, gz = random.uniform(-0.9, 1.9), 0.28      # armor wing
         gg = box((gx, gy, gz), (random.uniform(0.10, 0.30),
-                                random.uniform(0.12, 0.44),
+                                random.uniform(0.12, 0.42),
                                 random.uniform(0.05, 0.10)),
                  drk if random.random() < 0.6 else lit, bev=0.010)
         mx(gg)
 
-    camera(s, 11.0)
-    lights(tint=(1.0, 0.90, 0.80), power=1.7)
+    camera(s, 11.5)
+    lights(tint=(1.0, 0.82, 0.92), power=1.8)
     glare(s)
-    render(s, outdir, "boss_dreadnought", 512, 384)
+    render(s, outdir, "boss_aegis_dreadnought", 640, 480)
+
+
+def boss_tyrant(outdir):
+    """Helios Tyrant - radial solar weapons platform.
+
+    Lore: 'harnesses solar energy to power devastating beam weapons'.
+    Radial collector vanes around a molten core, twin beam cannons.
+    """
+    s = new_scene()
+    lit = mat("lit", "t_deck", 0.92, 0.28)
+    low = mat("low", "t_hull", 0.90, 0.32)
+    drk = mat("drk", "t_dark", 0.86, 0.38)
+    core = mat("core", "t_dark", 0.30, 0.20, emit="t_hot", emit_str=5.0)
+    beam = mat("beam", "t_dark", 0.40, 0.30, emit="t_prime", emit_str=8.0)
+    vane = mat("vane", "t_hull", 0.85, 0.30, emit="t_second", emit_str=0.35)
+
+    # ring hull around the core, with dark armor wedges for contrast
+    cyl((0, 0, 0), 2.35, 0.5, low, verts=16, bev=0.07)
+    cyl((0, 0, 0.18), 1.75, 0.42, drk, verts=16, bev=0.05)
+    for a in range(8):
+        ang = math.radians(45 * a)
+        box((math.cos(ang) * 2.0, math.sin(ang) * 2.0, 0.30),
+            (0.72, 0.55, 0.14), drk, rot=(0, 0, ang), bev=0.03)
+
+    # molten solar core
+    sphere((0, 0, 0.42), (0.85, 0.85, 0.48), core)
+    cyl((0, 0, 0.30), 1.30, 0.24, lit, verts=8, bev=0.04)
+
+    # 8 radial collector vanes, alternating long and short
+    for a in range(8):
+        ang = math.radians(45 * a + 22.5)
+        length = 2.3 if a % 2 == 0 else 1.5
+        d = 2.1 + length / 2
+        box((math.cos(ang) * d, math.sin(ang) * d, 0.05),
+            (length, 0.62, 0.18), vane,
+            rot=(0, 0, ang), bev=0.035)
+        tip = 2.1 + length + 0.02
+        box((math.cos(ang) * tip, math.sin(ang) * tip, 0.05),
+            (0.30, 0.34, 0.22), lit, rot=(0, 0, ang), bev=0.02)
+
+    # twin heavy beam cannons toward the player
+    g = cyl((1.2, -2.1, 0.2), 0.40, 2.5, drk, rot=FWD, verts=12)
+    mx(g)
+    gm = cone((1.2, -3.5, 0.2), 0.36, 0.16, 0.55, beam, rot=FWD, verts=12)
+    mx(gm)
+    # cannon yokes
+    yk = box((1.2, -1.15, 0.3), (0.68, 0.85, 0.5), lit, bev=0.05)
+    mx(yk)
+
+    # aft stabilizer fins (+Y)
+    fn = box((0.8, 2.35, 0.1), (0.5, 1.1, 0.2), low,
+             rot=(0, 0, math.radians(18)), bev=0.03)
+    mx(fn)
+
+    random.seed(23)
+    for _ in range(36):
+        ang = random.uniform(0, TAU)
+        d = random.uniform(1.15, 2.2)
+        box((math.cos(ang) * d, math.sin(ang) * d, 0.34),
+            (random.uniform(0.10, 0.28), random.uniform(0.10, 0.28),
+             random.uniform(0.04, 0.09)),
+            drk if random.random() < 0.5 else lit, bev=0.008)
+
+    camera(s, 11.5)
+    lights(tint=(1.0, 0.74, 0.55), power=1.4)
+    glare(s, threshold=0.72, size=8, mix=-0.3)
+    render(s, outdir, "boss_helios_tyrant", 640, 480)
+
+
+def boss_leviathan(outdir):
+    """Cryo Leviathan - biomechanical horror, crystalline armor.
+
+    Lore: 'biomechanical horror... crystalline armor regenerates from
+    ambient cold energy'. Central skull with twin serpentine necks arcing
+    outward, ice-crystal shards, cyan power veins.
+    """
+    s = new_scene()
+    body = mat("body", "l_body", 0.75, 0.35)
+    plate = mat("plate", "l_plate", 0.85, 0.28)
+    drk = mat("drk", "l_dark", 0.80, 0.40)
+    # emission kept moderate so the cyan HUE survives bloom instead of
+    # washing out to white
+    vein = mat("vein", "l_dark", 0.30, 0.20, emit="l_prime", emit_str=3.2)
+    ice = mat("ice", "l_second", 0.35, 0.12, emit="l_second", emit_str=0.6)
+    eye = mat("eye", "l_dark", 0.30, 0.20, emit="l_prime", emit_str=9.0)
+
+    # shoulder mass joining the necks - angled pauldrons, not a slab
+    box((0, 0.55, 0), (1.9, 1.15, 0.55), body, bev=0.14)
+    pd = box((0.85, 0.72, 0.30), (0.85, 0.75, 0.30), plate,
+             rot=(0, 0, math.radians(24)), bev=0.06)
+    mx(pd)
+    box((0, 0.85, 0.28), (0.7, 0.65, 0.30), drk, bev=0.05)
+    # cyan chest core between shoulders and skull
+    sphere((0, -0.12, 0.36), (0.32, 0.32, 0.24), vein, subd=3)
+
+    # central skull facing the player
+    sphere((0, -0.85, 0), (0.98, 1.05, 0.62), body)
+    box((0, -0.72, 0.36), (0.78, 0.68, 0.24), drk, bev=0.05)   # crown plate
+    box((0, -1.18, 0.32), (0.80, 0.26, 0.15), drk, bev=0.03)   # brow ridge
+    # mandible tusks flanking the mouth, clearly forward of the skull
+    jw = box((0.44, -1.82, 0.18), (0.22, 0.95, 0.18), plate,
+             rot=(0, 0, math.radians(-20)), bev=0.03)
+    mx(jw)
+    # horns sweeping wide out and back
+    hn = cone((0.85, -0.35, 0.35), 0.21, 0.02, 1.45, ice,
+              rot=(math.radians(55), 0, math.radians(-52)), verts=8)
+    mx(hn)
+    # eyes under the brow
+    ey = sphere((0.38, -1.42, 0.34), (0.17, 0.16, 0.14), eye, subd=2)
+    mx(ey)
+    # breath charge in the mouth
+    cone((0, -1.95, 0.05), 0.30, 0.06, 0.55, vein, rot=FWD, verts=10)
+
+    # twin serpentine necks arcing up and outward (mirrored)
+    n_seg = 9
+    pts = []
+    for i in range(n_seg):
+        t = i / (n_seg - 1)
+        sx = 0.55 + 2.35 * t
+        sy = 0.75 + 2.6 * t * (1.35 - t)
+        r = 0.55 - 0.24 * t
+        pts.append((sx, sy, r))
+        # alternate armor banding along the neck
+        sg = sphere((sx, sy, 0.05), (r, r * 0.92, r * 0.7),
+                    plate if i % 2 else body, subd=3)
+        mx(sg)
+        if i % 2 == 1:
+            # dorsal ice shard on every other segment
+            sh = cone((sx, sy, 0.7 * r + 0.30), r * 0.42, 0.02, 1.0, ice,
+                      rot=(math.radians(-14 + 26 * t), math.radians(20), 0),
+                      verts=8)
+            mx(sh)
+    # cyan power veins riding the top of the neck joints
+    for i in range(1, n_seg):
+        (x0, y0, r0), (x1, y1, r1) = pts[i - 1], pts[i]
+        vx, vy = (x0 + x1) / 2, (y0 + y1) / 2
+        vr = (r0 + r1) / 2
+        vn = sphere((vx, vy, vr * 0.55), (vr * 0.34,) * 3, vein, subd=2)
+        mx(vn)
+
+    # neck-tip claws: three talons pointing out and down
+    tipx, tipy = pts[-1][0], pts[-1][1]
+    for k, (dx, dy) in enumerate(((-0.10, 0.42), (0.30, 0.28), (0.10, -0.10))):
+        cl = cone((tipx + dx, tipy + dy, 0.12), 0.16, 0.01, 0.95, ice,
+                  rot=(math.radians(-115), 0, math.radians(-30 + k * 30)),
+                  verts=8)
+        mx(cl)
+
+    # tail fins trailing aft
+    tf = box((0.75, 1.65, 0.05), (0.5, 1.15, 0.14), plate,
+             rot=(0, 0, math.radians(-24)), bev=0.03)
+    mx(tf)
+
+    camera(s, 11.5)
+    lights(tint=(0.68, 0.86, 1.0), power=1.5)
+    glare(s, threshold=0.55, size=8, mix=-0.25)
+    render(s, outdir, "boss_cryo_leviathan", 640, 480)
+
+
+# --------------------------------------------------------------- miniboss
+def enemy_tank(outdir):
+    """Tank Fortress - the lore's 'heavily armored mobile platform with
+    regenerating shield generators'. Serves the tank and miniboss wave
+    patterns. Cyan shield tech on dark gunmetal, guns toward the player.
+    """
+    s = new_scene()
+    hull = mat("hull", "k_hull", 0.88, 0.32)
+    deck = mat("deck", "k_deck", 0.90, 0.26)
+    drk = mat("drk", "k_dark", 0.85, 0.40)
+    shld = mat("shld", "k_dark", 0.35, 0.20, emit="k_glow", emit_str=5.0)
+    glow = mat("glow", "k_dark", 0.35, 0.20, emit="k_hot", emit_str=8.0)
+
+    # octagonal armored platform
+    body = cyl((0, 0, 0), 1.55, 0.55, hull, verts=8, bev=0.07)
+    body.rotation_euler = (0, 0, math.radians(22.5))
+    inner = cyl((0, 0, 0.24), 1.10, 0.38, deck, verts=8, bev=0.05)
+    inner.rotation_euler = (0, 0, math.radians(22.5))
+
+    # four shield generator pylons on the diagonals - the regen system
+    for a in range(4):
+        ang = math.radians(90 * a + 45)
+        px, py = math.cos(ang) * 1.28, math.sin(ang) * 1.28
+        cyl((px, py, 0.42), 0.20, 0.55, drk, verts=8)
+        cyl((px, py, 0.74), 0.13, 0.18, shld, verts=8, bev=0)
+
+    # central turret with twin cannons toward the player
+    cyl((0, 0, 0.52), 0.52, 0.35, drk, verts=10)
+    for bx in (-0.2, 0.2):
+        cyl((bx, -0.95, 0.55), 0.10, 1.1, deck, rot=FWD, verts=8, bev=0)
+        cyl((bx, -1.52, 0.55), 0.14, 0.12, glow, verts=8, bev=0)
+
+    # front armor chevron
+    ch = box((0.62, -1.32, 0.10), (0.55, 0.38, 0.30), hull,
+             rot=(0, 0, math.radians(35)), bev=0.05)
+    mx(ch)
+    # rear thruster blocks
+    rt = box((0.55, 1.42, 0.05), (0.42, 0.5, 0.32), drk, bev=0.05)
+    mx(rt)
+    cyl((0, 1.55, 0.1), 0.16, 0.2, shld, rot=FWD, verts=8, bev=0)
+
+    # deck greebles
+    random.seed(31)
+    for _ in range(18):
+        ang = random.uniform(0, TAU)
+        d = random.uniform(0.55, 1.25)
+        box((math.cos(ang) * d, math.sin(ang) * d, 0.46),
+            (random.uniform(0.08, 0.2), random.uniform(0.08, 0.22),
+             random.uniform(0.04, 0.08)),
+            drk if random.random() < 0.5 else deck, bev=0.008)
+
+    camera(s, 4.6)
+    lights(tint=(0.75, 0.95, 1.0), power=1.2)
+    glare(s)
+    render(s, outdir, "enemy_tank_fortress", 256, 256)
+
+
+# --------------------------------------------------------------- power-up
+def power_chip(outdir):
+    """Gold energy cell pickup - replaces the flat yellow chicklet."""
+    s = new_scene()
+    shell = mat("shell", "chip_gold", 0.95, 0.22, emit="chip_gold", emit_str=0.25)
+    deep = mat("deep", "chip_deep", 0.90, 0.30)
+    core = mat("core", "chip_deep", 0.30, 0.15, emit="chip_hot", emit_str=5.5)
+    ringm = mat("ringm", "chip_deep", 0.30, 0.15, emit="chip_gold", emit_str=3.0)
+
+    # tilted hex cell so the top face and edge both read
+    hx = cyl((0, 0, 0), 0.85, 0.40, shell, rot=(math.radians(38), 0, 0),
+             verts=6, bev=0.05)
+    hx.rotation_euler.z = math.radians(12)
+    cyl((0, 0.02, 0.10), 0.58, 0.34, deep, rot=(math.radians(38), 0, 0),
+        verts=6, bev=0.03)
+    # blazing core
+    sphere((0, 0.02, 0.16), (0.34, 0.34, 0.30), core)
+    # orbit ring
+    bpy.ops.mesh.primitive_torus_add(major_radius=1.1, minor_radius=0.055,
+                                     location=(0, 0, 0.05),
+                                     rotation=(math.radians(64), 0,
+                                               math.radians(-18)))
+    ring = bpy.context.object
+    ring.data.materials.append(ringm)
+
+    camera(s, 3.2)
+    lights(tint=(1.0, 0.88, 0.6), power=0.65)
+    glare(s, threshold=0.75, size=7, mix=-0.3)
+    render(s, outdir, "power_chip", 128, 128)
 
 
 # --------------------------------------------------------------- background
@@ -551,8 +863,12 @@ def _star_layer(nt, vec, scale, threshold, color_key):
     return r
 
 
-def background_far(outdir):
-    """Opaque nebula + dense fine stars. Tiles seamlessly in Y."""
+def _nebula_bg(outdir, name, void_k, mid_k, hi_k, star_k, star2_k, seed_off=0.0):
+    """Opaque nebula + dense fine stars. Tiles seamlessly in Y.
+
+    Parameterized per zone so each map gets its own sky in its own
+    palette; seed_off shifts the noise so zones don't share cloud shapes.
+    """
     s = new_scene()
     bpy.ops.mesh.primitive_plane_add(size=12)
     pl = bpy.context.object
@@ -569,19 +885,21 @@ def background_far(outdir):
     neb.inputs["Scale"].default_value = 1.1
     neb.inputs["Detail"].default_value = 9.0
     neb.inputs["Roughness"].default_value = 0.62
+    neb.noise_dimensions = "4D"  # must switch before the W input exists
+    neb.inputs["W"].default_value = seed_off
     nt.links.new(vec, neb.inputs["Vector"])
 
     ramp = nt.nodes.new("ShaderNodeValToRGB")
     ramp.color_ramp.interpolation = "EASE"
     ramp.color_ramp.elements[0].position = 0.30
-    ramp.color_ramp.elements[0].color = C("void")
+    ramp.color_ramp.elements[0].color = C(void_k)
     ramp.color_ramp.elements[1].position = 0.74
-    ramp.color_ramp.elements[1].color = C("neb_hi")
-    ramp.color_ramp.elements.new(0.54).color = C("neb_mid")
+    ramp.color_ramp.elements[1].color = C(hi_k)
+    ramp.color_ramp.elements.new(0.54).color = C(mid_k)
     nt.links.new(neb.outputs["Fac"], ramp.inputs["Fac"])
 
-    stars = _star_layer(nt, vec, 30.0, 0.76, "star")
-    faint = _star_layer(nt, vec, 52.0, 0.79, "star_cool")
+    stars = _star_layer(nt, vec, 30.0, 0.76, star_k)
+    faint = _star_layer(nt, vec, 52.0, 0.79, star2_k)
 
     a1 = nt.nodes.new("ShaderNodeMixRGB")
     a1.blend_type = "ADD"
@@ -601,7 +919,25 @@ def background_far(outdir):
 
     camera(s, 12.0)
     glare(s, threshold=0.8, size=6, mix=-0.4)
-    render(s, outdir, "background_far", 512, 512, transparent=False)
+    render(s, outdir, name, 512, 512, transparent=False)
+
+
+def background_far(outdir):
+    """Nebula Runway - the default blue-violet sky."""
+    _nebula_bg(outdir, "background_far", "void", "neb_mid", "neb_hi",
+               "star", "star_cool")
+
+
+def background_far_solar(outdir):
+    """Solar Rift - ember nebula near the binary star."""
+    _nebula_bg(outdir, "background_far_solar", "sol_void", "sol_mid",
+               "sol_hi", "sol_star", "sol_star2", seed_off=7.3)
+
+
+def background_far_abyss(outdir):
+    """Abyss Crown - near-black deep void, sparse icy stars."""
+    _nebula_bg(outdir, "background_far_abyss", "aby_void", "aby_mid",
+               "aby_hi", "aby_star", "aby_star2", seed_off=13.9)
 
 
 def background_near(outdir):
@@ -642,8 +978,11 @@ def background_near(outdir):
 # --------------------------------------------------------------- main
 TARGETS = (
     astra_interceptor, valkyrie_lancer, seraph_guard,
-    enemy_drifter, enemy_sine, boss,
-    background_far, background_near,
+    enemy_drifter, enemy_sine, enemy_tank,
+    boss_aegis, boss_tyrant, boss_leviathan,
+    power_chip,
+    background_far, background_far_solar, background_far_abyss,
+    background_near,
 )
 
 if __name__ == "__main__":
