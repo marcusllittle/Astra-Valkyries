@@ -214,6 +214,11 @@ interface TouchMoveState {
   y: number;
 }
 
+// Bosses cycle: strafe (pressure) -> windup (readable tell) -> special
+// (signature move) -> recover (player's punish window). Without this they
+// just hover and stream bullets, which reads as random.
+type BossAction = "approach" | "strafe" | "windup" | "special" | "recover";
+
 interface BossState {
   name: string;
   archetype: BossArchetype;
@@ -232,6 +237,15 @@ interface BossState {
   minionCooldown: number;
   phaseTransitionFlash: number;
   lastPhase: 1 | 2 | 3;
+  // choreography
+  action: BossAction;
+  actionTimer: number;
+  chargeGlow: number; // 0..1 telegraph intensity, drives the windup ring
+  volleyTimer: number;
+  volleyIndex: number;
+  lockX: number; // player position captured when the tell resolves
+  homeY: number;
+  lanceActive: boolean;
 }
 
 interface PowerChip {
@@ -430,7 +444,10 @@ type SpriteKey =
   | "player"
   | "enemyDrifter"
   | "enemySine"
+  | "enemyTank"
   | "boss"
+  | "bossTyrant"
+  | "bossLeviathan"
   | "chip"
   | "bulletPlayer"
   | "bulletEnemy"
@@ -444,13 +461,22 @@ const SPRITE_PATHS: Record<SpriteKey, string> = {
   player: "/assets/shmup/player_ship.svg",
   enemyDrifter: "/assets/shmup/enemy_drifter.png",
   enemySine: "/assets/shmup/enemy_sine.png",
-  boss: "/assets/shmup/boss_dreadnought.png",
-  chip: "/assets/shmup/power_chip.svg",
+  enemyTank: "/assets/shmup/enemy_tank_fortress.png",
+  boss: "/assets/shmup/boss_aegis_dreadnought.png",
+  bossTyrant: "/assets/shmup/boss_helios_tyrant.png",
+  bossLeviathan: "/assets/shmup/boss_cryo_leviathan.png",
+  chip: "/assets/shmup/power_chip.png",
   bulletPlayer: "/assets/shmup/bullet_player.svg",
   bulletEnemy: "/assets/shmup/bullet_enemy.svg",
   bulletBoss: "/assets/shmup/bullet_boss.svg",
   impactBurst: "/assets/shmup/impact_burst.svg",
   pulseRing: "/assets/shmup/pulse_ring.svg",
+};
+
+// Per-zone far background; maps not listed fall back to SPRITE_PATHS.backgroundFar
+const MAP_BACKGROUND_FAR_PATHS: Record<string, string> = {
+  "solar-rift": "/assets/shmup/background_far_solar.png",
+  "abyss-crown": "/assets/shmup/background_far_abyss.png",
 };
 
 const PILOT_SHIP_ART_PATHS: Record<string, string> = {
@@ -476,7 +502,10 @@ function createSpriteStore(): Record<SpriteKey, HTMLImageElement | null> {
     player: null,
     enemyDrifter: null,
     enemySine: null,
+    enemyTank: null,
     boss: null,
+    bossTyrant: null,
+    bossLeviathan: null,
     chip: null,
     bulletPlayer: null,
     bulletEnemy: null,
@@ -819,6 +848,7 @@ export default function ShmupPlayScreen() {
   }, []);
   const spritesRef = useRef<Record<SpriteKey, HTMLImageElement | null>>(createSpriteStore());
   const playerSpriteLoadedPathRef = useRef<string | null>(null);
+  const backgroundFarLoadedPathRef = useRef<string | null>(null);
   const animationRef = useRef(0);
   const shipRef = useRef<ShipState>({
     x: window.innerWidth / 2,
@@ -1292,8 +1322,17 @@ export default function ShmupPlayScreen() {
       spriteStore.player = playerImage;
       playerSpriteLoadedPathRef.current = resolvedPlayerSpritePath;
     }
+    // Far background varies per zone, so reload whenever the path changes
+    const mapFarPath = MAP_BACKGROUND_FAR_PATHS[activeMap.id] ?? SPRITE_PATHS.backgroundFar;
+    const resolvedFarPath = resolveAssetUrl(mapFarPath) ?? mapFarPath;
+    if (!spriteStore.backgroundFar || backgroundFarLoadedPathRef.current !== resolvedFarPath) {
+      const farImage = new Image();
+      farImage.src = resolvedFarPath;
+      spriteStore.backgroundFar = farImage;
+      backgroundFarLoadedPathRef.current = resolvedFarPath;
+    }
     for (const key of Object.keys(SPRITE_PATHS) as SpriteKey[]) {
-      if (key === "player") continue;
+      if (key === "player" || key === "backgroundFar") continue;
       if (spriteStore[key]) continue;
       const image = new Image();
       image.src = resolveAssetUrl(SPRITE_PATHS[key]) ?? SPRITE_PATHS[key];
@@ -1803,7 +1842,7 @@ export default function ShmupPlayScreen() {
         archetype: activeMap.bossArchetype,
         x: canvas.width / 2,
         y: -96,
-        radius: activeMap.bossArchetype === "leviathan" ? 34 : activeMap.bossArchetype === "tyrant" ? 28 : 30,
+        radius: activeMap.bossArchetype === "leviathan" ? 62 : activeMap.bossArchetype === "tyrant" ? 54 : 58,
         hp: activeMap.bossMaxHp,
         maxHp: activeMap.bossMaxHp,
         age: 0,
@@ -1816,6 +1855,14 @@ export default function ShmupPlayScreen() {
         minionCooldown: 8.0,
         phaseTransitionFlash: 0,
         lastPhase: 1,
+        action: "approach",
+        actionTimer: 0,
+        chargeGlow: 0,
+        volleyTimer: 0,
+        volleyIndex: 0,
+        lockX: 0,
+        homeY: 128,
+        lanceActive: false,
       };
       activeWaveLabelRef.current = activeMap.bossName;
     };
@@ -2107,6 +2154,50 @@ export default function ShmupPlayScreen() {
         length: 12,
         spriteKey: "bulletEnemy",
       });
+    };
+
+    // Aegis signature: a wall spanning the arena with a single gap to thread.
+    const fireBroadsideWall = (boss: BossState) => {
+      const columns = 11;
+      const spacing = canvas.width / (columns - 1);
+      // gap biased toward the player so it is reachable but never free
+      const playerCol = Math.round((ship.x / canvas.width) * (columns - 1));
+      const gap = clamp(playerCol + (Math.random() < 0.5 ? -1 : 1), 1, columns - 2);
+      for (let i = 0; i < columns; i++) {
+        if (i === gap || (boss.phase === 1 && i === gap + 1)) continue;
+        pushEnemyBullet({
+          x: i * spacing,
+          y: boss.y + boss.radius * 0.5,
+          vx: 0,
+          vy: 148 + boss.phase * 16,
+          radius: 7,
+          color: activeMap.palette.bossShotColor,
+          coreColor: activeMap.palette.bossShotCore,
+          length: 18,
+          spriteKey: "bulletBoss",
+        });
+      }
+      addSparkBurst(boss.x, boss.y + boss.radius * 0.4, activeMap.palette.bossPrimary, 10, 120);
+    };
+
+    // Leviathan signature: radial shockwave thrown off at the bottom of its dive.
+    const fireFrostSlam = (boss: BossState) => {
+      const count = boss.phase === 1 ? 14 : boss.phase === 2 ? 18 : 24;
+      for (let i = 0; i < count; i++) {
+        const ang = (i / count) * Math.PI * 2;
+        pushEnemyBullet({
+          x: boss.x,
+          y: boss.y,
+          vx: Math.cos(ang) * 186,
+          vy: Math.sin(ang) * 186,
+          radius: 6.5,
+          color: activeMap.palette.bossShotColor,
+          coreColor: activeMap.palette.bossShotCore,
+          length: 15,
+          spriteKey: "bulletBoss",
+        });
+      }
+      addExplosion(boss.x, boss.y, activeMap.palette.bossPrimary, 26, 3.4);
     };
 
     const shootBossBullets = (boss: BossState) => {
@@ -3567,24 +3658,119 @@ export default function ShmupPlayScreen() {
         const moveSpeed = phaseConfig?.moveSpeed ?? (boss.phase === 1 ? 0.95 : boss.phase === 2 ? 1.35 : 1.8);
         const moveFreq = phaseConfig?.moveFreq ?? (boss.phase === 1 ? 86 : boss.phase === 2 ? 132 : 160);
 
-        const bossTargetY = 118;
-        if (boss.y < bossTargetY) {
-          boss.y = Math.min(bossTargetY, boss.y + 92 * bossDelta);
-        }
-
-        // Boss movement — horizontal sweeps + lunges in later phases
+        const bossTargetY = 128;
+        boss.homeY = bossTargetY;
+        const edgeMin = boss.radius * 0.55 + 10;
+        const edgeMax = canvas.width - boss.radius * 0.55 - 10;
         const baseX = canvas.width / 2 + Math.sin(boss.age * moveSpeed) * moveFreq;
-        if (boss.archetype === "tyrant") {
-          const pressureX = baseX + Math.sin(boss.age * (boss.phase === 3 ? 4.4 : 3.1)) * (boss.phase === 3 ? 44 : 26);
-          boss.x = clamp(pressureX, boss.radius + 12, canvas.width - boss.radius - 12);
-        } else if (boss.archetype === "leviathan") {
-          const tideX = baseX + Math.sin(boss.age * 1.9) * (boss.phase >= 2 ? 34 : 16);
-          boss.x = clamp(tideX, boss.radius + 12, canvas.width - boss.radius - 12);
-        } else if (boss.phase === 3) {
-          const lungeX = baseX + Math.sin(boss.age * 3.2) * 20;
-          boss.x = clamp(lungeX, boss.radius + 12, canvas.width - boss.radius - 12);
+
+        // ── Choreography: pressure → tell → signature move → punish window ──
+        boss.actionTimer -= bossDelta;
+        const strafeWindow = boss.phase === 1 ? 5.4 : boss.phase === 2 ? 4.1 : 3.2;
+
+        if (boss.action === "approach") {
+          boss.y = Math.min(bossTargetY, boss.y + 92 * bossDelta);
+          boss.x = clamp(canvas.width / 2 + Math.sin(boss.age * moveSpeed) * moveFreq * 0.35, edgeMin, edgeMax);
+          if (boss.y >= bossTargetY) {
+            boss.action = "strafe";
+            boss.actionTimer = strafeWindow;
+          }
+        } else if (boss.action === "strafe") {
+          // horizontal sweeps, personality per archetype
+          let sweepX = baseX;
+          if (boss.archetype === "tyrant") {
+            sweepX += Math.sin(boss.age * (boss.phase === 3 ? 4.4 : 3.1)) * (boss.phase === 3 ? 44 : 26);
+          } else if (boss.archetype === "leviathan") {
+            sweepX += Math.sin(boss.age * 1.9) * (boss.phase >= 2 ? 34 : 16);
+          } else if (boss.phase === 3) {
+            sweepX += Math.sin(boss.age * 3.2) * 20;
+          }
+          boss.x = clamp(sweepX, edgeMin, edgeMax);
+          boss.y += (bossTargetY - boss.y) * Math.min(1, 4 * bossDelta);
+          if (boss.actionTimer <= 0) {
+            boss.action = "windup";
+            boss.actionTimer = boss.phase === 3 ? 0.85 : 1.15;
+            boss.volleyIndex = 0;
+            boss.volleyTimer = 0;
+          }
+        } else if (boss.action === "windup") {
+          // Readable tell: charge glow ramps, boss rears back and shudders
+          boss.chargeGlow = Math.min(1, boss.chargeGlow + bossDelta / 0.5);
+          const shudder = Math.sin(boss.age * 46) * 3.5 * boss.chargeGlow;
+          const rear = boss.archetype === "leviathan" ? 52 : 26;
+          boss.y += (bossTargetY - rear - boss.y) * Math.min(1, 5 * bossDelta);
+          if (boss.archetype === "tyrant") {
+            // tracks the player during the tell, so dodging it is a real choice
+            boss.x = clamp(boss.x + (ship.x - boss.x) * Math.min(1, 2.4 * bossDelta) + shudder, edgeMin, edgeMax);
+          } else {
+            boss.x = clamp(boss.x + shudder, edgeMin, edgeMax);
+          }
+          if (boss.actionTimer <= 0) {
+            boss.lockX = clamp(ship.x, edgeMin, edgeMax);
+            boss.action = "special";
+            boss.actionTimer =
+              boss.archetype === "dreadnought" ? 1.9 : boss.archetype === "tyrant" ? 1.5 : 1.7;
+            if (boss.archetype === "tyrant") {
+              boss.lanceActive = true;
+              boss.sweepActive = true;
+              boss.sweepAngle = Math.atan2(ship.y - boss.y, ship.x - boss.x);
+            }
+            shakeTimeRef.current = 0.18;
+            shakePowerRef.current = 4;
+          }
+        } else if (boss.action === "special") {
+          boss.volleyTimer -= bossDelta;
+
+          if (boss.archetype === "dreadnought") {
+            // BROADSIDE: slides across firing bullet walls with one gap to thread
+            const side = boss.volleyIndex % 2 === 0 ? -1 : 1;
+            const anchor = canvas.width / 2 + side * canvas.width * 0.22;
+            boss.x = clamp(boss.x + (anchor - boss.x) * Math.min(1, 2.2 * bossDelta), edgeMin, edgeMax);
+            boss.y += (bossTargetY - boss.y) * Math.min(1, 4 * bossDelta);
+            if (boss.volleyTimer <= 0 && boss.volleyIndex < (boss.phase === 3 ? 4 : 3)) {
+              fireBroadsideWall(boss);
+              boss.volleyIndex += 1;
+              boss.volleyTimer = boss.phase === 3 ? 0.42 : 0.55;
+            }
+          } else if (boss.archetype === "tyrant") {
+            // SOLAR LANCE: sustained aimed beam that sweeps toward the player
+            const wantAngle = Math.atan2(ship.y - boss.y, ship.x - boss.x);
+            let diff = wantAngle - boss.sweepAngle;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            const track = boss.phase === 3 ? 1.5 : boss.phase === 2 ? 1.1 : 0.8;
+            boss.sweepAngle += clamp(diff, -track * bossDelta, track * bossDelta);
+            boss.y += (bossTargetY - boss.y) * Math.min(1, 3 * bossDelta);
+          } else {
+            // FROST DIVE: plunges at the locked position, then slams
+            const t = 1 - Math.max(0, boss.actionTimer) / 1.7;
+            const diveDepth = canvas.height * 0.42;
+            const arc = Math.sin(Math.min(1, t / 0.62) * Math.PI); // down then back up
+            boss.y = bossTargetY - 52 + arc * diveDepth;
+            boss.x = clamp(boss.x + (boss.lockX - boss.x) * Math.min(1, 3.2 * bossDelta), edgeMin, edgeMax);
+            if (boss.volleyIndex === 0 && t >= 0.6) {
+              fireFrostSlam(boss);
+              boss.volleyIndex = 1;
+              shakeTimeRef.current = 0.34;
+              shakePowerRef.current = 8;
+            }
+          }
+
+          if (boss.actionTimer <= 0) {
+            boss.action = "recover";
+            boss.actionTimer = boss.phase === 3 ? 0.55 : 0.95;
+            boss.lanceActive = false;
+            boss.sweepActive = false;
+          }
         } else {
-          boss.x = clamp(baseX, boss.radius + 12, canvas.width - boss.radius - 12);
+          // RECOVER: vents heat, holds fire — this is the player's window
+          boss.chargeGlow = Math.max(0, boss.chargeGlow - bossDelta / 0.35);
+          boss.y += (bossTargetY - boss.y) * Math.min(1, 3 * bossDelta);
+          boss.x = clamp(boss.x + Math.sin(boss.age * 1.2) * 12 * bossDelta, edgeMin, edgeMax);
+          if (boss.actionTimer <= 0) {
+            boss.action = "strafe";
+            boss.actionTimer = strafeWindow;
+          }
         }
 
         boss.fireCooldown -= bossDelta;
@@ -3593,17 +3779,23 @@ export default function ShmupPlayScreen() {
         const fireRate = (phaseConfig?.fireRate ?? (boss.phase === 1 ? 0.85 : 0.58)) * (boss.phase === 1 ? 0.92 : boss.phase === 2 ? 0.84 : 0.76);
         const burstRate = (phaseConfig?.burstRate ?? (boss.phase === 1 ? 2.1 : 1.35)) * (boss.phase === 1 ? 0.9 : boss.phase === 2 ? 0.82 : 0.72);
 
-        if (boss.y >= bossTargetY && boss.fireCooldown <= 0) {
+        // Routine fire only while strafing: the tell stays readable and
+        // recover is a genuine opening instead of more of the same stream.
+        const canRoutineFire = boss.action === "strafe";
+        if (canRoutineFire && boss.fireCooldown <= 0) {
           shootBossBullets(boss);
           boss.fireCooldown += fireRate;
         }
-        if (boss.y >= bossTargetY && boss.burstCooldown <= 0) {
+        if (canRoutineFire && boss.burstCooldown <= 0) {
           shootBossBurst(boss);
           boss.burstCooldown += burstRate;
         }
 
-        // Sweep laser (dreadnought dominates space, leviathan in late phases)
-        if (phaseConfig?.sweepLaser !== false && (boss.archetype === "dreadnought" ? boss.phase >= 2 : boss.archetype === "leviathan" ? boss.phase >= 3 : boss.phase >= 2)) {
+        // Sweep laser (dreadnought dominates space, leviathan in late phases).
+        // Skipped for the tyrant, whose beam is driven by the lance special.
+        if (!boss.lanceActive && boss.archetype !== "tyrant"
+          && phaseConfig?.sweepLaser !== false
+          && (boss.archetype === "dreadnought" ? boss.phase >= 2 : boss.phase >= 3)) {
           boss.sweepCooldown -= bossDelta;
           if (boss.sweepActive) {
             boss.sweepAngle += (boss.archetype === "dreadnought" ? Math.PI * 0.82 : Math.PI * 0.54) * bossDelta;
@@ -4216,7 +4408,13 @@ export default function ShmupPlayScreen() {
       }
 
       for (const enemy of enemiesRef.current) {
-        const sprite = getSprite(enemy.pattern === "drifter" ? "enemyDrifter" : "enemySine");
+        const sprite = getSprite(
+          enemy.pattern === "drifter"
+            ? "enemyDrifter"
+            : enemy.pattern === "tank" || enemy.pattern === "miniboss"
+              ? "enemyTank"
+              : "enemySine"
+        );
         const ENEMY_COLORS: Record<string, string> = {
           drifter: "#f06595", sine: "#845ef7", zigzag: "#ff922b", orbiter: "#74c0fc",
           charger: "#ff6b6b", splitter: "#69db7c", bomber: "#ffa94d", sniper: "#ff0000", swarm: "#adb5bd",
@@ -4690,8 +4888,14 @@ export default function ShmupPlayScreen() {
 
       if (bossRef.current) {
         const boss = bossRef.current;
-        // Bosses are rendered procedurally per archetype — distinct designs per zone
-        const sprite: HTMLImageElement | null = null;
+        // Distinct rendered sprite per archetype; canvas-procedural fallback below
+        const sprite = getSprite(
+          boss.archetype === "tyrant"
+            ? "bossTyrant"
+            : boss.archetype === "leviathan"
+              ? "bossLeviathan"
+              : "boss"
+        );
 
         // Phase transition flash
         if (boss.phaseTransitionFlash > 0) {
@@ -4716,12 +4920,38 @@ export default function ShmupPlayScreen() {
           ctx.arc(boss.x, boss.y + 10, bGlowR, 0, Math.PI * 2);
           ctx.fill();
           ctx.restore();
+
+          // Charge telegraph: contracting ring + hot core while winding up,
+          // so the signature move is always announced before it lands.
+          if (boss.chargeGlow > 0.01) {
+            ctx.save();
+            const cg = boss.chargeGlow;
+            const ringR = boss.radius * displayScale * (2.6 - cg * 1.3);
+            ctx.strokeStyle = `${activeMap.palette.bossPrimary}${Math.round(cg * 220).toString(16).padStart(2, "0")}`;
+            ctx.lineWidth = 2 + cg * 4;
+            ctx.beginPath();
+            ctx.arc(boss.x, boss.y, ringR, 0, Math.PI * 2);
+            ctx.stroke();
+            const hot = ctx.createRadialGradient(boss.x, boss.y, 2, boss.x, boss.y, boss.radius * displayScale * 1.1);
+            hot.addColorStop(0, `${activeMap.palette.bossSecondary}${Math.round(cg * 180).toString(16).padStart(2, "0")}`);
+            hot.addColorStop(1, "rgba(0,0,0,0)");
+            ctx.fillStyle = hot;
+            ctx.beginPath();
+            ctx.arc(boss.x, boss.y, boss.radius * displayScale * 1.1, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+
+          // Draw at the sprite's own aspect so each hull keeps its real
+          // proportions — the Aegis is a long ship, the Tyrant a wide wheel.
+          const bossW = boss.radius * 5.2;
+          const bossH = bossW * (sprite.naturalHeight / sprite.naturalWidth || 1);
           drawSpriteCentered(
             sprite,
             boss.x,
             boss.y,
-            boss.radius * 5.5,
-            boss.radius * 4.2,
+            bossW,
+            bossH,
             Math.sin(boss.age * 0.8) * 0.03
           );
         } else {

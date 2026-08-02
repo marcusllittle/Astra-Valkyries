@@ -36,7 +36,7 @@ export const LORE_ENTRIES: LoreEntry[] = [
     category: "zone",
     title: "Nebula Runway",
     content: "A vast corridor of ionized gas clouds that serves as the primary shipping lane between core worlds. Since the invasion, it has become a gauntlet of enemy patrols and automated defense drones.",
-    imageUrl: "/assets/shmup/boss_dreadnought.svg",
+    imageUrl: "/assets/cutins/scenes/nebula_runway_briefing.png",
   },
   {
     id: "lore-solar",
@@ -50,7 +50,7 @@ export const LORE_ENTRIES: LoreEntry[] = [
     category: "zone",
     title: "Abyss Crown",
     content: "The deepest region of charted space, where temperatures plunge to near absolute zero. Ancient alien structures dot the void, and the terrifying Cryo Leviathan guards the sector's secrets.",
-    imageUrl: "/assets/shmup/enemy_drifter.svg",
+    imageUrl: "/assets/cutins/scenes/abyss_crown_briefing.png",
   },
   // Bosses
   {
@@ -58,21 +58,21 @@ export const LORE_ENTRIES: LoreEntry[] = [
     category: "boss",
     title: "Aegis Dreadnought",
     content: "A massive capital ship bristling with weapons, the Aegis Dreadnought is the enemy's primary patrol vessel. Its layered shield system makes it nearly impervious to conventional attacks.",
-    imageUrl: "/assets/cutins/scenes/nebula_runway_briefing.png",
+    imageUrl: "/assets/shmup/boss_aegis_dreadnought.png",
   },
   {
     id: "lore-helios",
     category: "boss",
     title: "Helios Tyrant",
     content: "An experimental weapons platform that harnesses solar energy to power devastating beam weapons. The Helios Tyrant can redirect solar flares as offensive weapons.",
-    imageUrl: "/assets/cutins/scenes/solar_rift_briefing.png",
+    imageUrl: "/assets/shmup/boss_helios_tyrant.png",
   },
   {
     id: "lore-cryo",
     category: "boss",
     title: "Cryo Leviathan",
     content: "The most feared entity in known space. This biomechanical horror freezes everything in its path, and its crystalline armor regenerates from ambient cold energy.",
-    imageUrl: "/assets/cutins/scenes/abyss_crown_briefing.png",
+    imageUrl: "/assets/shmup/boss_cryo_leviathan.png",
   },
   // Enemy types
   {
@@ -80,20 +80,21 @@ export const LORE_ENTRIES: LoreEntry[] = [
     category: "enemy",
     title: "Drifter Drone",
     content: "Mass-produced patrol units with basic targeting systems. What they lack in individual threat, they make up for in numbers.",
-    imageUrl: "/assets/shmup/enemy_drifter.svg",
+    imageUrl: "/assets/shmup/enemy_drifter.png",
   },
   {
     id: "lore-tank",
     category: "enemy",
     title: "Tank Fortress",
     content: "Heavily armored mobile platforms with regenerating shield generators. Taking one down requires sustained firepower and careful timing around its shield cycles.",
+    imageUrl: "/assets/shmup/enemy_tank_fortress.png",
   },
   {
     id: "lore-dreadnought-enemy",
     category: "enemy",
     title: "Dreadnought",
     content: "Miniature capital ships that anchor in position and unleash devastating multi-phase attacks. Their beam weapons can sweep entire sectors.",
-    imageUrl: "/assets/shmup/boss_dreadnought.svg",
+    imageUrl: "/assets/shmup/boss_aegis_dreadnought.png",
   },
   // Factions
   {
