@@ -34,7 +34,24 @@ const INBOX_STORAGE_KEY = "astra-inbox-state";
 const CUSTOM_INBOX_DIR = "/assets/inbox";
 const PILOT_INBOX_DIR = `${CUSTOM_INBOX_DIR}/pilot`;
 const FORCE_UNLOCK_ALL_MESSAGES = false;
+// Every one of the 50 referenced portraits is present under
+// public/assets/inbox/pilot/, and renderAttachment has always handled
+// them, so this is the only thing standing between the Inbox and its
+// images. Left off: turning it on is a content call, not a code fix.
+//
+// What was broken regardless of this flag: the batch messages hardcoded
+// "Image attachment - <pilot>" into their preview while the flag stripped
+// the attachment, so 47 entries advertised a picture and opened empty.
+// The preview text is now derived from the flag (see previewFor), which
+// means the list tells the truth in both states.
 const ENABLE_INBOX_IMAGE_ATTACHMENTS = false;
+
+/** Preview line for a pilot message, honest about whether art will render. */
+function previewFor(sender: string): string {
+  return ENABLE_INBOX_IMAGE_ATTACHMENTS
+    ? `Image attachment • ${sender}`
+    : `Private channel • ${sender}`;
+}
 
 const PILOT_INBOX_IMAGE_FILES = [
   "job-0293e3f9670d.png",
@@ -288,7 +305,7 @@ function buildPilotInboxMessages(): InboxMessageTemplate[] {
       id: `msg-pilot-image-${filename.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`,
       sender,
       subject: variant.subject,
-      preview: `Image attachment • ${sender}`,
+      preview: previewFor(sender),
       body: variant.body,
       attachments: ENABLE_INBOX_IMAGE_ATTACHMENTS
         ? [
@@ -347,7 +364,7 @@ const BASE_MESSAGES: InboxMessageTemplate[] = [
     id: "msg-nova-personal",
     sender: "Nova",
     subject: "You were staring. I checked.",
-    preview: ENABLE_INBOX_IMAGE_ATTACHMENTS ? "Image attachment • Nova" : "Private channel • Nova",
+    preview: previewFor("Nova"),
     body: "You do that thing after a sortie where you act calm and then absolutely fail to hide your eyes.\n\nSo here. Off-duty Nova. Consider this a reward for surviving your first real run.\n\nIf that expression on your face gets any more obvious, I'm charging you for the view.\n\n- Nova",
     attachments: ENABLE_INBOX_IMAGE_ATTACHMENTS
       ? [
@@ -368,7 +385,7 @@ const BASE_MESSAGES: InboxMessageTemplate[] = [
     id: "msg-rex-personal",
     sender: "Rex",
     subject: "Try not to lose focus",
-    preview: ENABLE_INBOX_IMAGE_ATTACHMENTS ? "Image attachment • Rex" : "Private channel • Rex",
+    preview: previewFor("Rex"),
     body: "Cleared Nebula and suddenly you look like you can handle premium distractions.\n\nTell me this shot doesn't work and I'll call you a liar to your face.\n\nIf it does work, maybe keep that reaction in a private channel. Or don't. I'm flexible.\n\n- Rex",
     attachments: ENABLE_INBOX_IMAGE_ATTACHMENTS
       ? [
@@ -389,7 +406,7 @@ const BASE_MESSAGES: InboxMessageTemplate[] = [
     id: "msg-yuki-personal",
     sender: "Yuki",
     subject: "For your eyes only",
-    preview: ENABLE_INBOX_IMAGE_ATTACHMENTS ? "Image attachment • Yuki" : "Private channel • Yuki",
+    preview: previewFor("Yuki"),
     body: "You get battle telemetry, accuracy logs, and mission records. That is an unforgivably sterile version of me.\n\nThis one is better. Quieter. Closer.\n\nIf you're blushing, good. It means you were paying attention.\n\n- Yuki",
     attachments: ENABLE_INBOX_IMAGE_ATTACHMENTS
       ? [
