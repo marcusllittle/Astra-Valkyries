@@ -365,3 +365,53 @@ export async function fetchGalleryImages(
     return { images: [], offline: true };
   }
 }
+
+/**
+ * An asset the player owns on JoinHavn, claimed through the marketplace.
+ *
+ * Distinct from GalleryImage: those are reward renders Astra asked the
+ * network to paint. These are assets the player owns outright and can
+ * sell, which is why ownership has to be re-checked rather than cached
+ * forever — see `fetchOwnedAssets`.
+ */
+export interface OwnedAsset {
+  job_id: string;
+  title: string;
+  category?: string;
+  image_url?: string;
+  video_url?: string;
+  preview_url?: string;
+}
+
+/**
+ * Fetch the assets this wallet currently owns in its JoinHavn Collection.
+ *
+ * `offline: true` means "could not verify", which is deliberately different
+ * from an empty list: selling an asset must retire a cosmetic that uses it,
+ * but a dropped connection must not.
+ */
+export async function fetchOwnedAssets(
+  wallet: string,
+): Promise<{ assets: OwnedAsset[]; offline: boolean }> {
+  try {
+    const res = await fetch(`${API_BASE}/gallery/collection?wallet=${encodeURIComponent(wallet)}`);
+    if (!res.ok) return { assets: [], offline: true };
+    const data = await res.json();
+    const raw = Array.isArray(data.assets) ? data.assets : [];
+    return {
+      assets: raw
+        .filter((a: Record<string, unknown>) => typeof a?.job_id === "string")
+        .map((a: Record<string, unknown>) => ({
+          job_id: String(a.job_id),
+          title: String(a.title || "Untitled asset"),
+          category: typeof a.category === "string" ? a.category : undefined,
+          image_url: typeof a.image_url === "string" ? a.image_url : undefined,
+          video_url: typeof a.video_url === "string" ? a.video_url : undefined,
+          preview_url: typeof a.preview_url === "string" ? a.preview_url : undefined,
+        })),
+      offline: false,
+    };
+  } catch {
+    return { assets: [], offline: true };
+  }
+}
