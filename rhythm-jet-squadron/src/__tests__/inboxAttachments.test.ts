@@ -25,6 +25,10 @@ const PILOT_DIR = join(APP, "public/assets/inbox/pilot");
 const source = readFileSync(SOURCE, "utf8");
 
 describe("inbox attachments", () => {
+  it("ships the portrait rewards enabled", () => {
+    expect(source).toMatch(/const ENABLE_INBOX_IMAGE_ATTACHMENTS = true;/);
+  });
+
   it("no preview line hardcodes an attachment the flag can strip", () => {
     // This is the defect, and it is independent of which way the flag is
     // set: 47 batch messages hardcoded "Image attachment - <pilot>" into
@@ -96,7 +100,7 @@ describe("inbox attachments", () => {
     ].map((name) => join(PILOT_DIR, name));
 
     const all = [...literal, ...templated];
-    expect(all.length, "found no video references at all").toBeGreaterThan(0);
+    expect(all.length, "expected a video transmission for each pilot").toBeGreaterThanOrEqual(3);
 
     const missing = all.filter((path) => !existsSync(path));
     expect(

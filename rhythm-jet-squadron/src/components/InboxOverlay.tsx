@@ -34,17 +34,10 @@ const INBOX_STORAGE_KEY = "astra-inbox-state";
 const CUSTOM_INBOX_DIR = "/assets/inbox";
 const PILOT_INBOX_DIR = `${CUSTOM_INBOX_DIR}/pilot`;
 const FORCE_UNLOCK_ALL_MESSAGES = false;
-// Every one of the 50 referenced portraits is present under
-// public/assets/inbox/pilot/, and renderAttachment has always handled
-// them, so this is the only thing standing between the Inbox and its
-// images. Left off: turning it on is a content call, not a code fix.
-//
-// What was broken regardless of this flag: the batch messages hardcoded
-// "Image attachment - <pilot>" into their preview while the flag stripped
-// the attachment, so 47 entries advertised a picture and opened empty.
-// The preview text is now derived from the flag (see previewFor), which
-// means the list tells the truth in both states.
-const ENABLE_INBOX_IMAGE_ATTACHMENTS = false;
+// The portraits are shipped with the game and are the reward carried by
+// these transmissions. Keep preview copy and attachment delivery tied to the
+// same switch so a message can never promise media that it does not render.
+const ENABLE_INBOX_IMAGE_ATTACHMENTS = true;
 
 /** Preview line for a pilot message, honest about whether art will render. */
 function previewFor(sender: string): string {
@@ -330,7 +323,12 @@ function buildPilotInboxMessages(): InboxMessageTemplate[] {
 function loadInboxState(): Record<string, boolean> {
   try {
     const raw = localStorage.getItem(INBOX_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
+    if (!raw) return {};
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    return Object.fromEntries(
+      Object.entries(parsed).filter((entry): entry is [string, boolean] => typeof entry[1] === "boolean")
+    );
   } catch {
     return {};
   }
@@ -442,6 +440,42 @@ const BASE_MESSAGES: InboxMessageTemplate[] = [
     isUnlocked: (save) => Boolean(save.bestGrades["nebula-runway"]) && save.totalRuns >= 2,
   },
   {
+    id: "msg-rex-video",
+    sender: "Rex",
+    subject: "Full burn. Private channel.",
+    preview: "Video attachment • Rex",
+    body: "You keep asking what I look like when the heat spikes and the comms go quiet. Consider the question answered.\n\nTry to keep up on the next run.\n\n- Rex",
+    attachments: [
+      {
+        id: "rex-video",
+        type: "video",
+        url: "/assets/cutins/rex_fever.mp4",
+        posterUrl: `${PILOT_INBOX_DIR}/rex_afterburn.png`,
+        label: "Rex afterburn video",
+      },
+    ],
+    timestamp: Date.now() - 780000,
+    isUnlocked: (save) => Boolean(save.bestGrades["solar-rift"]) && save.totalRuns >= 3,
+  },
+  {
+    id: "msg-yuki-video",
+    sender: "Yuki",
+    subject: "Do not archive this",
+    preview: "Video attachment • Yuki",
+    body: "The official archive gets clean footage and tactical overlays. You get this version.\n\nNo annotations. No distance. Just the moment as it was.\n\n- Yuki",
+    attachments: [
+      {
+        id: "yuki-video",
+        type: "video",
+        url: "/assets/cutins/yuki_fever.mp4",
+        posterUrl: `${PILOT_INBOX_DIR}/yuki_midnight_archive.png`,
+        label: "Yuki midnight video",
+      },
+    ],
+    timestamp: Date.now() - 700000,
+    isUnlocked: (save) => Boolean(save.bestGrades["abyss-crown"]) && save.totalRuns >= 4,
+  },
+  {
     id: "msg-grade-a-brief",
     sender: "Flight Ops",
     subject: "A-Rank review posted",
@@ -511,117 +545,114 @@ const PLACEHOLDER_MESSAGES: InboxMessageTemplate[] = [...buildPilotInboxMessages
 function getInboxMessages(save: SaveData): InboxMessage[] {
   return PLACEHOLDER_MESSAGES
     .filter((message) => FORCE_UNLOCK_ALL_MESSAGES || message.isUnlocked(save))
-    .map(({ isUnlocked: _isUnlocked, ...message }) => ({
-      ...message,
+    .map((message) => ({
+      id: message.id,
+      sender: message.sender,
+      subject: message.subject,
+      body: message.body,
+      preview: message.preview,
+      attachments: message.attachments,
+      timestamp: message.timestamp,
       read: false,
     }));
 }
 
-function AttachmentImage({ attachment, onHoldStart, onHoldEnd }: { attachment: InboxAttachment; onHoldStart?: (src: string) => void; onHoldEnd?: () => void }) {
+function AttachmentImage({ attachment, onOpen }: { attachment: InboxAttachment; onOpen: (src: string) => void }) {
   const [src, setSrc] = useState(() => resolveAssetUrl(attachment.url) ?? attachment.url);
-  // Fade-in on decode so the image doesn't "pop" into the message pane.
   const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
 
-  useEffect(() => {
-    setLoaded(false);
-    setSrc(resolveAssetUrl(attachment.url) ?? attachment.url);
-  }, [attachment.url]);
-
-  const handlePointerDown = (e: React.PointerEvent) => {
-    e.preventDefault();
-    onHoldStart?.(src);
-  };
-
-  const handlePointerUp = () => {
-    onHoldEnd?.();
-  };
+  if (failed) {
+    return (
+      <div className="inbox-media-error" role="status">
+        <span aria-hidden="true">⌁</span>
+        <strong>Attachment unavailable</strong>
+        <small>The transmission text is still intact.</small>
+      </div>
+    );
+  }
 
   return (
-    <img
-      src={src}
-      alt={attachment.alt ?? attachment.label ?? ""}
-      draggable={false}
-      decoding="async"
-      onLoad={() => setLoaded(true)}
-      onError={() => {
-        if (!attachment.fallbackUrl) return;
-        const fallbackSrc = resolveAssetUrl(attachment.fallbackUrl) ?? attachment.fallbackUrl;
-        if (fallbackSrc !== src) {
-          setLoaded(false);
-          setSrc(fallbackSrc);
-        }
-      }}
-      onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerUp}
-      onContextMenu={(e) => e.preventDefault()}
-      style={{
-        width: "100%",
-        // Cap vertical footprint so a tall portrait never pushes the body
-        // text below the fold, especially in landscape where viewport height
-        // collapses. 55vh capped at 440px reads comfortably on both phones
-        // and desktop without cropping pilot portraits awkwardly.
-        maxHeight: "min(55vh, 440px)",
-        display: "block",
-        objectFit: "contain",
-        borderRadius: "6px",
-        cursor: "pointer",
-        userSelect: "none",
-        WebkitUserSelect: "none",
-        touchAction: "none",
-        opacity: loaded ? 1 : 0,
-        transform: loaded ? "scale(1)" : "scale(0.985)",
-        transition: "opacity 320ms ease, transform 420ms cubic-bezier(0.22, 0.61, 0.36, 1)",
-        willChange: "opacity, transform",
-      }}
-    />
+    <button
+      type="button"
+      className={`inbox-image-button ${loaded ? "is-loaded" : ""}`}
+      onClick={() => onOpen(src)}
+      aria-label={`Open ${attachment.label ?? "image attachment"} full screen`}
+    >
+      <img
+        src={src}
+        alt={attachment.alt ?? attachment.label ?? ""}
+        draggable={false}
+        decoding="async"
+        onLoad={() => setLoaded(true)}
+        onError={() => {
+          const fallbackSrc = attachment.fallbackUrl
+            ? resolveAssetUrl(attachment.fallbackUrl) ?? attachment.fallbackUrl
+            : null;
+          if (fallbackSrc && fallbackSrc !== src) {
+            setLoaded(false);
+            setSrc(fallbackSrc);
+            return;
+          }
+          setFailed(true);
+        }}
+      />
+      <span className="inbox-media-expand">
+        <span aria-hidden="true">↗</span> View full frame
+      </span>
+    </button>
   );
 }
 
-function ImageLightbox({ src, onRelease }: { src: string; onRelease: () => void }) {
-  useEffect(() => {
-    const handleUp = () => onRelease();
-    window.addEventListener("pointerup", handleUp);
-    window.addEventListener("pointercancel", handleUp);
-    return () => {
-      window.removeEventListener("pointerup", handleUp);
-      window.removeEventListener("pointercancel", handleUp);
-    };
-  }, [onRelease]);
+function AttachmentVideo({ attachment }: { attachment: InboxAttachment }) {
+  const [failed, setFailed] = useState(false);
+  const resolvedUrl = resolveAssetUrl(attachment.url) ?? attachment.url;
+
+  return (
+    <div className="inbox-media-frame inbox-media-frame--video">
+      <div className="inbox-media-caption">
+        <span><span className="inbox-media-type" aria-hidden="true">▶</span>{attachment.label ?? "Video attachment"}</span>
+        <span className="inbox-media-secure">Encrypted clip</span>
+      </div>
+      {failed ? (
+        <div className="inbox-media-error" role="status">
+          <span aria-hidden="true">⌁</span>
+          <strong>Clip could not be loaded</strong>
+          <small>Try reopening this transmission.</small>
+        </div>
+      ) : (
+        <video
+          src={resolvedUrl}
+          poster={resolveAssetUrl(attachment.posterUrl)}
+          controls
+          playsInline
+          preload="metadata"
+          onError={() => setFailed(true)}
+        />
+      )}
+    </div>
+  );
+}
+
+function ImageLightbox({ src, onClose }: { src: string; onClose: () => void }) {
 
   return (
     <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 2000,
-        background: "rgba(0, 0, 0, 0.92)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        // Respect notched / rounded-corner safe areas so full-bleed images
-        // don't clip under the status bar or home indicator on mobile.
-        paddingTop: "max(16px, env(safe-area-inset-top))",
-        paddingBottom: "max(16px, env(safe-area-inset-bottom))",
-        paddingLeft: "max(16px, env(safe-area-inset-left))",
-        paddingRight: "max(16px, env(safe-area-inset-right))",
-        touchAction: "none",
+      className="inbox-lightbox"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Image preview"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
       }}
     >
+      <button type="button" className="inbox-lightbox-close" onClick={onClose} aria-label="Close image preview">×</button>
       <img
         src={src}
         alt=""
         draggable={false}
-        style={{
-          maxWidth: "100%",
-          maxHeight: "100%",
-          objectFit: "contain",
-          borderRadius: "8px",
-          boxShadow: "0 0 60px rgba(102, 217, 239, 0.15)",
-          userSelect: "none",
-          WebkitUserSelect: "none",
-        }}
       />
+      <span className="inbox-lightbox-hint">Press Esc or click outside to close</span>
     </div>
   );
 }
@@ -641,11 +672,42 @@ function useIsMobile(breakpoint = 600) {
   return isMobile;
 }
 
+type InboxFilter = "all" | "unread" | "media";
+
+function senderKey(sender: string): string {
+  const normalized = sender.toLowerCase();
+  if (normalized === "nova" || normalized === "rex" || normalized === "yuki") return normalized;
+  if (normalized.includes("command") || normalized.includes("ops")) return "command";
+  return "intel";
+}
+
+function senderInitials(sender: string): string {
+  return sender
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function formatListTime(timestamp: number): string {
+  const date = new Date(timestamp);
+  const now = new Date();
+  if (date.toDateString() === now.toDateString()) {
+    return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  }
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+  return date.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
 export default function InboxOverlay({ isOpen, onClose }: InboxOverlayProps) {
   const { save } = useGame();
   const [readState, setReadState] = useState(loadInboxState);
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+  const [filter, setFilter] = useState<InboxFilter>("all");
   const isMobile = useIsMobile();
 
   const messages = useMemo(
@@ -661,22 +723,39 @@ export default function InboxOverlay({ isOpen, onClose }: InboxOverlayProps) {
 
   const unreadCount = messages.filter(m => !m.read).length;
   const selectedMessage = messages.find((message) => message.id === selectedMessageId) ?? null;
+  const visibleMessages = useMemo(() => {
+    const filtered = messages.filter((message) => {
+      if (filter === "unread") return !message.read;
+      if (filter === "media") return Boolean(message.attachments?.length);
+      return true;
+    });
+    if (selectedMessage && !filtered.some((message) => message.id === selectedMessage.id)) {
+      return [selectedMessage, ...filtered];
+    }
+    return filtered;
+  }, [filter, messages, selectedMessage]);
+  const selectedVisibleIndex = visibleMessages.findIndex((message) => message.id === selectedMessageId);
 
   useEffect(() => {
     saveInboxState(readState);
   }, [readState]);
 
   useEffect(() => {
-    if (!isOpen || messages.length === 0 || selectedMessageId) return;
+    if (!isOpen || isMobile || messages.length === 0 || selectedMessageId) return;
     const firstUnread = messages.find((message) => !message.read) ?? messages[0];
-    setSelectedMessageId(firstUnread.id);
-  }, [isOpen, messages, selectedMessageId]);
+    const frame = window.requestAnimationFrame(() => {
+      setSelectedMessageId(firstUnread.id);
+      setReadState((previous) => previous[firstUnread.id] ? previous : { ...previous, [firstUnread.id]: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [isMobile, isOpen, messages, selectedMessageId]);
 
   useEffect(() => {
     if (!selectedMessageId) return;
     const stillVisible = messages.some((message) => message.id === selectedMessageId);
     if (!stillVisible) {
-      setSelectedMessageId(messages[0]?.id ?? null);
+      const frame = window.requestAnimationFrame(() => setSelectedMessageId(messages[0]?.id ?? null));
+      return () => window.cancelAnimationFrame(frame);
     }
   }, [messages, selectedMessageId]);
 
@@ -685,54 +764,45 @@ export default function InboxOverlay({ isOpen, onClose }: InboxOverlayProps) {
     setReadState(prev => ({ ...prev, [msg.id]: true }));
   };
 
-  const renderAttachment = (attachment: InboxAttachment) => {
-    const resolvedUrl = resolveAssetUrl(attachment.url);
-    if (!resolvedUrl) return null;
-
-    const mediaFrameStyle = {
-      marginBottom: "16px",
-      borderRadius: "10px",
-      overflow: "hidden" as const,
-      border: "1px solid rgba(102,217,239,0.18)",
-      background: "rgba(2, 8, 18, 0.88)",
-      boxShadow: "0 14px 28px rgba(0, 0, 0, 0.22)",
+  useEffect(() => {
+    if (!isOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
     };
+  }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      if (lightboxSrc) setLightboxSrc(null);
+      else onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isOpen, lightboxSrc, onClose]);
+
+  const markAllRead = () => {
+    setReadState((previous) => ({
+      ...previous,
+      ...Object.fromEntries(messages.map((message) => [message.id, true])),
+    }));
+  };
+
+  const renderAttachment = (attachment: InboxAttachment) => {
     if (attachment.type === "video") {
-      return (
-        <div key={attachment.id} style={mediaFrameStyle}>
-          <div style={{
-            padding: "10px 12px",
-            borderBottom: "1px solid rgba(102,217,239,0.12)",
-            color: "rgba(102,217,239,0.8)",
-            fontSize: "11px",
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            fontFamily: "monospace",
-          }}>
-            {attachment.label ?? "Video attachment"}
-          </div>
-          <video
-            src={resolvedUrl}
-            poster={resolveAssetUrl(attachment.posterUrl)}
-            controls
-            playsInline
-            preload="metadata"
-            style={{
-              width: "100%",
-              maxHeight: "320px",
-              display: "block",
-              background: "#000",
-              objectFit: "contain",
-            }}
-          />
-        </div>
-      );
+      return <AttachmentVideo key={attachment.id} attachment={attachment} />;
     }
 
     return (
-      <div key={attachment.id} style={mediaFrameStyle}>
-        <AttachmentImage attachment={attachment} onHoldStart={setLightboxSrc} onHoldEnd={() => setLightboxSrc(null)} />
+      <div key={attachment.id} className="inbox-media-frame inbox-media-frame--image">
+        <div className="inbox-media-caption">
+          <span><span className="inbox-media-type" aria-hidden="true">◇</span>{attachment.label ?? "Image attachment"}</span>
+          <span className="inbox-media-secure">Private frame</span>
+        </div>
+        <AttachmentImage attachment={attachment} onOpen={setLightboxSrc} />
       </div>
     );
   };
@@ -741,214 +811,180 @@ export default function InboxOverlay({ isOpen, onClose }: InboxOverlayProps) {
 
   return (
     <>
-    {lightboxSrc && <ImageLightbox src={lightboxSrc} onRelease={() => setLightboxSrc(null)} />}
-    <div style={{
-      position: "fixed", inset: 0, zIndex: 1000,
-      background: "rgba(0,0,0,0.85)", display: "flex",
-      alignItems: "center", justifyContent: "center",
-    }}>
-      <div style={{
-        // 100% (not 100vw) keeps the panel inside the viewport even when
-        // a scrollbar / safe-area offset is present; mobile fills the
-        // flex parent rather than forcing horizontal overflow.
-        width: isMobile ? "100%" : "min(92vw, 840px)",
-        maxWidth: "100%",
-        height: isMobile ? "100%" : "min(84vh, 620px)",
-        maxHeight: "100%",
-        background: "linear-gradient(180deg, #0a1628 0%, #040612 100%)",
-        border: isMobile ? "none" : "1px solid rgba(102,217,239,0.3)",
-        borderRadius: isMobile ? 0 : "16px",
-        display: "flex", flexDirection: "column", overflow: "hidden",
-        boxShadow: "0 28px 80px rgba(0,0,0,0.45)",
-      }}>
-        {/* Header */}
-        <div style={{
-          display: "flex", justifyContent: "space-between", alignItems: "center",
-          padding: "14px 20px", borderBottom: "1px solid rgba(102,217,239,0.2)",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <span style={{ color: "#66d9ef", fontFamily: "monospace", fontSize: "16px", letterSpacing: "2px" }}>
-              INBOX
-            </span>
-            {unreadCount > 0 && (
-              <span style={{
-                background: "#ff6b6b", color: "#fff", padding: "2px 8px",
-                borderRadius: "10px", fontSize: "11px", fontFamily: "monospace",
-              }}>
-                {unreadCount}
-              </span>
-            )}
-          </div>
-          <button onClick={onClose} style={{
-            background: "none", border: "none", color: "rgba(255,255,255,0.5)",
-            cursor: "pointer", fontSize: "18px", fontFamily: "monospace",
-            // WCAG-minimum tap target so the close control is usable on phones.
-            minWidth: "44px", minHeight: "44px",
-            display: "inline-flex", alignItems: "center", justifyContent: "center",
-          }}>
-            {"\u2715"}
-          </button>
-        </div>
-
-        {/* Keyframes for message-body fade/slide-in on switch. Inlined so the
-            component has no external CSS dependency. */}
-        <style>{`
-          @keyframes inboxDetailFade {
-            0% { opacity: 0; transform: translateY(6px); }
-            100% { opacity: 1; transform: translateY(0); }
-          }
-        `}</style>
-
-        {/* Content. On mobile both panes stay mounted and slide with a CSS
-            transform, which keeps the detail view in the DOM across orientation
-            changes (fixes "rotate phone and text pane disappears") and gives
-            the list↔detail transition a modern slide feel instead of a hard
-            conditional render swap. */}
-        <div style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "row",
-          overflow: "hidden",
-          position: "relative",
-        }}>
-          {/* Message list */}
-          <div
-            aria-hidden={isMobile && !!selectedMessageId}
-            style={{
-              width: isMobile ? "100%" : "260px",
-              borderRight: isMobile ? "none" : "1px solid rgba(102,217,239,0.1)",
-              overflowY: "auto",
-              background: "linear-gradient(180deg, rgba(8,16,30,0.94) 0%, rgba(5,10,20,0.88) 100%)",
-              ...(isMobile
-                ? {
-                    position: "absolute",
-                    inset: 0,
-                    transform: selectedMessageId ? "translateX(-100%)" : "translateX(0)",
-                    transition: "transform 300ms cubic-bezier(0.22, 0.61, 0.36, 1)",
-                    willChange: "transform",
-                    zIndex: 1,
-                    // Pointer blocked when off-screen so buried buttons aren't
-                    // tappable through the detail pane mid-animation.
-                    pointerEvents: selectedMessageId ? "none" : "auto",
-                  }
-                : {}),
-          }}>
-            {messages.map(msg => (
-              <button key={msg.id} onClick={() => selectMessage(msg)} style={{
-                display: "block", width: "100%", textAlign: "left",
-                padding: "14px 16px", cursor: "pointer",
-                background: selectedMessage?.id === msg.id ? "rgba(102,217,239,0.12)" : "transparent",
-                border: "none", borderBottom: "1px solid rgba(255,255,255,0.05)",
-                fontFamily: "monospace",
-                transition: "background 180ms ease",
-              }}>
-                <div style={{
-                  fontSize: "11px", color: msg.read ? "rgba(255,255,255,0.4)" : "#66d9ef",
-                  marginBottom: "4px", display: "flex", alignItems: "center", gap: "6px",
-                }}>
-                  {!msg.read && <span style={{ display: "inline-block", width: "6px", height: "6px", background: "#66d9ef", borderRadius: "50%" }} />}
-                  {msg.sender}
+      {lightboxSrc && <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
+      <div
+        className="inbox-backdrop"
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget) onClose();
+        }}
+      >
+        <section className="inbox-shell" role="dialog" aria-modal="true" aria-labelledby="inbox-title">
+          <header className="inbox-header">
+            <div className="inbox-heading">
+              <span className="inbox-signal-mark" aria-hidden="true"><i /><i /><i /></span>
+              <div>
+                <span className="inbox-eyebrow">Valkyrie private network</span>
+                <div className="inbox-title-row">
+                  <h2 id="inbox-title">Squadron Comms</h2>
+                  {unreadCount > 0 && <span className="inbox-unread-badge">{unreadCount} new</span>}
                 </div>
-                <div style={{
-                  fontSize: "12px", color: msg.read ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.8)",
-                  whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                  marginBottom: "6px",
-                }}>
-                  {msg.subject}
-                </div>
-                <div style={{
-                  fontSize: "11px",
-                  color: "rgba(255,255,255,0.38)",
-                  lineHeight: 1.5,
-                  display: "-webkit-box",
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: "vertical",
-                  overflow: "hidden",
-                }}>
-                  {msg.preview ?? msg.body}
-                </div>
+              </div>
+            </div>
+            <div className="inbox-header-actions">
+              <button type="button" className="inbox-mark-read" onClick={markAllRead} disabled={unreadCount === 0}>
+                <span aria-hidden="true">✓✓</span> Mark all read
               </button>
-            ))}
+              <button type="button" className="inbox-close" onClick={onClose} aria-label="Close inbox">×</button>
+            </div>
+          </header>
+
+          <div className="inbox-toolbar">
+            <div className="inbox-channel-status">
+              <span className="inbox-live-dot" aria-hidden="true" />
+              Secure channel online
+              <span className="inbox-message-total">{messages.length} transmissions</span>
+            </div>
+            <div className="inbox-filters" aria-label="Filter transmissions">
+              {(["all", "unread", "media"] as const).map((option) => (
+                <button
+                  type="button"
+                  key={option}
+                  className={filter === option ? "is-active" : ""}
+                  aria-pressed={filter === option}
+                  onClick={() => setFilter(option)}
+                >
+                  {option === "all" ? "All" : option === "unread" ? `Unread ${unreadCount || ""}` : "Media"}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Message detail */}
-          <div
-            aria-hidden={isMobile && !selectedMessageId}
-            style={{
-              flex: isMobile ? undefined : 1,
-              padding: isMobile ? "14px" : "22px",
-              overflowY: "auto",
-              ...(isMobile
-                ? {
-                    position: "absolute",
-                    inset: 0,
-                    transform: selectedMessageId ? "translateX(0)" : "translateX(100%)",
-                    transition: "transform 300ms cubic-bezier(0.22, 0.61, 0.36, 1)",
-                    willChange: "transform",
-                    zIndex: 2,
-                    pointerEvents: selectedMessageId ? "auto" : "none",
-                  }
-                : {}),
-            }}
-          >
-            {selectedMessage ? (
-              // key forces re-mount → triggers inboxDetailFade animation on
-              // every message switch, which makes the content feel like it
-              // "arrives" rather than flashing.
-              <div key={selectedMessage.id} style={{ animation: "inboxDetailFade 260ms cubic-bezier(0.22, 0.61, 0.36, 1) both" }}>
-                {isMobile && (
-                  <button onClick={() => setSelectedMessageId(null)} style={{
-                    background: "none", border: "1px solid rgba(102,217,239,0.3)",
-                    color: "#66d9ef", padding: "10px 16px", borderRadius: "8px",
-                    cursor: "pointer", fontFamily: "monospace", fontSize: "13px",
-                    marginBottom: "14px", minHeight: "44px",
-                    display: "inline-flex", alignItems: "center",
-                  }}>
-                    ← Back to messages
-                  </button>
-                )}
-                <div style={{ marginBottom: "16px" }}>
-                  <h3 style={{ color: "#66d9ef", fontSize: isMobile ? "16px" : "18px", margin: "0 0 6px", fontFamily: "monospace" }}>
-                    {selectedMessage.subject}
-                  </h3>
-                  <div style={{
-                    color: "rgba(255,255,255,0.4)",
-                    fontSize: "11px",
-                    fontFamily: "monospace",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "10px",
-                    flexWrap: "wrap",
-                  }}>
-                    <span>From: {selectedMessage.sender}</span>
-                    <span>{new Date(selectedMessage.timestamp).toLocaleString()}</span>
+          <div className={`inbox-layout ${selectedMessageId ? "has-selection" : ""}`}>
+            <aside className="inbox-list-pane" aria-hidden={isMobile && Boolean(selectedMessageId)}>
+              <div className="inbox-list-scroll">
+                {visibleMessages.length > 0 ? visibleMessages.map((message) => {
+                  const key = senderKey(message.sender);
+                  const mediaType = message.attachments?.some((attachment) => attachment.type === "video")
+                    ? "video"
+                    : message.attachments?.length
+                      ? "image"
+                      : null;
+                  return (
+                    <button
+                      type="button"
+                      key={message.id}
+                      className={`inbox-list-item ${selectedMessageId === message.id ? "is-selected" : ""} ${message.read ? "is-read" : "is-unread"}`}
+                      onClick={() => selectMessage(message)}
+                      tabIndex={isMobile && Boolean(selectedMessageId) ? -1 : 0}
+                    >
+                      <span className="inbox-item-accent" data-sender={key} aria-hidden="true" />
+                      <span className="inbox-avatar" data-sender={key}>{senderInitials(message.sender)}</span>
+                      <span className="inbox-item-copy">
+                        <span className="inbox-item-topline">
+                          <strong>{message.sender}</strong>
+                          <time dateTime={new Date(message.timestamp).toISOString()}>{formatListTime(message.timestamp)}</time>
+                        </span>
+                        <span className="inbox-item-subject">{message.subject}</span>
+                        <span className="inbox-item-preview">
+                          {mediaType && <span className={`inbox-item-media inbox-item-media--${mediaType}`}>{mediaType === "video" ? "▶ Clip" : "◇ Image"}</span>}
+                          {message.preview ?? message.body}
+                        </span>
+                      </span>
+                      {!message.read && <span className="inbox-item-unread" aria-label="Unread" />}
+                    </button>
+                  );
+                }) : (
+                  <div className="inbox-list-empty">
+                    <span aria-hidden="true">⌁</span>
+                    <strong>No transmissions here</strong>
+                    <small>Try a different filter.</small>
                   </div>
+                )}
+              </div>
+            </aside>
+
+            <main className="inbox-detail-pane" aria-hidden={isMobile && !selectedMessageId}>
+              {selectedMessage ? (
+                <article key={selectedMessage.id} className={`inbox-message ${selectedMessage.attachments?.length ? "has-media" : ""}`}>
+                  <button type="button" className="inbox-back-to-list" onClick={() => setSelectedMessageId(null)}>
+                    <span aria-hidden="true">←</span> Transmissions
+                  </button>
+
+                  <div className="inbox-message-layout">
+                    {selectedMessage.attachments?.length ? (
+                      <div className="inbox-attachments">{selectedMessage.attachments.map(renderAttachment)}</div>
+                    ) : null}
+
+                    <div className="inbox-message-copy">
+                      <div className="inbox-message-channel">
+                        <span className="inbox-channel-chip"><span aria-hidden="true">●</span> Direct transmission</span>
+                        <span className="inbox-encryption">E2E / AES-256</span>
+                      </div>
+                      <header className="inbox-message-header">
+                        <div className="inbox-detail-sender">
+                          <span className="inbox-avatar inbox-avatar--large" data-sender={senderKey(selectedMessage.sender)}>
+                            {senderInitials(selectedMessage.sender)}
+                          </span>
+                          <span>
+                            <small>From</small>
+                            <strong>{selectedMessage.sender}</strong>
+                          </span>
+                        </div>
+                        <time dateTime={new Date(selectedMessage.timestamp).toISOString()}>
+                          {new Date(selectedMessage.timestamp).toLocaleString([], {
+                            month: "short",
+                            day: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}
+                        </time>
+                      </header>
+                      <h3>{selectedMessage.subject}</h3>
+                      <p className="inbox-message-body">{selectedMessage.body}</p>
+
+                      <footer className="inbox-message-footer">
+                        <span><i aria-hidden="true" /> Transmission authenticated</span>
+                        <div className="inbox-message-nav">
+                          <button
+                            type="button"
+                            disabled={selectedVisibleIndex <= 0}
+                            onClick={() => selectMessage(visibleMessages[selectedVisibleIndex - 1])}
+                            aria-label="Open newer transmission"
+                          >
+                            ←
+                          </button>
+                          <span>{selectedVisibleIndex + 1} / {visibleMessages.length}</span>
+                          <button
+                            type="button"
+                            disabled={selectedVisibleIndex < 0 || selectedVisibleIndex >= visibleMessages.length - 1}
+                            onClick={() => selectMessage(visibleMessages[selectedVisibleIndex + 1])}
+                            aria-label="Open older transmission"
+                          >
+                            →
+                          </button>
+                        </div>
+                      </footer>
+                    </div>
+                  </div>
+                </article>
+              ) : (
+                <div className="inbox-detail-empty">
+                  <span className="inbox-empty-orbit" aria-hidden="true"><i /><i /></span>
+                  <span className="inbox-eyebrow">Awaiting selection</span>
+                  <h3>Choose a transmission</h3>
+                  <p>Mission intel and private pilot media will appear here.</p>
                 </div>
-                {selectedMessage.attachments?.map(renderAttachment)}
-                <p style={{
-                  color: "rgba(255,255,255,0.8)", fontSize: "13px",
-                  lineHeight: "1.7", fontFamily: "monospace", whiteSpace: "pre-wrap",
-                }}>
-                  {selectedMessage.body}
-                </p>
-              </div>
-            ) : (
-              <div style={{
-                display: "flex", alignItems: "center", justifyContent: "center",
-                height: "100%", color: "rgba(255,255,255,0.3)", fontSize: "13px",
-                fontFamily: "monospace",
-              }}>
-                Select a message to read
-              </div>
-            )}
+              )}
+            </main>
           </div>
-        </div>
+        </section>
       </div>
-    </div>
     </>
   );
 }
 
+// This read helper intentionally lives beside the module-private message table.
+// eslint-disable-next-line react-refresh/only-export-components
 export function getUnreadCount(save: SaveData): number {
   const state = loadInboxState();
   return getInboxMessages(save).filter((message) => !state[message.id]).length;
