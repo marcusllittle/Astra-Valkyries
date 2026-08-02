@@ -34,17 +34,16 @@ const INBOX_STORAGE_KEY = "astra-inbox-state";
 const CUSTOM_INBOX_DIR = "/assets/inbox";
 const PILOT_INBOX_DIR = `${CUSTOM_INBOX_DIR}/pilot`;
 const FORCE_UNLOCK_ALL_MESSAGES = false;
-// Every one of the 50 referenced portraits is present under
-// public/assets/inbox/pilot/, and renderAttachment has always handled
-// them, so this is the only thing standing between the Inbox and its
-// images. Left off: turning it on is a content call, not a code fix.
+// All 50 referenced portraits are present under public/assets/inbox/pilot/
+// and renderAttachment has always handled them, so this flag was the only
+// thing standing between the Inbox and its images.
 //
 // What was broken regardless of this flag: the batch messages hardcoded
 // "Image attachment - <pilot>" into their preview while the flag stripped
 // the attachment, so 47 entries advertised a picture and opened empty.
-// The preview text is now derived from the flag (see previewFor), which
-// means the list tells the truth in both states.
-const ENABLE_INBOX_IMAGE_ATTACHMENTS = false;
+// The preview text now derives from the flag (see previewFor), so the list
+// tells the truth in either state.
+const ENABLE_INBOX_IMAGE_ATTACHMENTS = true;
 
 /** Preview line for a pilot message, honest about whether art will render. */
 function previewFor(sender: string): string {
