@@ -18,6 +18,7 @@ import BriefingScreen from "./screens/BriefingScreen";
 import CodexScreen from "./screens/CodexScreen";
 import SpaceportScreen from "./screens/SpaceportScreen";
 import MissionsScreen from "./screens/MissionsScreen";
+import SkillsScreen from "./screens/SkillsScreen";
 import VideoCutsceneScreen from "./screens/VideoCutsceneScreen";
 import AchievementToast from "./components/AchievementToast";
 
@@ -63,6 +64,7 @@ export default function App() {
             <Route path="/codex" element={<CodexScreen />} />
             <Route path="/spaceport" element={<SpaceportScreen />} />
             <Route path="/missions" element={<MissionsScreen />} />
+            <Route path="/skills" element={<SkillsScreen />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           <AchievementLayer />

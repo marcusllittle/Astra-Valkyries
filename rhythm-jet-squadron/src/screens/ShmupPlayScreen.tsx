@@ -18,6 +18,11 @@ import {
   NEUTRAL_MODIFIER_EFFECTS,
   type CombinedModifierEffects,
 } from "../data/modifiers";
+import {
+  combineSkillEffects,
+  NEUTRAL_SKILL_EFFECTS,
+  type SkillEffects,
+} from "../lib/skillEffects";
 import { astraStartRun, hasAstraSession } from "../lib/havnApi";
 import { resolveAssetUrl } from "../lib/assetUrl";
 import { BASE_SHMUP_HP, buildShmupLoadout } from "../lib/loadout";
@@ -71,6 +76,9 @@ const ENTITY_SCALE = 0.7;
 const BASE_SHIP_RADIUS = 10;
 const REFERENCE_HEIGHT = 540; // design reference resolution
 const PLAYER_INVULNERABLE_MS = 900;
+/** Crit hits read hot-white so they are legible against every bullet color. */
+const CRIT_COLOR = "#fff3bf";
+
 const OVERDRIVE_MAX = 100;
 const SHMUP_TRACK_ID = "shmup_arcade";
 const MAX_WEAPON_LEVEL = 6;
@@ -391,6 +399,23 @@ interface ShmupModifiers {
   runScoreMult: number;
   runEnemyBulletSpeedMult: number;
   runSpawnRateMult: number;
+  /** Skill-tree effects the sim applies at their own moments (crit rolls,
+   *  overdrive activation, kills) rather than folding into the loadout. */
+  critChance: number;
+  critDamageMult: number;
+  bossDamageMult: number;
+  skillFireRateMult: number;
+  overdriveFireRateMult: number;
+  overdriveInvulnMs: number;
+  hitInvulnBonusMs: number;
+  passiveEnemyTimeScale: number;
+  overdriveFreezeMs: number;
+  secondaryFreezeMs: number;
+  slowOnKillMs: number;
+  secondaryRadiusMult: number;
+  secondaryDamageMult: number;
+  shieldPulseIntervalMs: number;
+  dropRateMult: number;
 }
 
 interface ScheduledWaveSpawn extends ShmupWaveEnemy {
@@ -543,7 +568,8 @@ function buildModifiers(
   outfit: Outfit | undefined,
   ownedOutfit: OwnedOutfit | undefined,
   outfitKit: ShmupKit | null,
-  runMods: CombinedModifierEffects = NEUTRAL_MODIFIER_EFFECTS
+  runMods: CombinedModifierEffects = NEUTRAL_MODIFIER_EFFECTS,
+  skills: SkillEffects = NEUTRAL_SKILL_EFFECTS
 ): ShmupModifiers {
   const loadout = buildShmupLoadout(pilot, ship, outfit, ownedOutfit);
   const primaryKey = resolvePrimaryKey(outfitKit?.primary);
@@ -569,25 +595,29 @@ function buildModifiers(
     (hasAggressiveRoute ? SHMUP_BALANCE.passives.aggressiveRoute.hpPenalty : 0);
   // Run modifiers scale the assembled loadout. Floor of 1 keeps
   // "One Hit Wonder" (playerHpMult 0) at exactly one hit rather than zero.
+  // Skill-tree HP is flat and lands after the run-modifier scaling, so a
+  // "One Hit Wonder" run is not quietly undone by a +2 HP node.
   const baseHp = Math.max(
     1,
-    Math.round((loadout.shipHp + hpFromPassives) * runMods.playerHpMult),
+    Math.round((loadout.shipHp + hpFromPassives) * runMods.playerHpMult) + skills.bonusHp,
   );
 
   return {
     maxHp: baseHp,
-    shipSpeed: loadout.shipSpeed,
-    overdriveFillMultiplier: loadout.overdriveFillMultiplier,
-    overdriveDurationMs: hasOverdriveLoop
-      ? Math.round(loadout.overdriveDurationMs * SHMUP_BALANCE.passives.overdriveLoopDurationMult)
-      : loadout.overdriveDurationMs,
+    shipSpeed: loadout.shipSpeed * skills.moveSpeedMult,
+    overdriveFillMultiplier: loadout.overdriveFillMultiplier * skills.overdriveFillMult,
+    overdriveDurationMs: Math.round(
+      (hasOverdriveLoop
+        ? loadout.overdriveDurationMs * SHMUP_BALANCE.passives.overdriveLoopDurationMult
+        : loadout.overdriveDurationMs) * skills.overdriveDurationMult,
+    ),
     hitboxScale: loadout.hitboxScale * (hasSmallerHitbox ? 0.85 : 1),
     scoreFlatBonus: loadout.scoreFlatBonus,
-    scoreMultBonus: loadout.scoreMultBonus,
+    scoreMultBonus: loadout.scoreMultBonus + skills.scoreMult,
     comboBonus: loadout.comboBonus,
     hasMultiplierSave: loadout.hasComboShield,
-    secondaryStartCharges,
-    secondaryMaxCharges,
+    secondaryStartCharges: secondaryStartCharges + (secondaryConfig.usesCharges ? skills.secondaryBonusCharges : 0),
+    secondaryMaxCharges: secondaryMaxCharges + (secondaryConfig.usesCharges ? skills.secondaryBonusCharges : 0),
     secondaryUsesCharges: secondaryConfig.usesCharges,
     secondaryCooldownMs: secondaryConfig.cooldownMs,
     secondaryDurationMs: secondaryConfig.durationMs,
@@ -603,14 +633,31 @@ function buildModifiers(
     weaponDamageMultiplier:
       (hasPrecisionRoute ? SHMUP_BALANCE.passives.precisionRoute.damageMult : 1) *
       (hasAggressiveRoute ? SHMUP_BALANCE.passives.aggressiveRoute.damageMult : 1) *
-      runMods.playerDamageMult,
+      runMods.playerDamageMult *
+      skills.damageMult,
     // Run-modifier effects the sim applies at spawn/score time. Kept separate
     // from the loadout multipliers above, which describe the player's own kit.
     runEnemyHpMult: runMods.enemyHpMult,
     runEnemySpeedMult: runMods.enemySpeedMult,
     runScoreMult: runMods.scoreMult,
-    runEnemyBulletSpeedMult: runMods.bulletSpeedMult,
+    runEnemyBulletSpeedMult: runMods.bulletSpeedMult * skills.enemyBulletSpeedMult,
     runSpawnRateMult: runMods.spawnRateMult,
+    // Skill effects the sim applies at their own moments.
+    critChance: skills.critChance,
+    critDamageMult: skills.critDamageMult,
+    bossDamageMult: skills.bossDamageMult,
+    skillFireRateMult: skills.fireRateMult,
+    overdriveFireRateMult: skills.overdriveFireRateMult,
+    overdriveInvulnMs: skills.overdriveInvulnMs,
+    hitInvulnBonusMs: skills.hitInvulnBonusMs,
+    passiveEnemyTimeScale: skills.passiveEnemyTimeScale,
+    overdriveFreezeMs: skills.overdriveFreezeMs,
+    secondaryFreezeMs: skills.secondaryFreezeMs,
+    slowOnKillMs: skills.slowOnKillMs,
+    secondaryRadiusMult: skills.secondaryRadiusMult,
+    secondaryDamageMult: skills.secondaryDamageMult,
+    shieldPulseIntervalMs: skills.shieldPulseIntervalMs,
+    dropRateMult: skills.dropRateMult,
     damageTakenMultiplier: hasAggressiveRoute
       ? SHMUP_BALANCE.passives.aggressiveRoute.damageTakenMult
       : 1,
@@ -816,6 +863,11 @@ export default function ShmupPlayScreen() {
   const dronesUntilRef = useRef(0);
   const dronesFireTimerRef = useRef(0);
   const freezeUntilRef = useRef(0);
+  /** Ice Burst window, re-opened by each kill. Separate from the EMP and
+   *  crystal freezes so it composes with them instead of overwriting. */
+  const killSlowUntilRef = useRef(0);
+  /** Next time the Energy Shield skill hands back a free absorb. */
+  const nextShieldPulseAtRef = useRef(0);
   const freezeShatterRef = useRef<{ x: number; y: number; triggerAtMs: number } | null>(null);
   const statusFlashUntilRef = useRef(0);
   // New secondaries
@@ -862,7 +914,17 @@ export default function ShmupPlayScreen() {
     () => combineModifierEffects(save.selectedModifiers),
     [save.selectedModifiers],
   );
-  const modifiers = buildModifiers(pilot, selectedShip, outfit, ownedOutfit, outfitKit, runMods);
+  // Skill nodes the player has actually unlocked for the pilot they are
+  // flying. Skills are per-pilot, so switching pilots switches the bundle.
+  const skillMods = useMemo(
+    () =>
+      combineSkillEffects(
+        save.selectedPilotId,
+        save.selectedPilotId ? save.pilotSkills[save.selectedPilotId] : undefined,
+      ),
+    [save.selectedPilotId, save.pilotSkills],
+  );
+  const modifiers = buildModifiers(pilot, selectedShip, outfit, ownedOutfit, outfitKit, runMods, skillMods);
   const {
     comboBonus,
     hasMultiplierSave,
@@ -886,6 +948,21 @@ export default function ShmupPlayScreen() {
     scoreMultBonus,
     shipSpeed,
     shotColor,
+    critChance,
+    critDamageMult,
+    bossDamageMult,
+    skillFireRateMult,
+    overdriveFireRateMult: skillOverdriveFireRateMult,
+    overdriveInvulnMs,
+    hitInvulnBonusMs,
+    passiveEnemyTimeScale,
+    overdriveFreezeMs,
+    secondaryFreezeMs,
+    slowOnKillMs,
+    secondaryRadiusMult,
+    secondaryDamageMult,
+    shieldPulseIntervalMs,
+    dropRateMult,
     spreadMultiplier,
     weaponDamageMultiplier,
     runEnemyHpMult,
@@ -1172,6 +1249,10 @@ export default function ShmupPlayScreen() {
     dronesUntilRef.current = 0;
     dronesFireTimerRef.current = 0;
     freezeUntilRef.current = 0;
+    killSlowUntilRef.current = 0;
+    // Bank the first shield pulse immediately so the skill protects the
+    // opening seconds rather than making the player wait 30s for it.
+    nextShieldPulseAtRef.current = 0;
     freezeShatterRef.current = null;
     statusFlashUntilRef.current = 0;
     barrelRollUntilRef.current = 0;
@@ -1320,6 +1401,20 @@ export default function ShmupPlayScreen() {
       overdriveMeterRef.current = 0;
       overdriveStartRef.current = elapsedMs;
       overdriveUntilRef.current = elapsedMs + overdriveDurationMs;
+      // Skills that fire on the activation itself: Phantom Dodge grants a
+      // window of invulnerability, Absolute Zero freezes the field.
+      if (overdriveInvulnMs > 0) {
+        shipRef.current.invulnerableUntil = Math.max(
+          shipRef.current.invulnerableUntil,
+          elapsedMs + overdriveInvulnMs,
+        );
+      }
+      if (overdriveFreezeMs > 0) {
+        freezeUntilRef.current = Math.max(
+          freezeUntilRef.current,
+          elapsedMs + overdriveFreezeMs,
+        );
+      }
     };
 
     const addOverdrive = (amount: number, elapsedMs: number) => {
@@ -1439,6 +1534,11 @@ export default function ShmupPlayScreen() {
         color,
       });
     };
+
+    // Crit exists only because two skill nodes need it (nova_p2 chance,
+    // nova_p4 damage). It is a roll at the hit site rather than at fire
+    // time so a piercing bullet can crit each target independently.
+    const rollCrit = () => critChance > 0 && Math.random() < critChance;
 
     const addTrailParticle = (x: number, y: number, color: string) => {
       trailParticlesRef.current.push({
@@ -2187,6 +2287,10 @@ export default function ShmupPlayScreen() {
         (enemy.scoreValue + scoreFlatBonus) * totalMultiplier * runScoreMult,
       );
       extendOverdrive(elapsedMs, OVERDRIVE_EXTENSION_PER_KILL_MS);
+      // Ice Burst: each kill re-opens a short slow window on the field.
+      if (slowOnKillMs > 0) {
+        killSlowUntilRef.current = elapsedMs + slowOnKillMs;
+      }
 
       // Dreadnought: spawn full mini-wave on death
       if (enemy.pattern === "dreadnought") {
@@ -2314,7 +2418,8 @@ export default function ShmupPlayScreen() {
         secondaryUsesCharges &&
         secondaryChargesRef.current < secondaryMaxCharges &&
         Math.random() <
-          (enemy.pattern === "orbiter" ? BOMB_PICKUP_CHANCE + 0.05 : BOMB_PICKUP_CHANCE)
+          (enemy.pattern === "orbiter" ? BOMB_PICKUP_CHANCE + 0.05 : BOMB_PICKUP_CHANCE) *
+            dropRateMult
       ) {
         bombPickupsRef.current.push({
           x: enemy.x,
@@ -2427,29 +2532,48 @@ export default function ShmupPlayScreen() {
       y: number,
       elapsedMs: number
     ) => {
+      // Ordnance and Cryo skills scale the blast the secondary already
+      // makes, rather than adding a second projectile system.
+      const blastRadius = BOMB_RADIUS * secondaryRadiusMult;
+      // Cryo Bomb adds freeze to a secondary that had none.
+      const skillFreezeMs = secondaryFreezeMs;
+
       if (kind === "crystalBomb") {
         addExplosion(x, y, "#74c0fc", 28, 3.4);
-        addPulse(x, y, "#a5d8ff", BOMB_RADIUS * 0.33, 300, 0.24, 2.4);
+        addPulse(x, y, "#a5d8ff", blastRadius * 0.33, 300, 0.24, 2.4);
         statusFlashUntilRef.current = elapsedMs + 220;
-        freezeUntilRef.current = Math.max(
-          freezeUntilRef.current,
-          elapsedMs + SHMUP_BALANCE.effects.crystalFreezeMs
-        );
-        freezeShatterRef.current = {
+        const freezeMs = SHMUP_BALANCE.effects.crystalFreezeMs + skillFreezeMs;
+        freezeUntilRef.current = Math.max(freezeUntilRef.current, elapsedMs + freezeMs);
+        freezeShatterRef.current = { x, y, triggerAtMs: elapsedMs + freezeMs };
+        applyAreaBlast(
           x,
           y,
-          triggerAtMs: elapsedMs + SHMUP_BALANCE.effects.crystalFreezeMs,
-        };
-        applyAreaBlast(x, y, BOMB_RADIUS * 0.65, 2.2, 8, elapsedMs, "#99e9f2");
+          blastRadius * 0.65,
+          2.2 * secondaryDamageMult,
+          8 * secondaryDamageMult,
+          elapsedMs,
+          "#99e9f2",
+        );
         addOverdrive(12, elapsedMs);
         return;
       }
 
       addExplosion(x, y, "#ffd43b", 34, 3.8);
       addExplosion(x, y, "#ff922b", 22, 2.8);
-      addPulse(x, y, "#ffe066", BOMB_RADIUS * 0.45, 420, 0.2, 3);
+      addPulse(x, y, "#ffe066", blastRadius * 0.45, 420, 0.2, 3);
       addScreenShake(3.8, 0.16);
-      applyAreaBlast(x, y, BOMB_RADIUS, BOMB_ENEMY_DAMAGE, BOMB_BOSS_DAMAGE, elapsedMs, "#ffd43b");
+      if (skillFreezeMs > 0) {
+        freezeUntilRef.current = Math.max(freezeUntilRef.current, elapsedMs + skillFreezeMs);
+      }
+      applyAreaBlast(
+        x,
+        y,
+        blastRadius,
+        BOMB_ENEMY_DAMAGE * secondaryDamageMult,
+        BOMB_BOSS_DAMAGE * secondaryDamageMult,
+        elapsedMs,
+        "#ffd43b",
+      );
       addOverdrive(10, elapsedMs);
     };
 
@@ -2667,12 +2791,22 @@ export default function ShmupPlayScreen() {
     const handleShipHit = (elapsedMs: number) => {
       if (elapsedMs < ship.invulnerableUntil || runEndedRef.current) return;
 
+      // Energy Shield: if a pulse is banked, it eats the hit outright.
+      if (shieldPulseIntervalMs > 0 && elapsedMs >= nextShieldPulseAtRef.current) {
+        nextShieldPulseAtRef.current = elapsedMs + shieldPulseIntervalMs;
+        ship.invulnerableUntil = elapsedMs + PLAYER_INVULNERABLE_MS + hitInvulnBonusMs;
+        addPulse(ship.x, ship.y, "#74c0fc", 12, 120, 0.2, 2.2);
+        sfxPlayerHit();
+        return;
+      }
+
       sfxPlayerHit();
       ship.hp = Math.max(0, ship.hp - damageTakenMultiplier);
       damageTakenRef.current += damageTakenMultiplier;
       lastHitMsRef.current = elapsedMs;
       regenPoolRef.current = 0;
-      ship.invulnerableUntil = elapsedMs + PLAYER_INVULNERABLE_MS;
+      // Cloak Field / Vanishing Act extend the window after a hit.
+      ship.invulnerableUntil = elapsedMs + PLAYER_INVULNERABLE_MS + hitInvulnBonusMs;
       addExplosion(ship.x, ship.y, "#ff8787", 18, 2.4);
 
       if (multiplierSaveReadyRef.current) {
@@ -2796,16 +2930,24 @@ export default function ShmupPlayScreen() {
       const aggressiveRouteActive = activePassives.includes("aggressiveRoute");
       const empActive = empUntilRef.current > elapsedMs;
       const freezeActive = freezeUntilRef.current > elapsedMs;
-      const enemyTimeScale = freezeActive
-        ? 0.06
-        : empActive
-          ? SHMUP_BALANCE.effects.empEnemyTimeScale
-          : 1;
-      const enemyBulletTimeScale = freezeActive
-        ? 0.05
-        : empActive
-          ? SHMUP_BALANCE.effects.empBulletSpeedScale
-          : 1;
+      // Cryo skills: a permanent field slow (Frost Rounds) and a short
+      // window opened by each kill (Ice Burst). Multiplied into the
+      // existing EMP/freeze scale so the strongest source still wins and
+      // nothing can push the field past a standstill.
+      const skillSlowActive = slowOnKillMs > 0 && killSlowUntilRef.current > elapsedMs;
+      const skillTimeScale = passiveEnemyTimeScale * (skillSlowActive ? 0.8 : 1);
+      const enemyTimeScale =
+        (freezeActive
+          ? 0.06
+          : empActive
+            ? SHMUP_BALANCE.effects.empEnemyTimeScale
+            : 1) * skillTimeScale;
+      const enemyBulletTimeScale =
+        (freezeActive
+          ? 0.05
+          : empActive
+            ? SHMUP_BALANCE.effects.empBulletSpeedScale
+            : 1) * skillTimeScale;
 
       if (secondaryQueuedRef.current) {
         secondaryQueuedRef.current = false;
@@ -2876,6 +3018,12 @@ export default function ShmupPlayScreen() {
         );
         if (overchargeUntilRef.current > elapsedMs) {
           fireInterval *= SHMUP_BALANCE.effects.overchargeFireRateMult;
+        }
+        // Skill fire-rate nodes shorten the interval. The overdrive-only
+        // node (nova_i3) is gated on overdrive actually being up.
+        fireInterval /= skillFireRateMult;
+        if (overdriveUntilRef.current > elapsedMs) {
+          fireInterval /= skillOverdriveFireRateMult;
         }
         while (fireTimerRef.current <= 0) {
           spawnPlayerBullets(elapsedMs);
@@ -3613,15 +3761,22 @@ export default function ShmupPlayScreen() {
 
           // Dreadnought shield reduces damage by 50%
           const shieldMult = (enemy.pattern === "dreadnought" && enemy.dreadShieldActive) ? 0.5 : (enemy.pattern === "tank" && enemy.tankShieldActive) ? 0.5 : 1;
-          enemy.hp -= bullet.damage * shieldMult;
+          const isCrit = rollCrit();
+          const dealt = bullet.damage * shieldMult * (isCrit ? critDamageMult : 1);
+          enemy.hp -= dealt;
           consumePlayerBullet(bulletIndex);
           if (shieldMult < 1) {
             addSparkBurst(bullet.x, bullet.y, "#4488ff", 3, 60);
           } else {
-            addSparkBurst(bullet.x, bullet.y, bullet.color, 4, 90);
+            addSparkBurst(bullet.x, bullet.y, isCrit ? CRIT_COLOR : bullet.color, isCrit ? 7 : 4, isCrit ? 120 : 90);
           }
-          addPulse(bullet.x, bullet.y, bullet.color, 4, 42, 0.08, 1.2);
-          addDamageNumber(enemy.x, enemy.y - enemy.radius, Math.round(bullet.damage * shieldMult * 10));
+          addPulse(bullet.x, bullet.y, isCrit ? CRIT_COLOR : bullet.color, 4, 42, 0.08, 1.2);
+          addDamageNumber(
+            enemy.x,
+            enemy.y - enemy.radius,
+            Math.round(dealt * 10),
+            isCrit ? CRIT_COLOR : undefined,
+          );
           if (enemy.hp <= 0) {
             registerKill(enemy, elapsedMs);
             enemiesRef.current.splice(enemyIndex, 1);
@@ -3642,9 +3797,18 @@ export default function ShmupPlayScreen() {
             continue;
           }
 
-          activeBoss.hp -= bullet.damage;
+          // bossDamageMult is the one skill that only pays against bosses.
+          const bossCrit = rollCrit();
+          const bossDealt =
+            bullet.damage * bossDamageMult * (bossCrit ? critDamageMult : 1);
+          activeBoss.hp -= bossDealt;
           consumePlayerBullet(bulletIndex);
-          addDamageNumber(bullet.x, bullet.y - 10, Math.round(bullet.damage * 10), "#ffd43b");
+          addDamageNumber(
+            bullet.x,
+            bullet.y - 10,
+            Math.round(bossDealt * 10),
+            bossCrit ? CRIT_COLOR : "#ffd43b",
+          );
           addSparkBurst(bullet.x, bullet.y, activeBoss.phase === 1 ? "#ffa8a8" : "#ffd43b", 5, 96);
           addPulse(
             bullet.x,
@@ -5429,6 +5593,29 @@ export default function ShmupPlayScreen() {
     shotColor,
     submitResult,
     playerSpritePath,
+    // Run modifiers and skill effects. These only change between runs, but
+    // the loop closes over them, so leaving them out would mean a pilot or
+    // modifier swap silently kept the previous run's numbers.
+    runEnemyHpMult,
+    runEnemySpeedMult,
+    runScoreMult,
+    runEnemyBulletSpeedMult,
+    runSpawnRateMult,
+    critChance,
+    critDamageMult,
+    bossDamageMult,
+    skillFireRateMult,
+    skillOverdriveFireRateMult,
+    overdriveInvulnMs,
+    hitInvulnBonusMs,
+    passiveEnemyTimeScale,
+    overdriveFreezeMs,
+    secondaryFreezeMs,
+    slowOnKillMs,
+    secondaryRadiusMult,
+    secondaryDamageMult,
+    shieldPulseIntervalMs,
+    dropRateMult,
   ]);
 
   const handleTutorialComplete = useCallback(() => {

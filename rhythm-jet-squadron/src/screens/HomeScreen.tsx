@@ -21,6 +21,7 @@ const MENU_ITEMS = [
   { label: "PLAY", route: "/hangar" },
   { label: "SPACEPORT", route: "/spaceport" },
   { label: "MISSIONS", route: "/missions" },
+  { label: "SKILLS", route: "/skills" },
   { label: "LEADERBOARD", route: "/leaderboard" },
   { label: "COLLECTION", route: "/collection" },
   { label: "CODEX", route: "/codex" },
