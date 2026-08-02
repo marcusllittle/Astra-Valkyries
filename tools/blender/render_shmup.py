@@ -258,8 +258,10 @@ def glare(scene, threshold=0.65, size=7, mix=-0.28):
     t.links.new(gl.outputs["Image"], co.inputs["Image"])
 
 
-def camera(scene, ortho_scale, z=16):
-    bpy.ops.object.camera_add(location=(0, 0, z))
+def camera(scene, ortho_scale, z=16, cy=0.0):
+    """cy re-centers the frame on the subject; long hulls are not centered
+    on the origin, so without it the prow or engines fall off the edge."""
+    bpy.ops.object.camera_add(location=(0, cy, z))
     c = bpy.context.object
     c.data.type = "ORTHO"
     c.data.ortho_scale = ortho_scale
@@ -484,26 +486,34 @@ def boss_aegis(outdir):
     guns = mat("guns", "a_dark", 0.40, 0.30, emit="a_second", emit_str=6.0)
     shld = mat("shld", "a_dark", 0.40, 0.25, emit="a_prime", emit_str=3.0)
 
-    # central spine, prow toward the player (-Y)
-    box((0, 0.2, 0), (1.6, 4.6, 0.92), low, bev=0.10)
-    box((0, -1.75, 0.30), (1.15, 1.55, 0.60), lit, bev=0.07)   # forward deck
-    cone((0, -3.0, 0.10), 0.62, 0.16, 1.3, drk, rot=FWD, verts=8)  # ram prow
-    box((0, 1.85, 0.36), (1.3, 1.5, 0.58), drk, bev=0.07)      # aft castle
-    sphere((0, 1.2, 0.72), (0.52, 0.52, 0.38), lit)            # command dome
+    # central spine, prow toward the player (-Y) - long capital-ship keel
+    box((0, 0.2, 0), (1.6, 7.4, 0.92), low, bev=0.10)
+    box((0, -2.85, 0.30), (1.15, 2.4, 0.60), lit, bev=0.07)    # forward deck
+    box((0, -4.15, 0.16), (0.82, 1.5, 0.44), drk, bev=0.05)    # prow shoulder
+    cone((0, -5.35, 0.10), 0.62, 0.16, 1.5, drk, rot=FWD, verts=8)  # ram prow
+    box((0, 2.95, 0.36), (1.3, 2.3, 0.58), drk, bev=0.07)      # aft castle
+    sphere((0, 1.9, 0.72), (0.52, 0.60, 0.38), lit)            # command dome
+    # dorsal spine rail running the length of the keel
+    box((0, 0.1, 0.54), (0.34, 6.2, 0.20), drk, bev=0.03)
 
-    # layered armor shoulders
-    a1 = box((2.15, 0.35, -0.04), (2.6, 3.2, 0.58), low,
-             rot=(0, 0, math.radians(8)), bev=0.08)
+    # layered armor shoulders, stretched along the hull
+    a1 = box((2.15, 0.35, -0.04), (2.6, 5.0, 0.58), low,
+             rot=(0, 0, math.radians(5)), bev=0.08)
     mx(a1)
-    a2 = box((2.55, -0.45, 0.28), (1.8, 1.6, 0.30), lit,
-             rot=(0, 0, math.radians(8)), bev=0.05)
+    a2 = box((2.55, -1.25, 0.28), (1.8, 2.3, 0.30), lit,
+             rot=(0, 0, math.radians(5)), bev=0.05)
     mx(a2)
-    a3 = box((3.45, 0.85, 0.02), (1.05, 2.4, 0.48), drk,
-             rot=(0, 0, math.radians(-6)), bev=0.05)
+    a3 = box((3.45, 1.15, 0.02), (1.05, 3.6, 0.48), drk,
+             rot=(0, 0, math.radians(-4)), bev=0.05)
     mx(a3)
+    # sponson fins breaking up the flank silhouette
+    for fy in (-1.8, 0.4, 2.4):
+        fs = box((3.05, fy, 0.24), (1.5, 0.42, 0.22), lit,
+                 rot=(0, 0, math.radians(-4)), bev=0.03)
+        mx(fs)
 
     # quad turret batteries, barrels toward player
-    for tx, ty in ((1.35, -1.5), (2.5, -0.35)):
+    for tx, ty in ((1.35, -2.4), (2.5, -0.9), (1.35, 1.1)):
         tb = cyl((tx, ty, 0.45), 0.44, 0.4, drk, verts=10)
         mx(tb)
         for bx in (-0.16, 0.16):
@@ -519,32 +529,34 @@ def boss_aegis(outdir):
 
     # shield emitter posts along the leading edge - the 'layered shields'
     for ex in (0.55, 1.35, 2.15):
-        em = cyl((ex, -2.35 + ex * 0.28, 0.42), 0.13, 0.5, shld, verts=8, bev=0)
+        em = cyl((ex, -3.45 + ex * 0.28, 0.42), 0.13, 0.5, shld, verts=8, bev=0)
         mx(em)
 
     # engine bank aft (+Y), tucked against the stern castle
     for x in (-1.6, -0.55, 0.55, 1.6):
-        cyl((x, 2.42, 0), 0.36, 0.9, drk, rot=FWD, verts=12)
-        cyl((x, 2.90, 0), 0.27, 0.15, guns, rot=FWD, verts=12, bev=0)
+        cyl((x, 4.15, 0), 0.36, 1.0, drk, rot=FWD, verts=12)
+        cyl((x, 4.70, 0), 0.27, 0.15, guns, rot=FWD, verts=12, bev=0)
 
     # greebles constrained to actual hull decks so none float in space
     random.seed(11)
-    for _ in range(60):
+    for _ in range(88):
         gx = random.uniform(0.2, 2.95)
         if gx < 0.78:
-            gy, gz = random.uniform(-1.9, 2.2), 0.48      # spine deck
+            gy, gz = random.uniform(-3.4, 3.2), 0.48      # spine deck
         else:
-            gy, gz = random.uniform(-0.9, 1.9), 0.28      # armor wing
+            gy, gz = random.uniform(-2.4, 2.8), 0.28      # armor wing
         gg = box((gx, gy, gz), (random.uniform(0.10, 0.30),
                                 random.uniform(0.12, 0.42),
                                 random.uniform(0.05, 0.10)),
                  drk if random.random() < 0.6 else lit, bev=0.010)
         mx(gg)
 
-    camera(s, 11.5)
+    # Portrait frame: this is a long capital ship bearing down on the player,
+    # so the sprite is taller than wide and the game reads its natural aspect.
+    camera(s, 12.4, cy=-0.5)
     lights(tint=(1.0, 0.82, 0.92), power=1.8)
     glare(s)
-    render(s, outdir, "boss_aegis_dreadnought", 640, 480)
+    render(s, outdir, "boss_aegis_dreadnought", 592, 832)
 
 
 def boss_tyrant(outdir):
@@ -585,17 +597,19 @@ def boss_tyrant(outdir):
         box((math.cos(ang) * tip, math.sin(ang) * tip, 0.05),
             (0.30, 0.34, 0.22), lit, rot=(0, 0, ang), bev=0.02)
 
-    # twin heavy beam cannons toward the player
-    g = cyl((1.2, -2.1, 0.2), 0.40, 2.5, drk, rot=FWD, verts=12)
+    # twin heavy beam cannons toward the player - long barrels for reach
+    g = cyl((1.2, -2.9, 0.2), 0.40, 4.1, drk, rot=FWD, verts=12)
     mx(g)
-    gm = cone((1.2, -3.5, 0.2), 0.36, 0.16, 0.55, beam, rot=FWD, verts=12)
+    gs = box((1.2, -2.9, 0.42), (0.30, 3.6, 0.14), lit, bev=0.02)
+    mx(gs)
+    gm = cone((1.2, -5.2, 0.2), 0.36, 0.16, 0.6, beam, rot=FWD, verts=12)
     mx(gm)
     # cannon yokes
-    yk = box((1.2, -1.15, 0.3), (0.68, 0.85, 0.5), lit, bev=0.05)
+    yk = box((1.2, -1.15, 0.3), (0.68, 0.95, 0.5), lit, bev=0.05)
     mx(yk)
 
     # aft stabilizer fins (+Y)
-    fn = box((0.8, 2.35, 0.1), (0.5, 1.1, 0.2), low,
+    fn = box((0.8, 2.75, 0.1), (0.5, 1.5, 0.2), low,
              rot=(0, 0, math.radians(18)), bev=0.03)
     mx(fn)
 
@@ -608,10 +622,10 @@ def boss_tyrant(outdir):
              random.uniform(0.04, 0.09)),
             drk if random.random() < 0.5 else lit, bev=0.008)
 
-    camera(s, 11.5)
+    camera(s, 10.2, cy=-1.0)
     lights(tint=(1.0, 0.74, 0.55), power=1.4)
     glare(s, threshold=0.72, size=8, mix=-0.3)
-    render(s, outdir, "boss_helios_tyrant", 640, 480)
+    render(s, outdir, "boss_helios_tyrant", 736, 768)
 
 
 def boss_leviathan(outdir):
@@ -636,7 +650,9 @@ def boss_leviathan(outdir):
     pd = box((0.85, 0.72, 0.30), (0.85, 0.75, 0.30), plate,
              rot=(0, 0, math.radians(24)), bev=0.06)
     mx(pd)
-    box((0, 0.85, 0.28), (0.7, 0.65, 0.30), drk, bev=0.05)
+    nape = cyl((0, 0.85, 0.30), 0.52, 0.22, plate, verts=6, bev=0.04)
+    nape.rotation_euler = (0, 0, math.radians(90))
+    nape.scale = (1.0, 0.78, 1.0)
     # cyan chest core between shoulders and skull
     sphere((0, -0.12, 0.36), (0.32, 0.32, 0.24), vein, subd=3)
 
@@ -693,15 +709,32 @@ def boss_leviathan(outdir):
                   verts=8)
         mx(cl)
 
-    # tail fins trailing aft
-    tf = box((0.75, 1.65, 0.05), (0.5, 1.15, 0.14), plate,
-             rot=(0, 0, math.radians(-24)), bev=0.03)
+    # Armored abdomen trailing aft. Overlapping wide-and-flat segments, not
+    # a bead stack - from overhead a chain of spheres reads as a totem pole.
+    for i in range(4):
+        t = i / 3
+        ty = 1.45 + t * 2.5
+        w = 1.55 - 0.72 * t
+        sphere((0, ty, 0.0), (w, 0.85 - 0.26 * t, 0.42 - 0.14 * t), body, subd=3)
+        # dorsal carapace: a hex disc reads as shell, a box reads as cargo
+        cp = cyl((0, ty - 0.12, 0.26 - 0.07 * t), w * 0.62, 0.18, plate,
+                 verts=6, bev=0.04)
+        cp.rotation_euler = (0, 0, math.radians(90))
+        cp.scale = (1.0, 0.72, 1.0)
+        sphere((0, ty + 0.35, 0.22), (0.20 - 0.04 * t,) * 3, vein, subd=2)
+        # flank spines
+        sp = cone((w * 0.85, ty, 0.05), 0.16 - 0.03 * t, 0.01, 0.85, ice,
+                  rot=(math.radians(90), 0, math.radians(-70 - 12 * t)), verts=8)
+        mx(sp)
+    # tail fluke
+    tf = box((0.55, 4.35, 0.02), (0.55, 1.05, 0.14), plate,
+             rot=(0, 0, math.radians(-34)), bev=0.03)
     mx(tf)
 
-    camera(s, 11.5)
+    camera(s, 10.2, cy=1.05)
     lights(tint=(0.68, 0.86, 1.0), power=1.5)
     glare(s, threshold=0.55, size=8, mix=-0.25)
-    render(s, outdir, "boss_cryo_leviathan", 640, 480)
+    render(s, outdir, "boss_cryo_leviathan", 768, 736)
 
 
 # --------------------------------------------------------------- miniboss
