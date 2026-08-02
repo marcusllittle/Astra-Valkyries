@@ -445,6 +445,14 @@ type SpriteKey =
   | "enemyDrifter"
   | "enemySine"
   | "enemyTank"
+  | "enemyZigzag"
+  | "enemyOrbiter"
+  | "enemyCharger"
+  | "enemySplitter"
+  | "enemyBomber"
+  | "enemySniper"
+  | "enemySwarm"
+  | "enemyDreadnought"
   | "boss"
   | "bossTyrant"
   | "bossLeviathan"
@@ -462,6 +470,14 @@ const SPRITE_PATHS: Record<SpriteKey, string> = {
   enemyDrifter: "/assets/shmup/enemy_drifter.png",
   enemySine: "/assets/shmup/enemy_sine.png",
   enemyTank: "/assets/shmup/enemy_tank_fortress.png",
+  enemyZigzag: "/assets/shmup/enemy_zigzag.png",
+  enemyOrbiter: "/assets/shmup/enemy_orbiter.png",
+  enemyCharger: "/assets/shmup/enemy_charger.png",
+  enemySplitter: "/assets/shmup/enemy_splitter.png",
+  enemyBomber: "/assets/shmup/enemy_bomber.png",
+  enemySniper: "/assets/shmup/enemy_sniper.png",
+  enemySwarm: "/assets/shmup/enemy_swarm.png",
+  enemyDreadnought: "/assets/shmup/enemy_dreadnought.png",
   boss: "/assets/shmup/boss_aegis_dreadnought.png",
   bossTyrant: "/assets/shmup/boss_helios_tyrant.png",
   bossLeviathan: "/assets/shmup/boss_cryo_leviathan.png",
@@ -471,6 +487,24 @@ const SPRITE_PATHS: Record<SpriteKey, string> = {
   bulletBoss: "/assets/shmup/bullet_boss.svg",
   impactBurst: "/assets/shmup/impact_burst.svg",
   pulseRing: "/assets/shmup/pulse_ring.svg",
+};
+
+// Each pattern gets its own sprite so the player can read a threat before it
+// acts — nine of these previously shared the sine drone's art, which made a
+// sniper, a bomber and a charger indistinguishable in combat.
+const ENEMY_SPRITE_KEYS: Record<EnemyPattern, SpriteKey> = {
+  drifter: "enemyDrifter",
+  sine: "enemySine",
+  zigzag: "enemyZigzag",
+  orbiter: "enemyOrbiter",
+  charger: "enemyCharger",
+  splitter: "enemySplitter",
+  bomber: "enemyBomber",
+  sniper: "enemySniper",
+  swarm: "enemySwarm",
+  dreadnought: "enemyDreadnought",
+  tank: "enemyTank",
+  miniboss: "enemyTank",
 };
 
 // Per-zone far background; maps not listed fall back to SPRITE_PATHS.backgroundFar
@@ -503,6 +537,14 @@ function createSpriteStore(): Record<SpriteKey, HTMLImageElement | null> {
     enemyDrifter: null,
     enemySine: null,
     enemyTank: null,
+    enemyZigzag: null,
+    enemyOrbiter: null,
+    enemyCharger: null,
+    enemySplitter: null,
+    enemyBomber: null,
+    enemySniper: null,
+    enemySwarm: null,
+    enemyDreadnought: null,
     boss: null,
     bossTyrant: null,
     bossLeviathan: null,
@@ -4408,13 +4450,7 @@ export default function ShmupPlayScreen() {
       }
 
       for (const enemy of enemiesRef.current) {
-        const sprite = getSprite(
-          enemy.pattern === "drifter"
-            ? "enemyDrifter"
-            : enemy.pattern === "tank" || enemy.pattern === "miniboss"
-              ? "enemyTank"
-              : "enemySine"
-        );
+        const sprite = getSprite(ENEMY_SPRITE_KEYS[enemy.pattern] ?? "enemySine");
         const ENEMY_COLORS: Record<string, string> = {
           drifter: "#f06595", sine: "#845ef7", zigzag: "#ff922b", orbiter: "#74c0fc",
           charger: "#ff6b6b", splitter: "#69db7c", bomber: "#ffa94d", sniper: "#ff0000", swarm: "#adb5bd",
