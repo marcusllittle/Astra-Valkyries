@@ -25,6 +25,9 @@ const DEFAULT_SETTINGS: GameSettings = {
   musicVolume: 0.8,
   sfxVolume: 0.8,
   showFPS: false,
+  // Opt-in: silently changing how an existing player's ship moves is worse
+  // than making them find the toggle. Settings > Controls.
+  controlScheme: "keyboard",
 };
 
 function getStarterOutfits(): OwnedOutfit[] {

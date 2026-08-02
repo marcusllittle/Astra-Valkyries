@@ -23,6 +23,7 @@ import {
   NEUTRAL_SKILL_EFFECTS,
   type SkillEffects,
 } from "../lib/skillEffects";
+import { followStep, toCanvasPoint } from "../lib/shmupInput";
 import { astraStartRun, hasAstraSession } from "../lib/havnApi";
 import { resolveAssetUrl } from "../lib/assetUrl";
 import { BASE_SHMUP_HP, buildShmupLoadout } from "../lib/loadout";
@@ -862,6 +863,10 @@ export default function ShmupPlayScreen() {
   const empUntilRef = useRef(0);
   const dronesUntilRef = useRef(0);
   const dronesFireTimerRef = useRef(0);
+  /** Cursor position in canvas space, when playing with the mouse.
+   *  Inactive until the pointer actually moves over the playfield, so the
+   *  ship never jumps to a stale coordinate at launch. */
+  const mouseAimRef = useRef({ active: false, x: 0, y: 0 });
   const freezeUntilRef = useRef(0);
   /** Ice Burst window, re-opened by each kill. Separate from the EMP and
    *  crystal freezes so it composes with them instead of overwriting. */
@@ -975,6 +980,9 @@ export default function ShmupPlayScreen() {
 
   const [hud, setHud] = useState<HudState>(() => createHudState(modifiers, activeMap));
   const [showTouchControls, setShowTouchControls] = useState(false);
+  // Mouse steering only applies where there is a real cursor: a touch
+  // device keeps its on-screen stick no matter what the setting says.
+  const mouseAimActive = save.settings.controlScheme === "mouse" && !showTouchControls;
   const [touchKnob, setTouchKnob] = useState({ active: false, x: 0, y: 0 });
   const [floatingOrigin, setFloatingOrigin] = useState<{ x: number; y: number } | null>(null);
   const floatingOriginRef = useRef<{ x: number; y: number } | null>(null);
@@ -2994,6 +3002,23 @@ export default function ShmupPlayScreen() {
         ship.x = clamp(ship.x + rd.x * rollSpeed * deltaSeconds, playerBounds.minX, playerBounds.maxX);
         ship.y = clamp(ship.y + rd.y * rollSpeed * deltaSeconds, playerBounds.minY, playerBounds.maxY);
         shipTiltRef.current = rd.x * 0.5;
+      } else if (mouseAimActive && mouseAimRef.current.active && !introActive) {
+        // Follow the cursor at the ship's own speed. Never a snap: see
+        // lib/shmupInput.ts for why shipSpeed has to stay in this path.
+        const before = { x: ship.x, y: ship.y };
+        const next = followStep(
+          before,
+          { x: mouseAimRef.current.x, y: mouseAimRef.current.y },
+          shipSpeed,
+          deltaSeconds,
+        );
+        ship.x = clamp(next.x, playerBounds.minX, playerBounds.maxX);
+        ship.y = clamp(next.y, playerBounds.minY, playerBounds.maxY);
+        const travelled = ship.x - before.x;
+        if (Math.abs(travelled) > 0.01) {
+          lastMoveRef.current = { x: Math.sign(travelled), y: Math.sign(ship.y - before.y) };
+        }
+        shipTiltRef.current = shipTiltRef.current * 0.82 + clamp(travelled * 0.05, -1, 1) * 0.08;
       } else {
         const moveLength = Math.hypot(moveX, moveY) || 1;
         const velocityScale =
@@ -5545,6 +5570,34 @@ export default function ShmupPlayScreen() {
     const startRatio = isMobileDevice ? PLAYER_MOBILE_START_RATIO : PLAYER_DESKTOP_START_RATIO;
     ship.y = clamp(canvas.height * startRatio, ship.radius + 12, canvas.height - ship.radius - 12);
 
+    // Mouse aiming. Bound to the canvas rather than the window so the
+    // cursor stops steering the moment it leaves the playfield, and only
+    // when the player has actually chosen it — a touch device keeps its
+    // on-screen stick regardless of this setting.
+    const onPointerMove = (event: PointerEvent) => {
+      if (event.pointerType === "touch") return;
+      const point = toCanvasPoint(
+        event.clientX,
+        event.clientY,
+        canvas.getBoundingClientRect(),
+        canvas.width,
+        canvas.height,
+      );
+      mouseAimRef.current.x = point.x;
+      mouseAimRef.current.y = point.y;
+      mouseAimRef.current.active = true;
+    };
+    // Leaving the canvas holds the ship where it is instead of stranding
+    // it mid-flight toward a cursor that is no longer over the game.
+    const onPointerLeave = () => {
+      mouseAimRef.current.active = false;
+    };
+
+    if (mouseAimActive) {
+      canvas.addEventListener("pointermove", onPointerMove);
+      canvas.addEventListener("pointerleave", onPointerLeave);
+    }
+
     window.addEventListener("resize", resizeCanvas);
     window.visualViewport?.addEventListener("resize", resizeCanvas);
     window.addEventListener("keydown", onKeyDown);
@@ -5553,6 +5606,9 @@ export default function ShmupPlayScreen() {
 
     return () => {
       cancelAnimationFrame(animationRef.current);
+      canvas.removeEventListener("pointermove", onPointerMove);
+      canvas.removeEventListener("pointerleave", onPointerLeave);
+      mouseAimRef.current = { active: false, x: 0, y: 0 };
       window.removeEventListener("resize", resizeCanvas);
       window.visualViewport?.removeEventListener("resize", resizeCanvas);
       window.removeEventListener("keydown", onKeyDown);
@@ -5616,6 +5672,8 @@ export default function ShmupPlayScreen() {
     secondaryDamageMult,
     shieldPulseIntervalMs,
     dropRateMult,
+    // Toggling control scheme mid-session must rebind the listeners.
+    mouseAimActive,
   ]);
 
   const handleTutorialComplete = useCallback(() => {
@@ -5795,7 +5853,13 @@ export default function ShmupPlayScreen() {
       ) : null}
 
       {/* ── Game canvas ─────────────────────────────── */}
-      <canvas ref={canvasRef} className="play-canvas" />
+      {/* Cursor is hidden while steering with it: the ship is the pointer,
+          and a second arrow floating over the hitbox reads as a bug. */}
+      <canvas
+        ref={canvasRef}
+        className="play-canvas"
+        style={mouseAimActive ? { cursor: "none" } : undefined}
+      />
 
       {/* ── Touch controls (mobile only) ────────────── */}
       {showTouchControls ? (

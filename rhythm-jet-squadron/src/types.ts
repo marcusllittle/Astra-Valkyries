@@ -137,10 +137,15 @@ export interface EquippedBanner {
   url: string;
 }
 
+/** Desktop movement input. Ignored on touch devices, which always use the
+ *  on-screen stick. */
+export type ControlScheme = "keyboard" | "mouse";
+
 export interface GameSettings {
   musicVolume: number;     // 0-1
   sfxVolume: number;       // 0-1
   showFPS: boolean;
+  controlScheme: ControlScheme;
 }
 
 // ─── Gameplay types ─────────────────────────────────────

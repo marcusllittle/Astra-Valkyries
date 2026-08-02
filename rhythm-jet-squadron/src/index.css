@@ -6077,3 +6077,16 @@ video.card-art-img {
     transition: none;
   }
 }
+
+/* Keyboard / Mouse movement toggle in Settings. */
+.control-scheme-toggle {
+  display: flex;
+  gap: 6px;
+}
+
+.setting-hint {
+  margin: -2px 0 10px;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: #8fa2bd;
+}

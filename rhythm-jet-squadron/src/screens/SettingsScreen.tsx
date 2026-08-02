@@ -89,6 +89,32 @@ export default function SettingsScreen() {
       {/* Controls */}
       <section className="settings-section panel-surface">
         <h3>Controls</h3>
+
+        {/* Desktop movement input. Touch devices always use the on-screen
+            stick, so this row is about the cursor, not the phone. */}
+        <div className="setting-row">
+          <label>Movement</label>
+          <div className="control-scheme-toggle">
+            {(["keyboard", "mouse"] as const).map((scheme) => (
+              <button
+                key={scheme}
+                type="button"
+                className={`btn btn-small ${
+                  settings.controlScheme === scheme ? "btn-primary" : ""
+                }`}
+                onClick={() => updateSettings({ controlScheme: scheme })}
+              >
+                {scheme === "keyboard" ? "Keyboard" : "Mouse"}
+              </button>
+            ))}
+          </div>
+        </div>
+        <p className="setting-hint">
+          {settings.controlScheme === "mouse"
+            ? "Your ship flies to the cursor at its own top speed — faster hulls keep up with sharper flicks. Keys still fire and trigger secondaries."
+            : "WASD or arrows. Switch to Mouse for finer dodging; your ship's speed stat still decides how well it tracks."}
+        </p>
+
         <div className="settings-controls-grid">
           <div className="control-binding">
             <kbd>WASD / Arrows</kbd>
