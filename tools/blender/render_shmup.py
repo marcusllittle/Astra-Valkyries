@@ -337,9 +337,10 @@ def render(scene, outdir, name, rx, ry, transparent=True):
 
 
 # --------------------------------------------------------------- ships
-def astra_interceptor(outdir):
-    """Fast-response frame: narrow, sharp, minimal cross-section."""
-    s = new_scene()
+def _geo_astra_interceptor():
+    """Geometry only. The same hull feeds both the top-down gameplay sprite
+    and the 3/4 hangar deploy clip, so construction is kept separate from
+    the camera rig. Returns the thruster material for the ignition ramp."""
     lit = mat("lit", "hull_mid", 0.92, 0.20)
     low = mat("low", "hull_low", 0.95, 0.18)
     drk = mat("drk", "hull_dark", 0.88, 0.34)
@@ -368,16 +369,20 @@ def astra_interceptor(outdir):
     f = box((0.26, -1.98, 0.20), (0.085, 0.58, 0.40), low,
             rot=(math.radians(15), 0, 0), bev=0.018)
     mx(f)
+    return thr
 
+
+def astra_interceptor(outdir):
+    """Fast-response frame: narrow, sharp, minimal cross-section."""
+    s = new_scene()
+    _geo_astra_interceptor()
     camera(s, 5.6)
     lights()
     glare(s)
     render(s, outdir, "ships/astra_interceptor_sprite_3d", 256, 256)
 
 
-def valkyrie_lancer(outdir):
-    """Offensive spearhead: forward lance, forward-swept wings, gun pods."""
-    s = new_scene()
+def _geo_valkyrie_lancer():
     lit = mat("lit", "hull_mid", 0.92, 0.22)
     low = mat("low", "hull_low", 0.95, 0.20)
     drk = mat("drk", "hull_dark", 0.88, 0.34)
@@ -413,16 +418,20 @@ def valkyrie_lancer(outdir):
     f = box((0.30, -2.00, 0.24), (0.10, 0.62, 0.46), acc,
             rot=(math.radians(17), 0, 0), bev=0.02)
     mx(f)
+    return thr
 
+
+def valkyrie_lancer(outdir):
+    """Offensive spearhead: forward lance, forward-swept wings, gun pods."""
+    s = new_scene()
+    _geo_valkyrie_lancer()
     camera(s, 6.0)
     lights(tint=(1.0, 0.93, 0.86))
     glare(s)
     render(s, outdir, "ships/valkyrie_lancer_sprite_3d", 256, 256)
 
 
-def seraph_guard(outdir):
-    """Heavy command frame: broad shielding wings, four engines, armored."""
-    s = new_scene()
+def _geo_seraph_guard():
     lit = mat("lit", "hull_mid", 0.90, 0.24)
     low = mat("low", "hull_low", 0.94, 0.22)
     drk = mat("drk", "hull_dark", 0.88, 0.34)
@@ -458,11 +467,147 @@ def seraph_guard(outdir):
     f = box((0.24, -1.95, 0.26), (0.10, 0.60, 0.48), acc,
             rot=(math.radians(15), 0, 0), bev=0.02)
     mx(f)
+    return thr
 
+
+def seraph_guard(outdir):
+    """Heavy command frame: broad shielding wings, four engines, armored."""
+    s = new_scene()
+    _geo_seraph_guard()
     camera(s, 6.4)
     lights(tint=(0.86, 1.0, 0.98))
     glare(s)
     render(s, outdir, "ships/seraph_guard_sprite_3d", 256, 256)
+
+
+# --------------------------------------------------------------- deploy clips
+# Short hangar "deploy glam" videos. These reuse the exact gameplay hulls at
+# a 3/4 cinematic angle, which is the whole argument for modelling ships in
+# Blender rather than generating them: the same geometry serves the 12px
+# sprite and the hero shot, and they can never disagree.
+
+def _smoothstep(t):
+    return t * t * (3.0 - 2.0 * t)
+
+
+def _dark_world(scene, top, bottom):
+    """Hangar void backdrop. mp4 has no alpha, so the clip needs its own
+    background rather than relying on film_transparent."""
+    w = bpy.data.worlds.new("DeployWorld")
+    scene.world = w
+    w.use_nodes = True
+    nt = w.node_tree
+    nt.nodes.clear()
+    out = nt.nodes.new("ShaderNodeOutputWorld")
+    bg = nt.nodes.new("ShaderNodeBackground")
+    tc = nt.nodes.new("ShaderNodeTexCoord")
+    sep = nt.nodes.new("ShaderNodeSeparateXYZ")
+    nt.links.new(tc.outputs["Generated"], sep.inputs["Vector"])
+    ramp = nt.nodes.new("ShaderNodeValToRGB")
+    ramp.color_ramp.elements[0].position = 0.25
+    ramp.color_ramp.elements[0].color = C(bottom)
+    ramp.color_ramp.elements[1].position = 0.85
+    ramp.color_ramp.elements[1].color = C(top)
+    nt.links.new(sep.outputs["Z"], ramp.inputs["Fac"])
+    nt.links.new(ramp.outputs["Color"], bg.inputs["Color"])
+    bg.inputs["Strength"].default_value = 1.0
+    nt.links.new(bg.outputs["Background"], out.inputs["Surface"])
+
+
+def _deploy_clip(outdir, name, geo_fn, tint, sky_top, sky_bottom,
+                 hot=11.0, seconds=2.5, fps=24, res=(640, 480)):
+    s = new_scene()
+    thr = geo_fn()
+    try:
+        s.eevee.taa_render_samples = 32  # animation: trade samples for time
+    except AttributeError:
+        pass
+    _dark_world(s, sky_top, sky_bottom)
+
+    total = int(seconds * fps)
+    s.frame_start = 1
+    s.frame_end = total
+    s.render.fps = fps
+
+    # camera orbits in and rises, tracking the hull
+    bpy.ops.object.empty_add(type="PLAIN_AXES", location=(0, 0, 0.15))
+    target = bpy.context.object
+    bpy.ops.object.camera_add(location=(0, -8, 2))
+    cam = bpy.context.object
+    cam.data.type = "PERSP"
+    cam.data.lens = 46
+    s.camera = cam
+    con = cam.constraints.new("TRACK_TO")
+    con.target = target
+    con.track_axis = "TRACK_NEGATIVE_Z"
+    con.up_axis = "UP_Y"
+
+    for f in range(1, total + 1):
+        t = _smoothstep((f - 1) / max(1, total - 1))
+        ang = math.radians(-116.0 + 58.0 * t)
+        radius = 8.8 - 1.9 * t
+        height = 1.15 + 2.15 * t
+        cam.location = (math.cos(ang) * radius, math.sin(ang) * radius, height)
+        cam.keyframe_insert(data_path="location", frame=f)
+
+    # engine ignition: dead, catch, flare, settle
+    bsdf = thr.node_tree.nodes["Principled BSDF"]
+    strength = bsdf.inputs["Emission Strength"]
+    for frame, val in ((1, 0.15), (int(total * 0.22), 0.9),
+                       (int(total * 0.42), hot * 1.35),
+                       (total, hot)):
+        strength.default_value = val
+        strength.keyframe_insert(data_path="default_value", frame=frame)
+
+    lights(tint=tint, power=0.42)
+    bpy.ops.object.light_add(type="AREA", location=(-6, 7, 2.5))
+    rim = bpy.context.object
+    rim.data.energy = 1500
+    rim.data.size = 9
+    rim.data.color = tint
+    rim.rotation_euler = (math.radians(76), 0, math.radians(-148))
+
+    glare(s, threshold=0.82, size=7, mix=-0.28)
+
+    s.render.resolution_x, s.render.resolution_y = res
+    s.render.film_transparent = False
+    s.render.image_settings.file_format = "FFMPEG"
+    s.render.ffmpeg.format = "MPEG4"
+    s.render.ffmpeg.codec = "H264"
+    s.render.ffmpeg.constant_rate_factor = "MEDIUM"
+    s.render.ffmpeg.ffmpeg_preset = "GOOD"
+
+    stem = os.path.join(outdir, name)
+    s.render.filepath = stem + "_"
+    bpy.ops.render.render(animation=True)
+
+    # Blender suffixes video output with the frame range; normalise it so
+    # the game can reference a stable filename.
+    target_path = stem + ".mp4"
+    produced = stem + "_%04d-%04d.mp4" % (1, total)
+    if os.path.exists(produced):
+        if os.path.exists(target_path):
+            os.remove(target_path)
+        os.rename(produced, target_path)
+    print("WROTE", os.path.basename(target_path))
+
+
+def deploy_astra_interceptor(outdir):
+    _deploy_clip(outdir, "ships/astra_interceptor_deploy",
+                 _geo_astra_interceptor, (0.86, 0.93, 1.0),
+                 "#16233F", "#05080F", hot=10.0)
+
+
+def deploy_valkyrie_lancer(outdir):
+    _deploy_clip(outdir, "ships/valkyrie_lancer_deploy",
+                 _geo_valkyrie_lancer, (1.0, 0.90, 0.82),
+                 "#33180C", "#0A0503", hot=10.0)
+
+
+def deploy_seraph_guard(outdir):
+    _deploy_clip(outdir, "ships/seraph_guard_deploy",
+                 _geo_seraph_guard, (0.84, 1.0, 0.97),
+                 "#0C2E2C", "#030C0D", hot=9.0)
 
 
 # --------------------------------------------------------------- enemies
@@ -1654,6 +1799,7 @@ def background_near(outdir):
 # --------------------------------------------------------------- main
 TARGETS = (
     astra_interceptor, valkyrie_lancer, seraph_guard,
+    deploy_astra_interceptor, deploy_valkyrie_lancer, deploy_seraph_guard,
     enemy_drifter, enemy_sine, enemy_tank,
     enemy_zigzag, enemy_orbiter, enemy_charger, enemy_splitter,
     enemy_bomber, enemy_sniper, enemy_swarm, enemy_dreadnought,

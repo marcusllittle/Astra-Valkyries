@@ -1020,6 +1020,56 @@ video.card-art-img {
   height: 14px;
 }
 
+/* Selected ship deploy clip — the hull you actually fly, at a hero angle */
+.ship-deploy-stage {
+  position: relative;
+  margin-bottom: 10px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #05080f;
+  aspect-ratio: 4 / 3;
+  max-height: 260px;
+}
+
+.ship-deploy-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ship-deploy-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 22px 16px 12px;
+  background: linear-gradient(to top, rgba(3, 6, 12, 0.92), rgba(3, 6, 12, 0));
+  pointer-events: none;
+}
+
+.ship-deploy-caption strong {
+  font-size: 15px;
+  letter-spacing: 0.04em;
+}
+
+.ship-deploy-caption span {
+  font-size: 11px;
+  opacity: 0.7;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ship-deploy-video {
+    display: none;
+  }
+}
+
 /* Horizontal scroll strip for cards */
 .hangar-strip {
   display: flex;
