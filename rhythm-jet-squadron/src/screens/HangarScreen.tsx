@@ -17,7 +17,6 @@ import {
   summarizeOutfitKit,
 } from "../lib/outfitKits";
 import CardArt from "../components/CardArt";
-import { resolveAssetUrl } from "../lib/assetUrl";
 import type { Pilot, Outfit, OwnedOutfit, Ship } from "../types";
 import pilotsData from "../data/pilots.json";
 import outfitsData from "../data/outfits.json";
@@ -213,26 +212,6 @@ export default function HangarScreen() {
           <h3>Ship</h3>
           <span className="section-selected">{selectedShip?.name ?? "—"}</span>
         </div>
-        {selectedShip?.deployUrl ? (
-          <div className="ship-deploy-stage">
-            <video
-              // keyed on ship id so switching ships replays the ignition
-              key={selectedShip.id}
-              className="ship-deploy-video"
-              src={resolveAssetUrl(selectedShip.deployUrl) ?? selectedShip.deployUrl}
-              autoPlay
-              muted
-              playsInline
-              preload="metadata"
-            />
-            <div className="ship-deploy-caption">
-              <strong>{selectedShip.name}</strong>
-              <span>
-                {selectedShip.manufacturer} · {selectedShip.className}
-              </span>
-            </div>
-          </div>
-        ) : null}
         <div className="hangar-strip">
           {ownedShips.map((ship) => (
             <div

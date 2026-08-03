@@ -1799,7 +1799,6 @@ def background_near(outdir):
 # --------------------------------------------------------------- main
 TARGETS = (
     astra_interceptor, valkyrie_lancer, seraph_guard,
-    deploy_astra_interceptor, deploy_valkyrie_lancer, deploy_seraph_guard,
     enemy_drifter, enemy_sine, enemy_tank,
     enemy_zigzag, enemy_orbiter, enemy_charger, enemy_splitter,
     enemy_bomber, enemy_sniper, enemy_swarm, enemy_dreadnought,

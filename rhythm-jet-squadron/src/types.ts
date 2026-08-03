@@ -80,8 +80,6 @@ export interface Ship {
   artUrl?: string;
   spriteUrl?: string;
   cutinUrl?: string;
-  /** Short hangar "deploy glam" clip: the gameplay hull at a 3/4 angle. */
-  deployUrl?: string;
   trait: ShipTrait;
   modifiers: ShipModifiers;
 }

@@ -22,7 +22,18 @@ export type ShmupSecondaryKey =
   | "phaseShift"
   | "vortex"
   | "mirrorShield"
-  | "overcharge";
+  | "overcharge"
+  // Nova's signature kit
+  | "chronoLock"
+  | "novaBurst"
+  | "blinkLance"
+  | "riposte"
+  // Rex: the ex-racer. Speed as a weapon, kills that feed kills.
+  | "afterburn"
+  | "detonationChain"
+  // Yuki: electronic warfare and precision execution.
+  | "systemHijack"
+  | "zeroPoint";
 
 export type ShmupPassiveKey =
   | "smallerHitbox"
@@ -106,6 +117,33 @@ export const SHMUP_BALANCE: {
     overchargeFireRateMult: number;
     overchargeDamageMult: number;
     overchargeShotCountBonus: number;
+    chronoLockMs: number;
+    chronoBankMax: number;
+    chronoReleaseSpeed: number;
+    chronoBankDamageMult: number;
+    /** Blast area as a fraction of the actual viewport, not a fixed radius. */
+    novaBurstScreenFraction: number;
+    novaBurstDamage: number;
+    novaBurstBossDamage: number;
+    blinkLanceDistance: number;
+    blinkLanceCorridor: number;
+    blinkLanceDamage: number;
+    blinkLanceBossDamage: number;
+    riposteReturnDamage: number;
+    riposteMaxHeld: number;
+    afterburnMs: number;
+    afterburnSpeedMult: number;
+    afterburnRamDamage: number;
+    afterburnRamBossDamage: number;
+    afterburnTrailDamage: number;
+    detonationChainRadius: number;
+    detonationChainDamage: number;
+    detonationChainBossDamage: number;
+    detonationChainMaxLinks: number;
+    zeroPointMarks: number;
+    zeroPointDelayMs: number;
+    zeroPointDamage: number;
+    zeroPointBossDamage: number;
   };
 } = {
   primaries: {
@@ -258,9 +296,36 @@ export const SHMUP_BALANCE: {
       ssrBonusCharges: 2,
       bonusMaxCharges: 1,
     },
+    afterburn: { cooldownMs: 8200, durationMs: 2600, usesCharges: false },
+    detonationChain: { cooldownMs: 0, durationMs: 0, usesCharges: true, baseCharges: 2, ssrBonusCharges: 2, bonusMaxCharges: 1 },
+    systemHijack: { cooldownMs: 7400, durationMs: 400, usesCharges: false },
+    zeroPoint: { cooldownMs: 8800, durationMs: 700, usesCharges: false },
     barrelRoll: {
       cooldownMs: 1800,
       durationMs: 360,
+      usesCharges: false,
+    },
+    chronoLock: {
+      cooldownMs: 9000,
+      durationMs: 1900,
+      usesCharges: false,
+    },
+    novaBurst: {
+      cooldownMs: 0,
+      durationMs: 0,
+      usesCharges: true,
+      baseCharges: 2,
+      ssrBonusCharges: 2,
+      bonusMaxCharges: 1,
+    },
+    blinkLance: {
+      cooldownMs: 3600,
+      durationMs: 260,
+      usesCharges: false,
+    },
+    riposte: {
+      cooldownMs: 6400,
+      durationMs: 3200,
       usesCharges: false,
     },
     phaseShift: {
@@ -332,6 +397,32 @@ export const SHMUP_BALANCE: {
     vortexDetonateDamage: 8,
     vortexDetonateBossDamage: 30,
     // Mirror Shield: multi-layer reflective barrier, reflects bullets back
+    chronoLockMs: 1900,
+    chronoBankMax: 40,
+    chronoReleaseSpeed: 1150,
+    chronoBankDamageMult: 1.45,
+    novaBurstScreenFraction: 0.26,
+    novaBurstDamage: 7,
+    novaBurstBossDamage: 30,
+    blinkLanceDistance: 340,
+    blinkLanceCorridor: 46,
+    blinkLanceDamage: 4,
+    blinkLanceBossDamage: 16,
+    riposteReturnDamage: 2.6,
+    riposteMaxHeld: 24,
+    afterburnMs: 2600,
+    afterburnSpeedMult: 1.85,
+    afterburnRamDamage: 6,
+    afterburnRamBossDamage: 12,
+    afterburnTrailDamage: 1.6,
+    detonationChainRadius: 120,
+    detonationChainDamage: 5,
+    detonationChainBossDamage: 18,
+    detonationChainMaxLinks: 8,
+    zeroPointMarks: 6,
+    zeroPointDelayMs: 700,
+    zeroPointDamage: 12,
+    zeroPointBossDamage: 34,
     mirrorShieldLayers: 4,
     mirrorShieldReflectDamage: 1.8,
     mirrorShieldReflectBossDamage: 6,
