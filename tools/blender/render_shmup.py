@@ -1097,6 +1097,223 @@ def enemy_tank(outdir):
     render(s, outdir, "enemy_tank_fortress", 256, 256)
 
 
+# --------------------------------------------------------------- vistas
+# Codex sector dossiers. Unlike everything else in this file these are
+# cinematic environment shots, so they use a perspective camera, an
+# emissive world backdrop and receding geometry for depth rather than the
+# flat top-down ortho rig the sprites share.
+
+def _vista_world(scene, void_k, mid_k, hi_k, star_k, scale=1.4, seed=0.0):
+    w = bpy.data.worlds.new("VistaWorld")
+    scene.world = w
+    w.use_nodes = True
+    nt = w.node_tree
+    nt.nodes.clear()
+    out = nt.nodes.new("ShaderNodeOutputWorld")
+    bg = nt.nodes.new("ShaderNodeBackground")
+    tc = nt.nodes.new("ShaderNodeTexCoord")
+
+    neb = nt.nodes.new("ShaderNodeTexNoise")
+    neb.noise_dimensions = "4D"
+    neb.inputs["W"].default_value = seed
+    neb.inputs["Scale"].default_value = scale
+    neb.inputs["Detail"].default_value = 9.0
+    neb.inputs["Roughness"].default_value = 0.62
+    nt.links.new(tc.outputs["Generated"], neb.inputs["Vector"])
+
+    ramp = nt.nodes.new("ShaderNodeValToRGB")
+    ramp.color_ramp.interpolation = "EASE"
+    ramp.color_ramp.elements[0].position = 0.28
+    ramp.color_ramp.elements[0].color = C(void_k)
+    ramp.color_ramp.elements[1].position = 0.74
+    ramp.color_ramp.elements[1].color = C(hi_k)
+    ramp.color_ramp.elements.new(0.52).color = C(mid_k)
+    nt.links.new(neb.outputs["Fac"], ramp.inputs["Fac"])
+
+    stars = nt.nodes.new("ShaderNodeTexNoise")
+    stars.inputs["Scale"].default_value = 220.0
+    stars.inputs["Detail"].default_value = 2.0
+    nt.links.new(tc.outputs["Generated"], stars.inputs["Vector"])
+    sr = nt.nodes.new("ShaderNodeValToRGB")
+    sr.color_ramp.interpolation = "CONSTANT"
+    sr.color_ramp.elements[0].position = 0.0
+    sr.color_ramp.elements[0].color = (0, 0, 0, 1)
+    sr.color_ramp.elements[1].position = 0.78
+    sr.color_ramp.elements[1].color = C(star_k)
+    nt.links.new(stars.outputs["Fac"], sr.inputs["Fac"])
+
+    add = nt.nodes.new("ShaderNodeMixRGB")
+    add.blend_type = "ADD"
+    add.inputs["Fac"].default_value = 1.0
+    nt.links.new(ramp.outputs["Color"], add.inputs["Color1"])
+    nt.links.new(sr.outputs["Color"], add.inputs["Color2"])
+    nt.links.new(add.outputs["Color"], bg.inputs["Color"])
+    bg.inputs["Strength"].default_value = 1.0
+    nt.links.new(bg.outputs["Background"], out.inputs["Surface"])
+
+
+def _vista_camera(scene, loc=(0, -13, 1.6), pitch=88.0, lens=34.0):
+    bpy.ops.object.camera_add(location=loc)
+    c = bpy.context.object
+    c.data.type = "PERSP"
+    c.data.lens = lens
+    c.rotation_euler = (math.radians(pitch), 0, 0)
+    scene.camera = c
+    return c
+
+
+def _rock(loc, scale, material, seed, subd=2):
+    """Irregular asteroid - a clean icosphere reads as a bead, so the
+    vertices get jittered outward by a seeded random factor."""
+    bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=subd, radius=1.0,
+                                          location=loc)
+    o = bpy.context.object
+    rng = random.Random(seed)
+    for v in o.data.vertices:
+        v.co *= rng.uniform(0.68, 1.32)
+    o.scale = scale
+    o.rotation_euler = (rng.uniform(0, TAU), rng.uniform(0, TAU),
+                        rng.uniform(0, TAU))
+    o.data.materials.append(material)
+    return o
+
+
+def vista_nebula_runway(outdir):
+    """Shipping lane between core worlds, now a patrol gauntlet.
+
+    Reads as a corridor: debris massed on both flanks, clear lane down the
+    middle drawing the eye to the far light.
+    """
+    s = new_scene()
+    _vista_world(s, "void", "neb_mid", "neb_hi", "star", scale=1.5, seed=2.0)
+    rock = mat("rock", "#1B2138", 0.30, 0.85)
+    lit = mat("lit", "#3D4870", 0.40, 0.70)
+    beacon = mat("beacon", "#0A1024", 0.2, 0.4, emit="#8FB4FF", emit_str=9.0)
+
+    random.seed(3)
+    # Flanking debris walls. The clear lane has to widen with distance in
+    # screen terms, so the exclusion zone scales with range from the camera
+    # — a fixed lateral offset just puts a boulder over the whole frame.
+    for i in range(64):
+        far = random.uniform(12, 78)
+        side = -1 if i % 2 == 0 else 1
+        dist = far + 13.0
+        lane_half = dist * 0.30
+        x = side * random.uniform(lane_half, lane_half + 12.0)
+        z = random.uniform(-5.0, 5.0)
+        sc = random.uniform(0.5, 2.0) * (1 + far * 0.016)
+        _rock((x, far, z), (sc, sc * random.uniform(0.7, 1.2), sc),
+              rock if random.random() < 0.7 else lit, seed=i)
+    # Lane marker beacons receding down the corridor - the 'runway'. Kept
+    # small and frequent so they read as a perspective line of markers
+    # rather than a pair of glowing pillars in the foreground.
+    for k in range(16):
+        d = 16 + k * 5.0
+        for side in (-1, 1):
+            cyl((side * ((d + 13.0) * 0.27), d, -2.4), 0.055, 0.55, beacon,
+                verts=8, bev=0)
+    # traffic control station holding the far end of the lane, so the eye
+    # has somewhere to land at the vanishing point
+    sphere((0, 96, 1.0), (1.5, 1.5, 1.5), beacon, subd=3)
+    sphere((0, 96, 1.0), (3.4, 3.4, 0.5), lit, subd=3)
+
+    _vista_camera(s, loc=(0, -13, 1.2), pitch=89.0, lens=32.0)
+    bpy.ops.object.light_add(type="AREA", location=(-9, 6, 9))
+    key = bpy.context.object
+    key.data.energy = 9000
+    key.data.size = 18
+    key.data.color = (0.72, 0.80, 1.0)
+    key.rotation_euler = (math.radians(52), 0, math.radians(-38))
+    glare(s, threshold=0.82, size=8, mix=-0.32)
+    render(s, outdir, "vista_nebula_runway", 1280, 720, transparent=False)
+
+
+def vista_solar_rift(outdir):
+    """Binary star Helios Prime. Radiation makes shields unreliable here."""
+    s = new_scene()
+    _vista_world(s, "sol_void", "sol_mid", "sol_hi", "sol_star",
+                 scale=1.2, seed=7.3)
+    rock = mat("rock", "#2A1008", 0.30, 0.88)
+    scorch = mat("scorch", "#5E2410", 0.35, 0.72)
+    star = mat("star", "#FFE9D9", 0.0, 0.5, emit="#FFD9A0", emit_str=26.0)
+    halo = mat("halo", "#FFB076", 0.0, 0.5, emit="#FF8A3D", emit_str=6.0)
+
+    # the star dominates the upper frame
+    sphere((6, 74, 17), (13, 13, 13), star, subd=4)
+    sphere((6, 78, 17), (17.5, 17.5, 17.5), halo, subd=3)
+    # a second, smaller companion - it is a binary system
+    sphere((-19, 96, 9), (5.2, 5.2, 5.2), star, subd=3)
+
+    random.seed(11)
+    for i in range(38):
+        far = random.uniform(5, 56)
+        x = random.uniform(-17, 17)
+        z = random.uniform(-5.5, 3.0)
+        sc = random.uniform(0.6, 3.0) * (1 + far * 0.018)
+        _rock((x, far, z), (sc, sc * random.uniform(0.6, 1.15), sc * 0.8),
+              rock if random.random() < 0.65 else scorch, seed=100 + i)
+
+    _vista_camera(s, loc=(0, -14, 2.2), pitch=86.0, lens=30.0)
+    bpy.ops.object.light_add(type="AREA", location=(5, 34, 12))
+    key = bpy.context.object
+    key.data.energy = 42000
+    key.data.size = 26
+    key.data.color = (1.0, 0.72, 0.42)
+    key.rotation_euler = (math.radians(-118), 0, 0)
+    glare(s, threshold=0.70, size=9, mix=-0.26)
+    render(s, outdir, "vista_solar_rift", 1280, 720, transparent=False)
+
+
+def vista_abyss_crown(outdir):
+    """Deepest charted space. Ancient alien structures dot the void."""
+    s = new_scene()
+    _vista_world(s, "aby_void", "aby_mid", "aby_hi", "aby_star",
+                 scale=1.1, seed=13.9)
+    stone = mat("stone", "#101C2C", 0.25, 0.80)
+    face = mat("face", "#22405E", 0.35, 0.55)
+    glyph = mat("glyph", "#06121E", 0.2, 0.4, emit="#4DABF7", emit_str=15.0)
+    ice = mat("ice", "#3A6690", 0.30, 0.20, emit="#74C0FC", emit_str=1.2)
+
+    random.seed(19)
+    # monoliths: tall, deliberate, clearly built rather than accreted
+    for i in range(11):
+        far = 9 + i * 4.6 + random.uniform(-1.5, 1.5)
+        side = -1 if i % 2 == 0 else 1
+        x = side * random.uniform(3.6, 13.0)
+        h = random.uniform(5.5, 11.0)
+        w = random.uniform(0.7, 1.5)
+        tilt = math.radians(random.uniform(-7, 7))
+        box((x, far, -6 + h / 2), (w, w * 0.62, h), stone,
+            rot=(tilt, 0, tilt * 0.6), bev=0.10)
+        # lit glyph bands up the shaft
+        for b in range(int(h // 3)):
+            box((x, far - w * 0.34, -6 + 1.6 + b * 3.0),
+                (w * 0.52, 0.06, 0.34), glyph, rot=(tilt, 0, tilt * 0.6),
+                bev=0.02)
+        # capstone
+        cone((x, far, -6 + h + 0.5), w * 0.85, 0.05, 1.5, face,
+             rot=(0, 0, 0), verts=6)
+
+    # scattered ice shards low in the frame
+    for i in range(26):
+        far = random.uniform(5, 48)
+        x = random.uniform(-16, 16)
+        sc = random.uniform(0.3, 1.1)
+        _rock((x, far, random.uniform(-6.5, -4.0)),
+              (sc, sc * 0.7, sc * 1.5), ice if random.random() < 0.3 else stone,
+              seed=200 + i)
+
+    _vista_camera(s, loc=(0, -15, -1.6), pitch=81.5, lens=28.0)
+    bpy.ops.object.light_add(type="AREA", location=(-11, 10, 12))
+    key = bpy.context.object
+    key.data.energy = 7000
+    key.data.size = 20
+    key.data.color = (0.62, 0.82, 1.0)
+    key.rotation_euler = (math.radians(48), 0, math.radians(-40))
+    glare(s, threshold=0.76, size=8, mix=-0.30)
+    render(s, outdir, "vista_abyss_crown", 1280, 720, transparent=False)
+
+
 # --------------------------------------------------------------- vfx
 # Bullets travel along +X in sprite space: the draw code rotates by
 # atan2(vy, vx) and maps the sprite's width axis to the travel direction.
@@ -1443,6 +1660,7 @@ TARGETS = (
     boss_aegis, boss_tyrant, boss_leviathan,
     power_chip,
     bullet_player, bullet_enemy, bullet_boss, impact_burst, pulse_ring,
+    vista_nebula_runway, vista_solar_rift, vista_abyss_crown,
     background_far, background_far_solar, background_far_abyss,
     background_near,
 )
