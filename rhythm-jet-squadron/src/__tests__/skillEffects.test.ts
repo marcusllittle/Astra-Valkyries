@@ -73,8 +73,8 @@ describe("skill effects", () => {
 
   it("ignores unknown node ids instead of throwing", () => {
     // A save from an older build can name a node that no longer exists.
-    expect(combineSkillEffects("pilot_nova", ["nope", "nova_v1"]).moveSpeedMult)
-      .toBeCloseTo(1.05);
+    expect(combineSkillEffects("pilot_nova", ["nope", "nova_v1"]).grazeOverdriveGain)
+      .toBe(4);
   });
 
   it("ignores nodes belonging to a different pilot", () => {
@@ -87,10 +87,11 @@ describe("skill effects", () => {
     expect(twice).toEqual(once);
   });
 
-  it("stacks a whole branch multiplicatively", () => {
-    // Velocity: +5% then +10% move speed.
-    const e = combineSkillEffects("pilot_nova", ["nova_v1", "nova_v2"]);
-    expect(e.moveSpeedMult).toBeCloseTo(1.05 * 1.1);
+  it("stacks Nova's crit-chance nodes additively from tier 0", () => {
+    // Target Lock (+6%) then Weak Points (+10%): crit identity starts
+    // immediately instead of tier 1.
+    const e = combineSkillEffects("pilot_nova", ["nova_p1", "nova_p2"]);
+    expect(e.critChance).toBeCloseTo(0.16);
   });
 
   it("keeps crit chance in range even if every crit node stacks", () => {
@@ -98,6 +99,67 @@ describe("skill effects", () => {
     expect(e.critChance).toBeGreaterThan(0);
     expect(e.critChance).toBeLessThanOrEqual(1);
     expect(e.critDamageMult).toBeCloseTo(1.75);
+  });
+
+  // -- the redesigned kits ------------------------------------------------
+  // Nova Velocity/Instinct, Rex Arsenal/Fortify/Ordnance and Yuki
+  // Stealth/Technician were rewritten from flat stat buffs into mechanics.
+  // These lock down the values the sim actually keys off.
+
+  it("Nova Velocity: grazes charge overdrive, then add speed and damage bursts", () => {
+    expect(combineSkillEffects("pilot_nova", ["nova_v1"]).grazeOverdriveGain).toBe(4);
+    const e = combineSkillEffects("pilot_nova", ["nova_v1", "nova_v2", "nova_v3"]);
+    expect(e.grazeSpeedBurstMs).toBeGreaterThan(0);
+    expect(e.grazeSpeedBurstMult).toBeGreaterThan(1);
+    expect(e.grazeDamageBurstMs).toBeGreaterThan(0);
+    expect(e.grazeDamageBurstMult).toBeGreaterThan(1);
+  });
+
+  it("Nova Precision: Armor Piercing grants bonus pierce, not more flat damage", () => {
+    const e = combineSkillEffects("pilot_nova", ["nova_p3"]);
+    expect(e.critBonusPierce).toBe(1);
+    expect(e.damageMult).toBe(1);
+  });
+
+  it("Nova Instinct: overdrive activation clears bullets, streak kills feed the meter", () => {
+    const e = combineSkillEffects("pilot_nova", ["nova_i1", "nova_i2"]);
+    expect(e.overdriveActivationClearRadius).toBeGreaterThan(0);
+    expect(e.streakKillOverdriveGain).toBeGreaterThan(0);
+  });
+
+  it("Rex Arsenal: Kill Momentum stacks additively and Overcharged relieves cooldown", () => {
+    const oneNode = combineSkillEffects("pilot_rex", ["rex_a1"]);
+    expect(oneNode.killFireRateMaxStacks).toBe(1);
+    const stacked = combineSkillEffects("pilot_rex", ["rex_a1", "rex_a3"]);
+    expect(stacked.killFireRateMaxStacks).toBe(3);
+    expect(combineSkillEffects("pilot_rex", ["rex_a2"]).killSecondaryCooldownReliefMs).toBeGreaterThan(0);
+  });
+
+  it("Rex Fortify: the free shield's cadence is shorter-wins, not summed", () => {
+    const shieldOnly = combineSkillEffects("pilot_rex", ["rex_f2"]);
+    expect(shieldOnly.shieldPulseIntervalMs).toBe(34_000);
+    const faster = combineSkillEffects("pilot_rex", ["rex_f2", "rex_f3"]);
+    expect(faster.shieldPulseIntervalMs).toBe(22_000);
+  });
+
+  it("Rex Ordnance: Cluster Munitions is an honest chain-length bonus, not a hidden damage buff", () => {
+    const e = combineSkillEffects("pilot_rex", ["rex_o3"]);
+    expect(e.detonationChainBonusLinks).toBe(2);
+    expect(e.secondaryDamageMult).toBe(1);
+    expect(e.secondaryRadiusMult).toBe(1);
+  });
+
+  it("Yuki Stealth: Cold Focus rewards flying clean, not a fake positional bonus", () => {
+    const e = combineSkillEffects("pilot_yuki", ["yuki_s3"]);
+    expect(e.flawlessWindowMs).toBeGreaterThan(0);
+    expect(e.flawlessDamageMult).toBeGreaterThan(1);
+    expect(e.damageMult).toBe(1);
+  });
+
+  it("Yuki Technician: Intel Override shows enemy HP for real, and still pays its score bonus", () => {
+    const e = combineSkillEffects("pilot_yuki", ["yuki_t4"]);
+    expect(e.showEnemyHealthBars).toBe(true);
+    expect(e.scoreMult).toBeCloseTo(0.25);
   });
 
   // -- the mislabelled nodes --------------------------------------------

@@ -156,6 +156,9 @@ interface EnemyBullet {
   coreColor: string;
   length: number;
   spriteKey: SpriteKey;
+  /** Set once this bullet has paid out a graze, so a slow-moving round
+   *  lingering in the graze band across several frames only counts once. */
+  grazed?: boolean;
 }
 
 interface EnemyState {
@@ -168,6 +171,11 @@ interface EnemyState {
   vy: number;
   radius: number;
   hp: number;
+  /** HP at spawn, for Intel Override's health bars. Optional: enemies
+   *  spawned outside the main wave path (splitter children, boss adds)
+   *  just show full until damaged rather than needing every push site
+   *  updated. */
+  maxHp?: number;
   scoreValue: number;
   fireCooldown: number;
   age: number;
@@ -433,6 +441,22 @@ interface ShmupModifiers {
   secondaryDamageMult: number;
   shieldPulseIntervalMs: number;
   dropRateMult: number;
+  grazeOverdriveGain: number;
+  grazeSpeedBurstMs: number;
+  grazeSpeedBurstMult: number;
+  grazeDamageBurstMs: number;
+  grazeDamageBurstMult: number;
+  overdriveActivationClearRadius: number;
+  streakKillOverdriveGain: number;
+  critBonusPierce: number;
+  killFireRateBonusMs: number;
+  killFireRateBonusMult: number;
+  killFireRateMaxStacks: number;
+  killSecondaryCooldownReliefMs: number;
+  detonationChainBonusLinks: number;
+  flawlessWindowMs: number;
+  flawlessDamageMult: number;
+  showEnemyHealthBars: boolean;
 }
 
 interface ScheduledWaveSpawn extends ShmupWaveEnemy {
@@ -732,6 +756,22 @@ function buildModifiers(
     secondaryDamageMult: skills.secondaryDamageMult,
     shieldPulseIntervalMs: skills.shieldPulseIntervalMs,
     dropRateMult: skills.dropRateMult,
+    grazeOverdriveGain: skills.grazeOverdriveGain,
+    grazeSpeedBurstMs: skills.grazeSpeedBurstMs,
+    grazeSpeedBurstMult: skills.grazeSpeedBurstMult,
+    grazeDamageBurstMs: skills.grazeDamageBurstMs,
+    grazeDamageBurstMult: skills.grazeDamageBurstMult,
+    overdriveActivationClearRadius: skills.overdriveActivationClearRadius,
+    streakKillOverdriveGain: skills.streakKillOverdriveGain,
+    critBonusPierce: skills.critBonusPierce,
+    killFireRateBonusMs: skills.killFireRateBonusMs,
+    killFireRateBonusMult: skills.killFireRateBonusMult,
+    killFireRateMaxStacks: skills.killFireRateMaxStacks,
+    killSecondaryCooldownReliefMs: skills.killSecondaryCooldownReliefMs,
+    detonationChainBonusLinks: skills.detonationChainBonusLinks,
+    flawlessWindowMs: skills.flawlessWindowMs,
+    flawlessDamageMult: skills.flawlessDamageMult,
+    showEnemyHealthBars: skills.showEnemyHealthBars,
     damageTakenMultiplier: hasAggressiveRoute
       ? SHMUP_BALANCE.passives.aggressiveRoute.damageTakenMult
       : 1,
@@ -972,6 +1012,13 @@ export default function ShmupPlayScreen() {
   const decoysRef = useRef<{ x: number; y: number; vx: number; vy: number; hp: number; bornMs: number }[]>([]);
   // Tide Guard: a charging escort ring that physically eats bullets.
   const tideGuardRef = useRef<{ until: number; nodes: { hp: number }[]; charge: number }>({ until: 0, nodes: [], charge: 0 });
+  // Nova Velocity: transient buffs a graze grants.
+  const grazeSpeedBurstUntilRef = useRef(0);
+  const grazeDamageBurstUntilRef = useRef(0);
+  // Rex Arsenal: kill momentum. Stacks decay together on one timer rather
+  // than per-stack, which keeps the bookkeeping to two numbers.
+  const killMomentumStacksRef = useRef(0);
+  const killMomentumUntilRef = useRef(0);
   // Rex: afterburn turns the ship itself into the weapon.
   const afterburnUntilRef = useRef(0);
   // Yuki: painted targets that all resolve on the same frame.
@@ -1073,6 +1120,22 @@ export default function ShmupPlayScreen() {
     secondaryDamageMult,
     shieldPulseIntervalMs,
     dropRateMult,
+    grazeOverdriveGain,
+    grazeSpeedBurstMs,
+    grazeSpeedBurstMult,
+    grazeDamageBurstMs,
+    grazeDamageBurstMult,
+    overdriveActivationClearRadius,
+    streakKillOverdriveGain,
+    critBonusPierce,
+    killFireRateBonusMs,
+    killFireRateBonusMult,
+    killFireRateMaxStacks,
+    killSecondaryCooldownReliefMs,
+    detonationChainBonusLinks,
+    flawlessWindowMs,
+    flawlessDamageMult,
+    showEnemyHealthBars,
     spreadMultiplier,
     weaponDamageMultiplier,
     runEnemyHpMult,
@@ -1374,6 +1437,10 @@ export default function ShmupPlayScreen() {
     afterburnUntilRef.current = 0;
     zeroPointRef.current = null;
     bossLightningRef.current = { nextStrikeAtMs: 0, flashUntilMs: 0, bolts: [] };
+    grazeSpeedBurstUntilRef.current = 0;
+    grazeDamageBurstUntilRef.current = 0;
+    killMomentumStacksRef.current = 0;
+    killMomentumUntilRef.current = 0;
     flightRecorderRef.current = [];
     echoesRef.current = [];
     bloomsRef.current = [];
@@ -1547,6 +1614,25 @@ export default function ShmupPlayScreen() {
           freezeUntilRef.current,
           elapsedMs + overdriveFreezeMs,
         );
+      }
+      // Battle Sense: overdrive doubles as a panic button, sweeping nearby
+      // fire off the board the instant it triggers.
+      if (overdriveActivationClearRadius > 0) {
+        const sx = shipRef.current.x;
+        const sy = shipRef.current.y;
+        const r2 = overdriveActivationClearRadius * overdriveActivationClearRadius;
+        let cleared = 0;
+        enemyBulletsRef.current = enemyBulletsRef.current.filter((b) => {
+          const inRange = distanceSquared(sx, sy, b.x, b.y) <= r2;
+          if (inRange) {
+            cleared += 1;
+            addSparkBurst(b.x, b.y, "#ffd43b", 2, 90, [1.2, 2.6]);
+          }
+          return !inRange;
+        });
+        if (cleared > 0) {
+          addPulse(sx, sy, "#ffd43b", 16, overdriveActivationClearRadius, 0.18, 2.6);
+        }
       }
     };
 
@@ -1815,6 +1901,15 @@ export default function ShmupPlayScreen() {
       );
       if (spawned.length === 0) return;
 
+      const grazeDmgMult = grazeDamageBurstUntilRef.current > elapsedMs ? grazeDamageBurstMult : 1;
+      // Cold Focus: flying clean for a stretch sharpens Yuki's aim. Reuses
+      // the existing "time since last hit" tracking her shield-regen delay
+      // already depends on, rather than a dedicated timer.
+      const flawlessMult =
+        flawlessWindowMs > 0 && elapsedMs - lastHitMsRef.current >= flawlessWindowMs
+          ? flawlessDamageMult
+          : 1;
+      const kitDmgMult = grazeDmgMult * flawlessMult;
       const leadColor = spawned[0].color;
       addPulse(
         ship.x,
@@ -1836,7 +1931,7 @@ export default function ShmupPlayScreen() {
           bank.push({
             x: shot.x,
             y: shot.y,
-            damage: shot.damage * weaponDamageMultiplier,
+            damage: shot.damage * weaponDamageMultiplier * kitDmgMult,
             color: shot.color,
             coreColor: shot.coreColor,
           });
@@ -1853,7 +1948,7 @@ export default function ShmupPlayScreen() {
           age: 0,
           maxLife: shot.maxLife,
           radius: shot.radius * ENTITY_SCALE,
-          damage: shot.damage * weaponDamageMultiplier * (overchargeUntilRef.current > elapsedMs ? SHMUP_BALANCE.effects.overchargeDamageMult : 1),
+          damage: shot.damage * weaponDamageMultiplier * kitDmgMult * (overchargeUntilRef.current > elapsedMs ? SHMUP_BALANCE.effects.overchargeDamageMult : 1),
           color: shot.color,
           coreColor: shot.coreColor,
           length: shot.length * ENTITY_SCALE,
@@ -1910,6 +2005,12 @@ export default function ShmupPlayScreen() {
       };
 
       activeWaveLabelRef.current = spawn.waveLabel;
+      const spawnHp = Math.max(
+        1,
+        Math.round(
+          ((spawn.hp ?? def.hp) + spawn.loop * 0.15) * (isElite ? 1.8 : 1) * runEnemyHpMult,
+        ),
+      );
       enemiesRef.current.push({
         id: enemyIdRef.current++,
         pattern,
@@ -1919,12 +2020,8 @@ export default function ShmupPlayScreen() {
         vx: ((spawn.vx ?? 0) + vxJitter) * loopDifficulty,
         vy: (spawn.vy ?? (defaultVy[pattern] ?? 92)) * loopDifficulty * velRand * runEnemySpeedMult,
         radius: spawn.radius ?? def.radius,
-        hp: Math.max(
-          1,
-          Math.round(
-            ((spawn.hp ?? def.hp) + spawn.loop * 0.15) * (isElite ? 1.8 : 1) * runEnemyHpMult,
-          ),
-        ),
+        hp: spawnHp,
+        maxHp: spawnHp,
         scoreValue: Math.round(((spawn.scoreValue ?? def.score) * (1 + spawn.loop * 0.12)) * (isElite ? 1.5 : 1)),
         fireCooldown: Math.max(0.3, ((spawn.fireCooldown ?? def.fireCooldown) - spawn.loop * 0.03) / timeDifficultyScale),
         age: 0,
@@ -2548,6 +2645,27 @@ export default function ShmupPlayScreen() {
       if (slowOnKillMs > 0) {
         killSlowUntilRef.current = elapsedMs + slowOnKillMs;
       }
+      // Kill Streak: kills inside an active streak also feed the overdrive
+      // meter directly, not just the score multiplier.
+      if (streakKillOverdriveGain > 0 && streakRef.current >= 5) {
+        addOverdrive(streakKillOverdriveGain, elapsedMs);
+      }
+      // Kill Momentum: each kill refreshes a stacking fire-rate pulse, up to
+      // Rapid Salvo's cap. The stack decays as one unit rather than per-shot.
+      if (killFireRateBonusMs > 0) {
+        killMomentumStacksRef.current = Math.min(
+          killFireRateMaxStacks,
+          killMomentumStacksRef.current + 1,
+        );
+        killMomentumUntilRef.current = elapsedMs + killFireRateBonusMs;
+      }
+      // Overcharged: kills shave time off the secondary's cooldown.
+      if (killSecondaryCooldownReliefMs > 0 && secondaryCooldownUntilRef.current > elapsedMs) {
+        secondaryCooldownUntilRef.current = Math.max(
+          elapsedMs,
+          secondaryCooldownUntilRef.current - killSecondaryCooldownReliefMs,
+        );
+      }
 
       // Dreadnought: spawn full mini-wave on death
       if (enemy.pattern === "dreadnought") {
@@ -3073,15 +3191,21 @@ export default function ShmupPlayScreen() {
           if (!secondaryUsesCharges || secondaryChargesRef.current <= 0) return;
           secondaryChargesRef.current -= 1;
           sfxBomb();
-          const r = SHMUP_BALANCE.effects.detonationChainRadius;
+          // Ordnance Specialist / Wide Blast reach his real kit through
+          // the generic secondary mults, which only ever wired into the
+          // legacy bomb case before this.
+          const r = SHMUP_BALANCE.effects.detonationChainRadius * secondaryRadiusMult;
           let cx = ship.x;
           let cy = ship.y - 40;
           const struck = new Set<number>();
-          for (let link = 0; link < SHMUP_BALANCE.effects.detonationChainMaxLinks; link++) {
+          // Cluster Munitions: the chain reaches further, honestly this
+          // time, rather than quietly becoming a bigger single blast.
+          const maxLinks = SHMUP_BALANCE.effects.detonationChainMaxLinks + detonationChainBonusLinks;
+          for (let link = 0; link < maxLinks; link++) {
             applyAreaBlast(
               cx, cy, r,
-              SHMUP_BALANCE.effects.detonationChainDamage,
-              SHMUP_BALANCE.effects.detonationChainBossDamage,
+              SHMUP_BALANCE.effects.detonationChainDamage * secondaryDamageMult,
+              SHMUP_BALANCE.effects.detonationChainBossDamage * secondaryDamageMult,
               elapsedMs, link % 2 === 0 ? "#ff922b" : "#ffd43b"
             );
             addPulse(cx, cy, "#ff922b", 16, r, 0.20, 3.0);
@@ -3639,15 +3763,18 @@ export default function ShmupPlayScreen() {
     /** Afterburn: Rex's hull becomes the projectile and leaves a burn trail. */
     const applyAfterburn = (elapsedMs: number, deltaSeconds: number) => {
       if (afterburnUntilRef.current <= elapsedMs) return;
+      // Ordnance Specialist / Wide Blast apply here too: ramming is his
+      // ordnance now, not just his bomb.
+      const ramR = 10 * secondaryRadiusMult;
       // contact damage — ramming is the intended play, not an accident
       for (let i = enemiesRef.current.length - 1; i >= 0; i--) {
         const e = enemiesRef.current[i];
-        const reach = ship.radius + e.radius + 6;
+        const reach = ship.radius + e.radius + 6 * secondaryRadiusMult;
         if (distanceSquared(ship.x, ship.y, e.x, e.y) <= reach * reach) {
           applyAreaBlast(
-            e.x, e.y, e.radius + 10,
-            SHMUP_BALANCE.effects.afterburnRamDamage,
-            SHMUP_BALANCE.effects.afterburnRamBossDamage,
+            e.x, e.y, e.radius + ramR,
+            SHMUP_BALANCE.effects.afterburnRamDamage * secondaryDamageMult,
+            SHMUP_BALANCE.effects.afterburnRamBossDamage * secondaryDamageMult,
             elapsedMs, "#ff922b"
           );
           addScreenShake(1.6, 0.08);
@@ -3657,7 +3784,7 @@ export default function ShmupPlayScreen() {
       if (bossNear) {
         const reach = ship.radius + bossNear.radius * 0.5;
         if (distanceSquared(ship.x, ship.y, bossNear.x, bossNear.y) <= reach * reach) {
-          bossNear.hp -= SHMUP_BALANCE.effects.afterburnRamBossDamage * deltaSeconds * 2;
+          bossNear.hp -= SHMUP_BALANCE.effects.afterburnRamBossDamage * secondaryDamageMult * deltaSeconds * 2;
         }
       }
       // burn trail behind the ship
@@ -3879,8 +4006,13 @@ export default function ShmupPlayScreen() {
         const burnMult = afterburnUntilRef.current > elapsedMs
           ? SHMUP_BALANCE.effects.afterburnSpeedMult
           : 1;
+        const grazeSpeedMult = grazeSpeedBurstUntilRef.current > elapsedMs
+          ? grazeSpeedBurstMult
+          : 1;
         const velocityScale =
-          moveX !== 0 || moveY !== 0 ? shipSpeed * burnMult * deltaSeconds / moveLength : 0;
+          moveX !== 0 || moveY !== 0
+            ? shipSpeed * burnMult * grazeSpeedMult * deltaSeconds / moveLength
+            : 0;
         ship.x = clamp(ship.x + moveX * velocityScale, playerBounds.minX, playerBounds.maxX);
         ship.y = clamp(ship.y + moveY * velocityScale, playerBounds.minY, playerBounds.maxY);
         shipTiltRef.current = shipTiltRef.current * 0.82 + moveX * 0.08;
@@ -3907,6 +4039,13 @@ export default function ShmupPlayScreen() {
         fireInterval /= skillFireRateMult;
         if (overdriveUntilRef.current > elapsedMs) {
           fireInterval /= skillOverdriveFireRateMult;
+        }
+        // Kill Momentum: each stacked kill shortens the interval further,
+        // decaying as one block when the window lapses.
+        if (killMomentumUntilRef.current > elapsedMs && killMomentumStacksRef.current > 0) {
+          fireInterval /= killFireRateBonusMult ** killMomentumStacksRef.current;
+        } else {
+          killMomentumStacksRef.current = 0;
         }
         while (fireTimerRef.current <= 0) {
           spawnPlayerBullets(elapsedMs);
@@ -4780,6 +4919,12 @@ export default function ShmupPlayScreen() {
           const isCrit = rollCrit();
           const dealt = bullet.damage * shieldMult * (isCrit ? critDamageMult : 1);
           enemy.hp -= dealt;
+          // Armor Piercing: a crit punches through to the next target.
+          // consumePlayerBullet decrements pierce on THIS hit before
+          // checking it, so surviving one extra hit needs pierce >= 2.
+          if (isCrit && critBonusPierce > 0) {
+            bullet.pierce = Math.max(bullet.pierce, 1 + critBonusPierce);
+          }
           consumePlayerBullet(bulletIndex);
           if (shieldMult < 1) {
             addSparkBurst(bullet.x, bullet.y, "#4488ff", 3, 60);
@@ -4988,6 +5133,28 @@ export default function ShmupPlayScreen() {
         if (distSq <= hitDistance * hitDistance) {
           enemyBulletsRef.current.splice(bulletIndex, 1);
           handleShipHit(elapsedMs);
+          continue;
+        }
+
+        // Nova Velocity: a bullet that passes close without hitting is a
+        // graze. Flagged once per bullet so a slow round lingering in the
+        // band across several frames only pays out a single time.
+        if (
+          !bullet.grazed &&
+          (grazeOverdriveGain > 0 || grazeSpeedBurstMs > 0 || grazeDamageBurstMs > 0)
+        ) {
+          const grazeDistance = hitDistance + ship.radius * 0.9;
+          if (distSq <= grazeDistance * grazeDistance) {
+            bullet.grazed = true;
+            if (grazeOverdriveGain > 0) addOverdrive(grazeOverdriveGain, elapsedMs);
+            if (grazeSpeedBurstMs > 0) {
+              grazeSpeedBurstUntilRef.current = elapsedMs + grazeSpeedBurstMs;
+            }
+            if (grazeDamageBurstMs > 0) {
+              grazeDamageBurstUntilRef.current = elapsedMs + grazeDamageBurstMs;
+            }
+            addSparkBurst(bullet.x, bullet.y, "#a5d8ff", 2, 70, [1.2, 2.6]);
+          }
         }
       }
 
@@ -5223,6 +5390,22 @@ export default function ShmupPlayScreen() {
         };
         const enemyColor = enemy.elite ? "#ffd700" : (ENEMY_COLORS[enemy.pattern] ?? "#845ef7");
         const enemyCoreDark = enemy.elite ? "#b8860b" : (ENEMY_CORE_DARK[enemy.pattern] ?? "#5030a0");
+
+        // Intel Override: a thin bar above every enemy, positioned clear of
+        // the glow radius so paint order against the sprite doesn't matter.
+        if (showEnemyHealthBars && enemy.maxHp) {
+          const ratio = clamp(enemy.hp / enemy.maxHp, 0, 1);
+          const barW = Math.max(18, enemy.radius * 2.2) * displayScale;
+          const barY = enemy.y - enemy.radius * displayScale - 9 * displayScale;
+          const barX = enemy.x - barW / 2;
+          ctx.save();
+          ctx.fillStyle = "rgba(0,0,0,0.55)";
+          ctx.fillRect(barX, barY, barW, 3 * displayScale);
+          ctx.fillStyle = ratio > 0.5 ? "#69db7c" : ratio > 0.2 ? "#ffd43b" : "#ff6b6b";
+          ctx.fillRect(barX, barY, barW * ratio, 3 * displayScale);
+          ctx.restore();
+        }
+
         if (sprite) {
           ctx.save();
           const eGlowR = enemy.radius * 2.4 * displayScale;
@@ -6773,6 +6956,22 @@ export default function ShmupPlayScreen() {
     secondaryDamageMult,
     shieldPulseIntervalMs,
     dropRateMult,
+    grazeOverdriveGain,
+    grazeSpeedBurstMs,
+    grazeSpeedBurstMult,
+    grazeDamageBurstMs,
+    grazeDamageBurstMult,
+    overdriveActivationClearRadius,
+    streakKillOverdriveGain,
+    critBonusPierce,
+    killFireRateBonusMs,
+    killFireRateBonusMult,
+    killFireRateMaxStacks,
+    killSecondaryCooldownReliefMs,
+    detonationChainBonusLinks,
+    flawlessWindowMs,
+    flawlessDamageMult,
+    showEnemyHealthBars,
   ]);
 
   const handleTutorialComplete = useCallback(() => {
