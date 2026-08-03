@@ -745,13 +745,47 @@ body::after {
   cursor: not-allowed;
 }
 
-/* Rarity border colors */
-.rarity-rare { border-color: rgba(90, 191, 255, 0.65); }
-.rarity-sr { border-color: rgba(217, 124, 255, 0.7); }
-.rarity-ssr { border-color: rgba(255, 220, 111, 0.88); box-shadow: 0 0 0 1px rgba(255, 220, 111, 0.28), var(--shadow-card); }
+/* Rarity border colors. Previously only SSR carried any glow — Rare and SR
+   were border-tint only, so the ladder had one flashy tier and two flat
+   ones instead of a graduated escalation. */
+.rarity-rare { border-color: rgba(90, 191, 255, 0.65); box-shadow: 0 0 14px rgba(79, 184, 255, 0.16); }
+.rarity-sr { border-color: rgba(217, 124, 255, 0.7); box-shadow: 0 0 16px rgba(209, 125, 255, 0.22); }
+.rarity-ssr {
+  border-color: rgba(255, 220, 111, 0.88);
+  box-shadow: 0 0 0 1px rgba(255, 220, 111, 0.28), 0 0 22px rgba(255, 220, 111, 0.32), var(--shadow-card);
+  animation: rarityGlowPulse 2.6s ease-in-out infinite;
+}
 .rarity-rare.selected { border-color: var(--rarity-rare); box-shadow: 0 0 0 1px rgba(79, 184, 255, 0.45), 0 18px 34px rgba(15, 70, 128, 0.34); }
 .rarity-sr.selected { border-color: var(--rarity-sr); box-shadow: 0 0 0 1px rgba(209, 125, 255, 0.45), 0 18px 34px rgba(76, 32, 109, 0.35); }
 .rarity-ssr.selected { border-color: var(--rarity-ssr); box-shadow: 0 0 0 1px rgba(255, 220, 111, 0.55), 0 18px 34px rgba(128, 95, 15, 0.36); }
+
+@keyframes rarityGlowPulse {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(255, 220, 111, 0.28), 0 0 18px rgba(255, 220, 111, 0.26), var(--shadow-card); }
+  50% { box-shadow: 0 0 0 1px rgba(255, 220, 111, 0.4), 0 0 28px rgba(255, 220, 111, 0.42), var(--shadow-card); }
+}
+
+/* SSR gets one flourish the rest don't: a light sweep across the art
+   itself. object-fit: cover means the image fully covers .card-art, so a
+   background glow behind it would be invisible — this rides on ::after,
+   which already paints on top of the image for the base bottom-fade. */
+.rarity-ssr .card-art::after {
+  background:
+    linear-gradient(115deg, transparent 42%, rgba(255, 246, 214, 0.5) 50%, transparent 58%),
+    linear-gradient(180deg, transparent, rgba(8, 14, 27, 0.68));
+  background-size: 220% 220%, 100% 100%;
+  background-position: 130% -30%, 0 0;
+  animation: cardShimmer 3.2s ease-in-out infinite;
+}
+
+@keyframes cardShimmer {
+  0%, 55% { background-position: 130% -30%, 0 0; }
+  100% { background-position: -30% 130%, 0 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rarity-ssr { animation: none; }
+  .rarity-ssr .card-art::after { animation: none; background-position: 50% 50%, 0 0; }
+}
 
 .card-art {
   height: 182px;
