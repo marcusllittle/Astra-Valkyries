@@ -947,6 +947,15 @@ export default function ShmupPlayScreen() {
   // New secondaries
   const barrelRollUntilRef = useRef(0);
   const barrelRollDirRef = useRef({ x: 0, y: 0 });
+  const barrelRollStartRef = useRef(0);
+  // Chrono Lock: shots fired inside the freeze hang in the air and all
+  // release at once when time restarts.
+  const chronoUntilRef = useRef(0);
+  const bankedShotsRef = useRef<
+    { x: number; y: number; damage: number; color: string; coreColor: string }[]
+  >([]);
+  // Riposte: bullets caught by the shield orbit the ship until it fires them back.
+  const capturedShotsRef = useRef<{ angle: number; color: string; coreColor: string }[]>([]);
   const phaseShiftUntilRef = useRef(0);
   const phaseShiftGhostRef = useRef<{ x: number; y: number; triggerAtMs: number } | null>(null);
   const vortexRef = useRef<{ x: number; y: number; startMs: number; endMs: number } | null>(null);
@@ -1331,6 +1340,10 @@ export default function ShmupPlayScreen() {
     statusFlashUntilRef.current = 0;
     barrelRollUntilRef.current = 0;
     barrelRollDirRef.current = { x: 0, y: 0 };
+    barrelRollStartRef.current = 0;
+    chronoUntilRef.current = 0;
+    bankedShotsRef.current = [];
+    capturedShotsRef.current = [];
     phaseShiftUntilRef.current = 0;
     phaseShiftGhostRef.current = null;
     vortexRef.current = null;
@@ -1776,6 +1789,23 @@ export default function ShmupPlayScreen() {
         1.5
       );
       addScreenShake(overdriveActive ? 0.86 + weaponLevel * 0.18 : 0.28 + weaponLevel * 0.14, 0.045);
+
+      // Chrono Lock: shots fired inside the freeze do not travel. They hang
+      // where they were placed and the whole bank fires when time restarts.
+      if (chronoUntilRef.current > elapsedMs) {
+        const bank = bankedShotsRef.current;
+        for (const shot of spawned) {
+          if (bank.length >= SHMUP_BALANCE.effects.chronoBankMax) break;
+          bank.push({
+            x: shot.x,
+            y: shot.y,
+            damage: shot.damage * weaponDamageMultiplier,
+            color: shot.color,
+            coreColor: shot.coreColor,
+          });
+        }
+        return;
+      }
 
       for (const shot of spawned) {
         playerBulletsRef.current.push({
@@ -2817,6 +2847,104 @@ export default function ShmupPlayScreen() {
           startSecondaryCooldown(elapsedMs);
           return;
         }
+        case "chronoLock": {
+          // Freeze the field, then keep firing. Every shot placed during the
+          // lock hangs where it was fired and the whole bank releases at once
+          // when time restarts — you paint the screen, then pull the trigger.
+          sfxCrystalBomb();
+          const lockMs = SHMUP_BALANCE.effects.chronoLockMs;
+          chronoUntilRef.current = elapsedMs + lockMs;
+          freezeUntilRef.current = Math.max(freezeUntilRef.current, elapsedMs + lockMs);
+          bankedShotsRef.current = [];
+          statusFlashUntilRef.current = elapsedMs + 320;
+          startSecondaryCooldown(elapsedMs);
+          addPulse(ship.x, ship.y, "#d0bfff", 26, 460, 0.30, 4.0);
+          addPulse(ship.x, ship.y, "#f3f0ff", 16, 240, 0.18, 2.6);
+          addSparkBurst(ship.x, ship.y, "#e5dbff", 22, 260, [2.4, 6.4]);
+          addScreenShake(2.0, 0.12);
+          return;
+        }
+        case "novaBurst": {
+          // A bomb should read as a bomb. This detonates on the spot across a
+          // radius derived from actual screen area, deletes every bullet
+          // caught in it, and scales with the viewport instead of a constant.
+          if (!secondaryUsesCharges || secondaryChargesRef.current <= 0) return;
+          secondaryChargesRef.current -= 1;
+          sfxBomb();
+          const areaFrac = SHMUP_BALANCE.effects.novaBurstScreenFraction;
+          const burstR = Math.sqrt((areaFrac * canvas.width * canvas.height) / Math.PI);
+          // applyAreaBlast already clears caught bullets, breaks dreadnought
+          // shields, registers kills and handles boss defeat.
+          applyAreaBlast(
+            ship.x, ship.y, burstR,
+            SHMUP_BALANCE.effects.novaBurstDamage,
+            SHMUP_BALANCE.effects.novaBurstBossDamage,
+            elapsedMs, "#ffd43b"
+          );
+          // three staggered rings so the blast expands instead of popping
+          addPulse(ship.x, ship.y, "#fff3bf", 30, burstR, 0.34, 5.0);
+          addPulse(ship.x, ship.y, "#ffd43b", 20, burstR * 0.72, 0.26, 3.6);
+          addPulse(ship.x, ship.y, "#ff922b", 12, burstR * 0.44, 0.18, 2.4);
+          addExplosion(ship.x, ship.y, "#ffd43b", 46, 5.2);
+          statusFlashUntilRef.current = elapsedMs + 220;
+          addScreenShake(4.2, 0.30);
+          startSecondaryCooldown(elapsedMs);
+          return;
+        }
+        case "blinkLance": {
+          // Not a hop. Nova crosses most of the arena and everything standing
+          // on the line she travelled takes the trip with her.
+          sfxEmp();
+          const from = { x: ship.x, y: ship.y };
+          const dir = { ...lastMoveRef.current };
+          const dirMag = Math.hypot(dir.x, dir.y);
+          if (dirMag > 0.1) { dir.x /= dirMag; dir.y /= dirMag; }
+          else { dir.x = 0; dir.y = -1; }
+          const dist = SHMUP_BALANCE.effects.blinkLanceDistance;
+          ship.x = clamp(from.x + dir.x * dist, ship.radius + 8, canvas.width - ship.radius - 8);
+          ship.y = clamp(from.y + dir.y * dist, ship.radius + 8, canvas.height - ship.radius - 8);
+          ship.invulnerableUntil = Math.max(ship.invulnerableUntil, elapsedMs + 420);
+          phaseShiftUntilRef.current = elapsedMs + 240;
+          phaseShiftGhostRef.current = { x: from.x, y: from.y, triggerAtMs: elapsedMs + 110 };
+
+          const segX = ship.x - from.x;
+          const segY = ship.y - from.y;
+          const corridor = SHMUP_BALANCE.effects.blinkLanceCorridor;
+          // Walk the segment in overlapping steps and blast each one, so the
+          // whole travelled line is lethal rather than just the endpoints.
+          const steps = 7;
+          for (let i = 0; i <= steps; i++) {
+            const t = i / steps;
+            const px = from.x + segX * t;
+            const py = from.y + segY * t;
+            applyAreaBlast(
+              px, py, corridor,
+              SHMUP_BALANCE.effects.blinkLanceDamage,
+              SHMUP_BALANCE.effects.blinkLanceBossDamage / (steps + 1),
+              elapsedMs, "#d0bfff"
+            );
+            addPulse(px, py, i % 2 === 0 ? "#d0bfff" : "#b494ff",
+                     10, corridor * 1.6, 0.16 + t * 0.08, 2.2);
+          }
+          addSparkBurst(from.x, from.y, "#d0bfff", 18, 200, [2.4, 5.8]);
+          addSparkBurst(ship.x, ship.y, "#b494ff", 14, 160, [2, 5]);
+          addScreenShake(2.4, 0.12);
+          startSecondaryCooldown(elapsedMs);
+          return;
+        }
+        case "riposte": {
+          // A shield that does nothing but subtract damage is a stat. This one
+          // confiscates the pattern and hands it back.
+          sfxShield();
+          mirrorShieldUntilRef.current = elapsedMs + secondaryDurationMs;
+          mirrorShieldLayersRef.current = SHMUP_BALANCE.effects.mirrorShieldLayers;
+          capturedShotsRef.current = [];
+          startSecondaryCooldown(elapsedMs);
+          addPulse(ship.x, ship.y, "#ffd43b", 18, 170, 0.18, 3.0);
+          addPulse(ship.x, ship.y, "#fff3bf", 11, 100, 0.11, 1.9);
+          addSparkBurst(ship.x, ship.y, "#ffe066", 18, 180, [2.2, 5.6]);
+          return;
+        }
         case "shieldPulse":
           sfxShieldPulse();
           triggerShieldPulse(elapsedMs);
@@ -3069,6 +3197,73 @@ export default function ShmupPlayScreen() {
       ctx.restore();
     };
 
+    /** Fire every shot banked during Chrono Lock the instant time restarts. */
+    const releaseChronoBank = (elapsedMs: number) => {
+      const bank = bankedShotsRef.current;
+      if (!bank.length || chronoUntilRef.current > elapsedMs) return;
+      const speed = SHMUP_BALANCE.effects.chronoReleaseSpeed;
+      for (const s of bank) {
+        const target = findNearestHomingTarget(s.x, s.y, 900);
+        let vx = 0;
+        let vy = -speed;
+        if (target) {
+          const dx = target.x - s.x;
+          const dy = target.y - s.y;
+          const len = Math.hypot(dx, dy) || 1;
+          vx = (dx / len) * speed;
+          vy = (dy / len) * speed;
+        }
+        playerBulletsRef.current.push({
+          x: s.x, y: s.y, vx, vy,
+          age: 0, maxLife: 1.6,
+          radius: 4.6 * ENTITY_SCALE,
+          damage: s.damage * SHMUP_BALANCE.effects.chronoBankDamageMult,
+          color: s.color, coreColor: s.coreColor,
+          length: 18 * ENTITY_SCALE,
+          spriteKey: undefined,
+          pierce: 1, driftVx: 0,
+          oscillateAmp: 0, oscillateFreq: 0, oscillatePhase: 0,
+          boomerangTurnAt: 0, boomerangReturnVy: 0, boomerangReturning: false,
+          homingTurnRate: 3.4, homingRange: 520,
+        });
+      }
+      addPulse(ship.x, ship.y, "#e5dbff", 20, 300, 0.22, 3.4);
+      addScreenShake(2.6, 0.16);
+      sfxCrystalBomb();
+      bankedShotsRef.current = [];
+    };
+
+    /** Spit every bullet Riposte confiscated back out when the shield drops. */
+    const releaseRiposte = (elapsedMs: number) => {
+      const held = capturedShotsRef.current;
+      if (!held.length || mirrorShieldUntilRef.current > elapsedMs) return;
+      const count = held.length;
+      for (let i = 0; i < count; i++) {
+        const shot = held[i];
+        const spread = (i / Math.max(1, count - 1) - 0.5) * Math.PI * 0.9;
+        const angle = -Math.PI / 2 + spread;
+        const speed = 760;
+        playerBulletsRef.current.push({
+          x: ship.x, y: ship.y,
+          vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+          age: 0, maxLife: 1.7,
+          radius: 5 * ENTITY_SCALE,
+          damage: SHMUP_BALANCE.effects.riposteReturnDamage,
+          color: shot.color, coreColor: shot.coreColor,
+          length: 20 * ENTITY_SCALE,
+          spriteKey: undefined,
+          pierce: 1, driftVx: 0,
+          oscillateAmp: 0, oscillateFreq: 0, oscillatePhase: 0,
+          boomerangTurnAt: 0, boomerangReturnVy: 0, boomerangReturning: false,
+          homingTurnRate: 4.6, homingRange: 500,
+        });
+      }
+      addPulse(ship.x, ship.y, "#ffd43b", 18, 220, 0.2, 3.0);
+      addScreenShake(2.2, 0.14);
+      sfxShieldPulse();
+      capturedShotsRef.current = [];
+    };
+
     const findNearestHomingTarget = (
       x: number,
       y: number,
@@ -3117,6 +3312,8 @@ export default function ShmupPlayScreen() {
       const deltaSeconds = Math.min(0.033, (timestamp - lastFrameRef.current) / 1000);
       lastFrameRef.current = timestamp;
       triggerCrystalShatter(elapsedMs);
+      releaseChronoBank(elapsedMs);
+      releaseRiposte(elapsedMs);
       const aggressiveRouteActive = activePassives.includes("aggressiveRoute");
       const empActive = empUntilRef.current > elapsedMs;
       const freezeActive = freezeUntilRef.current > elapsedMs;
@@ -3183,7 +3380,23 @@ export default function ShmupPlayScreen() {
         const rd = barrelRollDirRef.current;
         ship.x = clamp(ship.x + rd.x * rollSpeed * deltaSeconds, playerBounds.minX, playerBounds.maxX);
         ship.y = clamp(ship.y + rd.y * rollSpeed * deltaSeconds, playerBounds.minY, playerBounds.maxY);
-        shipTiltRef.current = rd.x * 0.5;
+        // An actual roll: two full revolutions across the dash, eased so it
+        // snaps round rather than spinning at a constant rate. The old code
+        // only tilted 0.5rad, which is why it never read as a barrel roll.
+        const rollDur = SHMUP_BALANCE.effects.barrelRollDurationMs;
+        const rollT = clamp(1 - (barrelRollUntilRef.current - elapsedMs) / rollDur, 0, 1);
+        const eased = rollT * rollT * (3 - 2 * rollT);
+        const spin = (rd.x >= 0 ? 1 : -1) * Math.PI * 4 * eased;
+        shipTiltRef.current = spin;
+        // corkscrew trail
+        if (Math.random() < 0.7) {
+          const swirl = spin * 1.4;
+          addSparkBurst(
+            ship.x + Math.cos(swirl) * ship.radius * 1.5,
+            ship.y + Math.sin(swirl) * ship.radius * 1.5,
+            "#a5d8ff", 1, 30, [1.4, 2.6]
+          );
+        }
       } else {
         const moveLength = Math.hypot(moveX, moveY) || 1;
         const velocityScale =
@@ -4146,7 +4359,10 @@ export default function ShmupPlayScreen() {
               pierce: 0, driftVx: 0,
               oscillateAmp: 0, oscillateFreq: 0, oscillatePhase: 0,
               boomerangTurnAt: 0, boomerangReturnVy: 0, boomerangReturning: false,
-              homingTurnRate: 0, homingRange: 0,
+              // Deflected rounds seek. Rolling through a dense pattern
+              // should convert the screen against its owner, not just
+              // spray shots back in the direction they happened to come.
+              homingTurnRate: 5.2, homingRange: 460,
             });
             enemyBulletsRef.current.splice(bulletIndex, 1);
             addSparkBurst(bullet.x, bullet.y, "#74c0fc", 4, 100);
@@ -4161,6 +4377,20 @@ export default function ShmupPlayScreen() {
             const dx = bullet.x - ship.x;
             const dy = bullet.y - ship.y;
             const isFront = dy <= ship.radius * 0.5;
+            if (secondaryKey === "riposte") {
+              // Riposte confiscates rather than reflects: the round is held
+              // in orbit and returned as a single volley when time is up.
+              if (capturedShotsRef.current.length < SHMUP_BALANCE.effects.riposteMaxHeld) {
+                capturedShotsRef.current.push({
+                  angle: Math.atan2(dy, dx),
+                  color: bullet.color,
+                  coreColor: bullet.coreColor,
+                });
+              }
+              enemyBulletsRef.current.splice(bulletIndex, 1);
+              addSparkBurst(bullet.x, bullet.y, "#ffd43b", 4, 90, [1.4, 3.2]);
+              continue;
+            }
             if (isFront) {
               // Front hit: reflect bullet back toward nearest enemy
               const speed = Math.hypot(bullet.vx, bullet.vy) * 1.3;
@@ -5529,6 +5759,42 @@ export default function ShmupPlayScreen() {
         ctx.arc(pulse.x, pulse.y, pulse.radius, 0, Math.PI * 2);
         ctx.stroke();
         ctx.restore();
+      }
+
+      // Chrono Lock: banked shots hang in the air, charging, until release
+      if (bankedShotsRef.current.length) {
+        const pulseT = 0.6 + Math.sin(elapsedMs / 90) * 0.4;
+        for (const s of bankedShotsRef.current) {
+          ctx.save();
+          ctx.globalAlpha = 0.55 + pulseT * 0.4;
+          ctx.fillStyle = s.coreColor;
+          ctx.shadowColor = s.color;
+          ctx.shadowBlur = 12;
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, 3.4 * displayScale * (0.85 + pulseT * 0.3), 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      // Riposte: confiscated rounds orbit the ship until the shield drops
+      if (capturedShotsRef.current.length) {
+        const spin = elapsedMs / 420;
+        const held = capturedShotsRef.current;
+        held.forEach((shot, i) => {
+          const a = spin + (i / held.length) * Math.PI * 2;
+          const r = ship.radius * 3.0 * displayScale;
+          const hx = ship.x + Math.cos(a) * r;
+          const hy = ship.y + Math.sin(a) * r;
+          ctx.save();
+          ctx.fillStyle = shot.coreColor;
+          ctx.shadowColor = "#ffd43b";
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.arc(hx, hy, 3.2 * displayScale, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        });
       }
 
       for (const spark of sparksRef.current) {

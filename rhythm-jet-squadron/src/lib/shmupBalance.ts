@@ -22,7 +22,12 @@ export type ShmupSecondaryKey =
   | "phaseShift"
   | "vortex"
   | "mirrorShield"
-  | "overcharge";
+  | "overcharge"
+  // Nova's signature kit
+  | "chronoLock"
+  | "novaBurst"
+  | "blinkLance"
+  | "riposte";
 
 export type ShmupPassiveKey =
   | "smallerHitbox"
@@ -106,6 +111,20 @@ export const SHMUP_BALANCE: {
     overchargeFireRateMult: number;
     overchargeDamageMult: number;
     overchargeShotCountBonus: number;
+    chronoLockMs: number;
+    chronoBankMax: number;
+    chronoReleaseSpeed: number;
+    chronoBankDamageMult: number;
+    /** Blast area as a fraction of the actual viewport, not a fixed radius. */
+    novaBurstScreenFraction: number;
+    novaBurstDamage: number;
+    novaBurstBossDamage: number;
+    blinkLanceDistance: number;
+    blinkLanceCorridor: number;
+    blinkLanceDamage: number;
+    blinkLanceBossDamage: number;
+    riposteReturnDamage: number;
+    riposteMaxHeld: number;
   };
 } = {
   primaries: {
@@ -263,6 +282,29 @@ export const SHMUP_BALANCE: {
       durationMs: 360,
       usesCharges: false,
     },
+    chronoLock: {
+      cooldownMs: 9000,
+      durationMs: 1900,
+      usesCharges: false,
+    },
+    novaBurst: {
+      cooldownMs: 0,
+      durationMs: 0,
+      usesCharges: true,
+      baseCharges: 2,
+      ssrBonusCharges: 2,
+      bonusMaxCharges: 1,
+    },
+    blinkLance: {
+      cooldownMs: 3600,
+      durationMs: 260,
+      usesCharges: false,
+    },
+    riposte: {
+      cooldownMs: 6400,
+      durationMs: 3200,
+      usesCharges: false,
+    },
     phaseShift: {
       cooldownMs: 2800,
       durationMs: 220,
@@ -332,6 +374,19 @@ export const SHMUP_BALANCE: {
     vortexDetonateDamage: 8,
     vortexDetonateBossDamage: 30,
     // Mirror Shield: multi-layer reflective barrier, reflects bullets back
+    chronoLockMs: 1900,
+    chronoBankMax: 40,
+    chronoReleaseSpeed: 1150,
+    chronoBankDamageMult: 1.45,
+    novaBurstScreenFraction: 0.26,
+    novaBurstDamage: 7,
+    novaBurstBossDamage: 30,
+    blinkLanceDistance: 340,
+    blinkLanceCorridor: 46,
+    blinkLanceDamage: 4,
+    blinkLanceBossDamage: 16,
+    riposteReturnDamage: 2.6,
+    riposteMaxHeld: 24,
     mirrorShieldLayers: 4,
     mirrorShieldReflectDamage: 1.8,
     mirrorShieldReflectBossDamage: 6,

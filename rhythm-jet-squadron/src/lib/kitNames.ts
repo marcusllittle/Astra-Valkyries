@@ -24,6 +24,11 @@ const SECONDARY_NAMES: Record<string, string> = {
   vortex: "Gravity Vortex",
   mirrorShield: "Mirror Shield",
   overcharge: "Overcharge",
+  // Nova's signature kit
+  chronoLock: "Chrono Lock",
+  novaBurst: "Nova Burst",
+  blinkLance: "Blink Lance",
+  riposte: "Riposte Field",
 };
 
 const PASSIVE_NAMES: Record<string, string> = {
