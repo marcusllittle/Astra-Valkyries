@@ -36,21 +36,21 @@ export const LORE_ENTRIES: LoreEntry[] = [
     category: "zone",
     title: "Nebula Runway",
     content: "A vast corridor of ionized gas clouds that serves as the primary shipping lane between core worlds. Since the invasion, it has become a gauntlet of enemy patrols and automated defense drones.",
-    imageUrl: "/assets/cutins/scenes/nebula_runway_briefing.png",
+    imageUrl: "/assets/shmup/vista_nebula_runway.png",
   },
   {
     id: "lore-solar",
     category: "zone",
     title: "Solar Rift",
     content: "A region of space dangerously close to the binary star system Helios Prime. The intense radiation and solar flares make conventional shields unreliable, but the enemy has established a major fortress here.",
-    imageUrl: "/assets/cutins/scenes/solar_rift_briefing.png",
+    imageUrl: "/assets/shmup/vista_solar_rift.png",
   },
   {
     id: "lore-abyss",
     category: "zone",
     title: "Abyss Crown",
     content: "The deepest region of charted space, where temperatures plunge to near absolute zero. Ancient alien structures dot the void, and the terrifying Cryo Leviathan guards the sector's secrets.",
-    imageUrl: "/assets/cutins/scenes/abyss_crown_briefing.png",
+    imageUrl: "/assets/shmup/vista_abyss_crown.png",
   },
   // Bosses
   {
@@ -165,6 +165,6 @@ export const LORE_ENTRIES: LoreEntry[] = [
     category: "faction",
     title: "The Void Collective",
     content: "A mysterious enemy force that emerged from deep space. Their ships appear to be partially organic, and their tactics suggest a hive-mind intelligence.",
-    imageUrl: "/assets/cutins/scenes/abyss_crown_briefing.png",
+    imageUrl: "/assets/shmup/vista_abyss_crown.png",
   },
 ];
