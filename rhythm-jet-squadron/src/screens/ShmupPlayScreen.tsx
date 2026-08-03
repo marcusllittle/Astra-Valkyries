@@ -976,6 +976,13 @@ export default function ShmupPlayScreen() {
   const afterburnUntilRef = useRef(0);
   // Yuki: painted targets that all resolve on the same frame.
   const zeroPointRef = useRef<{ marks: { x: number; y: number }[]; strikeAtMs: number } | null>(null);
+  // Boss windup lightning: a handful of jagged bolts that strike near the
+  // boss while it charges, instead of a constant ambient effect.
+  const bossLightningRef = useRef<{
+    nextStrikeAtMs: number;
+    flashUntilMs: number;
+    bolts: { x1: number; y1: number; x2: number; y2: number; seed: number }[];
+  }>({ nextStrikeAtMs: 0, flashUntilMs: 0, bolts: [] });
   const phaseShiftUntilRef = useRef(0);
   const phaseShiftGhostRef = useRef<{ x: number; y: number; triggerAtMs: number } | null>(null);
   const vortexRef = useRef<{ x: number; y: number; startMs: number; endMs: number } | null>(null);
@@ -1366,6 +1373,7 @@ export default function ShmupPlayScreen() {
     capturedShotsRef.current = [];
     afterburnUntilRef.current = 0;
     zeroPointRef.current = null;
+    bossLightningRef.current = { nextStrikeAtMs: 0, flashUntilMs: 0, bolts: [] };
     flightRecorderRef.current = [];
     echoesRef.current = [];
     bloomsRef.current = [];
@@ -4496,6 +4504,23 @@ export default function ShmupPlayScreen() {
           // Readable tell: charge glow ramps, boss rears back and shudders
           boss.chargeGlow = Math.min(1, boss.chargeGlow + bossDelta / 0.5);
           const shudder = Math.sin(boss.age * 46) * 3.5 * boss.chargeGlow;
+          // Lightning strikes near the boss only once the tell is well
+          // underway, so it reads as the windup building rather than
+          // ambient weather running the whole fight.
+          if (boss.chargeGlow > 0.5 && elapsedMs >= bossLightningRef.current.nextStrikeAtMs) {
+            const strikeCount = 1 + (Math.random() < 0.4 ? 1 : 0);
+            const bolts: typeof bossLightningRef.current.bolts = [];
+            for (let n = 0; n < strikeCount; n++) {
+              const originX = boss.x + (Math.random() - 0.5) * boss.radius * 3.2;
+              bolts.push({ x1: originX, y1: -20, x2: boss.x + (Math.random() - 0.5) * boss.radius, y2: boss.y, seed: Math.random() * 1000 });
+            }
+            bossLightningRef.current = {
+              nextStrikeAtMs: elapsedMs + 140 + Math.random() * 180,
+              flashUntilMs: elapsedMs + 90,
+              bolts,
+            };
+            addScreenShake(1.4, 0.06);
+          }
           const rear = boss.archetype === "leviathan" ? 52 : 26;
           boss.y += (bossTargetY - rear - boss.y) * Math.min(1, 5 * bossDelta);
           if (boss.archetype === "tyrant") {
@@ -5041,44 +5066,10 @@ export default function ShmupPlayScreen() {
       ctx.fillStyle = corridorGlow;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      const zonePulse = 0.5 + Math.sin(elapsedMs / 520) * 0.5;
-      if (activeMap.id === "nebula-runway") {
-        ctx.save();
-        ctx.strokeStyle = `rgba(150, 220, 255, ${0.08 + zonePulse * 0.12})`;
-        ctx.lineWidth = 2;
-        for (let i = -2; i < 5; i++) {
-          const x = ((elapsedMs * 0.08 + i * 180) % (canvas.width + 220)) - 110;
-          ctx.beginPath();
-          ctx.moveTo(x, 0);
-          ctx.lineTo(x + 110, canvas.height);
-          ctx.stroke();
-        }
-        ctx.restore();
-      } else if (activeMap.id === "solar-rift") {
-        ctx.save();
-        for (let i = 0; i < 5; i++) {
-          const flareX = ((elapsedMs * 0.12 + i * 160) % (canvas.width + 260)) - 130;
-          const flare = ctx.createLinearGradient(flareX, 0, flareX + 120, canvas.height);
-          flare.addColorStop(0, "rgba(255, 160, 64, 0)");
-          flare.addColorStop(0.5, `rgba(255, 140, 40, ${0.05 + zonePulse * 0.06})`);
-          flare.addColorStop(1, "rgba(255, 220, 120, 0)");
-          ctx.fillStyle = flare;
-          ctx.fillRect(flareX, 0, 120, canvas.height);
-        }
-        ctx.restore();
-      } else if (activeMap.id === "abyss-crown") {
-        ctx.save();
-        ctx.strokeStyle = `rgba(170, 220, 255, ${0.05 + zonePulse * 0.08})`;
-        ctx.lineWidth = 1.5;
-        for (let i = 0; i < 6; i++) {
-          const y = ((elapsedMs * 0.05 + i * 120) % (canvas.height + 160)) - 80;
-          ctx.beginPath();
-          ctx.moveTo(0, y);
-          ctx.bezierCurveTo(canvas.width * 0.25, y - 30, canvas.width * 0.75, y + 30, canvas.width, y - 10);
-          ctx.stroke();
-        }
-        ctx.restore();
-      }
+      // Ambient per-zone streaks removed: constant drifting lines read as
+      // screen noise rather than atmosphere. The corridor glow above is the
+      // zone's ambient treatment now. Boss fights get a lightning flicker
+      // during the windup telegraph instead — see drawBossLightning below.
 
       if (overdriveUntilRef.current > elapsedMs) {
         ctx.fillStyle = activeMap.palette.overdriveOverlay;
@@ -5111,16 +5102,6 @@ export default function ShmupPlayScreen() {
         const offsetX = (Math.random() * 2 - 1) * shakePowerRef.current * damp;
         const offsetY = (Math.random() * 2 - 1) * shakePowerRef.current * damp;
         ctx.translate(offsetX, offsetY);
-      }
-
-      ctx.strokeStyle = "rgba(255,255,255,0.08)";
-      ctx.lineWidth = 1;
-      for (let i = 0; i < 7; i++) {
-        const y = (elapsedMs / 7 + i * 108) % (canvas.height + 120) - 120;
-        ctx.beginPath();
-        ctx.moveTo(canvas.width * 0.08, y);
-        ctx.lineTo(canvas.width * 0.92, y);
-        ctx.stroke();
       }
 
       for (const bullet of playerBulletsRef.current) {
@@ -5754,6 +5735,31 @@ export default function ShmupPlayScreen() {
             ctx.beginPath();
             ctx.arc(boss.x, boss.y, boss.radius * displayScale * 1.1, 0, Math.PI * 2);
             ctx.fill();
+            ctx.restore();
+          }
+
+          // Lightning strike flash: brief jagged bolts during the windup
+          // tell, not a persistent effect.
+          if (bossLightningRef.current.flashUntilMs > elapsedMs) {
+            ctx.save();
+            for (const bolt of bossLightningRef.current.bolts) {
+              const segs = 7;
+              ctx.strokeStyle = "rgba(220, 240, 255, 0.9)";
+              ctx.lineWidth = 2.4;
+              ctx.shadowColor = activeMap.palette.bossSecondary;
+              ctx.shadowBlur = 14;
+              ctx.beginPath();
+              ctx.moveTo(bolt.x1, bolt.y1);
+              for (let s = 1; s <= segs; s++) {
+                const t = s / segs;
+                const jitter = Math.sin(bolt.seed + s * 12.9) * 22 * (1 - t * 0.6);
+                ctx.lineTo(
+                  bolt.x1 + (bolt.x2 - bolt.x1) * t + jitter,
+                  bolt.y1 + (bolt.y2 - bolt.y1) * t
+                );
+              }
+              ctx.stroke();
+            }
             ctx.restore();
           }
 
