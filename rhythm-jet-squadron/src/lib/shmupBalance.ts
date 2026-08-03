@@ -27,7 +27,13 @@ export type ShmupSecondaryKey =
   | "chronoLock"
   | "novaBurst"
   | "blinkLance"
-  | "riposte";
+  | "riposte"
+  // Rex: the ex-racer. Speed as a weapon, kills that feed kills.
+  | "afterburn"
+  | "detonationChain"
+  // Yuki: electronic warfare and precision execution.
+  | "systemHijack"
+  | "zeroPoint";
 
 export type ShmupPassiveKey =
   | "smallerHitbox"
@@ -125,6 +131,19 @@ export const SHMUP_BALANCE: {
     blinkLanceBossDamage: number;
     riposteReturnDamage: number;
     riposteMaxHeld: number;
+    afterburnMs: number;
+    afterburnSpeedMult: number;
+    afterburnRamDamage: number;
+    afterburnRamBossDamage: number;
+    afterburnTrailDamage: number;
+    detonationChainRadius: number;
+    detonationChainDamage: number;
+    detonationChainBossDamage: number;
+    detonationChainMaxLinks: number;
+    zeroPointMarks: number;
+    zeroPointDelayMs: number;
+    zeroPointDamage: number;
+    zeroPointBossDamage: number;
   };
 } = {
   primaries: {
@@ -277,6 +296,10 @@ export const SHMUP_BALANCE: {
       ssrBonusCharges: 2,
       bonusMaxCharges: 1,
     },
+    afterburn: { cooldownMs: 8200, durationMs: 2600, usesCharges: false },
+    detonationChain: { cooldownMs: 0, durationMs: 0, usesCharges: true, baseCharges: 2, ssrBonusCharges: 2, bonusMaxCharges: 1 },
+    systemHijack: { cooldownMs: 7400, durationMs: 400, usesCharges: false },
+    zeroPoint: { cooldownMs: 8800, durationMs: 700, usesCharges: false },
     barrelRoll: {
       cooldownMs: 1800,
       durationMs: 360,
@@ -387,6 +410,19 @@ export const SHMUP_BALANCE: {
     blinkLanceBossDamage: 16,
     riposteReturnDamage: 2.6,
     riposteMaxHeld: 24,
+    afterburnMs: 2600,
+    afterburnSpeedMult: 1.85,
+    afterburnRamDamage: 6,
+    afterburnRamBossDamage: 12,
+    afterburnTrailDamage: 1.6,
+    detonationChainRadius: 120,
+    detonationChainDamage: 5,
+    detonationChainBossDamage: 18,
+    detonationChainMaxLinks: 8,
+    zeroPointMarks: 6,
+    zeroPointDelayMs: 700,
+    zeroPointDamage: 12,
+    zeroPointBossDamage: 34,
     mirrorShieldLayers: 4,
     mirrorShieldReflectDamage: 1.8,
     mirrorShieldReflectBossDamage: 6,

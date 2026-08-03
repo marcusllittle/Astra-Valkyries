@@ -956,6 +956,10 @@ export default function ShmupPlayScreen() {
   >([]);
   // Riposte: bullets caught by the shield orbit the ship until it fires them back.
   const capturedShotsRef = useRef<{ angle: number; color: string; coreColor: string }[]>([]);
+  // Rex: afterburn turns the ship itself into the weapon.
+  const afterburnUntilRef = useRef(0);
+  // Yuki: painted targets that all resolve on the same frame.
+  const zeroPointRef = useRef<{ marks: { x: number; y: number }[]; strikeAtMs: number } | null>(null);
   const phaseShiftUntilRef = useRef(0);
   const phaseShiftGhostRef = useRef<{ x: number; y: number; triggerAtMs: number } | null>(null);
   const vortexRef = useRef<{ x: number; y: number; startMs: number; endMs: number } | null>(null);
@@ -1344,6 +1348,8 @@ export default function ShmupPlayScreen() {
     chronoUntilRef.current = 0;
     bankedShotsRef.current = [];
     capturedShotsRef.current = [];
+    afterburnUntilRef.current = 0;
+    zeroPointRef.current = null;
     phaseShiftUntilRef.current = 0;
     phaseShiftGhostRef.current = null;
     vortexRef.current = null;
@@ -2932,6 +2938,119 @@ export default function ShmupPlayScreen() {
           startSecondaryCooldown(elapsedMs);
           return;
         }
+        case "afterburn": {
+          // Rex flew races before he flew combat. Speed IS the weapon: he
+          // becomes a projectile, and the burn trail keeps hurting behind him.
+          sfxDrones();
+          afterburnUntilRef.current = elapsedMs + SHMUP_BALANCE.effects.afterburnMs;
+          statusFlashUntilRef.current = elapsedMs + 260;
+          startSecondaryCooldown(elapsedMs);
+          addPulse(ship.x, ship.y, "#ff922b", 22, 220, 0.2, 3.4);
+          addPulse(ship.x, ship.y, "#ffd8a8", 14, 130, 0.13, 2.1);
+          addSparkBurst(ship.x, ship.y, "#ff922b", 20, 240, [2.4, 6.0]);
+          addScreenShake(2.2, 0.12);
+          return;
+        }
+        case "detonationChain": {
+          // His perk is chain growth, so his bomb chains too: each blast
+          // hunts the next nearest target and detonates again from there.
+          if (!secondaryUsesCharges || secondaryChargesRef.current <= 0) return;
+          secondaryChargesRef.current -= 1;
+          sfxBomb();
+          const r = SHMUP_BALANCE.effects.detonationChainRadius;
+          let cx = ship.x;
+          let cy = ship.y - 40;
+          const struck = new Set<number>();
+          for (let link = 0; link < SHMUP_BALANCE.effects.detonationChainMaxLinks; link++) {
+            applyAreaBlast(
+              cx, cy, r,
+              SHMUP_BALANCE.effects.detonationChainDamage,
+              SHMUP_BALANCE.effects.detonationChainBossDamage,
+              elapsedMs, link % 2 === 0 ? "#ff922b" : "#ffd43b"
+            );
+            addPulse(cx, cy, "#ff922b", 16, r, 0.20, 3.0);
+            addExplosion(cx, cy, "#ffd43b", 18, 3.0);
+            // jump to the nearest surviving enemy not already used as a link
+            let best: { x: number; y: number; id: number } | null = null;
+            let bestDist = Infinity;
+            for (const e of enemiesRef.current) {
+              if (struck.has(e.id)) continue;
+              const d = distanceSquared(cx, cy, e.x, e.y);
+              if (d < bestDist) { bestDist = d; best = { x: e.x, y: e.y, id: e.id }; }
+            }
+            if (!best) break;
+            struck.add(best.id);
+            cx = best.x;
+            cy = best.y;
+          }
+          addScreenShake(3.4, 0.22);
+          startSecondaryCooldown(elapsedMs);
+          return;
+        }
+        case "systemHijack": {
+          // Yuki is an electronic warfare specialist. She does not dodge the
+          // pattern, she takes ownership of it: every hostile round on screen
+          // changes sides at once.
+          sfxEmp();
+          let seized = 0;
+          for (const b of enemyBulletsRef.current) {
+            const target = findNearestHomingTarget(b.x, b.y, 900);
+            const speed = Math.max(420, Math.hypot(b.vx, b.vy) * 1.25);
+            let vx = 0;
+            let vy = -speed;
+            if (target) {
+              const dx = target.x - b.x;
+              const dy = target.y - b.y;
+              const len = Math.hypot(dx, dy) || 1;
+              vx = (dx / len) * speed;
+              vy = (dy / len) * speed;
+            }
+            playerBulletsRef.current.push({
+              x: b.x, y: b.y, vx, vy,
+              age: 0, maxLife: 1.8,
+              radius: b.radius, length: b.length ?? b.radius * 2,
+              damage: SHMUP_BALANCE.effects.mirrorShieldReflectDamage,
+              color: "#4dabf7", coreColor: "#d0ebff",
+              spriteKey: b.spriteKey,
+              pierce: 0, driftVx: 0,
+              oscillateAmp: 0, oscillateFreq: 0, oscillatePhase: 0,
+              boomerangTurnAt: 0, boomerangReturnVy: 0, boomerangReturning: false,
+              homingTurnRate: 5.0, homingRange: 520,
+            });
+            seized += 1;
+          }
+          enemyBulletsRef.current = [];
+          statusFlashUntilRef.current = elapsedMs + 260;
+          startSecondaryCooldown(elapsedMs);
+          addPulse(ship.x, ship.y, "#4dabf7", 24, 420, 0.26, 3.8);
+          addPulse(ship.x, ship.y, "#d0ebff", 14, 220, 0.16, 2.4);
+          addScreenShake(seized > 0 ? 2.6 : 1.2, 0.14);
+          return;
+        }
+        case "zeroPoint": {
+          // Precision strike doctrine: paint the targets, then everything
+          // resolves at once. The delay is the point — it reads as an execution.
+          sfxCrystalBomb();
+          const marks = enemiesRef.current
+            .slice()
+            .sort((a, b) =>
+              distanceSquared(ship.x, ship.y, a.x, a.y) -
+              distanceSquared(ship.x, ship.y, b.x, b.y))
+            .slice(0, SHMUP_BALANCE.effects.zeroPointMarks)
+            .map((e) => ({ x: e.x, y: e.y }));
+          const bossTarget = bossRef.current;
+          if (bossTarget) marks.push({ x: bossTarget.x, y: bossTarget.y });
+          zeroPointRef.current = {
+            marks,
+            strikeAtMs: elapsedMs + SHMUP_BALANCE.effects.zeroPointDelayMs,
+          };
+          for (const m of marks) {
+            addPulse(m.x, m.y, "#74c0fc", 10, 70, 0.5, 2.0);
+          }
+          startSecondaryCooldown(elapsedMs);
+          addScreenShake(1.4, 0.1);
+          return;
+        }
         case "riposte": {
           // A shield that does nothing but subtract damage is a stat. This one
           // confiscates the pattern and hands it back.
@@ -3197,6 +3316,55 @@ export default function ShmupPlayScreen() {
       ctx.restore();
     };
 
+    /** Zero Point: every painted target is struck on the same frame. */
+    const resolveZeroPoint = (elapsedMs: number) => {
+      const pending = zeroPointRef.current;
+      if (!pending || elapsedMs < pending.strikeAtMs) return;
+      for (const m of pending.marks) {
+        applyAreaBlast(
+          m.x, m.y, 68,
+          SHMUP_BALANCE.effects.zeroPointDamage,
+          SHMUP_BALANCE.effects.zeroPointBossDamage,
+          elapsedMs, "#74c0fc"
+        );
+        addPulse(m.x, m.y, "#d0ebff", 18, 150, 0.2, 3.0);
+        addExplosion(m.x, m.y, "#74c0fc", 16, 2.6);
+      }
+      addScreenShake(3.0, 0.2);
+      sfxCrystalBomb();
+      zeroPointRef.current = null;
+    };
+
+    /** Afterburn: Rex's hull becomes the projectile and leaves a burn trail. */
+    const applyAfterburn = (elapsedMs: number, deltaSeconds: number) => {
+      if (afterburnUntilRef.current <= elapsedMs) return;
+      // contact damage — ramming is the intended play, not an accident
+      for (let i = enemiesRef.current.length - 1; i >= 0; i--) {
+        const e = enemiesRef.current[i];
+        const reach = ship.radius + e.radius + 6;
+        if (distanceSquared(ship.x, ship.y, e.x, e.y) <= reach * reach) {
+          applyAreaBlast(
+            e.x, e.y, e.radius + 10,
+            SHMUP_BALANCE.effects.afterburnRamDamage,
+            SHMUP_BALANCE.effects.afterburnRamBossDamage,
+            elapsedMs, "#ff922b"
+          );
+          addScreenShake(1.6, 0.08);
+        }
+      }
+      const bossNear = bossRef.current;
+      if (bossNear) {
+        const reach = ship.radius + bossNear.radius * 0.5;
+        if (distanceSquared(ship.x, ship.y, bossNear.x, bossNear.y) <= reach * reach) {
+          bossNear.hp -= SHMUP_BALANCE.effects.afterburnRamBossDamage * deltaSeconds * 2;
+        }
+      }
+      // burn trail behind the ship
+      if (Math.random() < 0.8) {
+        addSparkBurst(ship.x, ship.y + ship.radius, "#ff922b", 2, 60, [2, 4.4]);
+      }
+    };
+
     /** Fire every shot banked during Chrono Lock the instant time restarts. */
     const releaseChronoBank = (elapsedMs: number) => {
       const bank = bankedShotsRef.current;
@@ -3314,6 +3482,8 @@ export default function ShmupPlayScreen() {
       triggerCrystalShatter(elapsedMs);
       releaseChronoBank(elapsedMs);
       releaseRiposte(elapsedMs);
+      resolveZeroPoint(elapsedMs);
+      applyAfterburn(elapsedMs, deltaSeconds);
       const aggressiveRouteActive = activePassives.includes("aggressiveRoute");
       const empActive = empUntilRef.current > elapsedMs;
       const freezeActive = freezeUntilRef.current > elapsedMs;
@@ -3399,8 +3569,11 @@ export default function ShmupPlayScreen() {
         }
       } else {
         const moveLength = Math.hypot(moveX, moveY) || 1;
+        const burnMult = afterburnUntilRef.current > elapsedMs
+          ? SHMUP_BALANCE.effects.afterburnSpeedMult
+          : 1;
         const velocityScale =
-          moveX !== 0 || moveY !== 0 ? shipSpeed * deltaSeconds / moveLength : 0;
+          moveX !== 0 || moveY !== 0 ? shipSpeed * burnMult * deltaSeconds / moveLength : 0;
         ship.x = clamp(ship.x + moveX * velocityScale, playerBounds.minX, playerBounds.maxX);
         ship.y = clamp(ship.y + moveY * velocityScale, playerBounds.minY, playerBounds.maxY);
         shipTiltRef.current = shipTiltRef.current * 0.82 + moveX * 0.08;

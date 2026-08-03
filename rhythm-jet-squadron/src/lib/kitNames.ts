@@ -29,6 +29,10 @@ const SECONDARY_NAMES: Record<string, string> = {
   novaBurst: "Nova Burst",
   blinkLance: "Blink Lance",
   riposte: "Riposte Field",
+  afterburn: "Afterburn",
+  detonationChain: "Detonation Chain",
+  systemHijack: "System Hijack",
+  zeroPoint: "Zero Point",
 };
 
 const PASSIVE_NAMES: Record<string, string> = {
