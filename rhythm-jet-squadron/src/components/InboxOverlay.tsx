@@ -268,6 +268,48 @@ const PILOT_BATCH_IMAGE_FILES = PILOT_INBOX_IMAGE_FILES.filter((name) =>
   name.startsWith("job-")
 );
 
+// Which pilot is actually IN each portrait.
+//
+// The filenames are content-free hashes and carry no PNG metadata, so this
+// has to be established by looking at the art. Identify by hair, which is
+// unambiguous between the three: Nova is blonde with a high ponytail, Rex
+// has a teal/green bob, Yuki has long pale ice-blue hair.
+//
+// Anything absent from this map is NOT attributed to a named pilot — the
+// message bodies are written in first person and signed, so guessing the
+// sender publishes a lie. Unverified portraits ship on an unsigned channel
+// instead, and graduate to a named pilot once someone eyeballs them.
+const PORTRAIT_PILOT: Partial<Record<string, PilotSender>> = {
+  "job-0293e3f9670d.png": "Nova",
+  "job-0feff59650c1.png": "Nova",
+  "job-3aa7dfe3dfa3.png": "Nova",
+  "job-b7976885127b.png": "Nova",
+  "job-79e2f2901e2a.png": "Yuki",
+  "job-ff6ef5ead0f2.png": "Rex",
+};
+
+// Unsigned variants for portraits whose subject has not been confirmed.
+// No name, no signature, so nothing can contradict the attached image.
+const UNVERIFIED_SENDER = "Private Channel";
+const UNVERIFIED_POOL: Array<{ subject: string; body: string }> = [
+  {
+    subject: "No sender ID",
+    body: "This came through on a squadron relay with the origin header stripped.\n\nSomeone on this crew wanted you to have it and did not want their name attached to it.",
+  },
+  {
+    subject: "Routed anonymously",
+    body: "Whoever sent this bounced it through three relays first.\n\nThat is a lot of effort to stay unnamed. Make of it what you will.",
+  },
+  {
+    subject: "Unsigned transmission",
+    body: "No callsign. No signature. Just the attachment.\n\nSomebody in this squadron is braver off the record than on it.",
+  },
+  {
+    subject: "Origin scrubbed",
+    body: "The header was wiped before this reached your inbox.\n\nDeliberate. Whoever it was would rather you wonder.",
+  },
+];
+
 // First few inbox rewards come quickly, then the drip slows so later
 // unlocks still feel earned instead of flooding all at once.
 function unlocksAtRun(index: number): number {
@@ -288,11 +330,14 @@ function buildPilotInboxMessages(): InboxMessageTemplate[] {
   // for the session. Newer (lower index) messages appear most recent.
   const now = Date.now();
   return PILOT_BATCH_IMAGE_FILES.map((filename, index) => {
-    // Round-robin pilot assignment so each pilot gets an even share of the
-    // batch instead of filename-hash bias. index 0 → Nova, 1 → Rex, 2 → Yuki...
-    const sender = PILOT_SENDERS[index % PILOT_SENDERS.length];
+    // Sender comes from who is actually in the picture. The previous
+    // round-robin (index % 3) was independent of the image, so roughly two
+    // in three messages were signed by a pilot who was not in the attached
+    // portrait.
+    const confirmed = PORTRAIT_PILOT[filename];
+    const sender: string = confirmed ?? UNVERIFIED_SENDER;
     const sequence = String(index + 1).padStart(2, "0");
-    const pool = PILOT_MESSAGE_POOLS[sender];
+    const pool = confirmed ? PILOT_MESSAGE_POOLS[confirmed] : UNVERIFIED_POOL;
     const variant = pool[index % pool.length];
     return {
       id: `msg-pilot-image-${filename.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`,
@@ -306,9 +351,9 @@ function buildPilotInboxMessages(): InboxMessageTemplate[] {
               id: `pilot-image-${sequence}`,
               type: "image",
               url: `${PILOT_INBOX_DIR}/${filename}`,
-              fallbackUrl: `/assets/outfits/${sender === "Nova" ? "cosmic_surge" : sender === "Rex" ? "solar_flare" : "lunar_eclipse"}.png`,
-              alt: `${sender} inbox portrait`,
-              label: `${sender} transmission`,
+              fallbackUrl: `/assets/outfits/${confirmed === "Rex" ? "solar_flare" : confirmed === "Yuki" ? "lunar_eclipse" : "cosmic_surge"}.png`,
+              alt: confirmed ? `${confirmed} inbox portrait` : "Squadron portrait",
+              label: confirmed ? `${confirmed} transmission` : "Unsigned transmission",
             },
           ]
         : undefined,
