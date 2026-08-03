@@ -68,6 +68,54 @@ export interface SkillEffects {
   shieldPulseIntervalMs: number;
   /** Multiplies pickup drop rate. */
   dropRateMult: number;
+
+  // -- Nova: Velocity (graze) ---------------------------------------------
+  /** Overdrive meter gained each time a bullet is grazed (passed close
+   *  without hitting). */
+  grazeOverdriveGain: number;
+  /** Duration of the speed burst a graze grants. */
+  grazeSpeedBurstMs: number;
+  /** Multiplier applied to move speed during a graze speed burst. */
+  grazeSpeedBurstMult: number;
+  /** Duration of the damage burst a graze grants. */
+  grazeDamageBurstMs: number;
+  /** Multiplier applied to weapon damage during a graze damage burst. */
+  grazeDamageBurstMult: number;
+
+  // -- Nova: Instinct (overdrive) ------------------------------------------
+  /** Radius of the bullet-clearing shockwave on overdrive activation. 0 disables it. */
+  overdriveActivationClearRadius: number;
+  /** Overdrive meter gained per kill while a streak (5+) is active. */
+  streakKillOverdriveGain: number;
+
+  // -- Nova: Precision (crit) ----------------------------------------------
+  /** Minimum pierce granted to a shot that lands as a critical hit. */
+  critBonusPierce: number;
+
+  // -- Rex: Arsenal (kill momentum) ----------------------------------------
+  /** Duration of the fire-rate pulse granted per kill. */
+  killFireRateBonusMs: number;
+  /** Fire-rate multiplier per stack of the kill pulse. */
+  killFireRateBonusMult: number;
+  /** Maximum stacks the kill pulse can reach. */
+  killFireRateMaxStacks: number;
+  /** Secondary cooldown shaved off on every kill. */
+  killSecondaryCooldownReliefMs: number;
+
+  // -- Rex: Ordnance --------------------------------------------------------
+  /** Extra chain links Detonation Chain can reach. */
+  detonationChainBonusLinks: number;
+
+  // -- Yuki: Stealth (Cold Focus) -------------------------------------------
+  /** How long the ship must go without taking a hit before Cold Focus
+   *  activates. 0 disables it. */
+  flawlessWindowMs: number;
+  /** Damage multiplier while Cold Focus is active. */
+  flawlessDamageMult: number;
+
+  // -- Yuki: Technician (Intel Override) ------------------------------------
+  /** Draws a health bar under every enemy and the boss. */
+  showEnemyHealthBars: boolean;
 }
 
 export const NEUTRAL_SKILL_EFFECTS: SkillEffects = {
@@ -94,6 +142,22 @@ export const NEUTRAL_SKILL_EFFECTS: SkillEffects = {
   slowOnKillMs: 0,
   shieldPulseIntervalMs: 0,
   dropRateMult: 1,
+  grazeOverdriveGain: 0,
+  grazeSpeedBurstMs: 0,
+  grazeSpeedBurstMult: 1,
+  grazeDamageBurstMs: 0,
+  grazeDamageBurstMult: 1,
+  overdriveActivationClearRadius: 0,
+  streakKillOverdriveGain: 0,
+  critBonusPierce: 0,
+  killFireRateBonusMs: 0,
+  killFireRateBonusMult: 1,
+  killFireRateMaxStacks: 0,
+  killSecondaryCooldownReliefMs: 0,
+  detonationChainBonusLinks: 0,
+  flawlessWindowMs: 0,
+  flawlessDamageMult: 1,
+  showEnemyHealthBars: false,
 };
 
 /**
@@ -105,30 +169,61 @@ export const NEUTRAL_SKILL_EFFECTS: SkillEffects = {
  * secondaries already carry radius and damage. Nothing new is invented.
  */
 const SPECIAL_EFFECTS: Record<string, Partial<SkillEffects>> = {
-  // Nova — Velocity
+  // Nova — Velocity. Grazing a bullet (passing close without taking the
+  // hit) is detected in the sim's collision pass and flagged per-bullet so
+  // a slow round lingering in the band only pays out once.
+  nova_v1: { grazeOverdriveGain: 4 },
+  nova_v2: { grazeSpeedBurstMs: 500, grazeSpeedBurstMult: 1.35 },
+  nova_v3: { grazeDamageBurstMs: 450, grazeDamageBurstMult: 1.25 },
   nova_v4: { overdriveInvulnMs: 1000 },
-  // Rex — Ordnance
+  // Nova — Precision. nova_p1/p2 are plain crit-chance nodes and fall
+  // through the generic "crit" case below; only the pierce node is bespoke.
+  nova_p3: { critBonusPierce: 1 },
+  // Nova — Instinct. Overdrive activation and streak kills both feed the
+  // sim's existing overdrive systems rather than adding new ones.
+  nova_i1: { overdriveActivationClearRadius: 130 },
+  nova_i2: { streakKillOverdriveGain: 3 },
+  // Rex — Arsenal. Kill Momentum is one stack counter with one decay
+  // timer; Rapid Salvo raises the cap rather than adding a second system.
+  rex_a1: { killFireRateBonusMs: 2000, killFireRateBonusMult: 1.12, killFireRateMaxStacks: 1 },
+  rex_a2: { killSecondaryCooldownReliefMs: 350 },
+  rex_a3: { killFireRateMaxStacks: 2 },
+  // Rex — Fortify. Energy Shield now unlocks the free-absorb shield
+  // directly (previously gated behind rex_f3); Overcharged Shield just
+  // shortens the cadence, and shorter-wins composition (below) means both
+  // being unlocked correctly yields the faster interval.
+  rex_f2: { shieldPulseIntervalMs: 34_000 },
+  rex_f3: { shieldPulseIntervalMs: 22_000 },
+  // Rex — Ordnance. secondaryDamageMult/secondaryRadiusMult (rex_o1/rex_o4,
+  // via TYPE_OVERRIDES below) are wired into detonationChain and afterburn
+  // directly in the sim now, not just the legacy bomb case, so they reach
+  // whichever explosive kit he actually has equipped. "Splits into 3" used
+  // to just be a bigger single blast; it is an honest chain-length bonus
+  // now.
   rex_o2: { secondaryBonusCharges: 1 },
-  // "Bombs split into 3" reads as a bigger, harder-hitting detonation
-  // rather than three projectiles: the secondary is a single blast, and
-  // splitting it would be a new projectile system, not a skill.
-  rex_o3: { secondaryDamageMult: 1.35, secondaryRadiusMult: 1.2 },
+  rex_o3: { detonationChainBonusLinks: 2 },
   rex_o4: { secondaryRadiusMult: 1.5 },
-  // Yuki — Stealth
+  // Yuki — Stealth. "Damage from behind" was never tracked — every enemy
+  // in a vertical shmup faces the player, so the bonus would have been
+  // unconditional. Cold Focus rewards sustained clean flying instead,
+  // reusing the same "time since last hit" the shield-regen delay depends
+  // on.
   yuki_s2: { hitInvulnBonusMs: 500 },
+  yuki_s3: { flawlessWindowMs: 3200, flawlessDamageMult: 1.2 },
   // "Phase through bullets" as a longer untouchable window, which is what
   // phasing would amount to against the collision the sim actually runs.
   yuki_s4: { hitInvulnBonusMs: 900 },
-  // Yuki — Technician
+  // Yuki — Technician. Intel Override promised "see enemy HP" and never
+  // implemented it; it draws a real health bar under every enemy now.
+  // Being bespoke means it must carry its own score bonus too, since being
+  // listed here skips the generic "score" case entirely.
   yuki_t3: { enemyBulletSpeedMult: 0.9 },
+  yuki_t4: { showEnemyHealthBars: true, scoreMult: 0.25 },
   // Yuki — Cryo-Ops
   yuki_c1: { passiveEnemyTimeScale: 0.95 },
   yuki_c2: { slowOnKillMs: 600 },
   yuki_c3: { secondaryFreezeMs: 700 },
   yuki_c4: { overdriveFreezeMs: 2000 },
-  // Rex — Fortify. The sim already regenerates shields on a delay; this
-  // is that mechanic on a fixed cadence.
-  rex_f3: { shieldPulseIntervalMs: 30_000 },
 };
 
 /**
@@ -177,10 +272,14 @@ function applyNode(node: SkillNode, acc: SkillEffects): void {
 
   const special = SPECIAL_EFFECTS[node.id];
   if (special) {
+    // Booleans can't flow through the numeric compose loop below; OR them
+    // in directly and strip them out so the generic cast stays honest.
+    if (special.showEnemyHealthBars) acc.showEnemyHealthBars = true;
     for (const [key, value] of Object.entries(special) as [
       keyof SkillEffects,
       number,
     ][]) {
+      if (key === "showEnemyHealthBars") continue;
       // Multiplicative fields compose; additive fields accumulate. The
       // split matters because two slow sources should stack toward zero,
       // not sum past it.
@@ -196,7 +295,11 @@ function applyNode(node: SkillNode, acc: SkillEffects): void {
         key === "secondaryRadiusMult" ||
         key === "secondaryDamageMult" ||
         key === "passiveEnemyTimeScale" ||
-        key === "dropRateMult"
+        key === "dropRateMult" ||
+        key === "grazeSpeedBurstMult" ||
+        key === "grazeDamageBurstMult" ||
+        key === "flawlessDamageMult" ||
+        key === "killFireRateBonusMult"
       ) {
         acc[key] *= value;
       } else if (key === "shieldPulseIntervalMs") {
