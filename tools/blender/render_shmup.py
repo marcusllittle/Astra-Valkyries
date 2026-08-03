@@ -74,6 +74,12 @@ P = {
     "l_prime":   "#4DABF7",
     "l_second":  "#74C0FC",
     "l_hot":     "#D0EBFF",
+    # VFX are rendered white so the game can multiply-tint them at draw
+    # time. Baking a hue in would kill per-zone enemy shot colors, boss
+    # phase colors and the per-outfit shotColor.
+    "vfx_hot":   "#FFFFFF",
+    "vfx_mid":   "#B9BFC9",
+    "vfx_low":   "#6E7480",
     # power chip (power_chip.svg)
     "chip_gold": "#FFD43B",
     "chip_hot":  "#FFF7C2",
@@ -1091,6 +1097,129 @@ def enemy_tank(outdir):
     render(s, outdir, "enemy_tank_fortress", 256, 256)
 
 
+# --------------------------------------------------------------- vfx
+# Bullets travel along +X in sprite space: the draw code rotates by
+# atan2(vy, vx) and maps the sprite's width axis to the travel direction.
+# Everything here is white with a luminance falloff, so a multiply tint
+# produces a vivid core and a darker rim in whatever color the game wants.
+
+def _vfx_scene(ortho, res_x, res_y, name, outdir, threshold=0.35, size=8):
+    s = bpy.context.scene
+    # AgX (the 4.x default) rolls highlights off hard and desaturates, which
+    # turns a white-hot core into flat grey. VFX need the literal values so
+    # the multiply tint in-game lands on a bright core.
+    try:
+        s.view_settings.view_transform = "Standard"
+    except TypeError:
+        pass
+    camera(s, ortho)
+    glare(s, threshold=threshold, size=size, mix=-0.15)
+    render(s, outdir, name, res_x, res_y)
+
+
+def bullet_player(outdir):
+    """Sleek energy bolt with a lance tip."""
+    s = new_scene()
+    hot = mat("hot", "vfx_hot", 0.0, 0.5, emit="vfx_hot", emit_str=1.9)
+    mid = mat("mid", "vfx_mid", 0.0, 0.5, emit="vfx_mid", emit_str=1.15)
+    low = mat("low", "vfx_low", 0.0, 0.5, emit="vfx_low", emit_str=0.60)
+
+    # Core sits ABOVE the body in Z, not inside it - the overhead camera
+    # only sees the outermost surface, so a nested core is invisible.
+    sphere((0, 0, 0), (1.35, 0.42, 0.30), mid)          # body
+    sphere((0.22, 0, 0.30), (0.66, 0.24, 0.16), hot)    # hot core
+    cone((1.55, 0, 0), 0.30, 0.01, 0.85, mid,
+         rot=(0, math.radians(90), 0), verts=12)        # lance tip
+    cone((-1.30, 0, 0), 0.34, 0.02, 1.5, low,
+         rot=(0, math.radians(-90), 0), verts=12)       # trailing wake
+
+    _vfx_scene(5.2, 160, 64, "bullet_player", outdir)
+
+
+def bullet_enemy(outdir):
+    """Rounder plasma slug - reads as hostile mass, not a lance."""
+    s = new_scene()
+    hot = mat("hot", "vfx_hot", 0.0, 0.5, emit="vfx_hot", emit_str=1.9)
+    mid = mat("mid", "vfx_mid", 0.0, 0.5, emit="vfx_mid", emit_str=1.20)
+    low = mat("low", "vfx_low", 0.0, 0.5, emit="vfx_low", emit_str=0.62)
+
+    sphere((0, 0, 0), (0.95, 0.72, 0.48), mid)
+    sphere((0.08, 0, 0.44), (0.52, 0.38, 0.24), hot)
+    cone((-1.15, 0, 0), 0.56, 0.02, 1.3, low,
+         rot=(0, math.radians(-90), 0), verts=12)
+    # leading shock lip
+    cone((0.95, 0, 0), 0.42, 0.10, 0.42, mid,
+         rot=(0, math.radians(90), 0), verts=12)
+
+    _vfx_scene(4.4, 128, 96, "bullet_enemy", outdir)
+
+
+def bullet_boss(outdir):
+    """Heavy shell with a containment collar - visibly the dangerous one."""
+    s = new_scene()
+    hot = mat("hot", "vfx_hot", 0.0, 0.5, emit="vfx_hot", emit_str=1.9)
+    mid = mat("mid", "vfx_mid", 0.0, 0.5, emit="vfx_mid", emit_str=1.25)
+    low = mat("low", "vfx_low", 0.0, 0.5, emit="vfx_low", emit_str=0.66)
+
+    sphere((0, 0, 0), (1.25, 0.80, 0.52), mid)
+    sphere((0.12, 0, 0.48), (0.70, 0.48, 0.30), hot)
+    # collar rings that make it read heavier than a normal shot
+    for cx, cr in ((-0.30, 0.92), (0.30, 0.86)):
+        r = cyl((cx, 0, 0), cr, 0.16, low, rot=(0, math.radians(90), 0),
+                verts=12, bev=0.03)
+        r.scale = (1.0, 0.82, 1.0)
+    cone((1.35, 0, 0), 0.50, 0.06, 0.72, mid,
+         rot=(0, math.radians(90), 0), verts=12)
+    cone((-1.35, 0, 0), 0.62, 0.02, 1.5, low,
+         rot=(0, math.radians(-90), 0), verts=12)
+
+    _vfx_scene(5.0, 160, 112, "bullet_boss", outdir)
+
+
+def impact_burst(outdir):
+    """Radial hit flash - spikes plus a hot centre, radially symmetric."""
+    s = new_scene()
+    hot = mat("hot", "vfx_hot", 0.0, 0.5, emit="vfx_hot", emit_str=1.9)
+    mid = mat("mid", "vfx_mid", 0.0, 0.5, emit="vfx_mid", emit_str=1.30)
+
+    sphere((0, 0, 0), (0.55, 0.55, 0.55), hot)
+    random.seed(5)
+    for i in range(12):
+        ang = (i / 12) * TAU
+        length = 1.5 if i % 2 == 0 else 0.95
+        d = 0.45 + length / 2
+        sp = cone((math.cos(ang) * d, math.sin(ang) * d, 0),
+                  0.16, 0.005, length, mid,
+                  rot=(math.radians(90), 0, -ang + math.pi / 2), verts=6)
+        sp.scale = (1.0, 0.5, 1.0)
+    bpy.ops.mesh.primitive_torus_add(major_radius=0.86, minor_radius=0.05,
+                                     location=(0, 0, 0))
+    bpy.context.object.data.materials.append(mid)
+
+    _vfx_scene(5.0, 128, 128, "impact_burst", outdir, threshold=0.3)
+
+
+def pulse_ring(outdir):
+    """Expanding shockwave ring - thin, bright, hollow centre."""
+    s = new_scene()
+    hot = mat("hot", "vfx_hot", 0.0, 0.5, emit="vfx_hot", emit_str=1.9)
+    mid = mat("mid", "vfx_mid", 0.0, 0.5, emit="vfx_mid", emit_str=1.15)
+
+    bpy.ops.mesh.primitive_torus_add(major_radius=1.7, minor_radius=0.16,
+                                     major_segments=64, location=(0, 0, 0))
+    bpy.context.object.data.materials.append(hot)
+    bpy.ops.mesh.primitive_torus_add(major_radius=1.38, minor_radius=0.06,
+                                     major_segments=48, location=(0, 0, 0))
+    bpy.context.object.data.materials.append(mid)
+    # sparse ticks so the ring reads as energy rather than a drawn circle
+    for i in range(8):
+        ang = (i / 8) * TAU
+        box((math.cos(ang) * 1.9, math.sin(ang) * 1.9, 0),
+            (0.22, 0.07, 0.07), mid, rot=(0, 0, ang), bev=0)
+
+    _vfx_scene(4.6, 128, 128, "pulse_ring", outdir, threshold=0.3)
+
+
 # --------------------------------------------------------------- power-up
 def power_chip(outdir):
     """Gold energy cell pickup - replaces the flat yellow chicklet."""
@@ -1313,6 +1442,7 @@ TARGETS = (
     enemy_bomber, enemy_sniper, enemy_swarm, enemy_dreadnought,
     boss_aegis, boss_tyrant, boss_leviathan,
     power_chip,
+    bullet_player, bullet_enemy, bullet_boss, impact_burst, pulse_ring,
     background_far, background_far_solar, background_far_abyss,
     background_near,
 )

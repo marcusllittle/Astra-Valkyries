@@ -482,11 +482,11 @@ const SPRITE_PATHS: Record<SpriteKey, string> = {
   bossTyrant: "/assets/shmup/boss_helios_tyrant.png",
   bossLeviathan: "/assets/shmup/boss_cryo_leviathan.png",
   chip: "/assets/shmup/power_chip.png",
-  bulletPlayer: "/assets/shmup/bullet_player.svg",
-  bulletEnemy: "/assets/shmup/bullet_enemy.svg",
-  bulletBoss: "/assets/shmup/bullet_boss.svg",
-  impactBurst: "/assets/shmup/impact_burst.svg",
-  pulseRing: "/assets/shmup/pulse_ring.svg",
+  bulletPlayer: "/assets/shmup/bullet_player.png",
+  bulletEnemy: "/assets/shmup/bullet_enemy.png",
+  bulletBoss: "/assets/shmup/bullet_boss.png",
+  impactBurst: "/assets/shmup/impact_burst.png",
+  pulseRing: "/assets/shmup/pulse_ring.png",
 };
 
 // Each pattern gets its own sprite so the player can read a threat before it
@@ -891,6 +891,8 @@ export default function ShmupPlayScreen() {
   const spritesRef = useRef<Record<SpriteKey, HTMLImageElement | null>>(createSpriteStore());
   const playerSpriteLoadedPathRef = useRef<string | null>(null);
   const backgroundFarLoadedPathRef = useRef<string | null>(null);
+  // sprite+color -> pre-tinted canvas; a run touches only a handful of colors
+  const tintCacheRef = useRef<Map<string, HTMLCanvasElement>>(new Map());
   const animationRef = useRef(0);
   const shipRef = useRef<ShipState>({
     x: window.innerWidth / 2,
@@ -1652,6 +1654,61 @@ export default function ShmupPlayScreen() {
       const sprite = spritesRef.current[key];
       if (!sprite || !sprite.complete || sprite.naturalWidth === 0) return null;
       return sprite;
+    };
+
+    // VFX sprites ship white so they can be recolored here. Without this,
+    // drawing the sprite discards bullet.color, which silently killed
+    // per-zone enemy shot colors, boss phase colors and outfit shotColor.
+    const tintCache = tintCacheRef.current;
+    const getTintedSprite = (
+      sprite: HTMLImageElement,
+      key: string,
+      color: string
+    ): CanvasImageSource => {
+      const cacheKey = `${key}|${color}`;
+      const cached = tintCache.get(cacheKey);
+      if (cached) return cached;
+      const w = sprite.naturalWidth;
+      const h = sprite.naturalHeight;
+      if (!w || !h) return sprite;
+      const off = document.createElement("canvas");
+      off.width = w;
+      off.height = h;
+      const octx = off.getContext("2d");
+      if (!octx) return sprite;
+      octx.drawImage(sprite, 0, 0);
+      // multiply keeps the luminance falloff, so the hot core stays the
+      // brightest part of the bolt instead of flattening to a flat fill
+      octx.globalCompositeOperation = "multiply";
+      octx.fillStyle = color;
+      octx.fillRect(0, 0, w, h);
+      // restore the sprite's alpha, which the fillRect just clobbered
+      octx.globalCompositeOperation = "destination-in";
+      octx.drawImage(sprite, 0, 0);
+      tintCache.set(cacheKey, off);
+      return off;
+    };
+
+    const drawTintedCentered = (
+      sprite: HTMLImageElement,
+      key: string,
+      color: string,
+      x: number,
+      y: number,
+      width: number,
+      height: number,
+      rotation: number = 0,
+      alpha: number = 1
+    ) => {
+      const img = getTintedSprite(sprite, key, color);
+      const w = width * displayScale;
+      const h = height * displayScale;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.translate(x, y);
+      ctx.rotate(rotation);
+      ctx.drawImage(img, -w / 2, -h / 2, w, h);
+      ctx.restore();
     };
 
     const drawSpriteCentered = (
@@ -4351,10 +4408,13 @@ export default function ShmupPlayScreen() {
 
       for (const bullet of playerBulletsRef.current) {
         const angle = Math.atan2(bullet.vy, bullet.vx);
-        const sprite = bullet.spriteKey ? getSprite(bullet.spriteKey) : null;
+        const spriteKey = bullet.spriteKey ?? "bulletPlayer";
+        const sprite = getSprite(spriteKey);
         if (sprite) {
-          drawSpriteCentered(
+          drawTintedCentered(
             sprite,
+            spriteKey,
+            bullet.color,
             bullet.x,
             bullet.y,
             bullet.length * 2.05,
@@ -4394,8 +4454,10 @@ export default function ShmupPlayScreen() {
         const angle = Math.atan2(bullet.vy, bullet.vx);
         const sprite = getSprite(bullet.spriteKey);
         if (sprite) {
-          drawSpriteCentered(
+          drawTintedCentered(
             sprite,
+            bullet.spriteKey,
+            bullet.color,
             bullet.x,
             bullet.y,
             bullet.length * 2.1,
@@ -5446,8 +5508,10 @@ export default function ShmupPlayScreen() {
         const alpha = clamp(pulse.life / pulse.maxLife, 0, 1);
         const sprite = pulse.spriteKey ? getSprite(pulse.spriteKey) : null;
         if (sprite) {
-          drawSpriteCentered(
+          drawTintedCentered(
             sprite,
+            pulse.spriteKey as string,
+            pulse.color,
             pulse.x,
             pulse.y,
             pulse.radius * 2.2,
@@ -5471,8 +5535,10 @@ export default function ShmupPlayScreen() {
         const alpha = clamp(spark.life / spark.maxLife, 0, 1);
         const burst = getSprite("impactBurst");
         if (burst && spark.radius >= 3.4) {
-          drawSpriteCentered(
+          drawTintedCentered(
             burst,
+            "impactBurst",
+            spark.color,
             spark.x,
             spark.y,
             spark.radius * 7.2,
