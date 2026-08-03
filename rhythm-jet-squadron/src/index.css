@@ -270,35 +270,6 @@ body::after {
     radial-gradient(920px 480px at 16% 84%, rgba(43, 85, 182, 0.18), transparent 76%);
 }
 
-/* Squadron key art. Sits between the nebula glow and the vignette so the
-   vignette's edge-darkening and center clearing apply to it exactly like
-   everything else, instead of needing its own fade rules. Rendered with a
-   transparent background, so the "empty" area above the ships is real
-   alpha, not a hard-edged rectangle. */
-.home-hero-ships {
-  position: absolute;
-  inset: auto 0 0;
-  z-index: 1;
-  pointer-events: none;
-  height: min(78vh, 900px);
-  /* background-image is set inline in HomeScreen.tsx via resolveAssetUrl,
-     since a hardcoded url() here would break under Electron's file://
-     packaging (see lib/assetUrl.ts). */
-  background-repeat: no-repeat;
-  background-position: bottom center;
-  background-size: contain;
-  -webkit-mask-image: linear-gradient(to top, black 60%, transparent 96%);
-  mask-image: linear-gradient(to top, black 60%, transparent 96%);
-  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-/* Recede once the menu is up so the vertical menu list has room to breathe
-   without the hulls competing with it for attention. */
-.home-menu-phase .home-hero-ships {
-  opacity: 0.4;
-  transform: translateY(6%);
-}
-
 .home-vignette {
   position: absolute;
   inset: 0;

@@ -13,9 +13,6 @@ import { useWallet } from "../context/WalletContext";
 import { syncVolumes } from "../lib/audioEngine";
 import { playTitleMusic, stopMusic } from "../lib/musicGen";
 import { cursorMove, menuConfirm, pressStart } from "../lib/retroSfx";
-import { resolveAssetUrl } from "../lib/assetUrl";
-
-const TITLE_HERO_URL = resolveAssetUrl("/assets/shmup/ui/title_hero_squadron.png");
 
 const HAVNAI_URL = import.meta.env.VITE_HAVNAI_WEB_URL ?? "https://joinhavn.io";
 
@@ -266,11 +263,6 @@ export default function HomeScreen() {
     >
       <canvas ref={canvasRef} className="home-starfield" />
       <div className="home-atmosphere" aria-hidden />
-      <div
-        className="home-hero-ships"
-        aria-hidden
-        style={{ backgroundImage: `url(${TITLE_HERO_URL})` }}
-      />
       <div className="home-vignette" aria-hidden />
 
       {/* Mute toggle — always visible */}

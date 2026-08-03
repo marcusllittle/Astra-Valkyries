@@ -592,91 +592,6 @@ def _deploy_clip(outdir, name, geo_fn, tint, sky_top, sky_bottom,
     print("WROTE", os.path.basename(target_path))
 
 
-def _spawn_ship_unit(geo_fn, loc, rot_deg, scale=1.0):
-    """Build a ship at the origin, then move the whole unit as a rigid body.
-
-    The _geo_* builders bake absolute coordinates into every box/sphere
-    call (they were written for a single ship centered at the origin), so
-    a formation shot needs each ship parented under an empty positioned
-    AFTER the geometry exists — parenting while the empty still sits at
-    identity means Blender's default parent-inverse is identity too, so
-    moving the empty afterward carries the ship as one rigid unit instead
-    of re-deriving every internal offset.
-    """
-    existing = set(bpy.data.objects)
-    geo_fn()
-    new_objs = [o for o in bpy.data.objects if o not in existing]
-    bpy.ops.object.empty_add(type="PLAIN_AXES", location=(0, 0, 0))
-    empty = bpy.context.object
-    for o in new_objs:
-        o.parent = empty
-    empty.location = loc
-    empty.rotation_euler = tuple(math.radians(d) for d in rot_deg)
-    empty.scale = (scale, scale, scale)
-    return empty
-
-
-def title_hero_squadron(outdir):
-    """Title-screen key art: the three ships in formation, transparent
-    background so it composites straight onto the starfield/nebula CSS
-    layers with no hard edge. Reuses the exact hull geometry the gameplay
-    sprites and hangar deploy clips already use — this is the reason to
-    model ships in Blender at all: one hero shot that can never disagree
-    with what the player actually flies.
-    """
-    s = new_scene()
-    # Valkyrie Lancer leads closest to camera, wingmen trail behind and
-    # out to the sides - a spearhead charging the viewer, not three ships
-    # lined up left to right. The first pass put the lead ship FARTHEST
-    # from camera (receding away) and spread the wingmen wide enough that
-    # an off-axis camera read them at wildly different distances, which is
-    # why it looked like a diagonal row instead of a formation.
-    _spawn_ship_unit(_geo_valkyrie_lancer, (0, -0.3, 0), (0, 0, 0), 1.3)
-    _spawn_ship_unit(_geo_astra_interceptor, (-3.5, 0.7, -0.1), (0, 0, 20), 0.85)
-    _spawn_ship_unit(_geo_seraph_guard, (3.7, 0.6, -0.15), (0, 0, -18), 0.88)
-
-    # Perspective, not the shared ortho camera() helper: an orthographic
-    # camera would flatten the depth between the three hulls and lose the
-    # 3/4 read that made the deploy-clip angle work. A camera centered
-    # directly behind the formation looks straight up the engine bells
-    # with almost no hull visible - the validated single-ship 3/4 angle
-    # had real lateral (X) offset, not just distance and height.
-    bpy.ops.object.empty_add(type="PLAIN_AXES", location=(0, 0.4, 0))
-    target = bpy.context.object
-    # Centered in X: an earlier pass offset the camera sideways for a 3/4
-    # feel, but with symmetric wingmen that just puts one ship closer to
-    # camera than the other, reading as a diagonal lineup rather than a
-    # formation. The 3/4 angle comes from the elevation/lens instead.
-    bpy.ops.object.camera_add(location=(0, -6.4, 3.4))
-    cam = bpy.context.object
-    cam.data.type = "PERSP"
-    cam.data.lens = 30
-    # AUTO sensor_fit re-anchors the lens's FOV to whichever axis is
-    # larger, so widening the render resolution earlier silently widened
-    # the WRONG axis and made the crop worse instead of better. Pin it to
-    # horizontal so the lens value always maps to image width.
-    cam.data.sensor_fit = "HORIZONTAL"
-    con = cam.constraints.new("TRACK_TO")
-    con.target = target
-    con.track_axis = "TRACK_NEGATIVE_Z"
-    con.up_axis = "UP_Y"
-    s.camera = cam
-
-    lights(tint=(0.82, 0.9, 1.0), power=1.05)
-    # Warm rim from behind so the hulls separate from the dark background
-    # they'll be composited over, and the engines read as lit rather than
-    # flat-shaded.
-    bpy.ops.object.light_add(type="AREA", location=(-6, 8, 3))
-    rim = bpy.context.object
-    rim.data.energy = 3200
-    rim.data.size = 10
-    rim.data.color = (0.55, 0.75, 1.0)
-    rim.rotation_euler = (math.radians(70), 0, math.radians(-150))
-    glare(s, threshold=0.78, size=9, mix=-0.3)
-
-    render(s, outdir, "ui/title_hero_squadron", 1900, 1500)
-
-
 def deploy_astra_interceptor(outdir):
     _deploy_clip(outdir, "ships/astra_interceptor_deploy",
                  _geo_astra_interceptor, (0.86, 0.93, 1.0),
@@ -1893,7 +1808,6 @@ TARGETS = (
     vista_nebula_runway, vista_solar_rift, vista_abyss_crown,
     background_far, background_far_solar, background_far_abyss,
     background_near,
-    title_hero_squadron,
 )
 
 if __name__ == "__main__":
@@ -1902,7 +1816,6 @@ if __name__ == "__main__":
     default = os.path.join(here, "rhythm-jet-squadron", "public", "assets", "shmup")
     outdir = argv[0] if argv else default
     os.makedirs(os.path.join(outdir, "ships"), exist_ok=True)
-    os.makedirs(os.path.join(outdir, "ui"), exist_ok=True)
     print("OUTDIR", outdir)
     for fn in TARGETS:
         fn(outdir)
