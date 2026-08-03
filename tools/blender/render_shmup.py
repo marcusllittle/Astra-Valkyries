@@ -78,6 +78,42 @@ P = {
     "chip_gold": "#FFD43B",
     "chip_hot":  "#FFF7C2",
     "chip_deep": "#9A6400",
+    # Enemy roster. Hues match ENEMY_COLORS/ENEMY_CORE_DARK in
+    # ShmupPlayScreen so rendered sprites agree with the procedural
+    # fallbacks, glow tints and bullet colors already in the game.
+    "z_hot":     "#FFC078",   # zigzag  #ff922b
+    "z_core":    "#FF922B",
+    "z_deep":    "#B06010",
+    "z_shell":   "#2A1606",
+    "o_hot":     "#D0EBFF",   # orbiter #74c0fc
+    "o_core":    "#74C0FC",
+    "o_deep":    "#3070A0",
+    "o_shell":   "#0A1E2E",
+    "c_hot":     "#FFC9C9",   # charger #ff6b6b
+    "c_core":    "#FF6B6B",
+    "c_deep":    "#A03030",
+    "c_shell":   "#2A0E0E",
+    "p_hot":     "#B2F2BB",   # splitter #69db7c
+    "p_core":    "#69DB7C",
+    "p_deep":    "#2B8A3E",
+    "p_shell":   "#0B2412",
+    "m_hot":     "#FFE8CC",   # bomber  #ffa94d
+    "m_core":    "#FFA94D",
+    "m_deep":    "#B06010",
+    "m_shell":   "#2A1A08",
+    "n_hot":     "#FF8787",   # sniper  #ff0000
+    "n_core":    "#FF2222",
+    "n_deep":    "#800000",
+    "n_shell":   "#240404",
+    "w_hot":     "#E9ECEF",   # swarm   #adb5bd
+    "w_core":    "#ADB5BD",
+    "w_deep":    "#495057",
+    "w_shell":   "#16191C",
+    "r_hot":     "#FFD8A8",   # dreadnought - elite capital escort
+    "r_core":    "#FF922B",
+    "r_deep":    "#7A3E12",
+    "r_shell":   "#1A1014",
+    "r_plate":   "#4A3550",
     # tank fortress miniboss - matches the game's tank enemy cyan #66d9ef
     "k_hull":    "#33454F",
     "k_deck":    "#4A616E",
@@ -737,6 +773,267 @@ def boss_leviathan(outdir):
     render(s, outdir, "boss_cryo_leviathan", 768, 736)
 
 
+# --------------------------------------------------------------- roster
+# Every enemy's silhouette telegraphs its behaviour. Nine of these patterns
+# previously shared one sprite, so a sniper and a bomber looked identical
+# and the player had no way to read the threat before it acted.
+
+def enemy_zigzag(outdir):
+    """Erratic fast dart - swept chevron wings, nose-heavy."""
+    s = new_scene()
+    shell = mat("shell", "z_shell", 0.88, 0.32)
+    deep = mat("deep", "z_deep", 0.90, 0.28)
+    core = mat("core", "z_deep", 0.30, 0.22, emit="z_core", emit_str=6.5)
+    edge = mat("edge", "z_core", 0.90, 0.22, emit="z_hot", emit_str=0.5)
+
+    box((0, 0.1, 0), (0.52, 1.9, 0.34), deep, bev=0.06)
+    cone((0, 1.35, 0), 0.30, 0.02, 1.0, shell, rot=NOSE, verts=10)
+    sphere((0, 0.25, 0.22), (0.30, 0.42, 0.20), core)
+    # hard chevron wings, sharply swept back
+    w = box((0.95, -0.30, 0), (1.5, 0.42, 0.16), shell,
+            rot=(0, 0, math.radians(-38)), bev=0.03)
+    mx(w)
+    w2 = box((0.72, -0.85, 0.04), (1.0, 0.30, 0.12), edge,
+             rot=(0, 0, math.radians(-38)), bev=0.02)
+    mx(w2)
+    t = box((0.30, -1.05, 0.10), (0.16, 0.60, 0.36), deep,
+            rot=(math.radians(18), 0, 0), bev=0.02)
+    mx(t)
+    exhaust(0.30, -1.05, core, radius=0.16, length=0.42, hot=0.09)
+
+    camera(s, 3.9)
+    lights(tint=(1.0, 0.88, 0.7))
+    glare(s)
+    render(s, outdir, "enemy_zigzag", 192, 192)
+
+
+def enemy_orbiter(outdir):
+    """Circles the player - a spinning ring of vanes around a bright eye."""
+    s = new_scene()
+    shell = mat("shell", "o_shell", 0.88, 0.30)
+    deep = mat("deep", "o_deep", 0.90, 0.26)
+    core = mat("core", "o_shell", 0.30, 0.20, emit="o_core", emit_str=8.0)
+    edge = mat("edge", "o_core", 0.88, 0.22, emit="o_hot", emit_str=0.6)
+
+    cyl((0, 0, 0), 0.72, 0.42, deep, verts=12, bev=0.05)
+    sphere((0, 0, 0.24), (0.44, 0.44, 0.30), core)
+    # orbital vane ring - reads as rotation even when still
+    for a in range(6):
+        ang = math.radians(60 * a)
+        box((math.cos(ang) * 1.12, math.sin(ang) * 1.12, 0.02),
+            (0.78, 0.24, 0.13), shell,
+            rot=(0, 0, ang + math.radians(34)), bev=0.03)
+        box((math.cos(ang) * 1.46, math.sin(ang) * 1.46, 0.02),
+            (0.24, 0.20, 0.16), edge,
+            rot=(0, 0, ang + math.radians(34)), bev=0.02)
+    bpy.ops.mesh.primitive_torus_add(major_radius=0.95, minor_radius=0.06,
+                                     location=(0, 0, 0.04))
+    bpy.context.object.data.materials.append(edge)
+
+    camera(s, 3.9)
+    lights(tint=(0.78, 0.9, 1.0))
+    glare(s)
+    render(s, outdir, "enemy_orbiter", 192, 192)
+
+
+def enemy_charger(outdir):
+    """Rams the player - heavy armoured wedge with a forward ram spike."""
+    s = new_scene()
+    shell = mat("shell", "c_shell", 0.88, 0.34)
+    deep = mat("deep", "c_deep", 0.90, 0.28)
+    core = mat("core", "c_shell", 0.30, 0.20, emit="c_core", emit_str=7.0)
+    edge = mat("edge", "c_core", 0.90, 0.22, emit="c_hot", emit_str=0.25)
+
+    # Blunt armoured prow: a battering ram reads as mass, so the nose stays
+    # wide and truncated. A sharp spire just reads as a roofline.
+    # Armour is the LIGHT value and the hull behind it is dark, so the ram
+    # face catches the key light and reads as the business end.
+    box((0, -0.15, 0), (1.15, 1.25, 0.46), shell, bev=0.09)
+    cone((0, 0.82, 0), 0.88, 0.50, 0.95, deep, rot=NOSE, verts=8)
+    cyl((0, 1.36, 0), 0.38, 0.34, deep, rot=FWD, verts=8, bev=0.06)
+    cone((0, 1.72, 0), 0.30, 0.06, 0.48, edge, rot=NOSE, verts=8)  # ram tip
+    # flank armour swept back off the shoulders
+    br = box((0.74, 0.22, 0.10), (0.32, 1.20, 0.34), deep,
+             rot=(0, 0, math.radians(13)), bev=0.04)
+    mx(br)
+    sphere((0, -0.30, 0.28), (0.34, 0.34, 0.22), core)
+    fl = box((0.92, -0.55, 0.02), (0.30, 0.95, 0.30), deep, bev=0.04)
+    mx(fl)
+    exhaust(0.48, -0.85, core, radius=0.22, length=0.48, hot=0.11)
+
+    camera(s, 4.1)
+    lights(tint=(1.0, 0.8, 0.8))
+    glare(s)
+    render(s, outdir, "enemy_charger", 192, 192)
+
+
+def enemy_splitter(outdir):
+    """Breaks into halves when killed - a visible seam splits the hull."""
+    s = new_scene()
+    shell = mat("shell", "p_shell", 0.88, 0.32)
+    deep = mat("deep", "p_deep", 0.90, 0.26)
+    core = mat("core", "p_shell", 0.30, 0.20, emit="p_core", emit_str=7.5)
+    edge = mat("edge", "p_core", 0.88, 0.22, emit="p_hot", emit_str=0.5)
+
+    # two mirrored half-shells with a lit gap down the middle
+    h = cyl((0.46, 0, 0), 0.92, 0.46, deep, verts=8, bev=0.06)
+    h.scale = (0.92, 1.0, 1.0)
+    mx(h)
+    hp = box((0.62, 0.15, 0.26), (0.62, 0.95, 0.20), shell,
+             rot=(0, 0, math.radians(-8)), bev=0.04)
+    mx(hp)
+    # the seam: exposed core running the full length
+    box((0, 0, 0.06), (0.20, 1.85, 0.40), core, bev=0.03)
+    sphere((0, 0.05, 0.30), (0.26, 0.40, 0.22), core)
+    # split-line indicator clamps
+    for gy in (-0.62, 0.0, 0.62):
+        cl = box((0.30, gy, 0.30), (0.34, 0.16, 0.18), edge, bev=0.02)
+        mx(cl)
+    exhaust(0.52, -0.98, core, radius=0.18, length=0.40, hot=0.09)
+
+    camera(s, 4.2)
+    lights(tint=(0.82, 1.0, 0.85))
+    glare(s)
+    render(s, outdir, "enemy_splitter", 192, 192)
+
+
+def enemy_bomber(outdir):
+    """Drops payloads - fat body with visible bomb pods slung underneath."""
+    s = new_scene()
+    shell = mat("shell", "m_shell", 0.88, 0.34)
+    deep = mat("deep", "m_deep", 0.90, 0.28)
+    core = mat("core", "m_shell", 0.30, 0.20, emit="m_core", emit_str=7.0)
+    edge = mat("edge", "m_core", 0.88, 0.22, emit="m_hot", emit_str=0.5)
+
+    # bulbous fuselage
+    sphere((0, 0, 0), (0.95, 1.30, 0.52), deep)
+    box((0, 0.35, 0.30), (0.85, 0.90, 0.26), shell, bev=0.06)
+    cone((0, 1.18, 0.05), 0.48, 0.12, 0.70, shell, rot=NOSE, verts=10)
+    # Payload pods flank the hull rather than hang below it - slung
+    # underneath they are invisible to an overhead camera, killing the tell.
+    for px in (0.66, 1.12):
+        pod = sphere((px, -0.28, 0.12), (0.30, 0.52, 0.30), shell)
+        mx(pod)
+        lamp = sphere((px, -0.72, 0.16), (0.17, 0.17, 0.15), core, subd=2)
+        mx(lamp)
+    # stubby wings
+    w = box((1.10, 0.15, 0.02), (0.85, 0.62, 0.16), deep,
+            rot=(0, 0, math.radians(-8)), bev=0.04)
+    mx(w)
+    st = box((1.15, 0.42, 0.12), (0.70, 0.20, 0.10), edge,
+             rot=(0, 0, math.radians(-8)), bev=0.02)
+    mx(st)
+    sphere((0, 0.30, 0.44), (0.24, 0.32, 0.16), core)
+    exhaust(0.40, -1.15, core, radius=0.22, length=0.46, hot=0.11)
+
+    camera(s, 4.5)
+    lights(tint=(1.0, 0.9, 0.74))
+    glare(s)
+    render(s, outdir, "enemy_bomber", 192, 192)
+
+
+def enemy_sniper(outdir):
+    """Long-range shot - thin body dominated by one oversized barrel."""
+    s = new_scene()
+    shell = mat("shell", "n_shell", 0.88, 0.32)
+    deep = mat("deep", "n_deep", 0.90, 0.28)
+    core = mat("core", "n_shell", 0.30, 0.18, emit="n_core", emit_str=9.0)
+    edge = mat("edge", "n_core", 0.88, 0.20, emit="n_hot", emit_str=0.6)
+
+    # slim spine
+    box((0, -0.35, 0), (0.42, 1.35, 0.30), deep, bev=0.05)
+    # the barrel - unmistakably a long gun
+    cyl((0, 0.95, 0.04), 0.17, 2.15, shell, rot=FWD, verts=10)
+    box((0, 0.95, 0.22), (0.13, 1.85, 0.07), deep, bev=0.02)
+    cone((0, 2.12, 0.04), 0.20, 0.09, 0.34, edge, rot=NOSE, verts=10)
+    # targeting optic - single hot eye
+    sphere((0, -0.05, 0.28), (0.24, 0.30, 0.18), core)
+    # recoil braces
+    br = box((0.42, 0.30, 0.02), (0.20, 0.95, 0.22), shell,
+             rot=(0, 0, math.radians(6)), bev=0.03)
+    mx(br)
+    fn = box((0.38, -0.90, 0.06), (0.44, 0.50, 0.24), deep,
+             rot=(0, 0, math.radians(24)), bev=0.03)
+    mx(fn)
+    exhaust(0.26, -1.02, core, radius=0.14, length=0.34, hot=0.08)
+
+    camera(s, 4.6)
+    lights(tint=(1.0, 0.78, 0.78))
+    glare(s)
+    render(s, outdir, "enemy_sniper", 192, 192)
+
+
+def enemy_swarm(outdir):
+    """Cheap and numerous - a tiny single-eye drone, read at a glance."""
+    s = new_scene()
+    shell = mat("shell", "w_shell", 0.88, 0.34)
+    deep = mat("deep", "w_deep", 0.90, 0.28)
+    core = mat("core", "w_shell", 0.30, 0.20, emit="w_core", emit_str=7.0)
+
+    body = cyl((0, 0, 0), 0.78, 0.36, deep, verts=6, bev=0.06)
+    body.rotation_euler = (0, 0, math.radians(30))
+    sphere((0, 0, 0.22), (0.34, 0.34, 0.24), core)
+    for a in range(3):
+        ang = math.radians(120 * a + 90)
+        box((math.cos(ang) * 0.86, math.sin(ang) * 0.86, 0.0),
+            (0.44, 0.18, 0.12), shell, rot=(0, 0, ang), bev=0.02)
+
+    camera(s, 2.6)
+    lights(tint=(0.92, 0.94, 1.0))
+    glare(s)
+    render(s, outdir, "enemy_swarm", 128, 128)
+
+
+def enemy_dreadnought(outdir):
+    """Anchors and sweeps with beams - a compact capital escort.
+
+    Deliberately echoes the Aegis boss hull so it reads as the same navy,
+    at a fraction of the size.
+    """
+    s = new_scene()
+    plate = mat("plate", "r_plate", 0.90, 0.28)
+    shell = mat("shell", "r_shell", 0.88, 0.34)
+    deep = mat("deep", "r_deep", 0.90, 0.28)
+    core = mat("core", "r_shell", 0.30, 0.20, emit="r_core", emit_str=8.0)
+    edge = mat("edge", "r_core", 0.88, 0.22, emit="r_hot", emit_str=0.55)
+
+    box((0, 0.1, 0), (1.0, 3.3, 0.60), plate, bev=0.08)
+    box((0, 1.25, 0.24), (0.72, 1.05, 0.44), shell, bev=0.06)
+    cone((0, 2.25, 0.04), 0.42, 0.10, 0.95, deep, rot=NOSE, verts=8)
+    box((0, -1.25, 0.26), (0.85, 1.0, 0.40), shell, bev=0.06)
+    # broadside armour
+    a1 = box((1.30, 0.30, -0.02), (1.35, 2.3, 0.40), plate,
+             rot=(0, 0, math.radians(-6)), bev=0.06)
+    mx(a1)
+    a2 = box((1.45, 0.85, 0.22), (0.95, 0.95, 0.20), deep,
+             rot=(0, 0, math.radians(-6)), bev=0.04)
+    mx(a2)
+    # beam emitter - the thing that sweeps sectors
+    cyl((0, 0.15, 0.48), 0.52, 0.34, deep, verts=8, bev=0.03)
+    sphere((0, 0.15, 0.66), (0.34, 0.34, 0.24), core)
+    for bx in (-0.22, 0.22):
+        cyl((bx, 1.35, 0.52), 0.09, 1.2, shell, rot=FWD, verts=8, bev=0)
+        cyl((bx, 1.98, 0.52), 0.12, 0.12, edge, verts=8, bev=0)
+    # engines aft
+    for x in (-0.55, 0.55):
+        cyl((x, -2.05, 0), 0.24, 0.7, deep, rot=FWD, verts=10)
+        cyl((x, -2.45, 0), 0.18, 0.12, core, rot=FWD, verts=10, bev=0)
+    random.seed(41)
+    for _ in range(22):
+        gx = random.uniform(0.15, 1.85)
+        gy = random.uniform(-1.5, 1.6)
+        gg = box((gx, gy, 0.34), (random.uniform(0.09, 0.22),
+                                  random.uniform(0.10, 0.30),
+                                  random.uniform(0.04, 0.08)),
+                 deep if random.random() < 0.6 else shell, bev=0.008)
+        mx(gg)
+
+    camera(s, 6.4)
+    lights(tint=(1.0, 0.88, 0.82), power=1.2)
+    glare(s)
+    render(s, outdir, "enemy_dreadnought", 256, 256)
+
+
 # --------------------------------------------------------------- miniboss
 def enemy_tank(outdir):
     """Tank Fortress - the lore's 'heavily armored mobile platform with
@@ -1012,6 +1309,8 @@ def background_near(outdir):
 TARGETS = (
     astra_interceptor, valkyrie_lancer, seraph_guard,
     enemy_drifter, enemy_sine, enemy_tank,
+    enemy_zigzag, enemy_orbiter, enemy_charger, enemy_splitter,
+    enemy_bomber, enemy_sniper, enemy_swarm, enemy_dreadnought,
     boss_aegis, boss_tyrant, boss_leviathan,
     power_chip,
     background_far, background_far_solar, background_far_abyss,
