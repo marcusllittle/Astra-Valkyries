@@ -33,6 +33,11 @@ const SECONDARY_NAMES: Record<string, string> = {
   detonationChain: "Detonation Chain",
   systemHijack: "System Hijack",
   zeroPoint: "Zero Point",
+  temporalEcho: "Temporal Echo",
+  superbloom: "Superbloom",
+  starfallSwarm: "Starfall Swarm",
+  decoyBurn: "Decoy Burn",
+  tideGuard: "Tide Guard",
 };
 
 const PASSIVE_NAMES: Record<string, string> = {

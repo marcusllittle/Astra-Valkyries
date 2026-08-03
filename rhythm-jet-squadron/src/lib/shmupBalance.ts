@@ -33,7 +33,12 @@ export type ShmupSecondaryKey =
   | "detonationChain"
   // Yuki: electronic warfare and precision execution.
   | "systemHijack"
-  | "zeroPoint";
+  | "zeroPoint"
+  | "temporalEcho"
+  | "superbloom"
+  | "starfallSwarm"
+  | "decoyBurn"
+  | "tideGuard";
 
 export type ShmupPassiveKey =
   | "smallerHitbox"
@@ -144,6 +149,29 @@ export const SHMUP_BALANCE: {
     zeroPointDelayMs: number;
     zeroPointDamage: number;
     zeroPointBossDamage: number;
+    echoWindowMs: number;
+    echoMaxGhosts: number;
+    echoFireInterval: number;
+    echoDamage: number;
+    superbloomRadius: number;
+    superbloomDamage: number;
+    superbloomBossDamage: number;
+    superbloomGenerations: number;
+    superbloomSpread: number;
+    superbloomStageMs: number;
+    starfallLances: number;
+    starfallFireInterval: number;
+    starfallShotSpeed: number;
+    starfallDamage: number;
+    starfallBounces: number;
+    decoyLifeMs: number;
+    decoyBlastRadius: number;
+    decoyDamage: number;
+    decoyBossDamage: number;
+    tideGuardNodes: number;
+    tideGuardNodeHp: number;
+    tideGuardMaxCharge: number;
+    tideGuardDischarge: number;
   };
 } = {
   primaries: {
@@ -296,6 +324,11 @@ export const SHMUP_BALANCE: {
       ssrBonusCharges: 2,
       bonusMaxCharges: 1,
     },
+    temporalEcho: { cooldownMs: 7600, durationMs: 3200, usesCharges: false },
+    superbloom: { cooldownMs: 0, durationMs: 0, usesCharges: true, baseCharges: 2, ssrBonusCharges: 2, bonusMaxCharges: 1 },
+    starfallSwarm: { cooldownMs: 9000, durationMs: 11000, usesCharges: false },
+    decoyBurn: { cooldownMs: 6800, durationMs: 3400, usesCharges: false },
+    tideGuard: { cooldownMs: 9600, durationMs: 6000, usesCharges: false },
     afterburn: { cooldownMs: 8200, durationMs: 2600, usesCharges: false },
     detonationChain: { cooldownMs: 0, durationMs: 0, usesCharges: true, baseCharges: 2, ssrBonusCharges: 2, bonusMaxCharges: 1 },
     systemHijack: { cooldownMs: 7400, durationMs: 400, usesCharges: false },
@@ -423,6 +456,29 @@ export const SHMUP_BALANCE: {
     zeroPointDelayMs: 700,
     zeroPointDamage: 12,
     zeroPointBossDamage: 34,
+    echoWindowMs: 3200,
+    echoMaxGhosts: 3,
+    echoFireInterval: 0.16,
+    echoDamage: 1.1,
+    superbloomRadius: 118,
+    superbloomDamage: 5,
+    superbloomBossDamage: 14,
+    superbloomGenerations: 3,
+    superbloomSpread: 132,
+    superbloomStageMs: 260,
+    starfallLances: 4,
+    starfallFireInterval: 0.34,
+    starfallShotSpeed: 520,
+    starfallDamage: 1.5,
+    starfallBounces: 3,
+    decoyLifeMs: 3400,
+    decoyBlastRadius: 128,
+    decoyDamage: 5,
+    decoyBossDamage: 14,
+    tideGuardNodes: 6,
+    tideGuardNodeHp: 4,
+    tideGuardMaxCharge: 18,
+    tideGuardDischarge: 1.4,
     mirrorShieldLayers: 4,
     mirrorShieldReflectDamage: 1.8,
     mirrorShieldReflectBossDamage: 6,

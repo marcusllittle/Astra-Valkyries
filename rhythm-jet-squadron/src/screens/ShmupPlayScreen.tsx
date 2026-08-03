@@ -141,6 +141,9 @@ interface PlayerBullet {
   boomerangReturning: boolean;
   homingTurnRate: number;
   homingRange: number;
+  /** Wall bounces remaining. Shots ricochet off the arena edges instead of
+   *  being culled, so a miss keeps hunting. */
+  bounces?: number;
 }
 
 interface EnemyBullet {
@@ -956,6 +959,19 @@ export default function ShmupPlayScreen() {
   >([]);
   // Riposte: bullets caught by the shield orbit the ship until it fires them back.
   const capturedShotsRef = useRef<{ angle: number; color: string; coreColor: string }[]>([]);
+  // Temporal Echo: a rolling recording of where the ship has been, and the
+  // ghosts currently replaying it alongside you.
+  const flightRecorderRef = useRef<{ x: number; y: number; t: number }[]>([]);
+  const echoesRef = useRef<{ startedAtMs: number; frames: { x: number; y: number; t: number }[]; fireTimer: number }[]>([]);
+  // Superbloom: staged detonations that open outward like petals.
+  const bloomsRef = useRef<{ x: number; y: number; atMs: number; stage: number; angle: number }[]>([]);
+  // Starfall Swarm: independent lances, not a fixed orbit ring.
+  const starfallUntilRef = useRef(0);
+  const starfallTimerRef = useRef(0);
+  // Decoy Burn: shadow duplicates that pull fire, then cook off.
+  const decoysRef = useRef<{ x: number; y: number; vx: number; vy: number; hp: number; bornMs: number }[]>([]);
+  // Tide Guard: a charging escort ring that physically eats bullets.
+  const tideGuardRef = useRef<{ until: number; nodes: { hp: number }[]; charge: number }>({ until: 0, nodes: [], charge: 0 });
   // Rex: afterburn turns the ship itself into the weapon.
   const afterburnUntilRef = useRef(0);
   // Yuki: painted targets that all resolve on the same frame.
@@ -1350,6 +1366,13 @@ export default function ShmupPlayScreen() {
     capturedShotsRef.current = [];
     afterburnUntilRef.current = 0;
     zeroPointRef.current = null;
+    flightRecorderRef.current = [];
+    echoesRef.current = [];
+    bloomsRef.current = [];
+    starfallUntilRef.current = 0;
+    starfallTimerRef.current = 0;
+    decoysRef.current = [];
+    tideGuardRef.current = { until: 0, nodes: [], charge: 0 };
     phaseShiftUntilRef.current = 0;
     phaseShiftGhostRef.current = null;
     vortexRef.current = null;
@@ -2938,6 +2961,91 @@ export default function ShmupPlayScreen() {
           startSecondaryCooldown(elapsedMs);
           return;
         }
+        case "temporalEcho": {
+          // Not "freeze time". The ship has been recording itself the whole
+          // run; this releases the last few seconds as a ghost that re-flies
+          // your exact path and fires while it does. Cast it again and you
+          // fly alongside two of your past selves at once.
+          sfxCrystalBomb();
+          const window = SHMUP_BALANCE.effects.echoWindowMs;
+          const frames = flightRecorderRef.current.filter((f) => f.t >= elapsedMs - window);
+          if (frames.length > 4) {
+            if (echoesRef.current.length >= SHMUP_BALANCE.effects.echoMaxGhosts) {
+              echoesRef.current.shift();
+            }
+            echoesRef.current.push({ startedAtMs: elapsedMs, frames, fireTimer: 0 });
+          }
+          statusFlashUntilRef.current = elapsedMs + 240;
+          startSecondaryCooldown(elapsedMs);
+          addPulse(ship.x, ship.y, "#d0bfff", 22, 260, 0.24, 3.4);
+          addSparkBurst(ship.x, ship.y, "#e5dbff", 18, 200, [2.2, 5.4]);
+          addScreenShake(1.8, 0.12);
+          return;
+        }
+        case "superbloom": {
+          // A seed that opens into petals, and every petal opens again.
+          // Three generations, timed so it visibly flowers outward across
+          // the whole battlefield rather than popping once.
+          if (!secondaryUsesCharges || secondaryChargesRef.current <= 0) return;
+          secondaryChargesRef.current -= 1;
+          sfxBomb();
+          bloomsRef.current.push({
+            x: ship.x, y: ship.y - 60, atMs: elapsedMs + 120, stage: 0, angle: -Math.PI / 2,
+          });
+          addPulse(ship.x, ship.y - 40, "#ffd6e7", 12, 90, 0.16, 2.2);
+          addScreenShake(1.6, 0.1);
+          startSecondaryCooldown(elapsedMs);
+          return;
+        }
+        case "starfallSwarm": {
+          // Ocean Drift's drones, but they actually hunt: each lance fires
+          // homing rounds that ricochet off the arena walls, so a miss keeps
+          // looking for something to hit.
+          sfxDrones();
+          starfallUntilRef.current = elapsedMs + secondaryDurationMs;
+          starfallTimerRef.current = 0;
+          startSecondaryCooldown(elapsedMs);
+          addPulse(ship.x, ship.y, "#4dd4ff", 18, 190, 0.18, 2.9);
+          addSparkBurst(ship.x, ship.y, "#e6f9ff", 16, 190, [2.2, 5.2]);
+          return;
+        }
+        case "decoyBurn": {
+          // Rex does not blink out of trouble, he leaves something burning
+          // in his place. Three afterimages peel off, pull fire, and cook.
+          sfxEmp();
+          const spread = [-1, 0, 1];
+          for (const s of spread) {
+            decoysRef.current.push({
+              x: ship.x + s * 34,
+              y: ship.y + 6,
+              vx: s * 70,
+              vy: -90,
+              hp: 2,
+              bornMs: elapsedMs,
+            });
+          }
+          statusFlashUntilRef.current = elapsedMs + 200;
+          startSecondaryCooldown(elapsedMs);
+          addPulse(ship.x, ship.y, "#ff922b", 16, 150, 0.16, 2.6);
+          addSparkBurst(ship.x, ship.y, "#ffd8a8", 14, 170, [2, 4.8]);
+          return;
+        }
+        case "tideGuard": {
+          // An escort ring with real bodies: the nodes physically intercept
+          // rounds and take the hit, charging as they do. Fully charged, the
+          // ring discharges everything it absorbed.
+          sfxShield();
+          const count = SHMUP_BALANCE.effects.tideGuardNodes;
+          tideGuardRef.current = {
+            until: elapsedMs + secondaryDurationMs,
+            nodes: Array.from({ length: count }, () => ({ hp: SHMUP_BALANCE.effects.tideGuardNodeHp })),
+            charge: 0,
+          };
+          startSecondaryCooldown(elapsedMs);
+          addPulse(ship.x, ship.y, "#67ffd4", 20, 180, 0.2, 3.0);
+          addSparkBurst(ship.x, ship.y, "#ebfff8", 18, 180, [2.2, 5.4]);
+          return;
+        }
         case "afterburn": {
           // Rex flew races before he flew combat. Speed IS the weapon: he
           // becomes a projectile, and the burn trail keeps hurting behind him.
@@ -3316,6 +3424,191 @@ export default function ShmupPlayScreen() {
       ctx.restore();
     };
 
+    /** Keep a rolling few seconds of flight path for Temporal Echo. */
+    const recordFlight = (elapsedMs: number) => {
+      const rec = flightRecorderRef.current;
+      rec.push({ x: ship.x, y: ship.y, t: elapsedMs });
+      const cutoff = elapsedMs - SHMUP_BALANCE.effects.echoWindowMs;
+      while (rec.length && rec[0].t < cutoff) rec.shift();
+    };
+
+    /** Replay each ghost along the path you actually flew, firing as it goes. */
+    const updateEchoes = (elapsedMs: number, deltaSeconds: number) => {
+      const echoes = echoesRef.current;
+      for (let i = echoes.length - 1; i >= 0; i--) {
+        const echo = echoes[i];
+        const age = elapsedMs - echo.startedAtMs;
+        const span = echo.frames[echo.frames.length - 1].t - echo.frames[0].t;
+        if (age > span) { echoes.splice(i, 1); continue; }
+        const targetT = echo.frames[0].t + age;
+        let frame = echo.frames[0];
+        for (const f of echo.frames) { if (f.t <= targetT) frame = f; else break; }
+        echo.fireTimer -= deltaSeconds;
+        if (echo.fireTimer <= 0) {
+          echo.fireTimer += SHMUP_BALANCE.effects.echoFireInterval;
+          playerBulletsRef.current.push({
+            x: frame.x, y: frame.y, vx: 0, vy: -760,
+            age: 0, maxLife: 1.5,
+            radius: 4 * ENTITY_SCALE,
+            damage: SHMUP_BALANCE.effects.echoDamage,
+            color: "#d0bfff", coreColor: "#f3f0ff",
+            length: 16 * ENTITY_SCALE,
+            spriteKey: undefined,
+            pierce: 0, driftVx: 0,
+            oscillateAmp: 0, oscillateFreq: 0, oscillatePhase: 0,
+            boomerangTurnAt: 0, boomerangReturnVy: 0, boomerangReturning: false,
+            homingTurnRate: 2.6, homingRange: 420,
+          });
+        }
+      }
+    };
+
+    /** Superbloom: each petal opens into the next generation of petals. */
+    const updateBlooms = (elapsedMs: number) => {
+      const blooms = bloomsRef.current;
+      if (!blooms.length) return;
+      const cfg = SHMUP_BALANCE.effects;
+      for (let i = blooms.length - 1; i >= 0; i--) {
+        const b = blooms[i];
+        if (elapsedMs < b.atMs) continue;
+        blooms.splice(i, 1);
+        const scale = 1 - b.stage * 0.26;
+        applyAreaBlast(
+          b.x, b.y, cfg.superbloomRadius * scale,
+          cfg.superbloomDamage * scale,
+          cfg.superbloomBossDamage * scale,
+          elapsedMs, b.stage === 0 ? "#ff8fc7" : b.stage === 1 ? "#ffd6e7" : "#fff0f6"
+        );
+        addPulse(b.x, b.y, "#ff8fc7", 14, cfg.superbloomRadius * scale, 0.2, 2.8);
+        addExplosion(b.x, b.y, "#ffd6e7", 14, 2.6 * scale);
+        if (b.stage >= cfg.superbloomGenerations - 1) continue;
+        // petals fan forward from the parent, so the shape opens outward
+        const petals = b.stage === 0 ? 6 : 3;
+        const arc = b.stage === 0 ? Math.PI * 2 : Math.PI * 0.8;
+        const reach = cfg.superbloomSpread * scale;
+        for (let p = 0; p < petals; p++) {
+          const a = b.angle + (p / petals - 0.5) * arc + (b.stage === 0 ? 0 : 0);
+          blooms.push({
+            x: clamp(b.x + Math.cos(a) * reach, 20, canvas.width - 20),
+            y: clamp(b.y + Math.sin(a) * reach, 20, canvas.height - 20),
+            atMs: elapsedMs + cfg.superbloomStageMs,
+            stage: b.stage + 1,
+            angle: a,
+          });
+        }
+        addScreenShake(2.2, 0.12);
+      }
+    };
+
+    /** Starfall lances: independent hunters with ricocheting homing shots. */
+    const updateStarfall = (elapsedMs: number, deltaSeconds: number) => {
+      if (starfallUntilRef.current <= elapsedMs) return;
+      starfallTimerRef.current -= deltaSeconds;
+      if (starfallTimerRef.current > 0) return;
+      starfallTimerRef.current += SHMUP_BALANCE.effects.starfallFireInterval;
+      const cfg = SHMUP_BALANCE.effects;
+      for (let n = 0; n < cfg.starfallLances; n++) {
+        const a = droneOrbitRef.current * 1.4 + (n / cfg.starfallLances) * Math.PI * 2;
+        const lx = ship.x + Math.cos(a) * 40;
+        const ly = ship.y + Math.sin(a) * 30 - 6;
+        const target = findNearestHomingTarget(lx, ly, 720);
+        let vx = 0;
+        let vy = -cfg.starfallShotSpeed;
+        if (target) {
+          const dx = target.x - lx;
+          const dy = target.y - ly;
+          const len = Math.hypot(dx, dy) || 1;
+          vx = (dx / len) * cfg.starfallShotSpeed;
+          vy = (dy / len) * cfg.starfallShotSpeed;
+        }
+        playerBulletsRef.current.push({
+          x: lx, y: ly, vx, vy,
+          age: 0, maxLife: 2.2,
+          radius: 3.6 * ENTITY_SCALE,
+          damage: cfg.starfallDamage,
+          color: "#4dd4ff", coreColor: "#e6f9ff",
+          length: 14 * ENTITY_SCALE,
+          spriteKey: undefined,
+          pierce: 0, driftVx: 0,
+          oscillateAmp: 0, oscillateFreq: 0, oscillatePhase: 0,
+          boomerangTurnAt: 0, boomerangReturnVy: 0, boomerangReturning: false,
+          homingTurnRate: 4.2, homingRange: 620,
+          bounces: cfg.starfallBounces,
+        });
+      }
+    };
+
+    /** Decoys drift, soak fire, and detonate when killed or when they burn out. */
+    const updateDecoys = (elapsedMs: number, deltaSeconds: number) => {
+      const decoys = decoysRef.current;
+      for (let i = decoys.length - 1; i >= 0; i--) {
+        const d = decoys[i];
+        d.x += d.vx * deltaSeconds;
+        d.y += d.vy * deltaSeconds;
+        const expired = elapsedMs - d.bornMs > SHMUP_BALANCE.effects.decoyLifeMs;
+        // enemy fire that reaches a decoy is consumed by it
+        for (let b = enemyBulletsRef.current.length - 1; b >= 0; b--) {
+          const bullet = enemyBulletsRef.current[b];
+          const reach = 16 + bullet.radius;
+          if (distanceSquared(d.x, d.y, bullet.x, bullet.y) <= reach * reach) {
+            enemyBulletsRef.current.splice(b, 1);
+            d.hp -= 1;
+            addSparkBurst(d.x, d.y, "#ff922b", 4, 110, [1.6, 3.4]);
+          }
+        }
+        if (d.hp <= 0 || expired) {
+          decoys.splice(i, 1);
+          applyAreaBlast(
+            d.x, d.y, SHMUP_BALANCE.effects.decoyBlastRadius,
+            SHMUP_BALANCE.effects.decoyDamage,
+            SHMUP_BALANCE.effects.decoyBossDamage,
+            elapsedMs, "#ff922b"
+          );
+          addExplosion(d.x, d.y, "#ffd8a8", 20, 3.2);
+          addScreenShake(1.8, 0.1);
+        }
+      }
+    };
+
+    /** Tide Guard nodes bodily intercept fire and bank it as charge. */
+    const updateTideGuard = (elapsedMs: number) => {
+      const guard = tideGuardRef.current;
+      if (!guard.nodes.length) return;
+      if (guard.until <= elapsedMs) {
+        // discharge whatever the ring soaked
+        if (guard.charge > 0) {
+          applyAreaBlast(
+            ship.x, ship.y, 150 + guard.charge * 9,
+            SHMUP_BALANCE.effects.tideGuardDischarge * guard.charge,
+            SHMUP_BALANCE.effects.tideGuardDischarge * guard.charge * 2,
+            elapsedMs, "#67ffd4"
+          );
+          addPulse(ship.x, ship.y, "#67ffd4", 22, 150 + guard.charge * 9, 0.24, 3.4);
+          addScreenShake(2.6, 0.16);
+          sfxShieldPulse();
+        }
+        tideGuardRef.current = { until: 0, nodes: [], charge: 0 };
+        return;
+      }
+      const radius = ship.radius * 3.4;
+      guard.nodes.forEach((node, i) => {
+        if (node.hp <= 0) return;
+        const a = droneOrbitRef.current + (i / guard.nodes.length) * Math.PI * 2;
+        const nx = ship.x + Math.cos(a) * radius;
+        const ny = ship.y + Math.sin(a) * radius;
+        for (let b = enemyBulletsRef.current.length - 1; b >= 0; b--) {
+          const bullet = enemyBulletsRef.current[b];
+          const reach = 13 + bullet.radius;
+          if (distanceSquared(nx, ny, bullet.x, bullet.y) <= reach * reach) {
+            enemyBulletsRef.current.splice(b, 1);
+            node.hp -= 1;
+            guard.charge = Math.min(SHMUP_BALANCE.effects.tideGuardMaxCharge, guard.charge + 1);
+            addSparkBurst(nx, ny, "#67ffd4", 4, 100, [1.6, 3.4]);
+          }
+        }
+      });
+    };
+
     /** Zero Point: every painted target is struck on the same frame. */
     const resolveZeroPoint = (elapsedMs: number) => {
       const pending = zeroPointRef.current;
@@ -3484,6 +3777,12 @@ export default function ShmupPlayScreen() {
       releaseRiposte(elapsedMs);
       resolveZeroPoint(elapsedMs);
       applyAfterburn(elapsedMs, deltaSeconds);
+      recordFlight(elapsedMs);
+      updateEchoes(elapsedMs, deltaSeconds);
+      updateBlooms(elapsedMs);
+      updateStarfall(elapsedMs, deltaSeconds);
+      updateDecoys(elapsedMs, deltaSeconds);
+      updateTideGuard(elapsedMs);
       const aggressiveRouteActive = activePassives.includes("aggressiveRoute");
       const empActive = empUntilRef.current > elapsedMs;
       const freezeActive = freezeUntilRef.current > elapsedMs;
@@ -3776,6 +4075,21 @@ export default function ShmupPlayScreen() {
         }
         bullet.y += bullet.vy * deltaSeconds;
       }
+      // Ricochet before culling: a bouncing shot that leaves the arena is
+      // reflected and spends a bounce instead of dying at the wall.
+      for (const bullet of playerBulletsRef.current) {
+        if (!bullet.bounces || bullet.bounces <= 0) continue;
+        let bounced = false;
+        if (bullet.x < 6 && bullet.vx < 0) { bullet.vx = -bullet.vx; bullet.x = 6; bounced = true; }
+        else if (bullet.x > canvas.width - 6 && bullet.vx > 0) { bullet.vx = -bullet.vx; bullet.x = canvas.width - 6; bounced = true; }
+        if (bullet.y < 6 && bullet.vy < 0) { bullet.vy = -bullet.vy; bullet.y = 6; bounced = true; }
+        if (bounced) {
+          bullet.bounces -= 1;
+          bullet.age = 0; // a fresh ricochet gets a fresh lease on life
+          addSparkBurst(bullet.x, bullet.y, bullet.color, 3, 90, [1.4, 3]);
+        }
+      }
+
       playerBulletsRef.current = playerBulletsRef.current.filter(
         (bullet) =>
           bullet.age <= bullet.maxLife &&
@@ -5932,6 +6246,72 @@ export default function ShmupPlayScreen() {
         ctx.arc(pulse.x, pulse.y, pulse.radius, 0, Math.PI * 2);
         ctx.stroke();
         ctx.restore();
+      }
+
+      // Temporal Echo: translucent past-selves re-flying your own path
+      for (const echo of echoesRef.current) {
+        const age = elapsedMs - echo.startedAtMs;
+        const targetT = echo.frames[0].t + age;
+        let frame = echo.frames[0];
+        for (const f of echo.frames) { if (f.t <= targetT) frame = f; else break; }
+        const sprite = getSprite("player");
+        ctx.save();
+        ctx.globalAlpha = 0.42;
+        if (sprite) {
+          drawSpriteCentered(sprite, frame.x, frame.y, ship.radius * 5.6, ship.radius * 5.6, 0, 0.42);
+        }
+        ctx.strokeStyle = "rgba(208,191,255,0.7)";
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.arc(frame.x, frame.y, ship.radius * displayScale * 1.2, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Decoy Burn: burning afterimages pulling fire away from Rex
+      for (const d of decoysRef.current) {
+        const heat = 0.55 + Math.sin(elapsedMs / 70 + d.x) * 0.3;
+        ctx.save();
+        ctx.globalAlpha = 0.62;
+        ctx.fillStyle = `rgba(255,146,43,${heat})`;
+        ctx.shadowColor = "#ff922b";
+        ctx.shadowBlur = 16;
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, 11 * displayScale, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Tide Guard: escort nodes, dimming as they take hits, ring brightening
+      // as it banks charge
+      {
+        const guard = tideGuardRef.current;
+        if (guard.nodes.length && guard.until > elapsedMs) {
+          const radius = ship.radius * 3.4 * displayScale;
+          const chargeT = guard.charge / SHMUP_BALANCE.effects.tideGuardMaxCharge;
+          ctx.save();
+          ctx.strokeStyle = `rgba(103,255,212,${0.15 + chargeT * 0.5})`;
+          ctx.lineWidth = 1 + chargeT * 3;
+          ctx.beginPath();
+          ctx.arc(ship.x, ship.y, radius, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+          guard.nodes.forEach((node, i) => {
+            if (node.hp <= 0) return;
+            const a = droneOrbitRef.current + (i / guard.nodes.length) * Math.PI * 2;
+            const nx = ship.x + Math.cos(a) * radius;
+            const ny = ship.y + Math.sin(a) * radius;
+            const health = node.hp / SHMUP_BALANCE.effects.tideGuardNodeHp;
+            ctx.save();
+            ctx.fillStyle = `rgba(103,255,212,${0.35 + health * 0.6})`;
+            ctx.shadowColor = "#67ffd4";
+            ctx.shadowBlur = 8 + chargeT * 14;
+            ctx.beginPath();
+            ctx.arc(nx, ny, (5 + health * 3) * displayScale, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          });
+        }
       }
 
       // Chrono Lock: banked shots hang in the air, charging, until release
