@@ -65,6 +65,61 @@ export interface RewardResult {
   bonuses?: string[] | null;
   multiplier?: number | null;
   artifact_job_id?: string;
+  campaign_contribution?: CampaignContribution;
+}
+
+export interface CampaignContribution {
+  campaign_id: string;
+  eligible: boolean;
+  combat_points: number;
+  target_map_id: string;
+  phase?: AstraCampaign["phase"];
+  progress_percent?: number;
+}
+
+export interface CampaignProgress {
+  current: number;
+  target: number;
+  percent: number;
+}
+
+export interface CampaignEvent {
+  kind: "combat" | "forge";
+  id: string;
+  actor: string;
+  points: number;
+  created_at: number;
+  grade?: string;
+  artifact_type?: "image" | "video";
+}
+
+export interface AstraCampaign {
+  schema: "havnai.astra.community-campaign";
+  version: 1;
+  campaign_id: string;
+  map_id: string;
+  name: string;
+  operation: string;
+  phase: "contested" | "awaiting_forge" | "awaiting_victories" | "secured";
+  secured: boolean;
+  starts_at: number;
+  ends_at: number;
+  progress_percent: number;
+  combat: CampaignProgress & {
+    accepted_runs: number;
+    contributors: number;
+  };
+  forge: CampaignProgress & {
+    settled_artifacts: number;
+    creator_nodes: number;
+  };
+  personal: {
+    combat_points: number;
+    accepted_runs: number;
+    forge_points: number;
+    settled_artifacts: number;
+  } | null;
+  recent_events: CampaignEvent[];
 }
 
 export interface PlayerStats {
@@ -518,6 +573,30 @@ export async function fetchLeaderboard(limit = 50): Promise<LeaderboardFetchResu
     };
   } catch {
     return { entries: [], offline: true };
+  }
+}
+
+/** Fetch the weekly front derived from accepted runs and final creator work. */
+export async function fetchAstraCampaign(
+  wallet?: string | null,
+): Promise<NetworkFetchResult<AstraCampaign>> {
+  try {
+    const query = wallet ? `?wallet=${encodeURIComponent(wallet)}` : "";
+    const res = await fetchWithRetry(`${API_BASE}/astra/campaign${query}`, {});
+    if (!res.ok) return { data: null, offline: true };
+    const data = await res.json() as Partial<AstraCampaign>;
+    if (
+      data.schema !== "havnai.astra.community-campaign" ||
+      typeof data.campaign_id !== "string" ||
+      !data.combat ||
+      !data.forge ||
+      !Array.isArray(data.recent_events)
+    ) {
+      return { data: null, offline: true };
+    }
+    return { data: data as AstraCampaign, offline: false };
+  } catch {
+    return { data: null, offline: true };
   }
 }
 

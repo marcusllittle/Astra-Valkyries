@@ -5,6 +5,7 @@ import { useWallet } from "../context/WalletContext";
 import {
   animateRewardArtifact,
   artifactReceiptJsonUrl,
+  fetchAstraCampaign,
   fetchArtifactReceipt,
   fetchArtifactReceiptProof,
   fetchGalleryImages,
@@ -13,9 +14,15 @@ import {
   resolveHavnAssetUrl,
   type ArtifactReceiptResponse,
   type ArtifactReceiptInclusionProof,
+  type AstraCampaign,
   type NetworkNode,
   type NetworkSnapshot,
 } from "../lib/havnApi";
+import {
+  campaignEventLabel,
+  campaignPhaseLabel,
+  campaignTimeRemaining,
+} from "../lib/communityCampaign";
 import {
   humanizeMachineName,
   mergeForgeArtifacts,
@@ -134,12 +141,14 @@ function NodeCard({
 
 export default function NetworkScreen() {
   const navigate = useNavigate();
-  const { save, equipBanner, selectCreatorNode } = useGame();
+  const { save, equipBanner, selectCreatorNode, selectMap } = useGame();
   const wallet = useWallet();
   const [snapshot, setSnapshot] = useState<NetworkSnapshot | null>(null);
+  const [campaign, setCampaign] = useState<AstraCampaign | null>(null);
   const [artifacts, setArtifacts] = useState<ForgeArtifact[]>([]);
   const [loading, setLoading] = useState(true);
   const [networkOffline, setNetworkOffline] = useState(false);
+  const [campaignOffline, setCampaignOffline] = useState(false);
   const [artifactsOffline, setArtifactsOffline] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [refreshNonce, setRefreshNonce] = useState(0);
@@ -154,8 +163,9 @@ export default function NetworkScreen() {
 
     const load = async (initial: boolean) => {
       if (initial) setLoading(true);
-      const [networkResult, galleryResult] = await Promise.all([
+      const [networkResult, campaignResult, galleryResult] = await Promise.all([
         fetchNetworkSnapshot(),
+        fetchAstraCampaign(wallet.address),
         wallet.address
           ? fetchGalleryImages(wallet.address)
           : Promise.resolve({ images: [], offline: false }),
@@ -163,7 +173,9 @@ export default function NetworkScreen() {
       if (cancelled) return;
 
       if (networkResult.data) setSnapshot(networkResult.data);
+      if (campaignResult.data) setCampaign(campaignResult.data);
       setNetworkOffline(networkResult.offline);
+      setCampaignOffline(campaignResult.offline);
       setArtifactsOffline(galleryResult.offline);
 
       const details = new Map();
@@ -324,11 +336,101 @@ export default function NetworkScreen() {
         <div className="network-metric-reward"><span>Distributed to nodes</span><strong>{loading && !summary ? "--" : `${formatNumber(distributed, 2)} HAI`}</strong></div>
       </section>
 
+      <section className="network-campaign" aria-label="Community campaign">
+        <div className="network-campaign-head">
+          <div>
+            <span className="network-section-index">01 / COMMUNITY FRONT</span>
+            <h2>{campaign?.name ?? "Synchronizing sector"}</h2>
+            <p>{campaign?.operation ?? "Waiting for campaign telemetry."}</p>
+          </div>
+          {campaign ? (
+            <div className="network-campaign-state">
+              <strong>{campaignPhaseLabel(campaign.phase)}</strong>
+              <span>{campaignTimeRemaining(campaign.ends_at)}</span>
+            </div>
+          ) : null}
+        </div>
+
+        {campaignOffline && !campaign ? (
+          <div className="network-empty">Community front telemetry is unavailable. Retrying automatically.</div>
+        ) : campaign ? (
+          <div className="network-campaign-grid">
+            <div className="network-campaign-objective">
+              <div className="network-campaign-score">
+                <span>Combined advance</span>
+                <strong>{campaign.progress_percent}%</strong>
+              </div>
+
+              <div className="network-campaign-lane">
+                <div>
+                  <span>Pilot combat</span>
+                  <strong>{campaign.combat.current} / {campaign.combat.target}</strong>
+                </div>
+                <div className="network-progress-track" aria-label={`${campaign.combat.percent}% pilot combat progress`}>
+                  <span style={{ width: `${campaign.combat.percent}%` }} />
+                </div>
+                <small>{campaign.combat.accepted_runs} accepted sorties / {campaign.combat.contributors} pilots</small>
+              </div>
+
+              <div className="network-campaign-lane is-forge">
+                <div>
+                  <span>Creator forge</span>
+                  <strong>{campaign.forge.current} / {campaign.forge.target}</strong>
+                </div>
+                <div className="network-progress-track" aria-label={`${campaign.forge.percent}% creator forge progress`}>
+                  <span style={{ width: `${campaign.forge.percent}%` }} />
+                </div>
+                <small>{campaign.forge.settled_artifacts} final artifacts / {campaign.forge.creator_nodes} creator nodes</small>
+              </div>
+
+              <div className="network-campaign-actions">
+                <div>
+                  <span>Your contribution</span>
+                  <strong>
+                    {campaign.personal
+                      ? `${campaign.personal.combat_points} combat / ${campaign.personal.forge_points} forge`
+                      : "Wallet not linked"}
+                  </strong>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => {
+                    selectMap(campaign.map_id);
+                    navigate("/briefing");
+                  }}
+                >
+                  DEPLOY TO FRONT
+                </button>
+              </div>
+            </div>
+
+            <div className="network-campaign-feed">
+              <span className="network-campaign-feed-title">Live contribution ledger</span>
+              {campaign.recent_events.length === 0 ? (
+                <div className="network-campaign-feed-empty">No accepted contributions yet.</div>
+              ) : (
+                campaign.recent_events.slice(0, 6).map((event) => (
+                  <div key={`${event.kind}:${event.id}`} className={`network-campaign-event is-${event.kind}`}>
+                    <span className="network-campaign-event-mark" aria-hidden="true" />
+                    <div>
+                      <strong>{campaignEventLabel(event)}</strong>
+                      <small>{new Date(event.created_at * 1000).toLocaleString()}</small>
+                    </div>
+                    <b>+{event.points}</b>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        ) : null}
+      </section>
+
       <main className="network-workspace">
         <section className="network-panel network-creators">
           <div className="network-section-head">
             <div>
-              <span className="network-section-index">01 / CREATOR TOPOLOGY</span>
+              <span className="network-section-index">02 / CREATOR TOPOLOGY</span>
               <h2>Active compute fleet</h2>
             </div>
             <span className="network-section-count">{nodes.filter((node) => node.online).length} routing</span>
@@ -355,7 +457,7 @@ export default function NetworkScreen() {
         <section className="network-panel network-artifacts">
           <div className="network-section-head">
             <div>
-              <span className="network-section-index">02 / YOUR ARTIFACT LEDGER</span>
+              <span className="network-section-index">03 / YOUR ARTIFACT LEDGER</span>
               <h2>Victory render queue</h2>
             </div>
             {wallet.short && <span className="network-wallet">{wallet.short}</span>}
