@@ -1658,6 +1658,130 @@ video.card-art-img {
   transition: width 0.08s linear;
 }
 
+/* Real creator assignment, surfaced inside the run without occupying HUD space. */
+.run-network-dispatch {
+  position: absolute;
+  top: 48px;
+  left: 10px;
+  z-index: 16;
+  width: min(310px, calc(100% - 20px));
+  min-height: 56px;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px 9px;
+  overflow: hidden;
+  border: 1px solid rgba(99, 230, 190, 0.38);
+  border-radius: 6px;
+  background: rgba(7, 20, 31, 0.9);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), inset 3px 0 0 #63e6be;
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+
+.run-network-dispatch.is-completed {
+  border-color: rgba(255, 212, 59, 0.48);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), inset 3px 0 0 #ffd43b;
+}
+
+.run-network-dispatch.is-failed {
+  border-color: rgba(255, 107, 107, 0.5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), inset 3px 0 0 #ff6b6b;
+}
+
+.run-network-signal {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(99, 230, 190, 0.45);
+  border-radius: 50%;
+}
+
+.run-network-signal::before,
+.run-network-signal i {
+  content: "";
+  grid-area: 1 / 1;
+  border-radius: 50%;
+}
+
+.run-network-signal::before {
+  width: 12px;
+  height: 12px;
+  border: 1px solid rgba(99, 230, 190, 0.42);
+}
+
+.run-network-signal i {
+  width: 5px;
+  height: 5px;
+  background: #63e6be;
+  box-shadow: 0 0 9px rgba(99, 230, 190, 0.85);
+  animation: runNetworkPulse 1.2s ease-in-out infinite alternate;
+}
+
+.run-network-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.run-network-copy span,
+.run-network-copy strong,
+.run-network-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: 0;
+}
+
+.run-network-copy span {
+  color: #63e6be;
+  font-size: 0.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.run-network-copy strong {
+  color: #f1f5f9;
+  font-size: 0.68rem;
+  line-height: 1.2;
+}
+
+.run-network-copy small {
+  color: #91a4b9;
+  font-size: 0.52rem;
+}
+
+.run-network-progress-value {
+  color: #c8f7e8;
+  font-size: 0.58rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.run-network-progress {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 3px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.run-network-progress i {
+  display: block;
+  height: 100%;
+  background: #63e6be;
+  transition: width 0.25s ease;
+}
+
+@keyframes runNetworkPulse {
+  from { opacity: 0.5; transform: scale(0.82); }
+  to { opacity: 1; transform: scale(1); }
+}
+
 /* ─── HUD top-right action buttons ─── */
 .hud-top-actions {
   display: flex;
@@ -3811,6 +3935,29 @@ video.card-art-img {
     gap: 4px;
   }
 
+  .run-network-dispatch {
+    top: 38px;
+    left: 6px;
+    width: min(250px, calc(100% - 12px));
+    min-height: 48px;
+    grid-template-columns: 22px minmax(0, 1fr) 30px;
+    gap: 6px;
+    padding: 5px 7px 7px;
+  }
+
+  .run-network-signal {
+    width: 20px;
+    height: 20px;
+  }
+
+  .run-network-copy strong {
+    font-size: 0.6rem;
+  }
+
+  .run-network-copy small {
+    font-size: 0.46rem;
+  }
+
   .play-screen .shmup-hud-center--landscape {
     display: flex;
     flex-direction: row;
@@ -4000,6 +4147,16 @@ video.card-art-img {
 
   .play-screen .shmup-subtitle {
     font-size: 0.5rem;
+  }
+
+  .run-network-dispatch {
+    top: 36px;
+    width: min(220px, calc(100% - 12px));
+    min-height: 44px;
+  }
+
+  .run-network-copy span {
+    font-size: 0.44rem;
   }
 
   .fever-bar-container--landscape {

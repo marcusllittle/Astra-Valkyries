@@ -23,8 +23,18 @@ import {
   NEUTRAL_SKILL_EFFECTS,
   type SkillEffects,
 } from "../lib/skillEffects";
-import { astraStartRun, hasAstraSession, preflightRewardImage } from "../lib/havnApi";
+import {
+  astraStartRun,
+  fetchNetworkJob,
+  hasAstraSession,
+  preflightRewardImage,
+} from "../lib/havnApi";
 import { resolveAssetUrl } from "../lib/assetUrl";
+import {
+  buildRunDispatch,
+  humanizeMachineName,
+  type RunDispatchView,
+} from "../lib/networkForge";
 import { BASE_SHMUP_HP, buildShmupLoadout } from "../lib/loadout";
 import { getSelectedOutfitKit } from "../lib/outfitKits";
 import { passiveName, primaryName, secondaryName } from "../lib/kitNames";
@@ -830,6 +840,7 @@ export default function ShmupPlayScreen() {
   const walletRef = useRef(wallet);
   walletRef.current = wallet;
   const runTokenRef = useRef<string | null>(null);
+  const [runDispatch, setRunDispatch] = useState<RunDispatchView | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [viewportBounds, setViewportBounds] = useState<ViewportBounds>(() => getViewportBounds());
@@ -1359,6 +1370,18 @@ export default function ShmupPlayScreen() {
     if (!pilot) return;
     let effectActive = true;
     let preflightTimer: number | undefined;
+    let dispatchPollTimer: number | undefined;
+
+    const pollDispatch = async (jobId: string) => {
+      const job = await fetchNetworkJob(jobId);
+      if (!effectActive) return;
+      if (job) {
+        const next = buildRunDispatch(jobId, job);
+        setRunDispatch(next);
+        if (next.phase === "completed" || next.phase === "failed") return;
+      }
+      dispatchPollTimer = window.setTimeout(() => void pollDispatch(jobId), 2500);
+    };
 
     // Start level music
     const mapId = activeMap?.id ?? "nebula-runway";
@@ -1368,6 +1391,7 @@ export default function ShmupPlayScreen() {
     // an existing session: never a wallet popup at launch. No session means
     // no shared-credit reward for this run, which the results screen reports.
     runTokenRef.current = null;
+    setRunDispatch(null);
     const w = walletRef.current;
     if (w.status === "connected" && w.address && hasAstraSession(w.address)) {
       void astraStartRun(w.address, mapId, w.sign).then((run) => {
@@ -1385,7 +1409,11 @@ export default function ShmupPlayScreen() {
               outfitId,
               mapId,
               w.sign,
-            );
+            ).then((result) => {
+              if (!effectActive || !result.ok || !result.job_id) return;
+              setRunDispatch(buildRunDispatch(result.job_id, null));
+              void pollDispatch(result.job_id);
+            });
           }, 32000);
         }
       });
@@ -6912,6 +6940,7 @@ export default function ShmupPlayScreen() {
     return () => {
       effectActive = false;
       if (preflightTimer !== undefined) window.clearTimeout(preflightTimer);
+      if (dispatchPollTimer !== undefined) window.clearTimeout(dispatchPollTimer);
       cancelAnimationFrame(animationRef.current);
       window.removeEventListener("resize", resizeCanvas);
       window.visualViewport?.removeEventListener("resize", resizeCanvas);
@@ -7129,6 +7158,39 @@ export default function ShmupPlayScreen() {
           </div>
         </div>
       </div>
+
+      {runDispatch && !hud.bossWarning && !hud.bossActive ? (
+        <aside
+          className={`run-network-dispatch is-${runDispatch.phase}`}
+          role="status"
+          aria-live="polite"
+        >
+          <span className="run-network-signal" aria-hidden="true"><i /></span>
+          <div className="run-network-copy">
+            <span>HavnAI creator mesh</span>
+            <strong>
+              {runDispatch.phase === "queued"
+                ? "Routing victory artifact"
+                : runDispatch.phase === "completed"
+                  ? "Victory artifact sealed"
+                  : runDispatch.phase === "failed"
+                    ? "Creator render interrupted"
+                    : humanizeMachineName(runDispatch.nodeId)}
+            </strong>
+            <small>
+              {runDispatch.phase === "queued"
+                ? runDispatch.jobId
+                : runDispatch.reward != null
+                  ? `${runDispatch.reward.toFixed(4)} HAI settled`
+                  : humanizeMachineName(runDispatch.stage)}
+            </small>
+          </div>
+          <span className="run-network-progress-value">{runDispatch.progress}%</span>
+          <span className="run-network-progress" aria-hidden="true">
+            <i style={{ width: `${runDispatch.progress}%` }} />
+          </span>
+        </aside>
+      ) : null}
 
       {/* ── Boss bar (only when boss active) ────────── */}
       {hud.bossWarning ? (

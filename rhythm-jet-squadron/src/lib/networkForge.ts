@@ -19,11 +19,45 @@ export interface ForgeArtifact extends GalleryImage {
   animationReward: number | null;
 }
 
+export type RunDispatchPhase = "queued" | "rendering" | "completed" | "failed";
+
+export interface RunDispatchView {
+  jobId: string;
+  phase: RunDispatchPhase;
+  progress: number;
+  stage: string;
+  nodeId: string | null;
+  reward: number | null;
+}
+
 const FAILED_STATUSES = new Set(["failed", "error", "cancelled", "canceled", "rejected"]);
 const COMPLETED_STATUSES = new Set(["completed", "complete", "succeeded", "success"]);
 
 function clampProgress(value: number): number {
   return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+/** Convert the coordinator's live job contract into the compact combat uplink. */
+export function buildRunDispatch(
+  jobId: string,
+  job: NetworkJobDetail | null,
+): RunDispatchView {
+  const status = job?.status?.toLowerCase() ?? "";
+  let phase: RunDispatchPhase = "queued";
+  if (FAILED_STATUSES.has(status)) phase = "failed";
+  else if (COMPLETED_STATUSES.has(status)) phase = "completed";
+  else if (job?.node_id || (job?.progress ?? 0) > 0 || ["leased", "running", "uploading"].includes(status)) {
+    phase = "rendering";
+  }
+
+  return {
+    jobId,
+    phase,
+    progress: clampProgress(phase === "completed" ? 100 : job?.progress ?? 0),
+    stage: job?.stage || phase,
+    nodeId: job?.node_id || null,
+    reward: typeof job?.reward === "number" ? job.reward : null,
+  };
 }
 
 export function deriveArtifactStatus(
