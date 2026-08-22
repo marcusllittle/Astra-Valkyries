@@ -19,6 +19,7 @@ import CodexScreen from "./screens/CodexScreen";
 import SpaceportScreen from "./screens/SpaceportScreen";
 import MissionsScreen from "./screens/MissionsScreen";
 import SkillsScreen from "./screens/SkillsScreen";
+import NetworkScreen from "./screens/NetworkScreen";
 import VideoCutsceneScreen from "./screens/VideoCutsceneScreen";
 import AchievementToast from "./components/AchievementToast";
 
@@ -26,9 +27,9 @@ function AchievementLayer() {
   const { pendingAchievement, dismissAchievement } = useGame();
   const location = useLocation();
 
-  // Suppress achievement toasts during active gameplay — they're distracting
-  // and pop up repeatedly. Achievements still unlock; toast shows after the run.
-  if (location.pathname === "/shmup") return null;
+  // Keep transient rewards out of gameplay and the dense network console.
+  // The pending toast appears after the player leaves either surface.
+  if (location.pathname === "/shmup" || location.pathname === "/network") return null;
 
   if (!pendingAchievement) return null;
   return (
@@ -65,6 +66,7 @@ export default function App() {
             <Route path="/spaceport" element={<SpaceportScreen />} />
             <Route path="/missions" element={<MissionsScreen />} />
             <Route path="/skills" element={<SkillsScreen />} />
+            <Route path="/network" element={<NetworkScreen />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           <AchievementLayer />

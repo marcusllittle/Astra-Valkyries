@@ -42,6 +42,7 @@ const GAMEPLAY_PATHS = [
 const COSMETIC_ALLOWLIST = new Set([
   "screens/HangarScreen.tsx",
   "screens/CollectionScreen.tsx",
+  "screens/NetworkScreen.tsx",
   "context/GameContext.tsx",
   "types.ts",
   "lib/havnApi.ts",

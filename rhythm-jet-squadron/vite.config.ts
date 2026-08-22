@@ -13,6 +13,7 @@ export default defineConfig(({ mode }) => {
     target: apiProxyTarget,
     changeOrigin: true,
     secure: apiProxyTarget.startsWith('https://'),
+    rewrite: (path: string) => path.replace(/^\/api(?=\/|$)/, ''),
   }
 
   return {

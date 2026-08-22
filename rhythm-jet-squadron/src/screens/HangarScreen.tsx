@@ -159,8 +159,8 @@ export default function HangarScreen() {
         <h2 className="hangar-title">Loadout</h2>
       </div>
 
-      {/* A JoinHavn asset the player owns, flying over the hangar. Decor
-          only — nothing below reads it. Equipped from Collection > Owned. */}
+      {/* A HavnAI artifact flying over the hangar. Decor only: nothing below
+          reads it and it never enters the loadout or combat simulation. */}
       {save.equippedBanner && (
         <div className="hangar-banner" title={save.equippedBanner.title}>
           <img src={save.equippedBanner.url} alt={save.equippedBanner.title} />

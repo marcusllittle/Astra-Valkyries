@@ -123,18 +123,18 @@ export interface SaveData {
   zoneClears: Record<string, number>;       // mapId -> times boss defeated
   // Skill tree
   pilotSkills: Record<string, string[]>;    // pilotId -> unlocked skill node IDs
-  // JoinHavn-owned cosmetic. Cosmetic only, deliberately: an owned asset
-  // must never change a number the sim reads, or the marketplace becomes
-  // pay-to-win. The URL here is a cache for first paint; ownership is
-  // re-verified against /gallery/collection before the banner is shown.
+  // HavnAI network cosmetic. Cosmetic only, deliberately: an artifact must
+  // never change a number the sim reads, or the network becomes pay-to-win.
   equippedBanner: EquippedBanner | null;
 }
 
-/** A JoinHavn Collection asset the player has equipped as hangar decor. */
+/** A HavnAI artifact the player has equipped as hangar decor. */
 export interface EquippedBanner {
   jobId: string;
   title: string;
   url: string;
+  /** Missing means a legacy JoinHavn-owned asset. */
+  source?: "owned" | "astra_reward";
 }
 
 export interface GameSettings {
