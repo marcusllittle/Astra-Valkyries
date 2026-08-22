@@ -1409,6 +1409,7 @@ export default function ShmupPlayScreen() {
               outfitId,
               mapId,
               w.sign,
+              save.preferredCreatorNodeId,
             ).then((result) => {
               if (!effectActive || !result.ok || !result.job_id) return;
               setRunDispatch(buildRunDispatch(result.job_id, null));

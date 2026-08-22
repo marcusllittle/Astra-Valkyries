@@ -63,6 +63,7 @@ function getDefaultSave(): SaveData {
     selectedShipId: shipsData[0].id,
     selectedMapId: SHMUP_MAPS[0]?.id ?? null,
     selectedOutfitId: starterOutfits[0]?.outfitId ?? null,
+    preferredCreatorNodeId: null,
     highScores: {},
     settings: { ...DEFAULT_SETTINGS },
     pilotXp: {},
@@ -116,6 +117,7 @@ interface GameContextValue {
   selectShip: (id: string) => void;
   selectMap: (id: string) => void;
   selectOutfit: (id: string) => void;
+  selectCreatorNode: (id: string | null) => void;
   // Economy
   addCredits: (amount: number) => void;
   spendCredits: (amount: number) => boolean;
@@ -198,6 +200,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const selectOutfit = useCallback((id: string) => {
     setSave((s) => ({ ...s, selectedOutfitId: id }));
+  }, []);
+
+  const selectCreatorNode = useCallback((id: string | null) => {
+    setSave((s) => ({ ...s, preferredCreatorNodeId: id }));
   }, []);
 
   const addCredits = useCallback((amount: number) => {
@@ -402,6 +408,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         selectShip,
         selectMap,
         selectOutfit,
+        selectCreatorNode,
         addCredits,
         spendCredits,
         applyGachaResults,

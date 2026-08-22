@@ -212,6 +212,7 @@ export default function ShmupResultsScreen() {
               save.selectedOutfitId,
               mapId ?? "nebula-runway",
               wallet.sign,
+              save.preferredCreatorNodeId,
             ).then((gen) => {
               if (gen.ok) setArtQueued(true);
             });
@@ -226,7 +227,7 @@ export default function ShmupResultsScreen() {
         }
       })
       .catch(() => { setRewardStatus("network_error"); });
-  }, [shmupResult, grade, wallet.address, wallet.status, rewardKey, wallet, runToken, mapId, save.selectedPilotId, save.selectedOutfitId]);
+  }, [shmupResult, grade, wallet.address, wallet.status, rewardKey, wallet, runToken, mapId, save.selectedPilotId, save.selectedOutfitId, save.preferredCreatorNodeId]);
 
   if (showDebrief && debriefLines.length > 0 && debriefLineIdx < debriefLines.length) {
     return (

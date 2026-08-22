@@ -337,6 +337,7 @@ export interface ArtifactRequestResult {
   status?: "queued" | "existing";
   wait_seconds?: number;
   cap?: number;
+  preferred_node_id?: string;
 }
 
 /**
@@ -367,11 +368,18 @@ export async function preflightRewardImage(
   outfitId: string,
   mapId: string,
   sign: SignFn,
+  preferredNodeId?: string | null,
 ): Promise<ArtifactRequestResult> {
   try {
     const res = await authorizedPost(
       "/astra/generate-preflight",
-      { run_token: runToken, pilot_id: pilotId, outfit_id: outfitId, map_id: mapId },
+      {
+        run_token: runToken,
+        pilot_id: pilotId,
+        outfit_id: outfitId,
+        map_id: mapId,
+        preferred_node_id: preferredNodeId || undefined,
+      },
       wallet,
       sign,
     );
@@ -471,6 +479,7 @@ export interface GenerateRewardResult {
   reason?: string;
   job_id?: string;
   status?: "queued" | "existing";
+  preferred_node_id?: string;
 }
 
 /** Request a personalized reward image for a completed, rewarded run. */
@@ -481,11 +490,18 @@ export async function generateRewardImage(
   outfitId: string,
   mapId: string,
   sign: SignFn,
+  preferredNodeId?: string | null,
 ): Promise<GenerateRewardResult> {
   try {
     const res = await authorizedPost(
       "/astra/generate-reward",
-      { run_id: runId, pilot_id: pilotId, outfit_id: outfitId, map_id: mapId },
+      {
+        run_id: runId,
+        pilot_id: pilotId,
+        outfit_id: outfitId,
+        map_id: mapId,
+        preferred_node_id: preferredNodeId || undefined,
+      },
       wallet,
       sign,
     );

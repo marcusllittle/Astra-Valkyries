@@ -5143,6 +5143,91 @@ video.card-art-img {
   color: rgba(255,255,255,0.56);
 }
 
+.briefing-creator-route {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.briefing-creator-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.briefing-creator-head span {
+  color: rgba(255,255,255,0.58);
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.briefing-creator-head strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #6ae0a0;
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.briefing-creator-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.briefing-creator-options button {
+  min-width: 0;
+  min-height: 42px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 8px;
+  border: 1px solid rgba(136, 166, 229, 0.22);
+  border-radius: 5px;
+  background: rgba(6, 13, 27, 0.72);
+  color: #cbd5e8;
+  cursor: pointer;
+}
+
+.briefing-creator-options button:hover,
+.briefing-creator-options button.is-active {
+  border-color: rgba(106, 224, 160, 0.65);
+  background: rgba(31, 91, 70, 0.32);
+  color: #ecfff7;
+}
+
+.briefing-creator-options span,
+.briefing-creator-options small {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: 0;
+}
+
+.briefing-creator-options span {
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.briefing-creator-options small,
+.briefing-creator-status {
+  color: #8798bb;
+  font-size: 0.54rem;
+}
+
+.briefing-creator-status {
+  display: block;
+  margin-top: 7px;
+  line-height: 1.35;
+}
+
 .briefing-dialogue-stage {
   min-height: 680px;
   background:
@@ -5264,6 +5349,19 @@ video.card-art-img {
   .briefing-map-note {
     padding: 8px 10px;
     border-radius: 14px;
+  }
+
+  .briefing-hero-panel {
+    padding-right: 14px;
+  }
+
+  .briefing-creator-route {
+    margin-top: 4px;
+    padding-top: 9px;
+  }
+
+  .briefing-creator-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .briefing-dialogue-stage,
@@ -6521,6 +6619,8 @@ video.card-art-img {
 
 .network-node {
   padding: 16px;
+  display: flex;
+  flex-direction: column;
 }
 
 .network-node.is-online {
@@ -6530,6 +6630,11 @@ video.card-art-img {
 .network-node.is-offline {
   border-left: 3px solid #596784;
   opacity: 0.74;
+}
+
+.network-node.is-preferred {
+  border-color: rgba(106, 224, 160, 0.62);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(106, 224, 160, 0.12);
 }
 
 .network-node-head {
@@ -6642,6 +6747,35 @@ video.card-art-img {
   background: rgba(28, 76, 61, 0.18);
   color: #a9d9c4;
   font-size: 0.66rem;
+}
+
+.network-node-route {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid rgba(136, 166, 229, 0.14);
+}
+
+.network-node-route > span {
+  color: #8798bb;
+  font-size: 0.66rem;
+}
+
+.network-node-route .btn {
+  flex: none;
+  min-height: 30px;
+  padding: 5px 8px;
+  border-radius: 5px;
+  font-size: 0.62rem;
+}
+
+.network-node-route .network-route-active {
+  border-color: rgba(106, 224, 160, 0.62);
+  background: rgba(31, 91, 70, 0.36);
+  color: #b9f3d8;
 }
 
 .network-wallet-gate,

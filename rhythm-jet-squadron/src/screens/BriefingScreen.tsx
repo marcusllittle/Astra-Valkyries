@@ -5,6 +5,11 @@ import DialogueBox from "../components/DialogueBox";
 import { useGame } from "../context/GameContext";
 import pilotsData from "../data/pilots.json";
 import outfitsData from "../data/outfits.json";
+import {
+  fetchNetworkSnapshot,
+  type NetworkNode,
+} from "../lib/havnApi";
+import { humanizeMachineName } from "../lib/networkForge";
 
 interface BriefingLocationState {
   scriptId?: string;
@@ -27,7 +32,7 @@ const MAP_BRIEFING_NOTES: Record<string, { label: string; tone: string; accent: 
 export default function BriefingScreen() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { save } = useGame();
+  const { save, selectCreatorNode } = useGame();
   const { scriptId, returnTo } = (location.state as BriefingLocationState) ?? {};
 
   const script = useMemo(() => {
@@ -39,6 +44,8 @@ export default function BriefingScreen() {
   const directRoute = script?.nextRoute ?? returnTo ?? "/shmup";
   const [currentNodeId, setCurrentNodeId] = useState(script?.startNodeId ?? "");
   const [lineIndex, setLineIndex] = useState(0);
+  const [creatorNodes, setCreatorNodes] = useState<NetworkNode[]>([]);
+  const [networkOffline, setNetworkOffline] = useState(false);
 
   const currentNode = script?.nodes.find((n) => n.id === currentNodeId);
   const mapId = script?.mapId ?? save.selectedMapId ?? "nebula-runway";
@@ -52,6 +59,29 @@ export default function BriefingScreen() {
     setCurrentNodeId(script?.startNodeId ?? "");
     setLineIndex(0);
   }, [script?.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    let timer: number | undefined;
+    const loadCreators = async () => {
+      const result = await fetchNetworkSnapshot();
+      if (cancelled) return;
+      setNetworkOffline(result.offline);
+      if (result.data) {
+        setCreatorNodes(
+          result.data.nodes
+            .filter((node) => node.online && node.role === "creator")
+            .sort((a, b) => (b.performance?.success_rate ?? 0) - (a.performance?.success_rate ?? 0)),
+        );
+      }
+      timer = window.setTimeout(loadCreators, 12000);
+    };
+    void loadCreators();
+    return () => {
+      cancelled = true;
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
+  }, []);
 
   useEffect(() => {
     if (!script) {
@@ -91,6 +121,7 @@ export default function BriefingScreen() {
   const line = currentNode.lines[lineIndex];
   const isLastLine = lineIndex === currentNode.lines.length - 1;
   const showChoices = isLastLine && currentNode.choices && currentNode.choices.length > 0;
+  const preferredCreator = creatorNodes.find((node) => node.node_id === save.preferredCreatorNodeId);
 
   return (
     <div className="briefing-screen-shell">
@@ -110,6 +141,49 @@ export default function BriefingScreen() {
             <span className="briefing-map-note-label">Zone Read</span>
             <strong style={{ color: note.accent }}>{note.label}</strong>
           </div>
+          <section className="briefing-creator-route" aria-label="Creator routing">
+            <div className="briefing-creator-head">
+              <span>Creator Wingman</span>
+              <strong>
+                {preferredCreator
+                  ? preferredCreator.node_name || preferredCreator.node_id
+                  : save.preferredCreatorNodeId
+                    ? "Fallback armed"
+                    : "Auto route"}
+              </strong>
+            </div>
+            <div className="briefing-creator-options">
+              <button
+                type="button"
+                className={!save.preferredCreatorNodeId ? "is-active" : ""}
+                onClick={() => selectCreatorNode(null)}
+              >
+                <span>AUTO</span>
+                <small>Fastest</small>
+              </button>
+              {creatorNodes.slice(0, 3).map((node) => (
+                <button
+                  key={node.node_id}
+                  type="button"
+                  className={save.preferredCreatorNodeId === node.node_id ? "is-active" : ""}
+                  onClick={() => selectCreatorNode(node.node_id)}
+                  title={node.gpu?.gpu_name || node.node_id}
+                >
+                  <span>{node.node_name || humanizeMachineName(node.node_id)}</span>
+                  <small>{Math.round((node.performance?.success_rate ?? 0) * 100)}% reliable</small>
+                </button>
+              ))}
+            </div>
+            <small className="briefing-creator-status">
+              {networkOffline
+                ? "Mesh unavailable · automatic routing remains active"
+                : save.preferredCreatorNodeId && !preferredCreator
+                  ? "Selected creator is offline · automatic failover enabled"
+                  : preferredCreator
+                    ? "15-second priority claim · automatic failover enabled"
+                    : `${creatorNodes.length} creator${creatorNodes.length === 1 ? "" : "s"} available`}
+            </small>
+          </section>
         </section>
 
         <section className="briefing-dialogue-stage briefing-dialogue-stage-art">

@@ -42,14 +42,22 @@ function statusLabel(status: ForgeArtifact["forgeStatus"]): string {
   return labels[status];
 }
 
-function NodeCard({ node }: { node: NetworkNode }) {
+function NodeCard({
+  node,
+  isPreferred,
+  onPreferenceChange,
+}: {
+  node: NetworkNode;
+  isPreferred: boolean;
+  onPreferenceChange: (nodeId: string | null) => void;
+}) {
   const successRate = (node.performance?.success_rate ?? 0) * 100;
   const trustScore = node.trust?.score;
   const gpuName = node.gpu?.gpu_name || "GPU not reported";
   const identity = node.operator?.wallet || node.operator?.identity;
 
   return (
-    <article className={`network-node ${node.online ? "is-online" : "is-offline"}`}>
+    <article className={`network-node ${node.online ? "is-online" : "is-offline"} ${isPreferred ? "is-preferred" : ""}`}>
       <header className="network-node-head">
         <div>
           <span className="network-node-role">{node.role || "creator"} node</span>
@@ -86,13 +94,24 @@ function NodeCard({ node }: { node: NetworkNode }) {
           <span key={pipeline}>{humanizeMachineName(pipeline)}</span>
         ))}
       </div>
+      <footer className="network-node-route">
+        <span>{isPreferred ? "Victory route armed" : "Automatic scheduler"}</span>
+        <button
+          type="button"
+          className={`btn btn-small ${isPreferred ? "network-route-active" : ""}`}
+          disabled={!node.online && !isPreferred}
+          onClick={() => onPreferenceChange(isPreferred ? null : node.node_id)}
+        >
+          {isPreferred ? "CLEAR WINGMAN" : node.online ? "SELECT WINGMAN" : "OFFLINE"}
+        </button>
+      </footer>
     </article>
   );
 }
 
 export default function NetworkScreen() {
   const navigate = useNavigate();
-  const { save, equipBanner } = useGame();
+  const { save, equipBanner, selectCreatorNode } = useGame();
   const wallet = useWallet();
   const [snapshot, setSnapshot] = useState<NetworkSnapshot | null>(null);
   const [artifacts, setArtifacts] = useState<ForgeArtifact[]>([]);
@@ -224,7 +243,14 @@ export default function NetworkScreen() {
             <div className="network-empty">No creator nodes are registered.</div>
           ) : (
             <div className="network-node-list">
-              {nodes.map((node) => <NodeCard key={node.node_id} node={node} />)}
+              {nodes.map((node) => (
+                <NodeCard
+                  key={node.node_id}
+                  node={node}
+                  isPreferred={save.preferredCreatorNodeId === node.node_id}
+                  onPreferenceChange={selectCreatorNode}
+                />
+              ))}
             </div>
           )}
         </section>
