@@ -6,6 +6,7 @@ import InboxOverlay from "../components/InboxOverlay";
 
 const AREAS = [
   { label: "HANGAR", desc: "Select loadout & launch", route: "/hangar", icon: "🚀" },
+  { label: "NETWORK", desc: "Live creator forge", route: "/network", icon: "◈" },
   { label: "MISSIONS", desc: "Daily & weekly challenges", route: "/missions", icon: "📋" },
   { label: "INBOX", desc: "Pilot transmissions", route: null, icon: "📨" },
   { label: "CODEX", desc: "Lore & bestiary", route: "/codex", icon: "📖" },

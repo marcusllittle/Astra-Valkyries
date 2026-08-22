@@ -23,7 +23,7 @@ import {
   NEUTRAL_SKILL_EFFECTS,
   type SkillEffects,
 } from "../lib/skillEffects";
-import { astraStartRun, hasAstraSession } from "../lib/havnApi";
+import { astraStartRun, hasAstraSession, preflightRewardImage } from "../lib/havnApi";
 import { resolveAssetUrl } from "../lib/assetUrl";
 import { BASE_SHMUP_HP, buildShmupLoadout } from "../lib/loadout";
 import { getSelectedOutfitKit } from "../lib/outfitKits";
@@ -1357,6 +1357,8 @@ export default function ShmupPlayScreen() {
 
   useEffect(() => {
     if (!pilot) return;
+    let effectActive = true;
+    let preflightTimer: number | undefined;
 
     // Start level music
     const mapId = activeMap?.id ?? "nebula-runway";
@@ -1369,7 +1371,23 @@ export default function ShmupPlayScreen() {
     const w = walletRef.current;
     if (w.status === "connected" && w.address && hasAstraSession(w.address)) {
       void astraStartRun(w.address, mapId, w.sign).then((run) => {
-        if (run) runTokenRef.current = run.run_token;
+        if (!run || !effectActive) return;
+        runTokenRef.current = run.run_token;
+        const pilotId = save.selectedPilotId;
+        const outfitId = save.selectedOutfitId;
+        if (pilotId && outfitId) {
+          preflightTimer = window.setTimeout(() => {
+            if (!effectActive || runEndedRef.current) return;
+            void preflightRewardImage(
+              w.address!,
+              run.run_token,
+              pilotId,
+              outfitId,
+              mapId,
+              w.sign,
+            );
+          }, 32000);
+        }
       });
     }
 
@@ -6892,6 +6910,8 @@ export default function ShmupPlayScreen() {
     animationRef.current = requestAnimationFrame(drawLoop);
 
     return () => {
+      effectActive = false;
+      if (preflightTimer !== undefined) window.clearTimeout(preflightTimer);
       cancelAnimationFrame(animationRef.current);
       window.removeEventListener("resize", resizeCanvas);
       window.visualViewport?.removeEventListener("resize", resizeCanvas);

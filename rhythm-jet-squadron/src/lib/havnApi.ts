@@ -27,6 +27,16 @@ function getApiBase(): string {
 
 const API_BASE = getApiBase();
 
+/** Route coordinator-hosted output paths through the same API proxy as JSON. */
+export function resolveHavnAssetUrl(value?: string): string | undefined {
+  if (!value || isAbsoluteHttpUrl(value) || value.startsWith("data:") || value.startsWith("blob:")) {
+    return value;
+  }
+
+  const path = value.startsWith("/") ? value : `/${value}`;
+  return `${API_BASE}${path}`;
+}
+
 // ─── Types ──────────────────────────────────────────────────
 
 export interface CreditBalance {
@@ -54,6 +64,7 @@ export interface RewardResult {
   wait_seconds?: number;
   bonuses?: string[] | null;
   multiplier?: number | null;
+  artifact_job_id?: string;
 }
 
 export interface PlayerStats {
@@ -77,6 +88,91 @@ export interface LeaderboardEntry {
 
 export interface LeaderboardFetchResult {
   entries: LeaderboardEntry[];
+  offline: boolean;
+}
+
+export interface NetworkSummary {
+  total_nodes: number;
+  online_nodes: number;
+  offline_nodes: number;
+  avg_utilization: number;
+  tasks_backlog: number;
+  jobs_completed_today: number;
+  total_rewarded: number;
+  total_rewards: number;
+  timestamp?: string;
+}
+
+export interface NetworkNode {
+  node_id: string;
+  node_name: string;
+  online: boolean;
+  role: string;
+  os?: string;
+  utilization: number;
+  tasks_completed: number;
+  pipelines: string[];
+  models: string[];
+  gpu?: {
+    gpu_name?: string;
+    utilization?: number;
+    memory_total?: number;
+    memory_used?: number;
+  };
+  operator?: {
+    display_name?: string;
+    identity?: string;
+    wallet?: string | null;
+  };
+  performance?: {
+    attempts_total?: number;
+    completed_attempts?: number;
+    failed_attempts?: number;
+    success_rate?: number;
+  };
+  trust?: {
+    level?: string;
+    score?: number | null;
+    sample_size?: number;
+  };
+  payouts?: {
+    count?: number;
+    total?: number;
+    window_days?: number;
+    window_total?: number;
+  };
+}
+
+export interface NetworkSnapshot {
+  summary: NetworkSummary;
+  nodes: NetworkNode[];
+  job_summary?: {
+    queued_jobs?: number;
+    jobs_completed_today?: number;
+    total_distributed?: number;
+  };
+}
+
+export interface NetworkJobDetail {
+  id: string;
+  status: string;
+  stage?: string;
+  progress?: number;
+  node_id?: string | null;
+  model?: string;
+  task_type?: string;
+  reward?: number;
+  timestamp?: number;
+  completed_at?: number;
+  model_metadata?: {
+    pipeline?: string;
+    tier?: string;
+    model_name?: string;
+  };
+}
+
+export interface NetworkFetchResult<T> {
+  data: T | null;
   offline: boolean;
 }
 
@@ -234,6 +330,15 @@ export interface RunHandle {
   started_at: number;
 }
 
+export interface ArtifactRequestResult {
+  ok: boolean;
+  reason?: string;
+  job_id?: string;
+  status?: "queued" | "existing";
+  wait_seconds?: number;
+  cap?: number;
+}
+
 /**
  * Open a run server-side. The returned token is what makes the reward
  * submission credible: the server times the run itself rather than trusting
@@ -251,6 +356,29 @@ export async function astraStartRun(
     return typeof data.run_token === "string" ? data : null;
   } catch {
     return null;
+  }
+}
+
+/** Start the personalized still after the coordinator has observed real play. */
+export async function preflightRewardImage(
+  wallet: string,
+  runToken: string,
+  pilotId: string,
+  outfitId: string,
+  mapId: string,
+  sign: SignFn,
+): Promise<ArtifactRequestResult> {
+  try {
+    const res = await authorizedPost(
+      "/astra/generate-preflight",
+      { run_token: runToken, pilot_id: pilotId, outfit_id: outfitId, map_id: mapId },
+      wallet,
+      sign,
+    );
+    if (!res) return { ok: false, reason: "session_required" };
+    return await res.json();
+  } catch {
+    return { ok: false, reason: "network_error" };
   }
 }
 
@@ -304,6 +432,35 @@ export async function fetchLeaderboard(limit = 50): Promise<LeaderboardFetchResu
   }
 }
 
+// ─── Creator Network ────────────────────────────────────────
+
+/** Fetch the public creator topology and its real settlement totals. */
+export async function fetchNetworkSnapshot(): Promise<NetworkFetchResult<NetworkSnapshot>> {
+  try {
+    const res = await fetchWithRetry(`${API_BASE}/nodes`, {});
+    if (!res.ok) return { data: null, offline: true };
+    const raw = await res.json() as Partial<NetworkSnapshot>;
+    if (!raw.summary || !Array.isArray(raw.nodes)) {
+      return { data: null, offline: true };
+    }
+    return { data: raw as NetworkSnapshot, offline: false };
+  } catch {
+    return { data: null, offline: true };
+  }
+}
+
+/** Fetch assignment, stage, model, progress, and settlement for one render. */
+export async function fetchNetworkJob(jobId: string): Promise<NetworkJobDetail | null> {
+  try {
+    const res = await fetch(`${API_BASE}/jobs/${encodeURIComponent(jobId)}`);
+    if (!res.ok) return null;
+    const raw = await res.json() as Partial<NetworkJobDetail>;
+    return typeof raw.id === "string" ? raw as NetworkJobDetail : null;
+  } catch {
+    return null;
+  }
+}
+
 // ─── Reward Images & Gallery ────────────────────────────────
 // The flywheel: finish a run, the network generates art for YOUR pilot.
 // The client sends IDs only — prompts are composed server-side from
@@ -350,6 +507,24 @@ export interface GalleryImage {
   created_at: number;
   image_url?: string;
   preview_url?: string;
+  video_job_id?: string;
+  video_status?: "pending" | "completed" | "failed";
+  video_url?: string;
+}
+
+/** Animate a completed wallet-owned Astra still with LTX 2.3. */
+export async function animateRewardArtifact(
+  wallet: string,
+  jobId: string,
+  sign: SignFn,
+): Promise<ArtifactRequestResult> {
+  try {
+    const res = await authorizedPost("/astra/animate-reward", { job_id: jobId }, wallet, sign);
+    if (!res) return { ok: false, reason: "session_required" };
+    return await res.json();
+  } catch {
+    return { ok: false, reason: "network_error" };
+  }
 }
 
 /** Fetch the player's generated reward images (pending, completed, failed). */

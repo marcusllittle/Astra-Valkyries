@@ -9,7 +9,13 @@ import { useGame } from "../context/GameContext";
 import { useWallet } from "../context/WalletContext";
 import { canUpgrade, SHARD_THRESHOLDS } from "../lib/gacha";
 import { summarizeOutfitKit } from "../lib/outfitKits";
-import { fetchGalleryImages, fetchOwnedAssets, type GalleryImage, type OwnedAsset } from "../lib/havnApi";
+import {
+  fetchGalleryImages,
+  fetchOwnedAssets,
+  resolveHavnAssetUrl,
+  type GalleryImage,
+  type OwnedAsset,
+} from "../lib/havnApi";
 import CardArt from "../components/CardArt";
 import type { Outfit, OwnedOutfit, Pilot } from "../types";
 import outfitsData from "../data/outfits.json";
@@ -93,7 +99,8 @@ export default function CollectionScreen() {
         setOwnedAssets(assets);
         setOwnedOffline(offline);
         const equipped = save.equippedBanner;
-        if (!offline && equipped && !assets.some((a) => a.job_id === equipped.jobId)) {
+        const isOwnedAsset = !equipped?.source || equipped.source === "owned";
+        if (!offline && equipped && isOwnedAsset && !assets.some((a) => a.job_id === equipped.jobId)) {
           equipBanner(null);
         }
       })
@@ -209,7 +216,7 @@ export default function CollectionScreen() {
             <div className="collection-scroll-row">
               {galleryImages.map((img) => {
                 const pilotName = pilotNameById.get(img.pilot_id) ?? img.pilot_id;
-                const imageUrl = img.image_url ?? img.preview_url;
+                const imageUrl = resolveHavnAssetUrl(img.image_url ?? img.preview_url);
                 return (
                   <div key={img.run_id} className="card outfit-card">
                     <div style={{ width: "100%", aspectRatio: "3/4", overflow: "hidden", borderRadius: "6px 6px 0 0", display: "flex", alignItems: "center", justifyContent: "center", background: "#0b1018" }}>
@@ -271,7 +278,7 @@ export default function CollectionScreen() {
               </p>
               <div className="collection-scroll-row">
                 {ownedAssets.map((asset) => {
-                  const url = asset.image_url ?? asset.preview_url;
+                  const url = resolveHavnAssetUrl(asset.image_url ?? asset.preview_url);
                   const isEquipped = save.equippedBanner?.jobId === asset.job_id;
                   return (
                     <div key={asset.job_id} className="card outfit-card">
@@ -303,7 +310,12 @@ export default function CollectionScreen() {
                             equipBanner(
                               isEquipped
                                 ? null
-                                : { jobId: asset.job_id, title: asset.title, url: url! },
+                                : {
+                                    jobId: asset.job_id,
+                                    title: asset.title,
+                                    url: url!,
+                                    source: "owned",
+                                  },
                             )
                           }
                         >
