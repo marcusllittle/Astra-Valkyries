@@ -29,7 +29,11 @@ function AchievementLayer() {
 
   // Keep transient rewards out of gameplay and the dense network console.
   // The pending toast appears after the player leaves either surface.
-  if (location.pathname === "/shmup" || location.pathname === "/network") return null;
+  if (
+    location.pathname === "/shmup" ||
+    location.pathname === "/network" ||
+    location.pathname === "/briefing"
+  ) return null;
 
   if (!pendingAchievement) return null;
   return (

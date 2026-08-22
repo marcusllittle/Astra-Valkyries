@@ -101,6 +101,7 @@ export interface SaveData {
   selectedShipId: string | null;
   selectedMapId: string | null;
   selectedOutfitId: string | null;
+  preferredCreatorNodeId: string | null;
   highScores: Record<string, number>; // trackId -> best score
   settings: GameSettings;
   // Progression

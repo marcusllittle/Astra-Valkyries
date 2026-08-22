@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { GalleryImage, NetworkJobDetail } from "../lib/havnApi";
-import { deriveArtifactStatus, humanizeMachineName, mergeForgeArtifacts } from "../lib/networkForge";
+import {
+  buildRunDispatch,
+  deriveArtifactStatus,
+  humanizeMachineName,
+  mergeForgeArtifacts,
+  verifySha256,
+} from "../lib/networkForge";
 
 const image: GalleryImage = {
   run_id: "run-1",
@@ -83,5 +89,43 @@ describe("Network Forge artifact state", () => {
       animationNodeId: "creator-two",
       animationModel: "ltx23_wangp_distilled",
     });
+  });
+
+  it("exposes a real creator assignment inside an active run", () => {
+    expect(buildRunDispatch("job-live", {
+      id: "job-live",
+      status: "running",
+      stage: "sampling",
+      progress: 36.6,
+      node_id: "DESKTOP-A26E195",
+      reward: 1.25,
+    })).toEqual({
+      jobId: "job-live",
+      phase: "rendering",
+      progress: 37,
+      stage: "sampling",
+      nodeId: "DESKTOP-A26E195",
+      reward: 1.25,
+    });
+  });
+
+  it("keeps queued and terminal dispatch states stable", () => {
+    expect(buildRunDispatch("job-queued", null).phase).toBe("queued");
+    expect(buildRunDispatch("job-done", {
+      id: "job-done",
+      status: "succeeded",
+      progress: 99,
+    })).toMatchObject({ phase: "completed", progress: 100 });
+    expect(buildRunDispatch("job-failed", {
+      id: "job-failed",
+      status: "failed",
+      progress: 24,
+    }).phase).toBe("failed");
+  });
+
+  it("verifies coordinator and content SHA-256 claims locally", async () => {
+    const expected = "sha256:2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824";
+    await expect(verifySha256("hello", expected)).resolves.toBe(true);
+    await expect(verifySha256("changed", expected)).resolves.toBe(false);
   });
 });

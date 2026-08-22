@@ -4,18 +4,35 @@ import { useGame } from "../context/GameContext";
 import { useWallet } from "../context/WalletContext";
 import {
   animateRewardArtifact,
+  artifactReceiptJsonUrl,
+  fetchArtifactReceipt,
   fetchGalleryImages,
   fetchNetworkJob,
   fetchNetworkSnapshot,
   resolveHavnAssetUrl,
+  type ArtifactReceiptResponse,
   type NetworkNode,
   type NetworkSnapshot,
 } from "../lib/havnApi";
-import { humanizeMachineName, mergeForgeArtifacts, type ForgeArtifact } from "../lib/networkForge";
+import {
+  humanizeMachineName,
+  mergeForgeArtifacts,
+  verifySha256,
+  type ForgeArtifact,
+} from "../lib/networkForge";
 
 const ACTIVE_POLL_MS = 6000;
 const IDLE_POLL_MS = 20000;
 const MAX_JOB_DETAILS = 20;
+
+interface ReceiptViewState {
+  jobId: string;
+  loading: boolean;
+  data: ArtifactReceiptResponse | null;
+  receiptDigestMatches: boolean | null;
+  contentDigestMatches: boolean | null;
+  error: string | null;
+}
 
 function formatNumber(value: number, digits = 0): string {
   return new Intl.NumberFormat(undefined, { maximumFractionDigits: digits }).format(value);
@@ -42,14 +59,22 @@ function statusLabel(status: ForgeArtifact["forgeStatus"]): string {
   return labels[status];
 }
 
-function NodeCard({ node }: { node: NetworkNode }) {
+function NodeCard({
+  node,
+  isPreferred,
+  onPreferenceChange,
+}: {
+  node: NetworkNode;
+  isPreferred: boolean;
+  onPreferenceChange: (nodeId: string | null) => void;
+}) {
   const successRate = (node.performance?.success_rate ?? 0) * 100;
   const trustScore = node.trust?.score;
   const gpuName = node.gpu?.gpu_name || "GPU not reported";
   const identity = node.operator?.wallet || node.operator?.identity;
 
   return (
-    <article className={`network-node ${node.online ? "is-online" : "is-offline"}`}>
+    <article className={`network-node ${node.online ? "is-online" : "is-offline"} ${isPreferred ? "is-preferred" : ""}`}>
       <header className="network-node-head">
         <div>
           <span className="network-node-role">{node.role || "creator"} node</span>
@@ -86,13 +111,24 @@ function NodeCard({ node }: { node: NetworkNode }) {
           <span key={pipeline}>{humanizeMachineName(pipeline)}</span>
         ))}
       </div>
+      <footer className="network-node-route">
+        <span>{isPreferred ? "Victory route armed" : "Automatic scheduler"}</span>
+        <button
+          type="button"
+          className={`btn btn-small ${isPreferred ? "network-route-active" : ""}`}
+          disabled={!node.online && !isPreferred}
+          onClick={() => onPreferenceChange(isPreferred ? null : node.node_id)}
+        >
+          {isPreferred ? "CLEAR WINGMAN" : node.online ? "SELECT WINGMAN" : "OFFLINE"}
+        </button>
+      </footer>
     </article>
   );
 }
 
 export default function NetworkScreen() {
   const navigate = useNavigate();
-  const { save, equipBanner } = useGame();
+  const { save, equipBanner, selectCreatorNode } = useGame();
   const wallet = useWallet();
   const [snapshot, setSnapshot] = useState<NetworkSnapshot | null>(null);
   const [artifacts, setArtifacts] = useState<ForgeArtifact[]>([]);
@@ -103,6 +139,8 @@ export default function NetworkScreen() {
   const [refreshNonce, setRefreshNonce] = useState(0);
   const [animatingJobId, setAnimatingJobId] = useState<string | null>(null);
   const [animationError, setAnimationError] = useState<{ jobId: string; message: string } | null>(null);
+  const [receiptView, setReceiptView] = useState<ReceiptViewState | null>(null);
+  const [copiedReceiptJobId, setCopiedReceiptJobId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -167,6 +205,68 @@ export default function NetworkScreen() {
     setRefreshNonce((value) => value + 1);
   };
 
+  const inspectReceipt = async (jobId: string) => {
+    if (receiptView?.jobId === jobId && !receiptView.loading) {
+      setReceiptView(null);
+      return;
+    }
+    setReceiptView({
+      jobId,
+      loading: true,
+      data: null,
+      receiptDigestMatches: null,
+      contentDigestMatches: null,
+      error: null,
+    });
+    const result = await fetchArtifactReceipt(jobId);
+    if (!result.data) {
+      setReceiptView((current) => current?.jobId === jobId ? {
+        ...current,
+        loading: false,
+        error: result.error || "receipt_unavailable",
+      } : current);
+      return;
+    }
+
+    const receiptDigestMatches = await verifySha256(
+      result.data.canonical_json,
+      result.data.receipt_sha256,
+    );
+    let contentDigestMatches: boolean | null = null;
+    const artifactUrl = resolveHavnAssetUrl(result.data.artifact_url ?? undefined);
+    if (artifactUrl) {
+      try {
+        const artifactResponse = await fetch(artifactUrl);
+        if (artifactResponse.ok) {
+          contentDigestMatches = await verifySha256(
+            await artifactResponse.arrayBuffer(),
+            result.data.receipt.artifact.sha256,
+          );
+        }
+      } catch {
+        contentDigestMatches = null;
+      }
+    }
+    setReceiptView((current) => current?.jobId === jobId ? {
+      jobId,
+      loading: false,
+      data: result.data,
+      receiptDigestMatches,
+      contentDigestMatches,
+      error: null,
+    } : current);
+  };
+
+  const copyReceiptDigest = async (jobId: string, digest: string) => {
+    try {
+      await navigator.clipboard.writeText(digest);
+      setCopiedReceiptJobId(jobId);
+      window.setTimeout(() => setCopiedReceiptJobId((current) => current === jobId ? null : current), 1600);
+    } catch {
+      setCopiedReceiptJobId(null);
+    }
+  };
+
   const nodes = useMemo(
     () => [...(snapshot?.nodes ?? [])].sort((a, b) => Number(b.online) - Number(a.online)),
     [snapshot],
@@ -224,7 +324,14 @@ export default function NetworkScreen() {
             <div className="network-empty">No creator nodes are registered.</div>
           ) : (
             <div className="network-node-list">
-              {nodes.map((node) => <NodeCard key={node.node_id} node={node} />)}
+              {nodes.map((node) => (
+                <NodeCard
+                  key={node.node_id}
+                  node={node}
+                  isPreferred={save.preferredCreatorNodeId === node.node_id}
+                  onPreferenceChange={selectCreatorNode}
+                />
+              ))}
             </div>
           )}
         </section>
@@ -273,6 +380,11 @@ export default function NetworkScreen() {
                 const assignedNode = artifact.nodeId
                   ? nodeNames.get(artifact.nodeId) || artifact.nodeId
                   : null;
+                const activeReceipt = receiptView?.jobId === artifact.job_id ? receiptView : null;
+                const receipt = activeReceipt?.data?.receipt;
+                const receiptCreator = receipt?.execution.creator_node_id
+                  ? nodeNames.get(receipt.execution.creator_node_id) || receipt.execution.creator_node_id
+                  : "Unassigned";
                 return (
                   <article key={artifact.job_id} className={`network-artifact is-${artifact.forgeStatus}`}>
                     <div className="network-artifact-preview">
@@ -338,9 +450,94 @@ export default function NetworkScreen() {
                         </div>
                       )}
 
+                      {activeReceipt && (
+                        <section className="network-receipt" aria-label="Artifact receipt">
+                          {activeReceipt.loading ? (
+                            <div className="network-receipt-loading">
+                              <span className="network-status" data-status="rendering">
+                                <span className="network-status-dot" />
+                                Verifying receipt
+                              </span>
+                            </div>
+                          ) : activeReceipt.error ? (
+                            <div className="network-receipt-error">
+                              <strong>Receipt unavailable</strong>
+                              <span>{humanizeMachineName(activeReceipt.error)}</span>
+                            </div>
+                          ) : receipt && activeReceipt.data ? (
+                            <>
+                              <header className="network-receipt-head">
+                                <div>
+                                  <span>ARTIFACT RECEIPT</span>
+                                  <strong>HAVNAI / V{receipt.version}</strong>
+                                </div>
+                                <div className="network-receipt-checks">
+                                  <span data-check={String(activeReceipt.receiptDigestMatches)}>
+                                    Receipt digest {activeReceipt.receiptDigestMatches === true ? "match" : activeReceipt.receiptDigestMatches === false ? "mismatch" : "unchecked"}
+                                  </span>
+                                  <span data-check={String(activeReceipt.contentDigestMatches)}>
+                                    Content hash {activeReceipt.contentDigestMatches === true ? "match" : activeReceipt.contentDigestMatches === false ? "mismatch" : "unchecked"}
+                                  </span>
+                                </div>
+                              </header>
+
+                              <div className="network-receipt-grid">
+                                <div><span>Creator</span><strong>{receiptCreator}</strong></div>
+                                <div><span>Model</span><strong>{humanizeMachineName(receipt.execution.model.name)}</strong></div>
+                                <div><span>Route</span><strong>{receipt.routing.preference_honored ? "Wingman honored" : humanizeMachineName(receipt.routing.strategy)}</strong></div>
+                                <div><span>Settlement</span><strong>{humanizeMachineName(receipt.settlement.outcome)}</strong></div>
+                                <div><span>Node reward</span><strong>{formatNumber(receipt.settlement.node_reward, 4)} {humanizeMachineName(receipt.settlement.reward_asset_type)}</strong></div>
+                                <div><span>Chain anchor</span><strong>{receipt.settlement.transaction_hash ? shortIdentity(receipt.settlement.transaction_hash) : "Not anchored"}</strong></div>
+                              </div>
+
+                              <div className="network-receipt-digests">
+                                <div>
+                                  <span>CONTENT SHA-256</span>
+                                  <code>{receipt.artifact.sha256}</code>
+                                </div>
+                                <div>
+                                  <span>RECEIPT SHA-256</span>
+                                  <code>{activeReceipt.data.receipt_sha256.replace(/^sha256:/, "")}</code>
+                                </div>
+                              </div>
+
+                              <footer className="network-receipt-actions">
+                                <span>{formatNumber(receipt.artifact.size_bytes)} bytes / {humanizeMachineName(receipt.artifact.digest_source)}</span>
+                                <div>
+                                  <button
+                                    type="button"
+                                    className="btn btn-small"
+                                    onClick={() => void copyReceiptDigest(artifact.job_id, activeReceipt.data!.receipt_sha256)}
+                                  >
+                                    {copiedReceiptJobId === artifact.job_id ? "COPIED" : "COPY DIGEST"}
+                                  </button>
+                                  <a
+                                    className="btn btn-small"
+                                    href={artifactReceiptJsonUrl(artifact.job_id)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                  >
+                                    OPEN JSON
+                                  </a>
+                                </div>
+                              </footer>
+                            </>
+                          ) : null}
+                        </section>
+                      )}
+
                       <footer className="network-artifact-foot">
                         <span>{humanizeMachineName(artifact.map_id)} · {new Date(artifact.created_at * 1000).toLocaleDateString()}</span>
                         <div className="network-artifact-actions">
+                          {artifact.forgeStatus === "completed" && imageUrl && (
+                            <button
+                              className="btn btn-small network-receipt-btn"
+                              disabled={activeReceipt?.loading}
+                              onClick={() => void inspectReceipt(artifact.job_id)}
+                            >
+                              {activeReceipt?.loading ? "VERIFYING..." : activeReceipt ? "CLOSE RECEIPT" : "VERIFY RECEIPT"}
+                            </button>
+                          )}
                           {artifact.forgeStatus === "completed" && imageUrl && !artifact.video_job_id && (
                             <button
                               className="btn btn-small network-animate-btn"
