@@ -120,3 +120,15 @@ export function humanizeMachineName(value: string | null | undefined): string {
   if (!value) return "Awaiting assignment";
   return value.replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
+
+/** Recompute a coordinator SHA-256 claim in the player's browser. */
+export async function verifySha256(
+  value: string | ArrayBuffer,
+  expectedDigest: string,
+): Promise<boolean | null> {
+  if (!globalThis.crypto?.subtle) return null;
+  const input = typeof value === "string" ? new TextEncoder().encode(value) : value;
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", input);
+  const actual = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return actual === expectedDigest.toLowerCase().replace(/^sha256:/, "");
+}

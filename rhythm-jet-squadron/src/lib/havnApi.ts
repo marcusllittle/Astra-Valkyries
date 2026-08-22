@@ -171,6 +171,66 @@ export interface NetworkJobDetail {
   };
 }
 
+export interface ArtifactReceipt {
+  schema: "havnai.astra.artifact-receipt";
+  version: number;
+  job_id: string;
+  run_id: string;
+  owner_commitment: string;
+  artifact: {
+    id: string;
+    kind: "image" | "video";
+    content_type: string;
+    size_bytes: number;
+    sha256: string;
+    digest_source: "node_upload" | "coordinator_scan";
+    created_at: number;
+  };
+  execution: {
+    status: string;
+    task_type: string;
+    creator_node_id: string;
+    queued_at: number;
+    completed_at: number;
+    attempt_count: number;
+    model: {
+      key: string;
+      name: string;
+      pipeline: string;
+      tier: string;
+    };
+  };
+  routing: {
+    strategy: "automatic" | "player_affinity";
+    preferred_node_id: string | null;
+    preference_honored: boolean | null;
+  };
+  settlement: {
+    execution_status: string;
+    quality_status: string;
+    outcome: string;
+    credits_spent: number;
+    node_reward: number;
+    reward_asset_type: string;
+    transaction_hash: string | null;
+    settled_at: number;
+  };
+  game: {
+    pilot_id: string;
+    outfit_id: string;
+    map_id: string;
+    grade: string;
+  };
+}
+
+export interface ArtifactReceiptResponse {
+  receipt: ArtifactReceipt;
+  canonical_json: string;
+  receipt_sha256: string;
+  issued_at: number;
+  artifact_url?: string | null;
+}
+
 export interface NetworkFetchResult<T> {
   data: T | null;
   offline: boolean;
@@ -466,6 +526,26 @@ export async function fetchNetworkJob(jobId: string): Promise<NetworkJobDetail |
     return typeof raw.id === "string" ? raw as NetworkJobDetail : null;
   } catch {
     return null;
+  }
+}
+
+export function artifactReceiptJsonUrl(jobId: string): string {
+  return `${API_BASE}/astra/artifacts/${encodeURIComponent(jobId)}/receipt`;
+}
+
+/** Fetch a finalized, prompt-free receipt for one Astra artifact. */
+export async function fetchArtifactReceipt(
+  jobId: string,
+): Promise<{ data: ArtifactReceiptResponse | null; error: string | null }> {
+  try {
+    const res = await fetch(artifactReceiptJsonUrl(jobId));
+    const body = await res.json().catch(() => ({})) as Partial<ArtifactReceiptResponse> & { error?: string };
+    if (!res.ok || !body.receipt || typeof body.canonical_json !== "string") {
+      return { data: null, error: body.error || `receipt_http_${res.status}` };
+    }
+    return { data: body as ArtifactReceiptResponse, error: null };
+  } catch {
+    return { data: null, error: "receipt_network_error" };
   }
 }
 
