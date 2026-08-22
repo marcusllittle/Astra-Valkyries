@@ -10,12 +10,14 @@ import {
   fetchArtifactReceiptProof,
   fetchGalleryImages,
   fetchNetworkJob,
+  fetchNodeRewardClaims,
   fetchNetworkSnapshot,
   resolveHavnAssetUrl,
   type ArtifactReceiptResponse,
   type ArtifactReceiptInclusionProof,
   type AstraCampaign,
   type NetworkNode,
+  type NodeRewardClaim,
   type NetworkSnapshot,
 } from "../lib/havnApi";
 import {
@@ -26,6 +28,7 @@ import {
 import {
   humanizeMachineName,
   mergeForgeArtifacts,
+  summarizeNodeRewards,
   verifyReceiptInclusionProof,
   verifySha256,
   type ForgeArtifact,
@@ -34,6 +37,7 @@ import {
 const ACTIVE_POLL_MS = 6000;
 const IDLE_POLL_MS = 20000;
 const MAX_JOB_DETAILS = 20;
+const HAVNAI_URL = (import.meta.env.VITE_HAVNAI_WEB_URL ?? "https://joinhavn.io").replace(/\/+$/, "");
 
 interface ReceiptViewState {
   jobId: string;
@@ -109,7 +113,7 @@ function NodeCard({
         <div><span>Reliability</span><strong>{successRate ? `${formatNumber(successRate, 2)}%` : "New"}</strong></div>
         <div><span>Trust</span><strong>{trustScore == null ? humanizeMachineName(node.trust?.level) : formatNumber(trustScore, 2)}</strong></div>
         <div><span>Attempts</span><strong>{formatNumber(node.performance?.attempts_total ?? 0)}</strong></div>
-        <div><span>Paid</span><strong>{formatNumber(node.payouts?.total ?? 0, 2)} HAI</strong></div>
+        <div><span>Tracked</span><strong>{formatNumber(node.payouts?.total ?? 0, 2)} HAI</strong></div>
       </div>
 
       <div className="network-utilization">
@@ -145,10 +149,12 @@ export default function NetworkScreen() {
   const wallet = useWallet();
   const [snapshot, setSnapshot] = useState<NetworkSnapshot | null>(null);
   const [campaign, setCampaign] = useState<AstraCampaign | null>(null);
+  const [nodeRewards, setNodeRewards] = useState<NodeRewardClaim[]>([]);
   const [artifacts, setArtifacts] = useState<ForgeArtifact[]>([]);
   const [loading, setLoading] = useState(true);
   const [networkOffline, setNetworkOffline] = useState(false);
   const [campaignOffline, setCampaignOffline] = useState(false);
+  const [rewardsOffline, setRewardsOffline] = useState(false);
   const [artifactsOffline, setArtifactsOffline] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [refreshNonce, setRefreshNonce] = useState(0);
@@ -163,19 +169,24 @@ export default function NetworkScreen() {
 
     const load = async (initial: boolean) => {
       if (initial) setLoading(true);
-      const [networkResult, campaignResult, galleryResult] = await Promise.all([
+      const [networkResult, campaignResult, galleryResult, rewardsResult] = await Promise.all([
         fetchNetworkSnapshot(),
         fetchAstraCampaign(wallet.address),
         wallet.address
           ? fetchGalleryImages(wallet.address)
           : Promise.resolve({ images: [], offline: false }),
+        wallet.address
+          ? fetchNodeRewardClaims(wallet.address)
+          : Promise.resolve({ data: null, offline: false }),
       ]);
       if (cancelled) return;
 
       if (networkResult.data) setSnapshot(networkResult.data);
       if (campaignResult.data) setCampaign(campaignResult.data);
+      setNodeRewards(rewardsResult.data?.claims ?? []);
       setNetworkOffline(networkResult.offline);
       setCampaignOffline(campaignResult.offline);
+      setRewardsOffline(rewardsResult.offline);
       setArtifactsOffline(galleryResult.offline);
 
       const details = new Map();
@@ -307,6 +318,7 @@ export default function NetworkScreen() {
   const queued = snapshot?.job_summary?.queued_jobs ?? summary?.tasks_backlog ?? 0;
   const completedToday = snapshot?.job_summary?.jobs_completed_today ?? summary?.jobs_completed_today ?? 0;
   const distributed = snapshot?.job_summary?.total_distributed ?? summary?.total_rewarded ?? 0;
+  const rewardSummary = useMemo(() => summarizeNodeRewards(nodeRewards), [nodeRewards]);
 
   return (
     <div className="screen network-screen">
@@ -333,7 +345,7 @@ export default function NetworkScreen() {
         <div><span>Creators online</span><strong>{loading && !summary ? "--" : `${summary?.online_nodes ?? 0} / ${summary?.total_nodes ?? 0}`}</strong></div>
         <div><span>Render queue</span><strong>{loading && !summary ? "--" : formatNumber(queued)}</strong></div>
         <div><span>Completed today</span><strong>{loading && !summary ? "--" : formatNumber(completedToday)}</strong></div>
-        <div className="network-metric-reward"><span>Distributed to nodes</span><strong>{loading && !summary ? "--" : `${formatNumber(distributed, 2)} HAI`}</strong></div>
+        <div className="network-metric-reward"><span>Tracked node rewards</span><strong>{loading && !summary ? "--" : `${formatNumber(distributed, 2)} HAI`}</strong></div>
       </section>
 
       <section className="network-campaign" aria-label="Community campaign">
@@ -426,11 +438,55 @@ export default function NetworkScreen() {
         ) : null}
       </section>
 
+      <section className="network-settlement" aria-label="Operator settlement">
+        <div className="network-settlement-head">
+          <div>
+            <span className="network-section-index">02 / OPERATOR SETTLEMENT</span>
+            <h2>Your node rewards</h2>
+          </div>
+          <span className="network-status" data-status={rewardsOffline ? "offline" : "online"}>
+            <span className="network-status-dot" />
+            {rewardsOffline ? "Ledger unavailable" : "Sepolia ledger"}
+          </span>
+        </div>
+
+        {!wallet.address ? (
+          <div className="network-settlement-empty">
+            <span>Connect the node operator wallet to resolve its payout proofs.</span>
+            <button
+              type="button"
+              className="btn btn-primary"
+              disabled={!wallet.available || wallet.status === "connecting"}
+              onClick={() => void wallet.connect()}
+            >
+              {wallet.status === "connecting" ? "CONNECTING..." : "CONNECT WALLET"}
+            </button>
+          </div>
+        ) : rewardsOffline ? (
+          <div className="network-settlement-empty">
+            <span>Operator settlement telemetry is unavailable. Retrying automatically.</span>
+          </div>
+        ) : (
+          <div className="network-settlement-grid">
+            <div><span>Tracked</span><strong>{formatNumber(rewardSummary.tracked, 6)} HAI</strong></div>
+            <div className="is-claimable"><span>Claimable</span><strong>{formatNumber(rewardSummary.claimable, 6)} HAI</strong></div>
+            <div><span>Awaiting root</span><strong>{formatNumber(rewardSummary.awaitingRoot, 6)} HAI</strong></div>
+            <div className="is-claimed"><span>Claimed on-chain</span><strong>{formatNumber(rewardSummary.claimed, 6)} HAI</strong></div>
+            <div className="network-settlement-action">
+              <span>{rewardSummary.claimableCount} published proof{rewardSummary.claimableCount === 1 ? "" : "s"}</span>
+              <a className="btn btn-primary" href={`${HAVNAI_URL}/node-rewards`} target="_blank" rel="noopener noreferrer">
+                {rewardSummary.claimableCount > 0 ? "CLAIM ON SEPOLIA" : "OPEN CLAIM LEDGER"}
+              </a>
+            </div>
+          </div>
+        )}
+      </section>
+
       <main className="network-workspace">
         <section className="network-panel network-creators">
           <div className="network-section-head">
             <div>
-              <span className="network-section-index">02 / CREATOR TOPOLOGY</span>
+              <span className="network-section-index">03 / CREATOR TOPOLOGY</span>
               <h2>Active compute fleet</h2>
             </div>
             <span className="network-section-count">{nodes.filter((node) => node.online).length} routing</span>
@@ -457,7 +513,7 @@ export default function NetworkScreen() {
         <section className="network-panel network-artifacts">
           <div className="network-section-head">
             <div>
-              <span className="network-section-index">03 / YOUR ARTIFACT LEDGER</span>
+              <span className="network-section-index">04 / YOUR ARTIFACT LEDGER</span>
               <h2>Victory render queue</h2>
             </div>
             {wallet.short && <span className="network-wallet">{wallet.short}</span>}

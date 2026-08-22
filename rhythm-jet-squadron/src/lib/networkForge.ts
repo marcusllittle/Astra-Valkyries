@@ -1,4 +1,9 @@
-import type { ArtifactReceiptInclusionProof, GalleryImage, NetworkJobDetail } from "./havnApi";
+import type {
+  ArtifactReceiptInclusionProof,
+  GalleryImage,
+  NetworkJobDetail,
+  NodeRewardClaim,
+} from "./havnApi";
 
 export type ForgeArtifactStatus = "queued" | "rendering" | "finalizing" | "completed" | "failed";
 
@@ -30,11 +35,48 @@ export interface RunDispatchView {
   reward: number | null;
 }
 
+export interface NodeRewardSummary {
+  tracked: number;
+  claimable: number;
+  awaitingRoot: number;
+  claimed: number;
+  claimableCount: number;
+  invalidCount: number;
+}
+
 const FAILED_STATUSES = new Set(["failed", "error", "cancelled", "canceled", "rejected"]);
 const COMPLETED_STATUSES = new Set(["completed", "complete", "succeeded", "success"]);
 
 function clampProgress(value: number): number {
   return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+/** Keep simulated, claimable, and verified on-chain rewards visibly distinct. */
+export function summarizeNodeRewards(claims: NodeRewardClaim[]): NodeRewardSummary {
+  return claims.reduce<NodeRewardSummary>((summary, claim) => {
+    const amount = Number(claim.amount_hai);
+    if (!claim.valid || !Number.isFinite(amount) || amount <= 0) {
+      summary.invalidCount += 1;
+      return summary;
+    }
+    summary.tracked += amount;
+    if (claim.claimed) {
+      summary.claimed += amount;
+    } else if (claim.batch_status === "published") {
+      summary.claimable += amount;
+      summary.claimableCount += 1;
+    } else {
+      summary.awaitingRoot += amount;
+    }
+    return summary;
+  }, {
+    tracked: 0,
+    claimable: 0,
+    awaitingRoot: 0,
+    claimed: 0,
+    claimableCount: 0,
+    invalidCount: 0,
+  });
 }
 
 /** Convert the coordinator's live job contract into the compact combat uplink. */

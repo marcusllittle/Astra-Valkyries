@@ -208,6 +208,31 @@ export interface NetworkSnapshot {
   };
 }
 
+export interface NodeRewardClaim {
+  schema_version: "havnai-node-payout-claims.v1";
+  batch_id: number;
+  leaf_index: number;
+  wallet: string;
+  amount_wei: string;
+  amount_hai: string;
+  node_ids: string[];
+  payout_count: number;
+  batch_status: "ready" | "pending" | "published";
+  publish_tx_hash?: string | null;
+  claimed: boolean;
+  claimed_tx_hash?: string | null;
+  claimed_at?: number | null;
+  valid: boolean;
+  network: "sepolia";
+  chain_id: 11155111;
+  explorer_url?: string | null;
+}
+
+export interface NodeRewardClaimsResponse {
+  wallet: string;
+  claims: NodeRewardClaim[];
+}
+
 export interface NetworkJobDetail {
   id: string;
   status: string;
@@ -612,6 +637,26 @@ export async function fetchNetworkSnapshot(): Promise<NetworkFetchResult<Network
       return { data: null, offline: true };
     }
     return { data: raw as NetworkSnapshot, offline: false };
+  } catch {
+    return { data: null, offline: true };
+  }
+}
+
+/** Fetch proof-bound Sepolia rewards for one connected operator wallet. */
+export async function fetchNodeRewardClaims(
+  wallet: string,
+): Promise<NetworkFetchResult<NodeRewardClaimsResponse>> {
+  try {
+    const res = await fetchWithRetry(
+      `${API_BASE}/payouts/claims?wallet=${encodeURIComponent(wallet)}`,
+      {},
+    );
+    if (!res.ok) return { data: null, offline: true };
+    const raw = await res.json() as Partial<NodeRewardClaimsResponse>;
+    if (typeof raw.wallet !== "string" || !Array.isArray(raw.claims)) {
+      return { data: null, offline: true };
+    }
+    return { data: raw as NodeRewardClaimsResponse, offline: false };
   } catch {
     return { data: null, offline: true };
   }

@@ -1,10 +1,16 @@
 import { describe, expect, it } from "vitest";
-import type { ArtifactReceiptInclusionProof, GalleryImage, NetworkJobDetail } from "../lib/havnApi";
+import type {
+  ArtifactReceiptInclusionProof,
+  GalleryImage,
+  NetworkJobDetail,
+  NodeRewardClaim,
+} from "../lib/havnApi";
 import {
   buildRunDispatch,
   deriveArtifactStatus,
   humanizeMachineName,
   mergeForgeArtifacts,
+  summarizeNodeRewards,
   verifyReceiptInclusionProof,
   verifySha256,
 } from "../lib/networkForge";
@@ -151,5 +157,38 @@ describe("Network Forge artifact state", () => {
     await expect(
       verifyReceiptInclusionProof({ ...proof, merkle_root: "ff".repeat(32) }),
     ).resolves.toBe(false);
+  });
+
+  it("keeps tracked, claimable, and confirmed node rewards distinct", () => {
+    const base: NodeRewardClaim = {
+      schema_version: "havnai-node-payout-claims.v1",
+      batch_id: 1,
+      leaf_index: 0,
+      wallet: "0x2222222222222222222222222222222222222222",
+      amount_wei: "1500000000000000000",
+      amount_hai: "1.5",
+      node_ids: ["creator-one"],
+      payout_count: 1,
+      batch_status: "ready",
+      claimed: false,
+      valid: true,
+      network: "sepolia",
+      chain_id: 11155111,
+    };
+    const summary = summarizeNodeRewards([
+      base,
+      { ...base, batch_id: 2, amount_hai: "4.75", batch_status: "published" },
+      { ...base, batch_id: 3, amount_hai: "2.25", batch_status: "published", claimed: true },
+      { ...base, batch_id: 4, amount_hai: "99", valid: false },
+    ]);
+
+    expect(summary).toEqual({
+      tracked: 8.5,
+      claimable: 4.75,
+      awaitingRoot: 1.5,
+      claimed: 2.25,
+      claimableCount: 1,
+      invalidCount: 1,
+    });
   });
 });
