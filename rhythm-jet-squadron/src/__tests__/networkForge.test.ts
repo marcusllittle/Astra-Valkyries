@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { GalleryImage, NetworkJobDetail } from "../lib/havnApi";
+import type { ArtifactReceiptInclusionProof, GalleryImage, NetworkJobDetail } from "../lib/havnApi";
 import {
   buildRunDispatch,
   deriveArtifactStatus,
   humanizeMachineName,
   mergeForgeArtifacts,
+  verifyReceiptInclusionProof,
   verifySha256,
 } from "../lib/networkForge";
 
@@ -127,5 +128,28 @@ describe("Network Forge artifact state", () => {
     const expected = "sha256:2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824";
     await expect(verifySha256("hello", expected)).resolves.toBe(true);
     await expect(verifySha256("changed", expected)).resolves.toBe(false);
+  });
+
+  it("verifies a domain-separated Merkle inclusion path locally", async () => {
+    const proof: ArtifactReceiptInclusionProof = {
+      batch_id: 7,
+      job_id: "job-1",
+      leaf_index: 0,
+      receipt_hash: "01".repeat(32),
+      leaf_hash: "dcffe786ded16d283c663846ad0c4ff26558fccde36ca9d30b2ea19eade9fc0e",
+      proof: [{ position: "right", hash: "02".repeat(32) }],
+      schema_version: "receipt-merkle-batch.v1",
+      merkle_root: "f1e490ddae693a2facccbb7269b87e52f5796d103d4ef1417a6e8cf47d7fe99b",
+      leaf_count: 2,
+      status: "anchored",
+      anchor_network: "sepolia",
+      anchor_tx_hash: `0x${"03".repeat(32)}`,
+      valid: true,
+    };
+
+    await expect(verifyReceiptInclusionProof(proof)).resolves.toBe(true);
+    await expect(
+      verifyReceiptInclusionProof({ ...proof, merkle_root: "ff".repeat(32) }),
+    ).resolves.toBe(false);
   });
 });

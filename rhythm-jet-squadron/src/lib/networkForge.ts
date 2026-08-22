@@ -1,4 +1,4 @@
-import type { GalleryImage, NetworkJobDetail } from "./havnApi";
+import type { ArtifactReceiptInclusionProof, GalleryImage, NetworkJobDetail } from "./havnApi";
 
 export type ForgeArtifactStatus = "queued" | "rendering" | "finalizing" | "completed" | "failed";
 
@@ -131,4 +131,37 @@ export async function verifySha256(
   const digest = await globalThis.crypto.subtle.digest("SHA-256", input);
   const actual = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
   return actual === expectedDigest.toLowerCase().replace(/^sha256:/, "");
+}
+
+function hexBytes(value: string): Uint8Array | null {
+  const normalized = value.toLowerCase().replace(/^0x/, "");
+  if (!/^[a-f0-9]+$/.test(normalized) || normalized.length % 2 !== 0) return null;
+  const pairs = normalized.match(/.{2}/g);
+  return pairs ? Uint8Array.from(pairs, (pair) => Number.parseInt(pair, 16)) : null;
+}
+
+async function sha256Bytes(value: Uint8Array): Promise<Uint8Array> {
+  const exact = value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength) as ArrayBuffer;
+  return new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", exact));
+}
+
+/** Verify the domain-separated receipt path without trusting the coordinator's `valid` flag. */
+export async function verifyReceiptInclusionProof(
+  inclusion: ArtifactReceiptInclusionProof,
+): Promise<boolean | null> {
+  if (!globalThis.crypto?.subtle) return null;
+  const receipt = hexBytes(inclusion.receipt_hash);
+  const root = inclusion.merkle_root.toLowerCase().replace(/^0x/, "");
+  if (!receipt || receipt.length !== 32 || !/^[a-f0-9]{64}$/.test(root)) return false;
+
+  let current = await sha256Bytes(Uint8Array.from([0, ...receipt]));
+  for (const step of inclusion.proof) {
+    const sibling = hexBytes(step.hash);
+    if (!sibling || sibling.length !== 32 || !["left", "right"].includes(step.position)) return false;
+    const left = step.position === "left" ? sibling : current;
+    const right = step.position === "left" ? current : sibling;
+    current = await sha256Bytes(Uint8Array.from([1, ...left, ...right]));
+  }
+  const actual = Array.from(current, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return actual === root;
 }

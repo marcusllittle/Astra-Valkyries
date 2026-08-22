@@ -231,6 +231,27 @@ export interface ArtifactReceiptResponse {
   artifact_url?: string | null;
 }
 
+export interface ArtifactReceiptInclusionProof {
+  batch_id: number;
+  job_id: string;
+  leaf_index: number;
+  receipt_hash: string;
+  leaf_hash: string;
+  proof: Array<{ position: "left" | "right"; hash: string }>;
+  schema_version: "receipt-merkle-batch.v1";
+  merkle_root: string;
+  leaf_count: number;
+  status: "ready" | "pending" | "anchored";
+  anchor_network?: string | null;
+  anchor_chain_id?: number | null;
+  anchor_tx_hash?: string | null;
+  anchor_block?: number | null;
+  anchor_from?: string | null;
+  anchor_to?: string | null;
+  anchored_at?: number | null;
+  valid: boolean;
+}
+
 export interface NetworkFetchResult<T> {
   data: T | null;
   offline: boolean;
@@ -533,6 +554,10 @@ export function artifactReceiptJsonUrl(jobId: string): string {
   return `${API_BASE}/astra/artifacts/${encodeURIComponent(jobId)}/receipt`;
 }
 
+export function artifactReceiptProofJsonUrl(jobId: string): string {
+  return `${artifactReceiptJsonUrl(jobId)}/proof`;
+}
+
 /** Fetch a finalized, prompt-free receipt for one Astra artifact. */
 export async function fetchArtifactReceipt(
   jobId: string,
@@ -546,6 +571,22 @@ export async function fetchArtifactReceipt(
     return { data: body as ArtifactReceiptResponse, error: null };
   } catch {
     return { data: null, error: "receipt_network_error" };
+  }
+}
+
+/** Fetch the receipt's Merkle inclusion path and Sepolia anchor state. */
+export async function fetchArtifactReceiptProof(
+  jobId: string,
+): Promise<{ data: ArtifactReceiptInclusionProof | null; error: string | null }> {
+  try {
+    const res = await fetch(artifactReceiptProofJsonUrl(jobId));
+    const body = await res.json().catch(() => ({})) as Partial<ArtifactReceiptInclusionProof> & { error?: string };
+    if (!res.ok || !Array.isArray(body.proof) || typeof body.merkle_root !== "string") {
+      return { data: null, error: body.error || `receipt_proof_http_${res.status}` };
+    }
+    return { data: body as ArtifactReceiptInclusionProof, error: null };
+  } catch {
+    return { data: null, error: "receipt_proof_network_error" };
   }
 }
 
