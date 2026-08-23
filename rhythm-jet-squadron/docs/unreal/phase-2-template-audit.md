@@ -104,13 +104,15 @@ presets under `/Game/AstraRenderLab/Cinematics/RenderPresets`.
 writes a generated audit to
 `Saved/AstraRenders/manifests/mrq-preset-audit.json`. Alpha Output is enabled
 through `r.PostProcessing.PropagateAlpha=True`; primitive alpha holdouts remain
-disabled because the current overlays do not require them.
+disabled because the current overlays do not require them. Every preset writes
+to `{job_name}/{shot_name}/{frame_number}` so multi-job queues cannot overwrite
+outputs when the PIE executor does not populate `{sequence_name}`.
 
-`Content/Python/astra_mrq_validate.py` queued the shared Hub map and
-`LS_HomeOrbitLoop` with the validation preset. MRQ completed one job, rendered
-one `640x360` PNG, flushed it to disk, and exited normally. The frame is
-nonblank and shows the complete Astra Interceptor against the orbital
-background. Full-length renders, delivery codecs, and side-by-side app review
+`Content/Python/astra_mrq_validate.py` queued the shared Hub map and all three
+Hub sequences with the validation preset. MRQ completed three jobs, rendered
+three uniquely named `640x360` PNGs, flushed them to disk, and exited normally.
+Every frame is nonblank and shows the Astra Interceptor with its assigned
+environment. Full-length renders, delivery codecs, and side-by-side app review
 remain production gates rather than completed outputs.
 
 ## Final state
@@ -121,6 +123,7 @@ configurations. All seven render presets are saved and not dirty. Four
 specialized materials recompile, the reusable lighting/stage Blueprints compile
 with warnings treated as errors, and the three hub sequences have verified
 camera keys. MRQ reported stale folder-only binding references while loading
-`LS_HomeOrbitLoop`; the missing bindings were not evaluation tracks, did not
-dirty the saved sequence, and are retained as a cleanup item before final hub
-delivery.
+the three Hub sequences. The repaired folder membership was saved to each
+sequence, and a second three-job validation completed without new stale-folder
+warnings. The removed IDs were organizational references, not evaluation
+tracks.

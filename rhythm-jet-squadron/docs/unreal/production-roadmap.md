@@ -83,10 +83,10 @@ Implementation status and MCP verification are recorded in
 The reusable material, lighting, Niagara, Sequencer, and Movie Render Queue
 baseline is callable and saved. Seven project-owned MRQ presets now cover
 cinematic, UI-loop, still, alpha VFX, horizontal marketing, vertical marketing,
-and low-cost validation output. The project has Alpha Output enabled, and a
-one-frame `LS_HomeOrbitLoop` render completed through the Unreal Python/MRQ API
-at the expected resolution. Final encoded comparison renders and in-app review
-remain approval gates.
+and low-cost validation output. The project has Alpha Output enabled, and
+frame 0 of all three Hub sequences rendered through the Unreal Python/MRQ API
+at the expected resolution with unique output paths. Final encoded comparison
+renders and in-app review remain approval gates.
 
 ### Phase 3: Home, Spaceport, and Hangar
 
