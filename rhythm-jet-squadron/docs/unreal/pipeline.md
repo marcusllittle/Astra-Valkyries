@@ -66,8 +66,39 @@ currently verified MCP surface is recorded in
 ## Render delivery
 
 Every sequence/render must have an entry in `render-manifest.json` before final
-rendering. The entry records the owning screen, Unreal map and sequence, HD URL,
-local fallback, phase, and approval status.
+rendering. The entry records the owning screen, Unreal map, sequence, render
+preset, HD URL, local fallback, phase, and approval status.
+
+The project-owned MRQ presets live under
+`/Game/AstraRenderLab/Cinematics/RenderPresets`:
+
+| Preset | Delivery role |
+| --- | --- |
+| `MPC_Astra_Cinematic_1080p` | 24 fps 16:9 cinematics and combat plates |
+| `MPC_Astra_UILoop_1080p` | 30 fps 16:9 UI loops |
+| `MPC_Astra_Still_4K` | 4K still and dossier masters |
+| `MPC_Astra_VFXAlpha_1080p` | 60 fps RGBA VFX image sequences |
+| `MPC_Astra_Marketing_4K` | 4K horizontal marketing masters |
+| `MPC_Astra_Marketing_Vertical_4K` | 4K vertical marketing masters |
+| `MPC_Astra_Validation_640x360` | One-frame render-pipeline checks |
+
+From Unreal's Output Log command field, create or refresh the presets with:
+
+```text
+py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_mrq_presets.py"
+```
+
+Run the current one-frame Hub validation with:
+
+```text
+py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_mrq_validate.py"
+```
+
+Preset audits and rendered image sequences are generated under
+`Saved/AstraRenders` and are intentionally excluded from source control. The
+source MRQ assets and scripts are versioned. Alpha output requires the checked
+in `r.PostProcessing.PropagateAlpha=True` renderer setting. Video encoding is a
+separate delivery step after image-sequence review.
 
 Validate the contract with:
 

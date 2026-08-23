@@ -80,11 +80,13 @@ recorded in `docs/unreal/mcp-capabilities.md`.
 Implementation status and MCP verification are recorded in
 `docs/unreal/phase-2-template-audit.md`.
 
-The reusable material, lighting, Niagara, and Sequencer baseline is callable
-and saved. Movie Render Queue preset authoring is still pending because the
-connected Unreal MCP server does not expose an MRQ toolset; render delivery is
-not considered approved until deterministic output settings are created and
-verified in Unreal.
+The reusable material, lighting, Niagara, Sequencer, and Movie Render Queue
+baseline is callable and saved. Seven project-owned MRQ presets now cover
+cinematic, UI-loop, still, alpha VFX, horizontal marketing, vertical marketing,
+and low-cost validation output. The project has Alpha Output enabled, and a
+one-frame `LS_HomeOrbitLoop` render completed through the Unreal Python/MRQ API
+at the expected resolution. Final encoded comparison renders and in-app review
+remain approval gates.
 
 ### Phase 3: Home, Spaceport, and Hangar
 
@@ -94,7 +96,8 @@ verified in Unreal.
   and revised launch shot only when it beats the current Blender clip.
 - Gate: desktop/mobile crops retain first-viewport UI readability.
 
-The first reusable stage assemblies and keyed sequences are recorded in
+The first reusable stage assemblies, keyed sequences, assigned MRQ presets,
+and initial MRQ render validation are recorded in
 `docs/unreal/phase-3-hub-audit.md`. They are production work in progress, not
 approved replacements for the current Astra media.
 

@@ -83,21 +83,44 @@ rect-light sources, bounded attenuation, shadows, reflection and GI
 contribution, and real-time skylight capture. Every Blueprint compiles with
 warnings treated as errors.
 
-## Remaining render-template work
+## Movie Render Queue
 
-The connected MCP server exposes Sequencer, Sequencer keyframing, cameras, and
-editor viewport capture, but no Movie Render Queue toolset. The sequence
-templates are valid production inputs; deterministic MRQ presets, horizontal
-and vertical output settings, codecs, alpha handling, and final render tests
-remain pending rather than being represented as completed assets.
+The Movie Render Pipeline plugin is enabled in the project. The connected MCP
+server does not expose a dedicated MRQ toolset, so project-owned Unreal Python
+scripts use the loaded Movie Render Pipeline API to create and validate the
+presets under `/Game/AstraRenderLab/Cinematics/RenderPresets`.
+
+| Preset | Output | Rate | Sampling | Use |
+| --- | ---: | ---: | ---: | --- |
+| `MPC_Astra_Cinematic_1080p` | 1920x1080 | 24 fps | 8 temporal | Cinematics and combat plates |
+| `MPC_Astra_UILoop_1080p` | 1920x1080 | 30 fps | 4 temporal | Seamless UI loops |
+| `MPC_Astra_Still_4K` | 3840x2160 | 24 fps | 8 temporal x 8 spatial | Stills and dossier plates |
+| `MPC_Astra_VFXAlpha_1080p` | 1920x1080 | 60 fps | 8 temporal | Transparent VFX PNG sequences |
+| `MPC_Astra_Marketing_4K` | 3840x2160 | 24 fps | 8 temporal x 2 spatial | Horizontal marketing masters |
+| `MPC_Astra_Marketing_Vertical_4K` | 2160x3840 | 24 fps | 8 temporal x 2 spatial | Vertical marketing masters |
+| `MPC_Astra_Validation_640x360` | 640x360 | 24 fps | 1 temporal | One-frame pipeline checks |
+
+`Content/Python/astra_mrq_presets.py` creates or updates all seven assets and
+writes a generated audit to
+`Saved/AstraRenders/manifests/mrq-preset-audit.json`. Alpha Output is enabled
+through `r.PostProcessing.PropagateAlpha=True`; primitive alpha holdouts remain
+disabled because the current overlays do not require them.
+
+`Content/Python/astra_mrq_validate.py` queued the shared Hub map and
+`LS_HomeOrbitLoop` with the validation preset. MRQ completed one job, rendered
+one `640x360` PNG, flushed it to disk, and exited normally. The frame is
+nonblank and shows the complete Astra Interceptor against the orbital
+background. Full-length renders, delivery codecs, and side-by-side app review
+remain production gates rather than completed outputs.
 
 ## Final state
 
-After the follow-up template and hub work, the Unreal registry contains 70
-Astra assets: 29 StaticMeshes, seven Materials, nine
-MaterialInstanceConstants, six NiagaraSystems, eight LevelSequences, and 11
-Blueprints. All assets are saved. Four specialized materials recompile, all 10
-new lighting/stage Blueprints compile with warnings treated as errors, and the
-three hub sequences have verified camera keys. Earlier session log entries for
-the first decal graph and stale replaced Sequencer bindings were repaired and
-did not recur when the assets were reopened.
+After the follow-up template, hub, dressing, and MRQ work, the Unreal registry
+contains 85 Astra assets, including seven new Movie Pipeline primary
+configurations. All seven render presets are saved and not dirty. Four
+specialized materials recompile, the reusable lighting/stage Blueprints compile
+with warnings treated as errors, and the three hub sequences have verified
+camera keys. MRQ reported stale folder-only binding references while loading
+`LS_HomeOrbitLoop`; the missing bindings were not evaluation tracks, did not
+dirty the saved sequence, and are retained as a cleanup item before final hub
+delivery.
