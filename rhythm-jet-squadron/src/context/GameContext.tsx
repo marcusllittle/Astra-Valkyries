@@ -131,7 +131,7 @@ interface GameContextValue {
   updateSettings: (partial: Partial<GameSettings>) => void;
   // Progression
   addPilotXp: (pilotId: string, xp: number) => void;
-  submitRunStats: (stats: { pilotId: string; mapId: string; score: number; kills: number; grade: string; bossDefeated: boolean }) => void;
+  submitRunStats: (stats: { pilotId: string; mapId: string; score: number; kills: number; grade: string; bossDefeated: boolean; flawlessWaves?: number }) => void;
   setSelectedModifiers: (modifiers: string[]) => void;
   claimMission: (missionId: string) => { credits: number; xp: number } | null;
   // Narrative
@@ -294,7 +294,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
    * several setSave calls would let a mid-sequence unmount leave the save
    * half-advanced.
    */
-  const submitRunStats = useCallback((stats: { pilotId: string; mapId: string; score: number; kills: number; grade: string; bossDefeated: boolean }) => {
+  const submitRunStats = useCallback((stats: { pilotId: string; mapId: string; score: number; kills: number; grade: string; bossDefeated: boolean; flawlessWaves?: number }) => {
     const xpEarned = calculateRunXp(stats.score, stats.kills, stats.grade, stats.bossDefeated);
     const activeMissions = [...getDailyMissions(), ...getWeeklyMissions()];
     const run = {
@@ -302,6 +302,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       kills: stats.kills,
       grade: stats.grade,
       bossDefeated: stats.bossDefeated,
+      flawlessWaves: stats.flawlessWaves ?? 0,
     };
 
     setSave((s) => {

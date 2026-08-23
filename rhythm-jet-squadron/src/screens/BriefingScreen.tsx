@@ -10,18 +10,17 @@ import {
   type NetworkNode,
 } from "../lib/havnApi";
 import { humanizeMachineName } from "../lib/networkForge";
+import {
+  getMapCinematic,
+  getPilotLaunchClip,
+  unseenCinematicClips,
+} from "../lib/missionCinematics";
 
 interface BriefingLocationState {
   scriptId?: string;
   returnTo?: string;
 }
 
-
-const MAP_BRIEFING_SCENE_ART: Record<string, string> = {
-  "nebula-runway": "/assets/cutins/scenes/nebula_runway_briefing.png",
-  "solar-rift": "/assets/cutins/scenes/solar_rift_briefing.png",
-  "abyss-crown": "/assets/cutins/scenes/abyss_crown_briefing.png",
-};
 
 const MAP_BRIEFING_NOTES: Record<string, { label: string; tone: string; accent: string }> = {
   "nebula-runway": { label: "Slipstream corridor", tone: "Fast patrol lane with layered drone pressure.", accent: "#66d9ef" },
@@ -46,18 +45,21 @@ export default function BriefingScreen() {
   const [lineIndex, setLineIndex] = useState(0);
   const [creatorNodes, setCreatorNodes] = useState<NetworkNode[]>([]);
   const [networkOffline, setNetworkOffline] = useState(false);
+  const [motionUnavailable, setMotionUnavailable] = useState(false);
 
   const currentNode = script?.nodes.find((n) => n.id === currentNodeId);
   const mapId = script?.mapId ?? save.selectedMapId ?? "nebula-runway";
   const note = MAP_BRIEFING_NOTES[mapId] ?? MAP_BRIEFING_NOTES["nebula-runway"];
   const selectedPilot = pilotsData.find((pilot) => pilot.id === save.selectedPilotId) ?? null;
   const selectedOutfit = outfitsData.find((outfit) => outfit.id === save.selectedOutfitId) ?? null;
-  const artwork = MAP_BRIEFING_SCENE_ART[mapId] ?? selectedOutfit?.artUrl ?? selectedPilot?.artUrl ?? "/assets/pilots/nova_starling.png";
+  const mapCinematic = getMapCinematic(mapId);
+  const artwork = mapCinematic?.poster ?? selectedOutfit?.artUrl ?? selectedPilot?.artUrl ?? "/assets/pilots/nova_starling.png";
   const loadoutLabel = [selectedPilot?.name, selectedOutfit?.name].filter(Boolean).join(" • ");
 
   useEffect(() => {
     setCurrentNodeId(script?.startNodeId ?? "");
     setLineIndex(0);
+    setMotionUnavailable(false);
   }, [script?.id]);
 
   useEffect(() => {
@@ -90,8 +92,19 @@ export default function BriefingScreen() {
   }, [directRoute, navigate, script]);
 
   const navigateAfterDialogue = useCallback(() => {
+    const clips = unseenCinematicClips(
+      [getPilotLaunchClip(save.selectedPilotId, mapId)],
+      save.seenCutscenes,
+    );
+    if (clips.length > 0) {
+      navigate("/video-cutscene", {
+        replace: true,
+        state: { clips, returnTo: directRoute },
+      });
+      return;
+    }
     navigate(directRoute, { replace: true });
-  }, [directRoute, navigate]);
+  }, [directRoute, mapId, navigate, save.seenCutscenes, save.selectedPilotId]);
 
   const handleNext = useCallback(() => {
     if (!currentNode) return;
@@ -113,8 +126,8 @@ export default function BriefingScreen() {
   }, []);
 
   const handleSkip = useCallback(() => {
-    navigateAfterDialogue();
-  }, [navigateAfterDialogue]);
+    navigate(directRoute, { replace: true });
+  }, [directRoute, navigate]);
 
   if (!script || !currentNode) return null;
 
@@ -188,12 +201,27 @@ export default function BriefingScreen() {
 
         <section className="briefing-dialogue-stage briefing-dialogue-stage-art">
           <div className="briefing-stage-backdrop" style={{ boxShadow: `0 0 60px ${note.accent}22` }}>
-            {artwork ? (
+            {mapCinematic?.video && !motionUnavailable ? (
+              <video
+                className="briefing-art-video"
+                src={mapCinematic.video}
+                poster={artwork}
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="auto"
+                onError={() => setMotionUnavailable(true)}
+              />
+            ) : artwork ? (
               <img className="briefing-art-image" src={artwork} alt="Mission briefing art" />
             ) : (
               <div className="briefing-art-placeholder">✦</div>
             )}
             <div className="briefing-stage-wash" />
+            {mapCinematic?.video && !motionUnavailable ? (
+              <span className="briefing-motion-status">LTX tactical feed</span>
+            ) : null}
           </div>
           <DialogueBox
             line={line}

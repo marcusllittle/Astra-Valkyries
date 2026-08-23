@@ -50,6 +50,7 @@ import {
   type ShmupSecondaryKey,
 } from "../lib/shmupBalance";
 import { gradeShmupRun, type ShmupRunResult } from "../lib/shmupResults";
+import { flawlessRouteReward, isFlawlessRoute } from "../lib/tacticalObjectives";
 import {
   getPrimaryFireInterval,
   spawnPrimaryShots,
@@ -383,6 +384,9 @@ interface HudState {
   bossLabel: string;
   bossHpRatio: number;
   bossWarning: boolean;
+  flawlessWaves: number;
+  flawlessStreak: number;
+  tacticalNotice: { kind: "flawless" | "broken"; score: number; streak: number } | null;
   secondaryName: string;
   secondaryReady: boolean;
   secondaryCooldownPct: number;
@@ -811,6 +815,9 @@ function createHudState(modifiers: ShmupModifiers, activeMap: ShmupMap): HudStat
     bossLabel: "",
     bossHpRatio: 0,
     bossWarning: false,
+    flawlessWaves: 0,
+    flawlessStreak: 0,
+    tacticalNotice: null,
     secondaryName: secondaryName(modifiers.secondaryKey),
     secondaryReady: true,
     secondaryCooldownPct: 0,
@@ -1055,6 +1062,18 @@ export default function ShmupPlayScreen() {
   const scoreRef = useRef(0);
   const killsRef = useRef(0);
   const damageTakenRef = useRef(0);
+  const activeDeploymentKeyRef = useRef<string | null>(null);
+  const activeDeploymentLoopRef = useRef(0);
+  const deploymentDamageStartRef = useRef(0);
+  const flawlessWavesRef = useRef(0);
+  const flawlessStreakRef = useRef(0);
+  const bestFlawlessStreakRef = useRef(0);
+  const tacticalNoticeRef = useRef<{
+    kind: "flawless" | "broken";
+    score: number;
+    streak: number;
+    untilMs: number;
+  } | null>(null);
   const streakRef = useRef(0);
   const bestMultiplierRef = useRef(1);
   const multiplierSaveReadyRef = useRef(false);
@@ -1508,6 +1527,13 @@ export default function ShmupPlayScreen() {
     scoreRef.current = 0;
     killsRef.current = 0;
     damageTakenRef.current = 0;
+    activeDeploymentKeyRef.current = null;
+    activeDeploymentLoopRef.current = 0;
+    deploymentDamageStartRef.current = 0;
+    flawlessWavesRef.current = 0;
+    flawlessStreakRef.current = 0;
+    bestFlawlessStreakRef.current = 0;
+    tacticalNoticeRef.current = null;
     streakRef.current = 0;
     bestMultiplierRef.current = 1;
     multiplierSaveReadyRef.current = hasMultiplierSave;
@@ -1611,6 +1637,15 @@ export default function ShmupPlayScreen() {
           boss === null &&
           bossIntroStartedRef.current &&
           elapsedMs < bossWarningUntilRef.current,
+        flawlessWaves: flawlessWavesRef.current,
+        flawlessStreak: flawlessStreakRef.current,
+        tacticalNotice: tacticalNoticeRef.current && tacticalNoticeRef.current.untilMs > elapsedMs
+          ? {
+              kind: tacticalNoticeRef.current.kind,
+              score: tacticalNoticeRef.current.score,
+              streak: tacticalNoticeRef.current.streak,
+            }
+          : null,
         secondaryName: secondaryName(secondaryKey),
         secondaryReady: secondaryRemaining <= 0,
         secondaryCooldownPct: secondaryPct,
@@ -1691,6 +1726,40 @@ export default function ShmupPlayScreen() {
         OVERDRIVE_MAX
       );
       activateOverdriveIfReady(elapsedMs);
+    };
+
+    const beginDeployment = (deploymentKey: string, loop: number, elapsedMs: number) => {
+      if (activeDeploymentKeyRef.current === deploymentKey) return;
+
+      if (activeDeploymentKeyRef.current !== null) {
+        if (isFlawlessRoute(deploymentDamageStartRef.current, damageTakenRef.current)) {
+          const reward = flawlessRouteReward(
+            flawlessStreakRef.current,
+            activeDeploymentLoopRef.current,
+            runScoreMult,
+          );
+          flawlessWavesRef.current += 1;
+          flawlessStreakRef.current = reward.streak;
+          bestFlawlessStreakRef.current = Math.max(
+            bestFlawlessStreakRef.current,
+            reward.streak,
+          );
+          scoreRef.current += reward.score;
+          addOverdrive(reward.overdrive, elapsedMs);
+          tacticalNoticeRef.current = {
+            kind: "flawless",
+            score: reward.score,
+            streak: reward.streak,
+            untilMs: elapsedMs + 1800,
+          };
+        } else {
+          flawlessStreakRef.current = 0;
+        }
+      }
+
+      activeDeploymentKeyRef.current = deploymentKey;
+      activeDeploymentLoopRef.current = loop;
+      deploymentDamageStartRef.current = damageTakenRef.current;
     };
 
     const extendOverdrive = (elapsedMs: number, extensionMs: number) => {
@@ -2015,6 +2084,7 @@ export default function ShmupPlayScreen() {
     };
 
     const spawnEnemyFromWave = (spawn: ScheduledWaveSpawn, elapsedMs: number) => {
+      beginDeployment(`${spawn.loop}:${spawn.waveLabel}`, spawn.loop, elapsedMs);
       const pattern = spawn.pattern;
       const loopDifficulty = 1 + Math.min(0.45, spawn.loop * 0.08 + elapsedMs / 180_000);
       // Progressive difficulty: enemy bullet speed and count scale over time
@@ -2136,6 +2206,7 @@ export default function ShmupPlayScreen() {
 
     const startBossIntro = (elapsedMs: number) => {
       if (bossIntroStartedRef.current) return;
+      beginDeployment("boss", waveLoopRef.current, elapsedMs);
       bossIntroStartedRef.current = true;
       sfxBossWarning();
       playBossMusic();
@@ -3488,6 +3559,8 @@ export default function ShmupPlayScreen() {
         bossDefeated,
         stage: Math.max(1, Math.floor(elapsedMs / 60_000) + 1),
         maxWeaponLevel: weaponLevelRef.current,
+        flawlessWaves: flawlessWavesRef.current,
+        bestFlawlessStreak: bestFlawlessStreakRef.current,
       };
 
       const scoreRecord: GameResult = {
@@ -3527,6 +3600,15 @@ export default function ShmupPlayScreen() {
       sfxPlayerHit();
       ship.hp = Math.max(0, ship.hp - damageTakenMultiplier);
       damageTakenRef.current += damageTakenMultiplier;
+      if (activeDeploymentKeyRef.current !== null) {
+        flawlessStreakRef.current = 0;
+        tacticalNoticeRef.current = {
+          kind: "broken",
+          score: 0,
+          streak: 0,
+          untilMs: elapsedMs + 900,
+        };
+      }
       lastHitMsRef.current = elapsedMs;
       regenPoolRef.current = 0;
       // Cloak Field / Vanishing Act extend the window after a hit.
@@ -7103,6 +7185,7 @@ export default function ShmupPlayScreen() {
           </div>
           <div className="shmup-subtitle">
             Lv{hud.weaponLevel} {hud.weaponLabel} &middot; {hud.waveLabel}
+            {hud.flawlessWaves > 0 ? ` · Clean ${hud.flawlessWaves}` : ""}
           </div>
         </div>
 
@@ -7191,6 +7274,22 @@ export default function ShmupPlayScreen() {
             <i style={{ width: `${runDispatch.progress}%` }} />
           </span>
         </aside>
+      ) : null}
+
+      {hud.tacticalNotice && !hud.bossWarning ? (
+        <div
+          className={`flawless-route-notice is-${hud.tacticalNotice.kind}`}
+          role="status"
+          aria-live="polite"
+        >
+          <span>{hud.tacticalNotice.kind === "flawless" ? "Flawless route" : "Route broken"}</span>
+          {hud.tacticalNotice.kind === "flawless" ? (
+            <strong>
+              +{hud.tacticalNotice.score.toLocaleString()}
+              {hud.tacticalNotice.streak > 1 ? ` / chain ${hud.tacticalNotice.streak}` : ""}
+            </strong>
+          ) : null}
+        </div>
       ) : null}
 
       {/* ── Boss bar (only when boss active) ────────── */}
