@@ -77,6 +77,9 @@ recorded in `docs/unreal/mcp-capabilities.md`.
   horizontal marketing, and vertical marketing.
 - Gate: templates produce deterministic test outputs recorded in the manifest.
 
+Implementation status and MCP verification are recorded in
+`docs/unreal/phase-2-template-audit.md`.
+
 ### Phase 3: Home, Spaceport, and Hangar
 
 - Build the shared orbital-spaceport visual language first.
