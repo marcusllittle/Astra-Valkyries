@@ -29,6 +29,7 @@ const DAILY_MISSION_POOL: MissionDef[] = [
   { id: "daily-score-10k", label: "Score Chaser", description: "Earn 10,000 points in a single run", target: 10000, type: "score", reward: { credits: 150, xp: 75 }, rotation: "daily" },
   { id: "daily-runs-3", label: "Sortie Veteran", description: "Complete 3 runs", target: 3, type: "runs", reward: { credits: 120, xp: 60 }, rotation: "daily" },
   { id: "daily-grade-a", label: "Precision Strike", description: "Achieve grade A or higher", target: 1, type: "grade", gradeTarget: "A", reward: { credits: 200, xp: 100 }, rotation: "daily" },
+  { id: "daily-flawless-3", label: "Clean Formation", description: "Complete 3 flawless routes", target: 3, type: "no_damage_waves", reward: { credits: 180, xp: 90 }, rotation: "daily" },
 ];
 
 const WEEKLY_MISSION_POOL: MissionDef[] = [
@@ -37,6 +38,7 @@ const WEEKLY_MISSION_POOL: MissionDef[] = [
   { id: "weekly-score-50k", label: "High Scorer", description: "Earn a total of 50,000 points", target: 50000, type: "score", reward: { credits: 400, xp: 250 }, rotation: "weekly" },
   { id: "weekly-runs-10", label: "Marathon Pilot", description: "Complete 10 runs", target: 10, type: "runs", reward: { credits: 350, xp: 200 }, rotation: "weekly" },
   { id: "weekly-grade-s", label: "Perfect Operation", description: "Achieve grade S", target: 1, type: "grade", gradeTarget: "S", reward: { credits: 800, xp: 500 }, rotation: "weekly" },
+  { id: "weekly-flawless-20", label: "Untouchable Wing", description: "Complete 20 flawless routes", target: 20, type: "no_damage_waves", reward: { credits: 700, xp: 450 }, rotation: "weekly" },
 ];
 
 /** Seeded random for deterministic daily/weekly selection */
@@ -89,6 +91,7 @@ export interface RunSummary {
   kills: number;
   grade: string;
   bossDefeated: boolean;
+  flawlessWaves?: number;
 }
 
 /**
@@ -131,10 +134,7 @@ export function advanceMissionProgress(
         : current;
       break;
     case "no_damage_waves":
-      // Run results carry no per-wave damage record, so this type cannot
-      // be scored yet. Left flat rather than silently miscounted; no
-      // mission in either pool uses it today.
-      next = current;
+      next = current + Math.max(0, Math.trunc(run.flawlessWaves ?? 0));
       break;
   }
 

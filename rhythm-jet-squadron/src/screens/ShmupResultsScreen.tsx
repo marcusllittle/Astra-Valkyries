@@ -15,6 +15,7 @@ import DialogueBox from "../components/DialogueBox";
 import CutinOverlay from "../components/CutinOverlay";
 import { getShmupMapById } from "../lib/shmupWaves";
 import { sfxRunGrade } from "../lib/retroSfx";
+import { getPilotReturnClip, unseenCinematicClips } from "../lib/missionCinematics";
 
 const GRADE_COLORS: Record<string, string> = {
   S: "#ffd43b",
@@ -152,7 +153,25 @@ export default function ShmupResultsScreen() {
   const debriefNote = mapId ? (didWinRun ? DEBRIEF_NOTES[mapId]?.win : DEBRIEF_NOTES[mapId]?.loss) : undefined;
 
   const handleReturnToPort = () => {
+    const clips = unseenCinematicClips(
+      [didWinRun ? getPilotReturnClip(save.selectedPilotId, mapId) : null],
+      save.seenCutscenes,
+    );
+    if (clips.length > 0) {
+      navigate("/video-cutscene", {
+        state: { clips, returnTo: "/spaceport" },
+      });
+      return;
+    }
     navigate("/spaceport");
+  };
+
+  const handleDebriefComplete = () => {
+    if (didWinRun) {
+      handleReturnToPort();
+      return;
+    }
+    setShowDebrief(false);
   };
 
   const rewardKey = useMemo(() => {
@@ -184,6 +203,7 @@ export default function ShmupResultsScreen() {
       kills: shmupResult.kills,
       grade,
       bossDefeated: shmupResult.bossDefeated ?? false,
+      flawlessWaves: shmupResult.flawlessWaves ?? 0,
     });
     sessionStorage.setItem(rewardKey, "1");
     awardAppliedRef.current = true;
@@ -241,7 +261,7 @@ export default function ShmupResultsScreen() {
         <div className="briefing-screen-atmosphere" aria-hidden="true" />
         <div className="briefing-screen-grid debrief-screen-grid">
           <section className="briefing-hero-panel debrief-hero-panel">
-            <button className="btn btn-secondary briefing-skip-btn" onClick={() => setShowDebrief(false)}>Skip</button>
+            <button className="btn btn-secondary briefing-skip-btn" onClick={handleDebriefComplete}>Skip</button>
             <div className="briefing-hero-copy">
               <span className="briefing-kicker">After Action Debrief</span>
               <h1 className="briefing-title">{activeMap?.name ?? mapId?.replace(/-/g, " ") ?? "Mission"}</h1>
@@ -274,7 +294,7 @@ export default function ShmupResultsScreen() {
                 if (debriefLineIdx < debriefLines.length - 1) {
                   setDebriefLineIdx((i) => i + 1);
                 } else {
-                  setShowDebrief(false);
+                  handleDebriefComplete();
                 }
               }}
             />
@@ -295,122 +315,98 @@ export default function ShmupResultsScreen() {
 
   return (
     <div className="screen results-screen">
-      <h2>{didWinRun ? "Mission Complete!" : "Run Ended"}</h2>
-
-      <div
-        className={`grade-display grade-stamp grade-stamp--${grade.toLowerCase()}`}
-        style={{ color: GRADE_COLORS[grade] }}
-      >
-        {grade}
+      <div className="results-scene" aria-hidden="true">
+        <img
+          src={debriefBackdrop ?? DEBRIEF_FALLBACK}
+          alt=""
+          onError={(event) => { (event.target as HTMLImageElement).src = DEBRIEF_FALLBACK; }}
+        />
       </div>
+      <div className="results-atmosphere" aria-hidden="true" />
 
-      <div className="results-victory-copy">
-        {didWinRun
-          ? grade === "S"
-            ? "That was a command-level sortie."
-            : grade === "A"
-              ? "Strong clear, strong momentum."
-              : grade === "B"
-                ? "Solid run, room to sharpen the build."
-                : "You cleared it. Tighten one thing and go again."
-          : (shmupResult.stage ?? 1) > 1
-            ? "You went down deep in the run. Adjust the build and push further."
-            : "Shot down early. Reset, re-read the pattern, and go again."}
-      </div>
+      <main className={`results-shell ${didWinRun ? "is-victory" : "is-defeat"}`}>
+        <div className="results-grade-halo" style={{ color: GRADE_COLORS[grade] }} aria-hidden="true" />
+        <header className="results-header">
+          <span className="results-kicker">{didWinRun ? "Operation secured" : "Recovery required"}</span>
+          <h1>{didWinRun ? "Mission Complete" : "Run Ended"}</h1>
+          <span className="results-map-name">{activeMap?.name ?? formatMapName(mapId ?? "unknown sector")}</span>
+        </header>
 
-      <div className="results-grid">
-        <div className="result-item">
-          <span className="result-label">Score</span>
-          <span className="result-value">{displayScore.toLocaleString()}</span>
+        <div
+          className={`grade-display grade-stamp grade-stamp--${grade.toLowerCase()}`}
+          style={{ color: GRADE_COLORS[grade] }}
+        >
+          {grade}
         </div>
-        <div className="result-item">
-          <span className="result-label">Kills</span>
-          <span className="result-value">{shmupResult.kills}</span>
-        </div>
-        <div className="result-item">
-          <span className="result-label">Time Survived</span>
-          <span className="result-value">{formatTime(shmupResult.timeSurvivedMs)}</span>
-        </div>
-        <div className="result-item">
-          <span className="result-label">Boss Defeated</span>
-          <span className="result-value">{shmupResult.bossDefeated ? "Yes" : "No"}</span>
-        </div>
-        <div className="result-item">
-          <span className="result-label">Stage</span>
-          <span className="result-value">{shmupResult.stage ?? 1}</span>
-        </div>
-        <div className="result-item">
-          <span className="result-label">Max Weapon</span>
-          <span className="result-value">{shmupResult.maxWeaponLevel ?? 1}</span>
-        </div>
-      </div>
 
-      <div className="credits-earned">
-        <span className="credit-icon">❆</span> +{creditsEarned} Credits
-      </div>
+        <p className="results-victory-copy">
+          {didWinRun
+            ? grade === "S"
+              ? "Command-level sortie. The route belongs to the squadron."
+              : "Sector control restored. There is still room to sharpen the flight."
+            : (shmupResult.stage ?? 1) > 1
+              ? "Deep push recorded. Rebuild around the pattern that ended it."
+              : "Early loss recorded. Reset the route and take the opening cleanly."}
+        </p>
 
-      {sharedReward !== null && sharedReward > 0 && (
-        <div className="credits-earned credits-earned-shared">
-          <span className="shared-icon">&#x26A1;</span> +{sharedReward} HavnAI Credits
-        </div>
-      )}
-      {artQueued && (
-        <div className="reward-status-note reward-art-note">
-          &#x1F3A8; The network is painting your victory — check the Collection gallery soon
-        </div>
-      )}
-      {campaignContribution?.eligible && campaignContribution.combat_points > 0 && (
-        <div className="reward-status-note reward-campaign-note">
-          Community front +{campaignContribution.combat_points} combat / {formatMapName(campaignContribution.target_map_id)}
-        </div>
-      )}
+        <section className="results-grid" aria-label="Run statistics">
+          <div className="result-item"><span className="result-label">Score</span><span className="result-value">{displayScore.toLocaleString()}</span></div>
+          <div className="result-item"><span className="result-label">Kills</span><span className="result-value">{shmupResult.kills}</span></div>
+          <div className="result-item"><span className="result-label">Flight time</span><span className="result-value">{formatTime(shmupResult.timeSurvivedMs)}</span></div>
+          <div className="result-item"><span className="result-label">Boss</span><span className="result-value">{shmupResult.bossDefeated ? "Destroyed" : "Active"}</span></div>
+          <div className="result-item"><span className="result-label">Stage</span><span className="result-value">{shmupResult.stage ?? 1}</span></div>
+          <div className="result-item"><span className="result-label">Max weapon</span><span className="result-value">{shmupResult.maxWeaponLevel ?? 1}</span></div>
+          <div className="result-item result-item-flawless">
+            <span className="result-label">Flawless routes</span>
+            <span className="result-value">{shmupResult.flawlessWaves ?? 0}</span>
+            <small>Best chain {shmupResult.bestFlawlessStreak ?? 0}</small>
+          </div>
+        </section>
 
-      <div className="results-focus-pill">
-        <span className="result-label">Next Focus</span>
-        <strong>{isFirstRun ? "Refine loadout" : "Push a cleaner grade"}</strong>
-      </div>
-      {wallet.status !== "connected" && (
-        <div className="reward-status-note">Wallet rewards available when connected</div>
-      )}
-      {wallet.status === "connected" && !runToken && !sharedReward && (
-        <div className="reward-status-note">
-          Reconnect your wallet before launching to earn HavnAI credits
-        </div>
-      )}
-      {rewardStatus && (
-        <div className="reward-status-note">
-          {rewardStatus === "daily_cap_reached" && "Daily HavnAI earn cap reached"}
-          {rewardStatus === "cooldown" && "HavnAI reward on cooldown — wait and play again"}
-          {rewardStatus === "score_too_low" && "Score below 5,000 — no HavnAI credits earned"}
-          {rewardStatus === "run_too_short" && "Run too short — survive longer to earn credits"}
-          {rewardStatus === "duplicate_run" && "Duplicate run detected"}
-          {rewardStatus === "network_error" && "Could not reach HavnAI server — credits will sync next run"}
-          {!['daily_cap_reached', 'cooldown', 'score_too_low', 'run_too_short', 'duplicate_run', 'network_error'].includes(rewardStatus) && `HavnAI: ${rewardStatus}`}
-        </div>
-      )}
+        <section className="results-reward-strip" aria-label="Run rewards">
+          <div className="credits-earned">+{creditsEarned} Credits</div>
+          {sharedReward !== null && sharedReward > 0 ? (
+            <div className="credits-earned credits-earned-shared">+{sharedReward} HavnAI Credits</div>
+          ) : null}
+        </section>
 
-      {isFirstRun ? (
-        <div className="results-next-step-callout">
-          <strong>Loadout updated.</strong> Choose your next route from the port.
+        <div className="results-status-stack">
+          {artQueued ? <div className="reward-status-note reward-art-note">Victory artwork dispatched to the creator network</div> : null}
+          {campaignContribution?.eligible && campaignContribution.combat_points > 0 ? (
+            <div className="reward-status-note reward-campaign-note">Community front +{campaignContribution.combat_points} combat / {formatMapName(campaignContribution.target_map_id)}</div>
+          ) : null}
+          {wallet.status !== "connected" ? <div className="reward-status-note">Wallet rewards available when connected</div> : null}
+          {wallet.status === "connected" && !runToken && !sharedReward ? <div className="reward-status-note">Reconnect before launch to earn HavnAI credits</div> : null}
+          {rewardStatus ? (
+            <div className="reward-status-note">
+              {rewardStatus === "daily_cap_reached" && "Daily HavnAI earn cap reached"}
+              {rewardStatus === "cooldown" && "HavnAI reward cooling down"}
+              {rewardStatus === "score_too_low" && "Score below the HavnAI reward threshold"}
+              {rewardStatus === "run_too_short" && "Run ended before the HavnAI reward threshold"}
+              {rewardStatus === "duplicate_run" && "Run already settled"}
+              {rewardStatus === "network_error" && "HavnAI coordinator unavailable"}
+              {!['daily_cap_reached', 'cooldown', 'score_too_low', 'run_too_short', 'duplicate_run', 'network_error'].includes(rewardStatus) && `HavnAI: ${rewardStatus}`}
+            </div>
+          ) : null}
         </div>
-      ) : null}
 
-      <div className="results-buttons">
-        {debriefLines.length > 0 ? (
-          <button
-            className="btn btn-primary"
-            onClick={() => { setDebriefLineIdx(0); setShowDebrief(true); }}
-          >
-            Continue to Debrief
+        <div className="results-focus-pill">
+          <span className="result-label">Next focus</span>
+          <strong>{isFirstRun ? "Refine loadout" : (shmupResult.flawlessWaves ?? 0) === 0 ? "Hold a flawless route" : "Extend the clean-flight chain"}</strong>
+        </div>
+
+        <footer className="results-buttons">
+          {debriefLines.length > 0 ? (
+            <button className="btn btn-primary" onClick={() => { setDebriefLineIdx(0); setShowDebrief(true); }}>
+              {didWinRun ? "Debrief & Return" : "Continue to Debrief"}
+            </button>
+          ) : null}
+          <button className="btn btn-primary" onClick={() => navigate(isFirstRun ? "/hangar" : "/shmup")}>
+            {isFirstRun ? "Open Loadout" : "Play Again"}
           </button>
-        ) : null}
-        <button className="btn btn-primary" onClick={() => navigate(isFirstRun ? "/hangar" : "/shmup")}>
-          {isFirstRun ? "Open Loadout" : "Play Again"}
-        </button>
-        <button className="btn btn-secondary" onClick={handleReturnToPort}>
-          Return to Port
-        </button>
-      </div>
+          <button className="btn btn-secondary" onClick={handleReturnToPort}>Return to Port</button>
+        </footer>
+      </main>
 
       {rankCutin && (
         <CutinOverlay src={rankCutin} onComplete={() => setRankCutin(null)} allowPointerThrough />

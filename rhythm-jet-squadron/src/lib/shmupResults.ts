@@ -5,6 +5,8 @@ export type ShmupRunResult = {
   bossDefeated?: boolean;
   stage?: number;
   maxWeaponLevel?: number;
+  flawlessWaves?: number;
+  bestFlawlessStreak?: number;
 };
 
 export function gradeShmupRun(result: ShmupRunResult): "S" | "A" | "B" | "C" | "D" {

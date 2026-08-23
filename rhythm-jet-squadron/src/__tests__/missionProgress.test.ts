@@ -22,6 +22,7 @@ const run = (over: Partial<RunSummary> = {}): RunSummary => ({
   kills: 40,
   grade: "B",
   bossDefeated: false,
+  flawlessWaves: 0,
   ...over,
 });
 
@@ -105,16 +106,17 @@ describe("advanceMissionProgress", () => {
     expect(advanceMissionProgress(m, 40, run({ kills: 999 }))).toBe(50);
   });
 
-  it("leaves unscoreable types flat instead of miscounting", () => {
+  it("accumulates measured no-damage wave deployments", () => {
     const m = mission({ type: "no_damage_waves", target: 5 });
-    expect(advanceMissionProgress(m, 2, run())).toBe(2);
+    expect(advanceMissionProgress(m, 2, run({ flawlessWaves: 2 }))).toBe(4);
+    expect(advanceMissionProgress(m, 4, run({ flawlessWaves: 8 }))).toBe(5);
   });
 });
 
 describe("active mission pools", () => {
   it("every rotating mission is scoreable by a run", () => {
     // Guards against adding a mission type the updater silently ignores.
-    const scoreable = new Set(["kills", "score", "runs", "grade", "boss_kills"]);
+    const scoreable = new Set(["kills", "score", "runs", "grade", "boss_kills", "no_damage_waves"]);
     for (const m of [...getDailyMissions(), ...getWeeklyMissions()]) {
       expect(scoreable.has(m.type), `${m.id} has unscoreable type ${m.type}`).toBe(true);
     }
