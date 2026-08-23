@@ -13,9 +13,9 @@
       "phase": 3,
       "screens": ["home"],
       "kind": "video",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/L_Astra_HubRenderStage", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_HomeOrbitStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_HomeOrbitLoop", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_UILoop_1080p", "status": "integrated"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/hub/home-establishing.mp4", "localAsset": "/assets/unreal/hub/home-establishing.mp4", "poster": "/assets/unreal/hub/home-establishing-poster.webp", "localFallback": "/assets/shmup/vista_nebula_runway.png"},
-      "review": {"decision": "replace-home-background", "note": "Integrated as the Home establishing loop after web, file-runtime, and mobile-responsive verification."}
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/L_Astra_HubRenderStage", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_HomeOrbitStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_HomeOrbitLoop", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_UILoop_1080p", "status": "rejected"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/hub/home-establishing.mp4"},
+      "review": {"decision": "reject-placement", "note": "Rejected after in-app product review: a single low-detail ship gives one frame undue prominence and does not represent Astra's three-ship roster. Keep Home fleet-neutral until substantially better ship models exist."}
     },
     {
       "id": "hub-spaceport-loop",
@@ -31,9 +31,9 @@
       "phase": 3,
       "screens": ["hangar"],
       "kind": "video",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/L_Astra_HubRenderStage", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_HangarStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_HangarInspection", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "integrated"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/hub/hangar-turntable.mp4", "localAsset": "/assets/unreal/hub/hangar-inspection.mp4", "poster": "/assets/unreal/hub/hangar-inspection-poster.webp", "localFallback": "/assets/unreal/hub/hangar-inspection-poster.webp"},
-      "review": {"decision": "add-inspection-loop", "note": "Integrated for Hangar inspection after web, file-runtime, and mobile-responsive verification; the Blender launch clip remains authoritative for takeoff."}
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/L_Astra_HubRenderStage", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_HangarStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_HangarInspection", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "rejected"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/hub/hangar-turntable.mp4"},
+      "review": {"decision": "reject-placement", "note": "Rejected after in-app product review: the passive low-detail strip adds no loadout value. The Hangar now prioritizes visual Pilot, Ship, Map, Outfit, and Modifier tabs; the Blender launch clip remains authoritative for takeoff."}
     },
     {
       "id": "flow-briefing-nebula",

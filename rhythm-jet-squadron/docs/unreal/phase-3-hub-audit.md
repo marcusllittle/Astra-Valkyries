@@ -157,23 +157,27 @@ binding replacement. The dead organizational IDs were removed, the rebuilt
 post-process spawnables were saved under Lighting, and subsequent validation,
 proof, and master queues completed without new stale-folder warnings.
 
-The placement review approved the Home loop as a full-viewport background and
-the Hangar sequence as an inspection-only loop above the loadout. Their local
-H.264 deliveries and frame-zero WebP posters are packaged under
-`/assets/unreal/hub/`. Both are now `integrated` in the manifest.
+The first placement pass put the Home loop behind the title and the Hangar
+sequence above the loadout. Technical verification at `1440x900` and `390x844`
+confirmed playable H.264 media, reduced-motion posters, no console errors, no
+horizontal overflow, exact `file://` navigation, and a successful Capacitor
+sync. Those checks established delivery compatibility, not product approval.
 
-Runtime verification covered Home title and menu states plus the Hangar
-loadout at `1440x900` and `390x844`. Both H.264 files reached playable state,
-advanced, produced no console errors, and introduced no horizontal overflow.
-Reduced-motion mode renders the static posters without mounting autoplay
-video. The production build passed exact `file://` and hash-router navigation
-through Home and Hangar with no failed requests, and Capacitor synchronized the
-same production web payload. Windows NSIS assembly still has to run under a
-native Windows Node toolchain because WSL cannot cross-compile the existing
-`bufferutil` module.
+The subsequent in-app product review rejected both placements. The Home shot
+gave one low-detail ship undue prominence even though Astra has a three-ship
+roster. The Hangar strip was passive decoration and did not improve Pilot,
+Ship, Map, Outfit, or Modifier selection. Both entries are now `rejected` in
+the manifest; their packaged H.264 and WebP files were removed from the React
+runtime. Home uses the smooth fleet-neutral title starfield. Hangar uses five
+dedicated tabs, actual zone art for Map selection, and a motion-led selected
+Outfit view with a responsive wardrobe grid. The revised screens pass desktop
+and mobile browser checks without console errors or horizontal overflow.
+
+Windows NSIS assembly still has to run under a native Windows Node toolchain
+because WSL cannot cross-compile the existing `bufferutil` module.
 
 The Spaceport candidate is not approved. Nova's existing pre-takeoff clip
-remains the shipping Spaceport presentation. The Hangar approval also does not
-replace the Blender Astra Interceptor takeoff: that clip remains authoritative
-for the launch cinematic until the planned Phase 5 Unreal sequence is clearly
-better.
+remains the shipping Spaceport presentation. The rejected Hangar candidate also
+does not replace the Blender Astra Interceptor takeoff: that clip remains
+authoritative for the launch cinematic until the planned Phase 5 Unreal
+sequence is clearly better.

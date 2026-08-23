@@ -31,9 +31,9 @@ web, Electron, and mobile verification. Compact fallbacks remain in
 
 | Screen | Current presentation | Unreal production target | Phase |
 | --- | --- | --- | --- |
-| Home | CSS hub shell and existing vista fallback | Orbital establishing loop with readable ship/spaceport identity | 3 |
+| Home | Animated fleet-neutral title/menu starfield | Fleet-neutral orbital environment; feature ships only after the models clear visual review | 3 |
 | Spaceport | Hub UI plus Nova departure/return clips | Persistent spaceport environment loop and return shot | 3, 5 |
-| Hangar | Ship/outfit art, owned banner, Blender launch clip | Lit ship bay, turntables, material variants, launch-deck continuity | 3 |
+| Hangar | Visual Pilot/Ship/Map/Outfit/Modifiers console, owned banner, Blender launch clip | Lit ship bay and material variants only when they improve a specific loadout task | 3 |
 | Briefing | Zone MP4/poster with selected pilot fallback | Three zone-specific briefing sequences sharing one shot template | 5 |
 | Video Cutscene | Runtime player for pilot/ship clips | Delivery host for briefing, launch, boss, return, and gacha renders | 5, 6 |
 | Shmup | Layered 2D plates, rendered sprites, Blender VFX | Three zone plate sets, enemy/boss beauty renders, Niagara flipbooks | 4 |
@@ -101,9 +101,14 @@ The reusable stage assemblies, keyed sequences, assigned MRQ presets,
 composition proofs, full 1080p PNG masters, and encoded review candidates are
 recorded in `docs/unreal/phase-3-hub-audit.md`. Home and Spaceport have closed
 transform and focus curves, while Hangar has a three-point inspection arc.
-Home and Hangar passed placement and runtime verification and are integrated.
-Spaceport retains Nova's current pre-takeoff clip, and the current Blender
-takeoff remains the launch cinematic until Phase 5 produces a better sequence.
+The Home and Hangar candidates passed technical playback checks but failed the
+subsequent in-app product review: the single low-detail ship did not represent
+the roster, and the passive Hangar strip added no loadout value. Both are
+`rejected` in the manifest and removed from the runtime. Home remains
+fleet-neutral; Hangar now uses dedicated visual tabs with current map and outfit
+media. Spaceport retains Nova's current pre-takeoff clip, and the current
+Blender takeoff remains the launch cinematic until Phase 5 produces a clearly
+better sequence.
 
 ### Phase 4: zones, bosses, enemies, and combat VFX
 
