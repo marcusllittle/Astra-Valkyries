@@ -52,6 +52,14 @@ import {
 import { gradeShmupRun, type ShmupRunResult } from "../lib/shmupResults";
 import { flawlessRouteReward, isFlawlessRoute } from "../lib/tacticalObjectives";
 import {
+  EMPTY_GAMEPAD_INPUT,
+  findActiveGamepad,
+  readGameplayGamepad,
+  rumbleGamepad,
+  type GamepadLike,
+  type GameplayGamepadInput,
+} from "../lib/gamepadInput";
+import {
   getPrimaryFireInterval,
   spawnPrimaryShots,
 } from "../lib/shmupWeapons";
@@ -1178,6 +1186,7 @@ export default function ShmupPlayScreen() {
 
   const [hud, setHud] = useState<HudState>(() => createHudState(modifiers, activeMap));
   const [showTouchControls, setShowTouchControls] = useState(false);
+  const [gamepadConnected, setGamepadConnected] = useState(false);
   const [touchKnob, setTouchKnob] = useState({ active: false, x: 0, y: 0 });
   const [floatingOrigin, setFloatingOrigin] = useState<{ x: number; y: number } | null>(null);
   const floatingOriginRef = useRef<{ x: number; y: number } | null>(null);
@@ -1193,6 +1202,9 @@ export default function ShmupPlayScreen() {
     y: 0,
   });
   const secondaryQueuedRef = useRef(false);
+  const gamepadInputRef = useRef<GameplayGamepadInput>({ ...EMPTY_GAMEPAD_INPUT });
+  const activeGamepadRef = useRef<GamepadLike | null>(null);
+  const gamepadConnectedRef = useRef(false);
   const touchPadRadius = TOUCH_PAD_RADIUS;
 
   const updateTouchVector = (dx: number, dy: number) => {
@@ -1545,6 +1557,8 @@ export default function ShmupPlayScreen() {
     shipTiltRef.current = 0;
     droneOrbitRef.current = 0;
     secondaryQueuedRef.current = false;
+    gamepadInputRef.current = { ...EMPTY_GAMEPAD_INPUT };
+    activeGamepadRef.current = null;
     touchMoveRef.current = { active: false, pointerId: null, x: 0, y: 0 };
     setTouchKnob({ active: false, x: 0, y: 0 });
 
@@ -1726,6 +1740,51 @@ export default function ShmupPlayScreen() {
         OVERDRIVE_MAX
       );
       activateOverdriveIfReady(elapsedMs);
+    };
+
+    const pollGamepad = (): GameplayGamepadInput => {
+      const pads = typeof navigator.getGamepads === "function" ? navigator.getGamepads() : [];
+      const active = findActiveGamepad(
+        pads as unknown as ArrayLike<GamepadLike | null>,
+        gamepadInputRef.current.index,
+      );
+      activeGamepadRef.current = active;
+      const next = readGameplayGamepad(active);
+      const previous = gamepadInputRef.current;
+
+      if (next.connected !== gamepadConnectedRef.current) {
+        gamepadConnectedRef.current = next.connected;
+        setGamepadConnected(next.connected);
+      }
+
+      let resumedThisFrame = false;
+      const canControlPause = !showTutorial && !mobileGateVisibleRef.current && !runEndedRef.current;
+      if (canControlPause && next.pausePressed && !previous.pausePressed) {
+        pausedRef.current = !pausedRef.current;
+        if (pausedRef.current) pauseTimeRef.current = performance.now();
+        setPaused(pausedRef.current);
+      } else if (
+        canControlPause &&
+        pausedRef.current &&
+        next.confirmPressed &&
+        !previous.confirmPressed
+      ) {
+        pausedRef.current = false;
+        setPaused(false);
+        resumedThisFrame = true;
+      }
+
+      if (
+        !pausedRef.current &&
+        !resumedThisFrame &&
+        next.secondaryPressed &&
+        !previous.secondaryPressed
+      ) {
+        secondaryQueuedRef.current = true;
+      }
+
+      gamepadInputRef.current = next;
+      return next;
     };
 
     const beginDeployment = (deploymentKey: string, loop: number, elapsedMs: number) => {
@@ -2208,6 +2267,7 @@ export default function ShmupPlayScreen() {
       if (bossIntroStartedRef.current) return;
       beginDeployment("boss", waveLoopRef.current, elapsedMs);
       bossIntroStartedRef.current = true;
+      void rumbleGamepad(activeGamepadRef.current, 180, 0.42, 0.18);
       sfxBossWarning();
       playBossMusic();
       bossWarningUntilRef.current = elapsedMs + activeMap.bossWarningMs;
@@ -3598,6 +3658,7 @@ export default function ShmupPlayScreen() {
       }
 
       sfxPlayerHit();
+      void rumbleGamepad(activeGamepadRef.current, 160, 0.62, 0.34);
       ship.hp = Math.max(0, ship.hp - damageTakenMultiplier);
       damageTakenRef.current += damageTakenMultiplier;
       if (activeDeploymentKeyRef.current !== null) {
@@ -4019,6 +4080,7 @@ export default function ShmupPlayScreen() {
 
     const drawLoop = (timestamp: number) => {
       if (runEndedRef.current) return;
+      const gamepadInput = pollGamepad();
       if (pausedRef.current) {
         animationRef.current = requestAnimationFrame(drawLoop);
         return;
@@ -4096,8 +4158,12 @@ export default function ShmupPlayScreen() {
         (keysRef.current.has("arrowup") || keysRef.current.has("w") ? 1 : 0);
       const touchMoveX = touchMoveRef.current.active ? touchMoveRef.current.x : 0;
       const touchMoveY = touchMoveRef.current.active ? touchMoveRef.current.y : 0;
-      let moveX = introActive ? 0 : clamp(keyboardMoveX + touchMoveX, -1, 1);
-      let moveY = introActive ? 0 : clamp(keyboardMoveY + touchMoveY, -1, 1);
+      const moveX = introActive
+        ? 0
+        : clamp(keyboardMoveX + touchMoveX + gamepadInput.moveX, -1, 1);
+      const moveY = introActive
+        ? 0
+        : clamp(keyboardMoveY + touchMoveY + gamepadInput.moveY, -1, 1);
 
       // Track last nonzero input direction for barrel roll / phase shift
       if (moveX !== 0 || moveY !== 0) {
@@ -7033,6 +7099,8 @@ export default function ShmupPlayScreen() {
       touchMoveRef.current = { active: false, pointerId: null, x: 0, y: 0 };
       setTouchKnob({ active: false, x: 0, y: 0 });
       secondaryQueuedRef.current = false;
+      gamepadInputRef.current = { ...EMPTY_GAMEPAD_INPUT };
+      activeGamepadRef.current = null;
       stopMusic(0);
     };
   }, [
@@ -7104,6 +7172,7 @@ export default function ShmupPlayScreen() {
     flawlessWindowMs,
     flawlessDamageMult,
     showEnemyHealthBars,
+    showTutorial,
   ]);
 
   const handleTutorialComplete = useCallback(() => {
@@ -7215,6 +7284,15 @@ export default function ShmupPlayScreen() {
         <div className="hud-right hud-stat-stack hud-stat-stack--row hud-stat-stack-right">
           <div className="shmup-high-score">Best {highScore.toLocaleString()}</div>
           <div className="hud-top-actions">
+            {gamepadConnected ? (
+              <span
+                className="shmup-gamepad-status"
+                title="Controller connected"
+                aria-label="Controller connected"
+              >
+                PAD
+              </span>
+            ) : null}
             <button
               type="button"
               className="btn btn-icon"
@@ -7420,6 +7498,7 @@ export default function ShmupPlayScreen() {
           kills={hud.kills}
           timeMs={hud.timeSurvivedMs}
           weaponLevel={hud.weaponLevel}
+          gamepadConnected={gamepadConnected}
           onResume={handlePauseResume}
           onRestart={handlePauseRestart}
           onQuit={handlePauseQuit}

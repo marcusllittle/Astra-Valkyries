@@ -103,6 +103,18 @@ export default function SettingsScreen() {
             <span>Pause game</span>
           </div>
           <div className="control-binding">
+            <kbd>Left Stick / D-pad</kbd>
+            <span>Move ship (controller)</span>
+          </div>
+          <div className="control-binding">
+            <kbd>A / RT</kbd>
+            <span>Secondary (controller)</span>
+          </div>
+          <div className="control-binding">
+            <kbd>Menu</kbd>
+            <span>Pause game (controller)</span>
+          </div>
+          <div className="control-binding">
             <kbd>Touch Pad</kbd>
             <span>Move (mobile)</span>
           </div>
