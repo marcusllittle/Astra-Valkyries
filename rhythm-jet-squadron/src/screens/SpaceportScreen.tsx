@@ -86,11 +86,12 @@ export default function SpaceportScreen() {
             </div>
 
             <div className="spaceport-grid">
-              {AREAS.map((area) => (
+              {AREAS.map((area, index) => (
                 <button
                   key={area.label}
                   type="button"
                   className="spaceport-area-card"
+                  data-gamepad-default={index === 0 ? "true" : undefined}
                   onClick={() => {
                     if (area.label === "INBOX") {
                       setInboxOpen(true);

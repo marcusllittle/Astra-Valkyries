@@ -56,7 +56,11 @@ export default function PauseMenu({
         </div>
 
         <div className="pause-actions">
-          <button className="btn btn-primary pause-btn" onClick={onResume}>
+          <button
+            className="btn btn-primary pause-btn"
+            data-gamepad-default="true"
+            onClick={onResume}
+          >
             Resume
           </button>
           <button className="btn btn-secondary pause-btn" onClick={onRestart}>

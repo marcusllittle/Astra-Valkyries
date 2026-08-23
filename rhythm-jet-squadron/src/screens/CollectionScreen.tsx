@@ -360,7 +360,14 @@ export default function CollectionScreen() {
                 <div
                   key={outfit.id}
                   className={`card outfit-card rarity-${outfit.rarity.toLowerCase()} ${isOwned ? "" : "card-locked"}`}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setPreviewOutfitId(outfit.id)}
+                  onKeyDown={(event) => {
+                    if (event.key !== "Enter" && event.key !== " ") return;
+                    event.preventDefault();
+                    setPreviewOutfitId(outfit.id);
+                  }}
                 >
                   <CardArt
                     title={outfit.name}

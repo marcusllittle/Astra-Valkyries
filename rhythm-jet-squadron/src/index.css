@@ -55,6 +55,12 @@ html.shmup-active {
   -webkit-text-size-adjust: 100%;
 }
 
+body.gamepad-navigation-active :where(button, a[href], input, select, [role="button"]):focus {
+  outline: 3px solid #74d8ff;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 2px rgba(3, 10, 22, 0.9), 0 0 22px rgba(116, 216, 255, 0.48);
+}
+
 body::before,
 body::after {
   content: "";
