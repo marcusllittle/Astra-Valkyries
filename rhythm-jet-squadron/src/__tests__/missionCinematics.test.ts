@@ -33,11 +33,16 @@ describe("mission cinematic registry", () => {
   });
 
   it("builds an authored LTX then Blender sequence when both assets match", () => {
-    expect(
-      getMissionLaunchClips("pilot_nova", "ship_astra_interceptor", "nebula-runway").map(
-        (clip) => clip.source,
-      ),
-    ).toEqual(["ltx", "blender"]);
+    const clips = getMissionLaunchClips(
+      "pilot_nova",
+      "ship_astra_interceptor",
+      "nebula-runway",
+    );
+    expect(clips.map((clip) => clip.source)).toEqual(["ltx", "blender"]);
+    expect(clips.map((clip) => clip.src)).toEqual([
+      "/assets/cutins/nova/nova_leaving_port.mp4",
+      "/assets/cutins/ships/astra_interceptor_launch.mp4",
+    ]);
     expect(getShipLaunchClip("ship_astra_interceptor", "solar-rift")?.id).toBe(
       "launch:ship_astra_interceptor:solar-rift",
     );

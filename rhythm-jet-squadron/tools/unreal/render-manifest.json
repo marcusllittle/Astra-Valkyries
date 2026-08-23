@@ -13,8 +13,9 @@
       "phase": 3,
       "screens": ["home"],
       "kind": "video",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/L_Astra_HubRenderStage", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_HomeOrbitStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_HomeOrbitLoop", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_UILoop_1080p", "status": "in-progress"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/hub/home-establishing.mp4", "localFallback": "/assets/shmup/vista_nebula_runway.png"}
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/L_Astra_HubRenderStage", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_HomeOrbitStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_HomeOrbitLoop", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_UILoop_1080p", "status": "rejected"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/hub/home-establishing.mp4"},
+      "review": {"decision": "reject-placement", "note": "Rejected after in-app product review: a single low-detail ship gives one frame undue prominence and does not represent Astra's three-ship roster. Keep Home fleet-neutral until substantially better ship models exist."}
     },
     {
       "id": "hub-spaceport-loop",
@@ -22,15 +23,17 @@
       "screens": ["spaceport"],
       "kind": "video",
       "unreal": {"map": "/Game/AstraRenderLab/Maps/L_Astra_HubRenderStage", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_SpaceportStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_SpaceportLoop", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_UILoop_1080p", "status": "in-progress"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/hub/spaceport-loop.mp4", "localFallback": "/assets/cutins/nova/nova_leaving_port.mp4"}
+      "delivery": {"hd": "https://media.joinhavn.io/astra/hub/spaceport-loop.mp4", "localFallback": "/assets/cutins/nova/nova_leaving_port.mp4"},
+      "review": {"decision": "retain-current", "note": "Keep Nova's pre-takeoff clip as the shipping Spaceport presentation."}
     },
     {
       "id": "hub-hangar-turntable",
       "phase": 3,
       "screens": ["hangar"],
       "kind": "video",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/L_Astra_HubRenderStage", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_HangarStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_HangarInspection", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/hub/hangar-turntable.mp4", "localFallback": "/assets/cutins/ships/astra_interceptor_launch.mp4"}
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/L_Astra_HubRenderStage", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_HangarStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_HangarInspection", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "rejected"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/hub/hangar-turntable.mp4"},
+      "review": {"decision": "reject-placement", "note": "Rejected after in-app product review: the passive low-detail strip adds no loadout value. The Hangar now prioritizes visual Pilot, Ship, Map, Outfit, and Modifier tabs; the Blender launch clip remains authoritative for takeoff."}
     },
     {
       "id": "flow-briefing-nebula",
@@ -62,7 +65,8 @@
       "screens": ["video-cutscene"],
       "kind": "video",
       "unreal": {"map": "/Game/AstraRenderLab/Maps/Hub/L_LaunchDeck", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Flow/LS_Launch_AstraInterceptor", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "planned"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/flow/launch-astra-interceptor.mp4", "localFallback": "/assets/cutins/ships/astra_interceptor_launch.mp4"}
+      "delivery": {"hd": "https://media.joinhavn.io/astra/flow/launch-astra-interceptor.mp4", "localFallback": "/assets/cutins/ships/astra_interceptor_launch.mp4"},
+      "review": {"decision": "retain-current", "note": "Keep the Blender ship takeoff until a future Unreal launch sequence is clearly better."}
     },
     {
       "id": "combat-nebula-plates",

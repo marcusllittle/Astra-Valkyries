@@ -240,12 +240,15 @@ body::after {
 
 /* ─── Home Screen — PS1/JRPG Title Screen ────────────── */
 
-.home-screen {
+.screen.home-screen {
   justify-content: center;
   align-items: center;
   overflow: hidden;
   padding: 0;
   min-height: 100vh;
+  width: 100vw;
+  max-width: none;
+  margin-inline: calc(50% - 50vw);
   cursor: default;
 }
 
@@ -1015,15 +1018,15 @@ video.card-art-img {
 /* ─── Hangar ──────────────────────────────────────────── */
 
 .hangar-screen {
-  padding-bottom: 120px;
-  gap: 6px !important;
+  padding-bottom: 132px;
+  gap: 12px !important;
 }
 
 .hangar-topbar {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 4px 0 8px;
+  padding: 4px 0;
 }
 
 .hangar-title {
@@ -1070,33 +1073,168 @@ video.card-art-img {
   }
 }
 
-.hangar-section {
-  margin-bottom: 0;
-  padding: 10px 12px;
-  background: rgba(10, 19, 40, 0.45);
-  border-radius: 14px;
-  border: 1px solid rgba(130, 160, 230, 0.12);
+.hangar-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  min-height: 66px;
+  overflow: hidden;
+  background: rgba(7, 14, 30, 0.94);
+  border-top: 1px solid rgba(141, 173, 241, 0.16);
+  border-bottom: 1px solid rgba(141, 173, 241, 0.24);
+  backdrop-filter: blur(18px);
 }
 
-.section-head {
+.hangar-tab {
+  position: relative;
+  min-width: 0;
+  padding: 11px 12px 12px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 8px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  text-align: left;
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  border-right: 1px solid rgba(141, 173, 241, 0.1);
+  cursor: pointer;
+  transition: color 160ms ease, background 160ms ease;
 }
 
-.section-head h3 {
-  font-size: 0.82rem;
+.hangar-tab:last-child {
+  border-right: 0;
+}
+
+.hangar-tab::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 0;
+  height: 2px;
+  opacity: 0;
+  transform: scaleX(0.3);
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(106, 141, 255, 0.65);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.hangar-tab:hover,
+.hangar-tab:focus-visible {
+  color: var(--text-primary);
+  background: rgba(121, 157, 237, 0.08);
+}
+
+.hangar-tab.active {
+  color: var(--text-primary);
+  background: rgba(121, 157, 237, 0.12);
+}
+
+.hangar-tab.active::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.hangar-tab-label {
+  font-size: 0.76rem;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--text-secondary);
 }
 
-.section-selected {
-  font-size: 0.78rem;
-  color: var(--accent);
-  font-weight: 600;
+.hangar-tab-summary {
+  width: 100%;
+  overflow: hidden;
+  font-size: 0.67rem;
+  color: var(--text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hangar-tab.active .hangar-tab-summary {
+  color: #a9c2ff;
+}
+
+.hangar-workspace {
+  width: 100%;
+  min-height: min(590px, 64vh);
+  padding: 10px 0 22px;
+}
+
+.hangar-panel {
+  width: 100%;
+  animation: hangarPanelIn 220ms ease-out both;
+}
+
+@keyframes hangarPanelIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.hangar-panel-head {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.7fr) minmax(260px, 1.3fr);
+  align-items: end;
+  gap: 24px;
+  min-height: 78px;
+  margin-bottom: 14px;
+  padding: 0 2px 14px;
+  border-bottom: 1px solid rgba(141, 173, 241, 0.16);
+}
+
+.hangar-panel-head > div {
+  min-width: 0;
+}
+
+.hangar-panel-label {
+  display: block;
+  margin-bottom: 5px;
+  color: #8caeff;
+  font-size: 0.67rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.hangar-panel-head h3 {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: clamp(1.15rem, 2.2vw, 1.65rem);
+  line-height: 1.1;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hangar-panel-head p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.hangar-panel-head p strong {
+  color: #b9ccff;
+}
+
+.hangar-choice-grid,
+.hangar-map-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.hangar-choice-grid .card {
+  min-width: 0;
+  border-radius: 8px;
+}
+
+.hangar-choice-grid .card-art {
+  height: clamp(250px, 32vw, 430px);
 }
 
 .outfit-filter-toggle {
@@ -1105,10 +1243,12 @@ video.card-art-img {
   gap: 6px;
   font-size: 0.72rem;
   color: var(--text-secondary);
-  background: rgba(19, 34, 66, 0.5);
+  justify-self: end;
+  align-self: end;
+  background: rgba(19, 34, 66, 0.72);
   border: 1px solid rgba(146, 173, 239, 0.2);
-  border-radius: 999px;
-  padding: 4px 8px;
+  border-radius: 6px;
+  padding: 7px 9px;
   white-space: nowrap;
 }
 
@@ -1118,59 +1258,10 @@ video.card-art-img {
   height: 14px;
 }
 
-/* Horizontal scroll strip for cards */
-.hangar-strip {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 4px;
-}
-
-.hangar-strip::-webkit-scrollbar {
-  height: 3px;
-}
-
-.hangar-strip::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.hangar-strip::-webkit-scrollbar-thumb {
-  background: rgba(106, 141, 255, 0.3);
-  border-radius: 3px;
-}
-
-.hangar-strip > .card,
-.hangar-strip > .map-card {
-  flex: 0 0 auto;
-  scroll-snap-align: start;
-}
-
-.hangar-strip > .pilot-card,
-.hangar-strip > .ship-card {
-  width: 152px;
-}
-
-.hangar-strip > .outfit-card {
-  width: 142px;
-}
-
-.hangar-strip > .map-card {
-  width: 170px;
-  min-height: 80px;
-}
-
-/* Outfit strip wraps on desktop */
-.hangar-strip-wrap {
-  flex-wrap: wrap;
-}
-
 .outfit-groups {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 18px;
 }
 
 .outfit-group {
@@ -1187,7 +1278,7 @@ video.card-art-img {
 }
 
 .outfit-group-head h4 {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: var(--text-secondary);
@@ -1199,24 +1290,99 @@ video.card-art-img {
 }
 
 .kit-warning {
-  margin-top: 8px;
+  margin: 10px 0 0;
   font-size: 0.8rem;
   color: #ffc7b7;
 }
 
+.outfit-workspace {
+  display: grid;
+  grid-template-columns: minmax(230px, 0.72fr) minmax(0, 1.8fr);
+  align-items: start;
+  gap: 18px;
+}
+
+.outfit-feature {
+  position: sticky;
+  top: 88px;
+  min-width: 0;
+  overflow: hidden;
+  background: rgba(9, 17, 35, 0.82);
+  border: 1px solid rgba(145, 171, 239, 0.3);
+  border-radius: 8px;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
+}
+
+.outfit-feature-art {
+  height: clamp(330px, 48vw, 520px);
+}
+
+.outfit-feature-art.card-art::after {
+  height: 28%;
+}
+
+.outfit-feature-art video.card-art-img {
+  object-fit: cover;
+  object-position: center top;
+}
+
+.outfit-feature-info {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 13px 14px 15px;
+}
+
+.outfit-feature-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.outfit-feature-title-row strong {
+  min-width: 0;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.outfit-feature-info p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  line-height: 1.42;
+}
+
+.outfit-browser {
+  min-width: 0;
+}
+
+.outfit-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.outfit-card-grid .outfit-card {
+  min-width: 0;
+  border-radius: 8px;
+}
+
+.outfit-card-grid .card-art {
+  height: clamp(170px, 22vw, 250px);
+}
+
 .map-card {
   position: relative;
+  aspect-ratio: 4 / 3;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid rgba(145, 171, 239, 0.28);
   background: rgba(15, 27, 53, 0.82);
-  /* This card is a <button>, which does not inherit colour from the page and
-     would otherwise fall back to the UA's near-black `buttontext`. */
   color: var(--text-primary);
   padding: 0;
   text-align: left;
   cursor: pointer;
-  min-height: 80px;
   transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
 }
 
@@ -1231,46 +1397,47 @@ video.card-art-img {
   box-shadow: 0 0 0 1px rgba(170, 193, 255, 0.44), 0 10px 22px rgba(64, 99, 255, 0.28);
 }
 
-.map-card-glow {
+.map-card::after {
+  content: "";
   position: absolute;
   inset: 0;
-  opacity: 0.95;
-  /* Subtle zoom on hover so the rendered art feels alive without
-     stealing focus from the rest of the hangar. */
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(3, 8, 19, 0.02) 18%, rgba(3, 8, 19, 0.28) 50%, rgba(3, 8, 19, 0.96) 100%);
+}
+
+.map-card-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center;
   transition: transform 0.32s ease, filter 0.32s ease;
 }
 
-.map-card:hover .map-card-glow {
+.map-card:hover .map-card-art {
   transform: scale(1.04);
   filter: brightness(1.06) saturate(1.05);
 }
 
-.map-card-glow::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  /* Strong bottom-weighted gradient so title + meta stay legible over
-     photographic key art; subtle vignette at the top keeps the corners
-     from looking too washed out on bright scenes (Solar Rift). */
-  background:
-    linear-gradient(180deg, rgba(4, 11, 28, 0.32) 0%, rgba(4, 11, 28, 0.55) 38%, rgba(4, 11, 28, 0.92) 100%),
-    radial-gradient(120% 80% at 50% 20%, rgba(4, 11, 28, 0) 55%, rgba(4, 11, 28, 0.45) 100%);
-}
-
 .map-card-info {
-  position: relative;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 2;
-  padding: 10px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
 .map-card-title {
-  font-size: 0.88rem;
+  font-size: clamp(0.96rem, 1.7vw, 1.2rem);
   line-height: 1.1;
   color: var(--text-primary);
-  /* Keeps the name readable over the brighter zone palettes (Solar Rift). */
   text-shadow: 0 1px 3px rgba(4, 11, 28, 0.7);
 }
 
@@ -1279,6 +1446,26 @@ video.card-art-img {
   color: #b6c9f3;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.map-card-boss {
+  margin-top: 3px;
+  font-size: 0.7rem;
+  color: #e4ebff;
+}
+
+.modifier-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.modifier-grid .modifier-card {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  min-height: 92px;
+  border-radius: 8px;
 }
 
 /* ─── Compact Deploy Bar (sticky bottom) ────────────── */
@@ -4110,6 +4297,14 @@ video.card-art-img {
   .missions-summary-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  .outfit-workspace {
+    grid-template-columns: minmax(220px, 0.72fr) minmax(0, 1.5fr);
+  }
+
+  .outfit-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 640px) {
@@ -4123,36 +4318,124 @@ video.card-art-img {
     flex-direction: column;
   }
 
-  .section-head {
-    align-items: center;
-    flex-direction: row;
-  }
-
-  /* Mobile hangar: horizontal scroll, smaller cards */
-  .hangar-strip-wrap {
-    flex-wrap: nowrap;
-  }
-
-  .hangar-strip > .pilot-card,
-  .hangar-strip > .ship-card {
-    width: 130px;
-  }
-
-  .hangar-strip > .outfit-card {
-    width: 120px;
-  }
-
-  .hangar-strip > .map-card {
-    width: 150px;
-    min-height: 68px;
-  }
-
-  .hangar-section {
-    padding: 8px 10px;
-  }
-
   .hangar-screen {
-    padding-bottom: 100px;
+    padding-bottom: 112px;
+    gap: 9px !important;
+  }
+
+  .hangar-tabs {
+    display: flex;
+    min-height: 58px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .hangar-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hangar-tab {
+    flex: 0 0 116px;
+    padding: 9px 10px 10px;
+  }
+
+  .hangar-tab::after {
+    left: 10px;
+    right: 10px;
+  }
+
+  .hangar-tab-label {
+    font-size: 0.7rem;
+  }
+
+  .hangar-tab-summary {
+    font-size: 0.62rem;
+  }
+
+  .hangar-workspace {
+    min-height: 0;
+    padding-top: 6px;
+  }
+
+  .hangar-panel-head {
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 8px;
+    min-height: 0;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+  }
+
+  .hangar-panel-head h3 {
+    white-space: normal;
+  }
+
+  .hangar-panel-head p {
+    font-size: 0.76rem;
+  }
+
+  .hangar-choice-grid,
+  .hangar-map-grid {
+    grid-auto-flow: column;
+    grid-template-columns: none;
+    gap: 10px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .hangar-choice-grid {
+    grid-auto-columns: min(78vw, 304px);
+  }
+
+  .hangar-map-grid {
+    grid-auto-columns: min(82vw, 320px);
+  }
+
+  .hangar-choice-grid::-webkit-scrollbar,
+  .hangar-map-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hangar-choice-grid > *,
+  .hangar-map-grid > * {
+    scroll-snap-align: start;
+  }
+
+  .hangar-choice-grid .card-art {
+    height: min(92vw, 430px);
+  }
+
+  .outfit-filter-toggle {
+    justify-self: start;
+    align-self: start;
+  }
+
+  .outfit-workspace {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .outfit-feature {
+    position: relative;
+    top: auto;
+  }
+
+  .outfit-feature .outfit-feature-art {
+    height: min(122vw, 520px);
+  }
+
+  .outfit-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .outfit-card-grid .card-art {
+    height: min(62vw, 240px);
+  }
+
+  .modifier-grid {
+    grid-template-columns: 1fr;
   }
 
   .card-art {
@@ -6885,6 +7168,7 @@ video.card-art-img {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .hangar-panel,
   .inbox-shell,
   .inbox-message,
   .inbox-signal-mark i,
