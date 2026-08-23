@@ -2,7 +2,7 @@
 
 Verified through Unreal MCP on 2026-08-23 against
 `D:/UnrealProjects/AstraValkRenderLab` branch
-`agent/hub-lighting-dressing`.
+`agent/hub-camera-crop-validation`.
 
 ## Shared render environment
 
@@ -71,9 +71,33 @@ Camera endpoints now frame the production subjects more tightly:
 
 | Sequence | Start location / rotation | End location / rotation |
 | --- | --- | --- |
-| Home | `(1350, -1050, 1450)` / `(0, -14, 137)` | `(1100, -1400, 1550)` / `(0, -15.5, 124)` |
+| Home | `(2200, -1800, 1800)` / `(0, -14.5, 139)` | `(1800, -2200, 1900)` / `(0, -16.5, 126)` |
 | Spaceport | `(2600, -3000, 1800)` / `(0, -14, 136)` | `(2200, -3300, 1600)` / `(0, -9, 123)` |
 | Hangar | `(1800, -1800, 2000)` / `(0, -18, 129)` | `(-1500, -1700, 1750)` / `(0, -15, 55)` |
+
+## Production camera and crop verification
+
+The camera cuts were captured through Sequencer camera lock so validation used
+the authored CineCamera lens rather than the editor viewport's 90-degree field
+of view. Each camera-component binding now has explicit focal-length, aperture,
+and manual-focus-distance keys at both shot endpoints:
+
+| Sequence | Focal length | Aperture | Focus distance start / end |
+| --- | ---: | ---: | ---: |
+| Home | 24 mm | f/5.6 | 3150 / 3225 cm |
+| Spaceport | 35 mm | f/5.6 | 4300 / 4250 cm |
+| Hangar | 35 mm | f/5.6 | 2950 / 2625 cm |
+
+Home uses the wider environmental lens and longer camera move because its
+previous 35 mm framing clipped the interceptor's wingtip at the real camera
+field of view. Spaceport and Hangar retained their 35 mm framing after their
+actual camera-cut captures passed.
+
+Endpoint captures were reviewed as 16:9 masters and against the centered 9:16
+crop band, which retains the middle 31.6 percent of the horizontal frame. All
+desktop endpoints preserve the ship silhouette. The mobile band preserves the
+fuselage, cockpit, and engine identity while allowing outer deck and wingtip
+context to crop away behind the app UI.
 
 ## Visual check
 
@@ -84,8 +108,8 @@ three assemblies. Fixed manual exposure remains stable between the space-only
 Home composition and the lit Spaceport and Hangar decks.
 
 These remain production-layout sequences, not approved final renders. The hub
-still needs production camera-lens review, final stage-specific dressing, MRQ
-presets, rendered comparison frames, and desktop/mobile crop review.
+still needs final stage-specific dressing, MRQ presets, encoded comparison
+renders, and review at the actual UI placement and playback size.
 
 No shipping React asset was changed. The render manifest remains
 `in-progress`; current local media stays authoritative until comparison,
