@@ -86,7 +86,8 @@ cinematic, UI-loop, still, alpha VFX, horizontal marketing, vertical marketing,
 and low-cost validation output. The project has Alpha Output enabled, and
 frame 0 of all three Hub sequences rendered through the Unreal Python/MRQ API
 at the expected resolution with unique output paths. Final encoded comparison
-renders and in-app review remain approval gates.
+renders now exist locally; in-app review and platform verification remain
+approval gates.
 
 ### Phase 3: Home, Spaceport, and Hangar
 
@@ -96,10 +97,12 @@ renders and in-app review remain approval gates.
   and revised launch shot only when it beats the current Blender clip.
 - Gate: desktop/mobile crops retain first-viewport UI readability.
 
-The first reusable stage assemblies, keyed sequences, assigned MRQ presets,
-and initial MRQ render validation are recorded in
-`docs/unreal/phase-3-hub-audit.md`. They are production work in progress, not
-approved replacements for the current Astra media.
+The reusable stage assemblies, keyed sequences, assigned MRQ presets,
+composition proofs, full 1080p PNG masters, and encoded review candidates are
+recorded in `docs/unreal/phase-3-hub-audit.md`. Home and Spaceport now have
+closed transform and focus curves, while Hangar has a three-point inspection
+arc. They remain production work in progress until runtime comparison and
+web/Electron/mobile gates approve replacement of the current Astra media.
 
 ### Phase 4: zones, bosses, enemies, and combat VFX
 

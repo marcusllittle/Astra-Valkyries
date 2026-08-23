@@ -2,7 +2,7 @@
 
 Verified through Unreal MCP on 2026-08-23 against
 `D:/UnrealProjects/AstraValkRenderLab` branch
-`agent/hub-stage-specific-dressing`.
+`agent/hub-composition-preview` (Unreal PR #9).
 
 ## Shared render environment
 
@@ -18,8 +18,9 @@ Verified through Unreal MCP on 2026-08-23 against
 - `MI_Astra_DeckSteel` now uses a readable blue-gray metal response while
   preserving the imported Blender launch-deck geometry.
 - `BP_Astra_HubPostProcess` supplies deterministic manual exposure, restrained
-  bloom and motion blur, and shared color finishing. It is bound under the
-  Lighting folder in every hub sequence.
+  bloom and motion blur, and shared color finishing. Its exposure compensation
+  is `-0.75 EV` after production-frame review. It is bound under the Lighting
+  folder in every hub sequence.
 - `BP_Astra_HubDeckDressing` adds reusable cyan and amber guide strips, deck
   pylons, emissive beacons, and low-cost practical lights without replacing
   the imported launch deck. Spaceport and Hangar bind the same compiled
@@ -60,9 +61,9 @@ the existing rig assets remain the single reusable lighting source.
 
 | Sequence | Rate and range | Spawnables | Camera verification |
 | --- | --- | --- | --- |
-| `LS_HomeOrbitLoop` | 30 fps, 0-300 | Home stage, Hub rig, orbital sky, post process, cine camera | Location and rotation keys at 0 and 300 |
-| `LS_SpaceportLoop` | 30 fps, 0-300 | Spaceport stage, Hub rig, orbital sky, deck dressing, Spaceport gantry, post process, cine camera | Location and rotation keys at 0 and 300 |
-| `LS_HangarInspection` | 24 fps, 0-240 | Hangar stage, Hangar rig, orbital sky, deck dressing, Hangar service bay, post process, cine camera | Location and rotation keys at 0 and 240 |
+| `LS_HomeOrbitLoop` | 30 fps, 0-300 | Home stage, Hub rig, orbital sky, post process, cine camera | Closed location, rotation, and focus keys at 0, 150, and 300 |
+| `LS_SpaceportLoop` | 30 fps, 0-300 | Spaceport stage, Hub rig, orbital sky, deck dressing, Spaceport gantry, post process, cine camera | Closed location, rotation, and focus keys at 0, 150, and 300 |
+| `LS_HangarInspection` | 24 fps, 0-240 | Hangar stage, Hangar rig, orbital sky, deck dressing, Hangar service bay, post process, cine camera | Location and rotation keys at 0, 120, and 240 |
 
 Each sequence retains the master camera cut and the Cameras, Lighting, FX, and
 Subject organization. Stage, lighting, and environment spawnables were rebuilt
@@ -71,13 +72,15 @@ one bound object for all 6 Home bindings and all 8 Spaceport and Hangar
 bindings, including post process, shared deck dressing, and stage-specific
 dressing, so no stale copied CDO remains.
 
-Camera endpoints now frame the production subjects more tightly:
+Camera paths now frame the production subjects more tightly. Home and
+Spaceport preserve the previous endpoint as frame 150 and return to the exact
+starting transform at frame 300, producing a closed A-to-B-to-A UI loop:
 
-| Sequence | Start location / rotation | End location / rotation |
-| --- | --- | --- |
-| Home | `(2200, -1800, 1800)` / `(0, -14.5, 139)` | `(1800, -2200, 1900)` / `(0, -16.5, 126)` |
-| Spaceport | `(2600, -3000, 1800)` / `(0, -14, 136)` | `(2200, -3300, 1600)` / `(0, -9, 123)` |
-| Hangar | `(1800, -1800, 2000)` / `(0, -18, 129)` | `(-1500, -1700, 1750)` / `(0, -15, 55)` |
+| Sequence | Start location / rotation | Midpoint location / rotation | End location / rotation |
+| --- | --- | --- | --- |
+| Home | `(2200, -1800, 1800)` / `(0, -14.5, 139)` | `(1800, -2200, 1900)` / `(0, -16.5, 126)` | Matches start |
+| Spaceport | `(2600, -3000, 1800)` / `(0, -12, 131)` | `(2200, -3300, 1600)` / `(0, -9, 123)` | Matches start |
+| Hangar | `(1800, -1800, 2000)` / `(0, -18, 129)` | `(150, -2600, 1900)` / `(0, -19.5, 93.3)` | `(-1500, -1700, 1750)` / `(0, -15, 55)` |
 
 ## Production camera and crop verification
 
@@ -88,9 +91,13 @@ and manual-focus-distance keys at both shot endpoints:
 
 | Sequence | Focal length | Aperture | Focus distance start / end |
 | --- | ---: | ---: | ---: |
-| Home | 24 mm | f/5.6 | 3150 / 3225 cm |
-| Spaceport | 35 mm | f/5.6 | 4300 / 4250 cm |
+| Home | 24 mm | f/5.6 | 3150 / 3150 cm |
+| Spaceport | 35 mm | f/5.6 | 4300 / 4300 cm |
 | Hangar | 35 mm | f/5.6 | 2950 / 2625 cm |
+
+Home focus reaches `3225 cm` at frame 150, and Spaceport reaches `4250 cm` at
+frame 150. Matching the transform and camera-component values at frames 0 and
+300 prevents a spatial or depth-of-field snap at browser loop boundaries.
 
 Home uses the wider environmental lens and longer camera move because its
 previous 35 mm framing clipped the interceptor's wingtip at the real camera
@@ -114,8 +121,7 @@ with a rear service wall and ceiling rails. Neither dressing pass obscures the
 ship at the start or end camera frame. Fixed manual exposure remains stable
 between the space-only Home composition and the two lit deck environments.
 
-These remain production-layout sequences, not approved final renders. The hub
-sequences now have deterministic MRQ assignments:
+The hub sequences have deterministic MRQ assignments:
 
 | Sequence | Render preset |
 | --- | --- |
@@ -123,23 +129,38 @@ sequences now have deterministic MRQ assignments:
 | `LS_SpaceportLoop` | `MPC_Astra_UILoop_1080p` |
 | `LS_HangarInspection` | `MPC_Astra_Cinematic_1080p` |
 
-The validation preset rendered frame 0 of all three sequences through the MRQ
-PIE executor at `640x360`. The queue completed three jobs normally and wrote
-unique outputs under each job name. All three PNGs were nonblank and showed the
-ship, assigned environment, materials, and practical lighting. Home preserves
-the full silhouette against space. Spaceport exposes a bright, open deck with
-the ship weighted toward the upper-left; that composition and exposure need
-refinement before a full master. Hangar gives the ship a stronger inspection
-scale, but the overhead service prop needs review through the complete move.
+`astra_mrq_sample_hub.py` rendered start, midpoint, and end frames for all three
+sequences at `640x360`. `astra_mrq_sample_hub_1080p.py` then rendered the same
+nine proof frames using the assigned production presets. The final proof queue
+completed in 19 seconds without a current-run error or stale-folder warning.
+The full-resolution proofs retain the complete Home silhouette, center the
+Spaceport ship through the move, and keep the Hangar wings in frame through the
+new inspection arc.
 
-The first multi-job run exposed stale folder membership left by earlier binding
-replacement in all three sequences. The dead organizational IDs were removed
-and the repaired sequences were saved. A second three-job run completed without
-new stale-folder warnings; evaluation tracks and camera cuts were unchanged.
+`astra_mrq_render_hub.py` completed the final three-job master queue in 3:01:
 
-The hub still needs composition refinement, full-length PNG sequences, encoded
-comparison renders, and review at the actual UI placement and playback size.
+| Sequence | Master output | Encoded review output |
+| --- | --- | --- |
+| `LS_HomeOrbitLoop` | 300 PNGs, 1920x1080, 30 fps | H.264, 10.0 seconds, 300 frames |
+| `LS_SpaceportLoop` | 300 PNGs, 1920x1080, 30 fps | H.264, 10.0 seconds, 300 frames |
+| `LS_HangarInspection` | 240 PNGs, 1920x1080, 24 fps | H.264, 10.0 seconds, 240 frames |
+
+The local encoded reviews live under `Saved/AstraRenders/encoded` and are not
+versioned. `ffprobe` confirmed codec, resolution, frame rate, duration, and
+frame count. Frame 299-to-0 PSNR is `49.0 dB` for Home and `48.2 dB` for
+Spaceport. The authored transform, focal length, aperture, and manual focus
+values match exactly at frames 0 and 300; remaining pixel variation comes from
+the temporal render and ambient scene evaluation.
+
+The first multi-job validation exposed stale folder membership left by earlier
+binding replacement. The dead organizational IDs were removed, the rebuilt
+post-process spawnables were saved under Lighting, and subsequent validation,
+proof, and master queues completed without new stale-folder warnings.
+
+The candidates still need side-by-side review at their real React placement,
+desktop/mobile crop checks in the runtime, delivery-size and decode review,
+CDN publication, and web/Electron/mobile verification.
 
 No shipping React asset was changed. The render manifest remains
 `in-progress`; current local media stays authoritative until comparison,
-render, encoding, and platform gates pass.
+runtime, delivery, and platform gates pass.

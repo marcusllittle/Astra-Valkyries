@@ -94,6 +94,40 @@ Run the current one-frame-per-sequence Hub validation with:
 py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_mrq_validate.py"
 ```
 
+Run the start/midpoint/end Hub composition sampler with:
+
+```text
+py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_mrq_sample_hub.py"
+```
+
+Run the equivalent proof frames with each sequence's assigned 1080p production
+preset with:
+
+```text
+py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_mrq_sample_hub_1080p.py"
+```
+
+After those proofs pass, render the full Home, Spaceport, and Hangar masters
+with:
+
+```text
+py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_mrq_render_hub.py"
+```
+
+The Hub UI loops write 300 PNGs at 30 fps under `ui-loop-1080p`; the Hangar
+inspection writes 240 PNGs at 24 fps under `cinematic-1080p`. Encode review
+MP4s only after confirming the expected frame counts. For example:
+
+```bash
+ffmpeg -framerate 30 -start_number 0 \
+  -i "Saved/AstraRenders/ui-loop-1080p/LS_HomeOrbitLoop/no shot/%04d.png" \
+  -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p \
+  -movflags +faststart Saved/AstraRenders/encoded/LS_HomeOrbitLoop_1080p.mp4
+```
+
+Use 30 fps for Home and Spaceport and 24 fps for Hangar. Validate each encode
+with `ffprobe -count_frames` before comparison or delivery.
+
 Preset audits and rendered image sequences are generated under
 `Saved/AstraRenders` and are intentionally excluded from source control. The
 source MRQ assets and scripts are versioned. Output paths use the queue job name
