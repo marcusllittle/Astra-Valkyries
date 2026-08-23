@@ -1757,26 +1757,15 @@ export default function ShmupPlayScreen() {
         setGamepadConnected(next.connected);
       }
 
-      let resumedThisFrame = false;
       const canControlPause = !showTutorial && !mobileGateVisibleRef.current && !runEndedRef.current;
       if (canControlPause && next.pausePressed && !previous.pausePressed) {
         pausedRef.current = !pausedRef.current;
         if (pausedRef.current) pauseTimeRef.current = performance.now();
         setPaused(pausedRef.current);
-      } else if (
-        canControlPause &&
-        pausedRef.current &&
-        next.confirmPressed &&
-        !previous.confirmPressed
-      ) {
-        pausedRef.current = false;
-        setPaused(false);
-        resumedThisFrame = true;
       }
 
       if (
         !pausedRef.current &&
-        !resumedThisFrame &&
         next.secondaryPressed &&
         !previous.secondaryPressed
       ) {

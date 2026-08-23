@@ -125,7 +125,11 @@ export default function TutorialOverlay({ onComplete }: TutorialOverlayProps) {
           <button className="btn btn-text tutorial-skip" onClick={skip}>
             Skip
           </button>
-          <button className="btn btn-primary tutorial-next" onClick={advance}>
+          <button
+            className="btn btn-primary tutorial-next"
+            data-gamepad-default="true"
+            onClick={advance}
+          >
             {isLast ? "Play" : "Next"}
           </button>
         </div>

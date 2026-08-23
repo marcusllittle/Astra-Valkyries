@@ -352,6 +352,8 @@ export default function HomeScreen() {
                         setCursorIdx(i);
                       }
                     }}
+                    onFocus={() => setCursorIdx(i)}
+                    data-gamepad-default={cursorIdx === i ? "true" : undefined}
                   >
                     <span className="retro-menu-cursor" aria-hidden>
                       {cursorIdx === i ? "▶" : "\u00A0\u00A0"}

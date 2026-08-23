@@ -22,6 +22,7 @@ import SkillsScreen from "./screens/SkillsScreen";
 import NetworkScreen from "./screens/NetworkScreen";
 import VideoCutsceneScreen from "./screens/VideoCutsceneScreen";
 import AchievementToast from "./components/AchievementToast";
+import GamepadNavigationLayer from "./components/GamepadNavigationLayer";
 
 function AchievementLayer() {
   const { pendingAchievement, dismissAchievement } = useGame();
@@ -73,6 +74,7 @@ export default function App() {
             <Route path="/network" element={<NetworkScreen />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          <GamepadNavigationLayer />
           <AchievementLayer />
         </div>
         <Analytics />

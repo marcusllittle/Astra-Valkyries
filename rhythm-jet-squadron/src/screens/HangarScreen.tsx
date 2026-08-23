@@ -106,6 +106,19 @@ export default function HangarScreen() {
     const ownedStars = owned?.stars ?? 0;
     const isPilotLocked = isOutfitPilotLocked(outfit, save.selectedPilotId);
     const isLocked = !isOwned || isPilotLocked;
+    const activateOutfit = () => {
+      if (!isOwned) {
+        setKitWarning(`${outfit.name} is locked. Pull in Shop to unlock.`);
+        return;
+      }
+      if (isPilotLocked) {
+        const pilotName = outfit.pilotId ? pilotNameById.get(outfit.pilotId) : null;
+        setKitWarning(`${outfit.name} is Pilot-specific${pilotName ? ` for ${pilotName}` : ""}.`);
+        return;
+      }
+      setKitWarning(null);
+      selectOutfit(outfit.id);
+    };
 
     return (
       <div
@@ -113,18 +126,14 @@ export default function HangarScreen() {
         className={`card outfit-card rarity-${outfit.rarity.toLowerCase()} ${
           isLocked ? "card-locked" : ""
         } ${outfit.id === save.selectedOutfitId ? "selected" : ""}`}
-        onClick={() => {
-          if (!isOwned) {
-            setKitWarning(`${outfit.name} is locked. Pull in Shop to unlock.`);
-            return;
-          }
-          if (isPilotLocked) {
-            const pilotName = outfit.pilotId ? pilotNameById.get(outfit.pilotId) : null;
-            setKitWarning(`${outfit.name} is Pilot-specific${pilotName ? ` for ${pilotName}` : ""}.`);
-            return;
-          }
-          setKitWarning(null);
-          selectOutfit(outfit.id);
+        role="button"
+        tabIndex={0}
+        data-gamepad-default={outfit.id === save.selectedOutfitId ? "true" : undefined}
+        onClick={activateOutfit}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          activateOutfit();
         }}
       >
         <CardArt
@@ -179,7 +188,16 @@ export default function HangarScreen() {
             <div
               key={pilot.id}
               className={`card pilot-card ${pilot.id === save.selectedPilotId ? "selected" : ""}`}
+              role="button"
+              tabIndex={0}
+              data-gamepad-default={pilot.id === save.selectedPilotId ? "true" : undefined}
               onClick={() => { setKitWarning(null); selectPilot(pilot.id); }}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter" && event.key !== " ") return;
+                event.preventDefault();
+                setKitWarning(null);
+                selectPilot(pilot.id);
+              }}
             >
               <CardArt
                 title={pilot.name}
@@ -217,7 +235,15 @@ export default function HangarScreen() {
             <div
               key={ship.id}
               className={`card ship-card ${ship.id === save.selectedShipId ? "selected" : ""}`}
+              role="button"
+              tabIndex={0}
+              data-gamepad-default={ship.id === save.selectedShipId ? "true" : undefined}
               onClick={() => selectShip(ship.id)}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter" && event.key !== " ") return;
+                event.preventDefault();
+                selectShip(ship.id);
+              }}
             >
               <CardArt
                 title={ship.name}

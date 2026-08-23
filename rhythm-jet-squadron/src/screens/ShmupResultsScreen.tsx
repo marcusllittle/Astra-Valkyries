@@ -397,14 +397,28 @@ export default function ShmupResultsScreen() {
 
         <footer className="results-buttons">
           {debriefLines.length > 0 ? (
-            <button className="btn btn-primary" onClick={() => { setDebriefLineIdx(0); setShowDebrief(true); }}>
+            <button
+              className="btn btn-primary"
+              data-gamepad-default="true"
+              onClick={() => { setDebriefLineIdx(0); setShowDebrief(true); }}
+            >
               {didWinRun ? "Debrief & Return" : "Continue to Debrief"}
             </button>
           ) : null}
-          <button className="btn btn-primary" onClick={() => navigate(isFirstRun ? "/hangar" : "/shmup")}>
+          <button
+            className="btn btn-primary"
+            data-gamepad-default={debriefLines.length === 0 ? "true" : undefined}
+            onClick={() => navigate(isFirstRun ? "/hangar" : "/shmup")}
+          >
             {isFirstRun ? "Open Loadout" : "Play Again"}
           </button>
-          <button className="btn btn-secondary" onClick={handleReturnToPort}>Return to Port</button>
+          <button
+            className="btn btn-secondary"
+            data-gamepad-back="true"
+            onClick={handleReturnToPort}
+          >
+            Return to Port
+          </button>
         </footer>
       </main>
 

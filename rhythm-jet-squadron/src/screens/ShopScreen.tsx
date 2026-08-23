@@ -217,7 +217,18 @@ export default function ShopScreen() {
             <h3>Pull Results</h3>
             <div className="gacha-results-grid">
               {results.map((r, i) => (
-                <div key={i} className={`gacha-result-card rarity-${r.outfit.rarity.toLowerCase()}`} onClick={() => setPreviewResult(r)}>
+                <div
+                  key={i}
+                  className={`gacha-result-card rarity-${r.outfit.rarity.toLowerCase()}`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setPreviewResult(r)}
+                  onKeyDown={(event) => {
+                    if (event.key !== "Enter" && event.key !== " ") return;
+                    event.preventDefault();
+                    setPreviewResult(r);
+                  }}
+                >
                   <CardArt title={r.outfit.name} artUrl={r.outfit.artUrl} artPlaceholder={r.outfit.artPlaceholder} rarity={r.outfit.rarity} className="card-art-small" motionMode="never" />
                   <div className="gacha-result-info">
                     <span className="rarity-text" style={{ color: RARITY_COLORS[r.outfit.rarity] }}>{r.outfit.rarity}</span>

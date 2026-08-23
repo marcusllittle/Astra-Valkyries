@@ -43,8 +43,22 @@ export default function DialogueBox({ line, onNext, choices, onChoice }: Dialogu
     onNext();
   };
 
+  const choicesVisible = isComplete && Boolean(choices?.length);
+
   return (
-    <div className="dialogue-box-shell" onClick={handleClick}>
+    <div
+      className="dialogue-box-shell"
+      role={choicesVisible ? undefined : "button"}
+      tabIndex={choicesVisible ? -1 : 0}
+      aria-label={choicesVisible ? undefined : isComplete ? "Continue dialogue" : "Reveal dialogue"}
+      data-gamepad-default={choicesVisible ? undefined : "true"}
+      onClick={handleClick}
+      onKeyDown={(event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        handleClick();
+      }}
+    >
       <div className="dialogue-box-panel">
         <div className="dialogue-box-speaker">{line.speaker}</div>
         <div className="dialogue-box-text">
@@ -53,10 +67,11 @@ export default function DialogueBox({ line, onNext, choices, onChoice }: Dialogu
         </div>
         {isComplete && choices && choices.length > 0 && (
           <div className="dialogue-box-choices">
-            {choices.map((choice) => (
+            {choices.map((choice, index) => (
               <button
                 key={choice.nextNodeId}
                 className="dialogue-box-choice"
+                data-gamepad-default={index === 0 ? "true" : undefined}
                 onClick={(e) => {
                   e.stopPropagation();
                   onChoice?.(choice.nextNodeId);
