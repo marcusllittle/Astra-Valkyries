@@ -58,7 +58,7 @@ recorded in `docs/unreal/mcp-capabilities.md`.
 ### Phase 1: production foundation
 
 - Establish `/Game/AstraRenderLab` ownership boundaries.
-- Export existing Blender geometry as GLB with source hashes and export metadata.
+- Export existing Blender geometry as FBX with source hashes and export metadata.
 - Define Unreal import destinations and stable naming.
 - Establish the render manifest and validate coverage of every routed screen.
 - Gate: exported geometry can be imported without rebuilding source work; no
@@ -80,6 +80,12 @@ recorded in `docs/unreal/mcp-capabilities.md`.
 Implementation status and MCP verification are recorded in
 `docs/unreal/phase-2-template-audit.md`.
 
+The reusable material, lighting, Niagara, and Sequencer baseline is callable
+and saved. Movie Render Queue preset authoring is still pending because the
+connected Unreal MCP server does not expose an MRQ toolset; render delivery is
+not considered approved until deterministic output settings are created and
+verified in Unreal.
+
 ### Phase 3: Home, Spaceport, and Hangar
 
 - Build the shared orbital-spaceport visual language first.
@@ -87,6 +93,10 @@ Implementation status and MCP verification are recorded in
 - Produce a Home establishing loop, Spaceport ambient loop, Hangar turntable,
   and revised launch shot only when it beats the current Blender clip.
 - Gate: desktop/mobile crops retain first-viewport UI readability.
+
+The first reusable stage assemblies and keyed sequences are recorded in
+`docs/unreal/phase-3-hub-audit.md`. They are production work in progress, not
+approved replacements for the current Astra media.
 
 ### Phase 4: zones, bosses, enemies, and combat VFX
 
