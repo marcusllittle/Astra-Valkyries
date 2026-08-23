@@ -88,7 +88,7 @@ From Unreal's Output Log command field, create or refresh the presets with:
 py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_mrq_presets.py"
 ```
 
-Run the current one-frame Hub validation with:
+Run the current one-frame-per-sequence Hub validation with:
 
 ```text
 py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_mrq_validate.py"
@@ -96,9 +96,11 @@ py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_mrq_validate.py"
 
 Preset audits and rendered image sequences are generated under
 `Saved/AstraRenders` and are intentionally excluded from source control. The
-source MRQ assets and scripts are versioned. Alpha output requires the checked
-in `r.PostProcessing.PropagateAlpha=True` renderer setting. Video encoding is a
-separate delivery step after image-sequence review.
+source MRQ assets and scripts are versioned. Output paths use the queue job name
+rather than the sequence-name token, which the PIE executor can leave empty.
+Alpha output requires the checked in `r.PostProcessing.PropagateAlpha=True`
+renderer setting. Video encoding is a separate delivery step after
+image-sequence review.
 
 Validate the contract with:
 

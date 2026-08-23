@@ -123,14 +123,22 @@ sequences now have deterministic MRQ assignments:
 | `LS_SpaceportLoop` | `MPC_Astra_UILoop_1080p` |
 | `LS_HangarInspection` | `MPC_Astra_Cinematic_1080p` |
 
-The validation preset rendered frame 0 of `LS_HomeOrbitLoop` through the MRQ
-PIE executor at `640x360`. The queue completed normally, the PNG was nonblank,
-and the ship silhouette, cockpit, engines, and orbital background were visible.
-The sequence emitted stale folder-binding warnings for removed organizational
-entries; evaluation completed and the asset remained saved and not dirty.
+The validation preset rendered frame 0 of all three sequences through the MRQ
+PIE executor at `640x360`. The queue completed three jobs normally and wrote
+unique outputs under each job name. All three PNGs were nonblank and showed the
+ship, assigned environment, materials, and practical lighting. Home preserves
+the full silhouette against space. Spaceport exposes a bright, open deck with
+the ship weighted toward the upper-left; that composition and exposure need
+refinement before a full master. Hangar gives the ship a stronger inspection
+scale, but the overhead service prop needs review through the complete move.
 
-The hub still needs full-length PNG sequences, encoded comparison renders, and
-review at the actual UI placement and playback size.
+The first multi-job run exposed stale folder membership left by earlier binding
+replacement in all three sequences. The dead organizational IDs were removed
+and the repaired sequences were saved. A second three-job run completed without
+new stale-folder warnings; evaluation tracks and camera cuts were unchanged.
+
+The hub still needs composition refinement, full-length PNG sequences, encoded
+comparison renders, and review at the actual UI placement and playback size.
 
 No shipping React asset was changed. The render manifest remains
 `in-progress`; current local media stays authoritative until comparison,
