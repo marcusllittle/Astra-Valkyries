@@ -58,6 +58,11 @@ import {
   type WeaponProjectileSpriteKey,
 } from "../lib/weaponVfx";
 import {
+  resolveSecondaryVfx,
+  SECONDARY_VFX_ASSET_PATHS,
+  type SecondaryVfxSpriteKey,
+} from "../lib/secondaryVfx";
+import {
   EMPTY_GAMEPAD_INPUT,
   findActiveGamepad,
   readGameplayGamepad,
@@ -379,6 +384,8 @@ interface PulseEffect {
   color: string;
   lineWidth: number;
   spriteKey?: SpriteKey;
+  rotation?: number;
+  spin?: number;
 }
 
 interface WeaponFlash {
@@ -534,6 +541,10 @@ type SpriteKey =
   | "weaponTrail"
   | "weaponMuzzle"
   | "weaponImpact"
+  | "bossWarningRing"
+  | "bossLaserLane"
+  | "bossTarget"
+  | SecondaryVfxSpriteKey
   | WeaponProjectileSpriteKey;
 
 const SPRITE_PATHS: Record<SpriteKey, string> = {
@@ -563,6 +574,10 @@ const SPRITE_PATHS: Record<SpriteKey, string> = {
   weaponTrail: "/assets/shmup/blender-vfx/weapon_trail.png",
   weaponMuzzle: "/assets/shmup/blender-vfx/weapon_muzzle.png",
   weaponImpact: "/assets/shmup/blender-vfx/weapon_impact.png",
+  bossWarningRing: "/assets/shmup/blender-vfx/boss_warning_ring.png",
+  bossLaserLane: "/assets/shmup/blender-vfx/boss_laser_lane.png",
+  bossTarget: "/assets/shmup/blender-vfx/boss_target.png",
+  ...SECONDARY_VFX_ASSET_PATHS,
   ...WEAPON_PROJECTILE_ASSET_PATHS,
 };
 
@@ -1202,6 +1217,10 @@ export default function ShmupPlayScreen() {
   const weaponVfx = useMemo(
     () => resolveWeaponVfx(outfit?.rarity, ownedOutfit?.stars, primaryKey),
     [outfit?.rarity, ownedOutfit?.stars, primaryKey],
+  );
+  const secondaryVfx = useMemo(
+    () => resolveSecondaryVfx(secondaryKey, outfit?.rarity, ownedOutfit?.stars),
+    [secondaryKey, outfit?.rarity, ownedOutfit?.stars],
   );
 
   const [hud, setHud] = useState<HudState>(() => createHudState(modifiers, activeMap));
@@ -1868,6 +1887,23 @@ export default function ShmupPlayScreen() {
     };
 
     const startSecondaryCooldown = (elapsedMs: number) => {
+      const layerCount = secondaryVfx.layers;
+      for (let layer = 0; layer < layerCount; layer++) {
+        const maxLife = 0.32 + layer * 0.08;
+        pulsesRef.current.push({
+          x: ship.x,
+          y: ship.y,
+          radius: (30 + layer * 11) * secondaryVfx.scale,
+          growth: (170 + layer * 52) * secondaryVfx.scale,
+          life: maxLife,
+          maxLife,
+          color: secondaryVfx.color,
+          lineWidth: 0,
+          spriteKey: secondaryVfx.spriteKey,
+          rotation: layer * Math.PI / Math.max(1, layerCount),
+          spin: secondaryVfx.spin * (layer % 2 === 0 ? 1 : -1),
+        });
+      }
       if (secondaryCooldownMs <= 0) return;
       secondaryCooldownUntilRef.current = elapsedMs + secondaryCooldownMs;
     };
@@ -4579,6 +4615,7 @@ export default function ShmupPlayScreen() {
       for (const pulse of pulsesRef.current) {
         pulse.radius += pulse.growth * deltaSeconds;
         pulse.life -= deltaSeconds;
+        pulse.rotation = (pulse.rotation ?? 0) + (pulse.spin ?? 0) * deltaSeconds;
       }
       pulsesRef.current = pulsesRef.current.filter((pulse) => pulse.life > 0);
 
@@ -6239,6 +6276,23 @@ export default function ShmupPlayScreen() {
             ctx.save();
             const cg = boss.chargeGlow;
             const ringR = boss.radius * displayScale * (2.6 - cg * 1.3);
+            const warningSprite = getSprite("bossWarningRing");
+            if (warningSprite) {
+              ctx.globalCompositeOperation = "lighter";
+              ctx.shadowColor = activeMap.palette.bossPrimary;
+              ctx.shadowBlur = 20 * cg * displayScale;
+              drawTintedCentered(
+                warningSprite,
+                "bossWarningRing",
+                activeMap.palette.bossPrimary,
+                boss.x,
+                boss.y,
+                ringR * 2.25,
+                ringR * 2.25,
+                boss.age * (boss.archetype === "leviathan" ? -0.7 : 0.9),
+                0.28 + cg * 0.58,
+              );
+            }
             ctx.strokeStyle = `${activeMap.palette.bossPrimary}${Math.round(cg * 220).toString(16).padStart(2, "0")}`;
             ctx.lineWidth = 2 + cg * 4;
             ctx.beginPath();
@@ -6252,6 +6306,31 @@ export default function ShmupPlayScreen() {
             ctx.arc(boss.x, boss.y, boss.radius * displayScale * 1.1, 0, Math.PI * 2);
             ctx.fill();
             ctx.restore();
+
+            if (cg > 0.28 && boss.archetype !== "dreadnought") {
+              const targetSprite = getSprite("bossTarget");
+              if (targetSprite) {
+                const targetX = ship.x;
+                const targetY = boss.archetype === "leviathan" ? ship.y : Math.max(ship.y, canvas.height * 0.55);
+                const lockSize = (92 - cg * 28) * displayScale;
+                ctx.save();
+                ctx.globalCompositeOperation = "lighter";
+                ctx.shadowColor = "#ff3b30";
+                ctx.shadowBlur = 12 * displayScale;
+                drawTintedCentered(
+                  targetSprite,
+                  "bossTarget",
+                  "#ff554f",
+                  targetX,
+                  targetY,
+                  lockSize,
+                  lockSize,
+                  -boss.age * 1.4,
+                  cg * 0.72,
+                );
+                ctx.restore();
+              }
+            }
           }
 
           // Lightning strike flash: brief jagged bolts during the windup
@@ -6631,12 +6710,55 @@ export default function ShmupPlayScreen() {
           ctx.restore();
         }
 
+        const drawBossLaserLane = (angle: number, alpha: number, height: number) => {
+          const laneSprite = getSprite("bossLaserLane");
+          if (!laneSprite) return;
+          const laserLen = Math.hypot(canvas.width, canvas.height) * 1.25;
+          const laneX = boss.x + Math.cos(angle) * laserLen * 0.5;
+          const laneY = boss.y + Math.sin(angle) * laserLen * 0.5;
+          ctx.save();
+          ctx.globalCompositeOperation = "lighter";
+          ctx.shadowColor = "#ff3b30";
+          ctx.shadowBlur = 12 * displayScale;
+          drawTintedCentered(
+            laneSprite,
+            "bossLaserLane",
+            "#ff453a",
+            laneX,
+            laneY,
+            laserLen,
+            height,
+            angle,
+            alpha,
+          );
+          ctx.restore();
+        };
+
+        // Solar Lance tracks during its tell. The authored lane makes the
+        // future collision corridor readable before the damaging beam starts.
+        if (boss.action === "windup" && boss.archetype === "tyrant" && boss.chargeGlow > 0.12) {
+          const tellAngle = Math.atan2(ship.y - boss.y, ship.x - boss.x);
+          drawBossLaserLane(tellAngle, boss.chargeGlow * 0.42, 30 + boss.chargeGlow * 10);
+        }
+
+        // Autonomous sweep lasers now expose their initial lane shortly
+        // before activation instead of appearing as immediate damage.
+        const phaseConfig = activeMap.bossPhases?.[boss.phase - 1];
+        const sweepEnabled = boss.archetype !== "tyrant"
+          && phaseConfig?.sweepLaser !== false
+          && (boss.archetype === "dreadnought" ? boss.phase >= 2 : boss.phase >= 3);
+        if (sweepEnabled && !boss.sweepActive && boss.sweepCooldown > 0 && boss.sweepCooldown <= 0.65) {
+          const previewAngle = boss.archetype === "dreadnought" ? Math.PI * 0.08 : Math.PI * 0.15;
+          drawBossLaserLane(previewAngle, (1 - boss.sweepCooldown / 0.65) * 0.48, 34);
+        }
+
         // Sweep laser beam
         if (boss.sweepActive) {
           ctx.save();
           const laserLen = 800;
           const endX = boss.x + Math.cos(boss.sweepAngle) * laserLen;
           const endY = boss.y + Math.sin(boss.sweepAngle) * laserLen;
+          drawBossLaserLane(boss.sweepAngle, 0.62, 42);
           // Beam glow
           ctx.strokeStyle = "rgba(255,40,40,0.15)";
           ctx.lineWidth = 20;
@@ -6755,7 +6877,7 @@ export default function ShmupPlayScreen() {
             pulse.y,
             pulse.radius * 2.2,
             pulse.radius * 2.2,
-            0,
+            pulse.rotation ?? 0,
             alpha * 0.6
           );
           continue;
@@ -7314,6 +7436,7 @@ export default function ShmupPlayScreen() {
     submitResult,
     playerSpritePath,
     weaponVfx,
+    secondaryVfx,
     // Run modifiers and skill effects. These only change between runs, but
     // the loop closes over them, so leaving them out would mean a pilot or
     // modifier swap silently kept the previous run's numbers.
