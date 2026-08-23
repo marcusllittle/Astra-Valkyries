@@ -1,7 +1,8 @@
 # Phase 2 Unreal Template Audit
 
-Verified through Unreal MCP on 2026-08-23 against the local
-`agent/phase2-templates` branch in
+Verified through Unreal MCP on 2026-08-23 against the merged
+`agent/phase2-templates` baseline and the follow-up `agent/hub-production`
+branch in
 `D:/UnrealProjects/AstraValkRenderLab`.
 
 ## Source control
@@ -16,7 +17,7 @@ Verified through Unreal MCP on 2026-08-23 against the local
 - Created the private GitHub remote
   `https://github.com/marcusllittle/AstraValkRenderLab`.
 - Pushed local `main` and `agent/phase2-templates`, including all required LFS
-  objects, and opened Unreal pull request #1.
+  objects, and merged Unreal pull request #1.
 
 ## Materials
 
@@ -26,6 +27,16 @@ Verified through Unreal MCP on 2026-08-23 against the local
   support and Niagara sprite, ribbon, and mesh usage enabled.
 - `M_Astra_Glass`: two-sided translucent lit glass with tint, roughness,
   specular, and opacity controls.
+- `M_Astra_Hologram`: additive unlit hologram master with particle color,
+  view-angle Fresnel falloff, color, intensity, and opacity controls.
+- `M_Astra_UnlitFlipbook`: translucent unlit SubUV master for Niagara sprite
+  sheets with texture, tint, emissive intensity, particle color, and opacity.
+- `M_Astra_Decal`: translucent unlit deferred decal master with texture, tint,
+  and opacity. The unlit emissive path replaced an initial SM6-incompatible
+  lit decal graph and recompiles without a new material failure.
+- `M_Astra_EnvironmentSurface`: opaque lit environment master with the shared
+  surface controls plus ambient occlusion, static-lighting, Nanite, and LOD
+  usage support.
 - Nine retained material instances cover sapphire armor, command ceramic,
   carbon armor, deck steel, gold trim, cockpit glass, and cyan/gold/danger
   energy.
@@ -65,15 +76,28 @@ Lighting, and FX folders, and has a spawnable `CAM_Astra_Master` cine camera.
 ## Lighting
 
 `BP_Astra_LightingRig_Studio` contains configured movable key, fill, rim,
-overhead, and ambient-sky components. The rig uses separate cool and warm
-accents, large rect-light sources, bounded attenuation, shadows, reflection and
-GI contribution, and real-time skylight capture. It compiles with warnings
-treated as errors.
+overhead, and ambient-sky components. Seven compiled profile variants provide
+independent Hub, Hangar, Briefing, Combat, Dossier, Gacha, and Marketing color
+and intensity treatments. The rigs use separate cool and warm accents, large
+rect-light sources, bounded attenuation, shadows, reflection and GI
+contribution, and real-time skylight capture. Every Blueprint compiles with
+warnings treated as errors.
+
+## Remaining render-template work
+
+The connected MCP server exposes Sequencer, Sequencer keyframing, cameras, and
+editor viewport capture, but no Movie Render Queue toolset. The sequence
+templates are valid production inputs; deterministic MRQ presets, horizontal
+and vertical output settings, codecs, alpha handling, and final render tests
+remain pending rather than being represented as completed assets.
 
 ## Final state
 
-The Unreal registry contains 53 Astra assets: 29 StaticMeshes, three Materials,
-nine MaterialInstanceConstants, six NiagaraSystems, five LevelSequences, and
-one lighting Blueprint. All assets are saved, no asset remains dirty, and the
-editor log contains no relevant material, Blueprint, Niagara, Sequencer, or
-Astra failures.
+After the follow-up template and hub work, the Unreal registry contains 70
+Astra assets: 29 StaticMeshes, seven Materials, nine
+MaterialInstanceConstants, six NiagaraSystems, eight LevelSequences, and 11
+Blueprints. All assets are saved. Four specialized materials recompile, all 10
+new lighting/stage Blueprints compile with warnings treated as errors, and the
+three hub sequences have verified camera keys. Earlier session log entries for
+the first decal graph and stale replaced Sequencer bindings were repaired and
+did not recur when the assets were reopened.
