@@ -131,6 +131,12 @@ export default function VideoCutsceneScreen() {
         }}
       />
       <div className="cinematic-vignette" aria-hidden="true" />
+      <img
+        className="cinematic-watermark"
+        src={resolveAssetUrl("/assets/brand/havnai-watermark.png")}
+        alt=""
+        aria-hidden="true"
+      />
 
       <header className="cinematic-header">
         <div className="cinematic-title">

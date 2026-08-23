@@ -12,7 +12,7 @@ import {
 import { humanizeMachineName } from "../lib/networkForge";
 import {
   getMapCinematic,
-  getPilotLaunchClip,
+  getMissionLaunchClips,
   unseenCinematicClips,
 } from "../lib/missionCinematics";
 
@@ -93,7 +93,7 @@ export default function BriefingScreen() {
 
   const navigateAfterDialogue = useCallback(() => {
     const clips = unseenCinematicClips(
-      [getPilotLaunchClip(save.selectedPilotId, mapId)],
+      getMissionLaunchClips(save.selectedPilotId, save.selectedShipId, mapId),
       save.seenCutscenes,
     );
     if (clips.length > 0) {
@@ -104,7 +104,7 @@ export default function BriefingScreen() {
       return;
     }
     navigate(directRoute, { replace: true });
-  }, [directRoute, mapId, navigate, save.seenCutscenes, save.selectedPilotId]);
+  }, [directRoute, mapId, navigate, save.seenCutscenes, save.selectedPilotId, save.selectedShipId]);
 
   const handleNext = useCallback(() => {
     if (!currentNode) return;

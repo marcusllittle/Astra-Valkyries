@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   getMapCinematic,
+  getMissionLaunchClips,
   getPilotLaunchClip,
   getPilotReturnClip,
+  getShipLaunchClip,
   unseenCinematicClips,
 } from "../lib/missionCinematics";
 
@@ -28,6 +30,21 @@ describe("mission cinematic registry", () => {
 
   it("does not substitute another pilot when footage is unavailable", () => {
     expect(getPilotLaunchClip("pilot_rex", "solar-rift")).toBeNull();
+  });
+
+  it("builds an authored LTX then Blender sequence when both assets match", () => {
+    expect(
+      getMissionLaunchClips("pilot_nova", "ship_astra_interceptor", "nebula-runway").map(
+        (clip) => clip.source,
+      ),
+    ).toEqual(["ltx", "blender"]);
+    expect(getShipLaunchClip("ship_astra_interceptor", "solar-rift")?.id).toBe(
+      "launch:ship_astra_interceptor:solar-rift",
+    );
+  });
+
+  it("does not show the Interceptor cinematic for another selected ship", () => {
+    expect(getShipLaunchClip("ship_seraph_guard", "nebula-runway")).toBeNull();
   });
 
   it("filters previously completed clips without mutating order", () => {

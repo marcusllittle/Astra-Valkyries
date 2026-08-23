@@ -45,6 +45,16 @@ const PILOT_RETURN_CLIPS: Record<string, Omit<CinematicClip, "id">> = {
   },
 };
 
+const SHIP_LAUNCH_CLIPS: Record<string, Omit<CinematicClip, "id">> = {
+  ship_astra_interceptor: {
+    src: "/assets/cutins/ships/astra_interceptor_launch.mp4",
+    poster: "/assets/ships/astra_interceptor.png",
+    eyebrow: "Flight deck",
+    title: "Astra Interceptor / Slipstream launch",
+    source: "blender",
+  },
+};
+
 export function getMapCinematic(mapId?: string | null): MapCinematic | null {
   if (!mapId) return null;
   return MAP_CINEMATICS[mapId] ?? null;
@@ -66,6 +76,25 @@ export function getPilotReturnClip(
   if (!pilotId || !mapId) return null;
   const clip = PILOT_RETURN_CLIPS[pilotId];
   return clip ? { ...clip, id: `return:${pilotId}:${mapId}` } : null;
+}
+
+export function getShipLaunchClip(
+  shipId?: string | null,
+  mapId?: string | null,
+): CinematicClip | null {
+  if (!shipId || !mapId) return null;
+  const clip = SHIP_LAUNCH_CLIPS[shipId];
+  return clip ? { ...clip, id: `launch:${shipId}:${mapId}` } : null;
+}
+
+export function getMissionLaunchClips(
+  pilotId?: string | null,
+  shipId?: string | null,
+  mapId?: string | null,
+): CinematicClip[] {
+  return [getPilotLaunchClip(pilotId, mapId), getShipLaunchClip(shipId, mapId)].filter(
+    (clip): clip is CinematicClip => Boolean(clip),
+  );
 }
 
 export function unseenCinematicClips(
