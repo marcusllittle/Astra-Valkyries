@@ -53,6 +53,11 @@ import { gradeShmupRun, type ShmupRunResult } from "../lib/shmupResults";
 import { flawlessRouteReward, isFlawlessRoute } from "../lib/tacticalObjectives";
 import { GRAZE_CHAIN_TIMEOUT_MS, grazeReward } from "../lib/masteryScoring";
 import {
+  resolveWeaponVfx,
+  WEAPON_PROJECTILE_ASSET_PATHS,
+  type WeaponProjectileSpriteKey,
+} from "../lib/weaponVfx";
+import {
   EMPTY_GAMEPAD_INPUT,
   findActiveGamepad,
   readGameplayGamepad,
@@ -376,6 +381,17 @@ interface PulseEffect {
   spriteKey?: SpriteKey;
 }
 
+interface WeaponFlash {
+  x: number;
+  y: number;
+  size: number;
+  life: number;
+  maxLife: number;
+  color: string;
+  rotation: number;
+  kind: "muzzle" | "impact";
+}
+
 interface HudState {
   score: number;
   kills: number;
@@ -514,7 +530,11 @@ type SpriteKey =
   | "bulletEnemy"
   | "bulletBoss"
   | "impactBurst"
-  | "pulseRing";
+  | "pulseRing"
+  | "weaponTrail"
+  | "weaponMuzzle"
+  | "weaponImpact"
+  | WeaponProjectileSpriteKey;
 
 const SPRITE_PATHS: Record<SpriteKey, string> = {
   backgroundFar: "/assets/shmup/background_far.png",
@@ -540,6 +560,10 @@ const SPRITE_PATHS: Record<SpriteKey, string> = {
   bulletBoss: "/assets/shmup/bullet_boss.png",
   impactBurst: "/assets/shmup/impact_burst.png",
   pulseRing: "/assets/shmup/pulse_ring.png",
+  weaponTrail: "/assets/shmup/blender-vfx/weapon_trail.png",
+  weaponMuzzle: "/assets/shmup/blender-vfx/weapon_muzzle.png",
+  weaponImpact: "/assets/shmup/blender-vfx/weapon_impact.png",
+  ...WEAPON_PROJECTILE_ASSET_PATHS,
 };
 
 // Each pattern gets its own sprite so the player can read a threat before it
@@ -583,31 +607,9 @@ function getPlayerShipSpritePath(
 }
 
 function createSpriteStore(): Record<SpriteKey, HTMLImageElement | null> {
-  return {
-    backgroundFar: null,
-    backgroundNear: null,
-    player: null,
-    enemyDrifter: null,
-    enemySine: null,
-    enemyTank: null,
-    enemyZigzag: null,
-    enemyOrbiter: null,
-    enemyCharger: null,
-    enemySplitter: null,
-    enemyBomber: null,
-    enemySniper: null,
-    enemySwarm: null,
-    enemyDreadnought: null,
-    boss: null,
-    bossTyrant: null,
-    bossLeviathan: null,
-    chip: null,
-    bulletPlayer: null,
-    bulletEnemy: null,
-    bulletBoss: null,
-    impactBurst: null,
-    pulseRing: null,
-  };
+  return Object.fromEntries(
+    (Object.keys(SPRITE_PATHS) as SpriteKey[]).map((key) => [key, null]),
+  ) as Record<SpriteKey, HTMLImageElement | null>;
 }
 
 function getViewportBounds(): ViewportBounds {
@@ -984,6 +986,7 @@ export default function ShmupPlayScreen() {
   const bombPickupsRef = useRef<BombPickup[]>([]);
   const sparksRef = useRef<SparkParticle[]>([]);
   const pulsesRef = useRef<PulseEffect[]>([]);
+  const weaponFlashesRef = useRef<WeaponFlash[]>([]);
   const bomberZonesRef = useRef<BomberZone[]>([]);
   const damageNumbersRef = useRef<DamageNumber[]>([]);
   const trailParticlesRef = useRef<TrailParticle[]>([]);
@@ -1196,6 +1199,10 @@ export default function ShmupPlayScreen() {
     runSpawnRateMult,
   } = modifiers;
   const passiveKeySignature = passiveKeys.join("|");
+  const weaponVfx = useMemo(
+    () => resolveWeaponVfx(outfit?.rarity, ownedOutfit?.stars, primaryKey),
+    [outfit?.rarity, ownedOutfit?.stars, primaryKey],
+  );
 
   const [hud, setHud] = useState<HudState>(() => createHudState(modifiers, activeMap));
   const [showTouchControls, setShowTouchControls] = useState(false);
@@ -1487,6 +1494,7 @@ export default function ShmupPlayScreen() {
     bombPickupsRef.current = [];
     sparksRef.current = [];
     pulsesRef.current = [];
+    weaponFlashesRef.current = [];
     bomberZonesRef.current = [];
     damageNumbersRef.current = [];
     trailParticlesRef.current = [];
@@ -1601,6 +1609,7 @@ export default function ShmupPlayScreen() {
     }
     for (const key of Object.keys(SPRITE_PATHS) as SpriteKey[]) {
       if (key === "player" || key === "backgroundFar") continue;
+      if (key.startsWith("weapon_") && key !== weaponVfx.spriteKey) continue;
       if (spriteStore[key]) continue;
       const image = new Image();
       image.src = resolveAssetUrl(SPRITE_PATHS[key]) ?? SPRITE_PATHS[key];
@@ -1923,6 +1932,30 @@ export default function ShmupPlayScreen() {
       });
     };
 
+    const addWeaponFlash = (
+      kind: WeaponFlash["kind"],
+      x: number,
+      y: number,
+      color: string,
+      size: number,
+      rotation: number = 0,
+    ) => {
+      if (weaponFlashesRef.current.length >= 80) {
+        weaponFlashesRef.current.shift();
+      }
+      const maxLife = kind === "muzzle" ? 0.11 : 0.18;
+      weaponFlashesRef.current.push({
+        kind,
+        x,
+        y,
+        color,
+        size,
+        rotation,
+        life: maxLife,
+        maxLife,
+      });
+    };
+
     const addExplosion = (
       x: number,
       y: number,
@@ -2111,6 +2144,14 @@ export default function ShmupPlayScreen() {
         58 + weaponLevel * 22,
         0.08,
         1.5
+      );
+      addWeaponFlash(
+        "muzzle",
+        ship.x,
+        ship.y - ship.radius - 10,
+        leadColor,
+        (12 + weaponLevel * 1.5) * weaponVfx.muzzleScale,
+        elapsedMs / 180,
       );
       addScreenShake(overdriveActive ? 0.86 + weaponLevel * 0.18 : 0.28 + weaponLevel * 0.14, 0.045);
 
@@ -4541,6 +4582,11 @@ export default function ShmupPlayScreen() {
       }
       pulsesRef.current = pulsesRef.current.filter((pulse) => pulse.life > 0);
 
+      for (const flash of weaponFlashesRef.current) {
+        flash.life -= deltaSeconds;
+      }
+      weaponFlashesRef.current = weaponFlashesRef.current.filter((flash) => flash.life > 0);
+
       // Update damage numbers
       for (const dmg of damageNumbersRef.current) {
         dmg.y += dmg.vy * deltaSeconds;
@@ -5155,6 +5201,14 @@ export default function ShmupPlayScreen() {
           } else {
             addSparkBurst(bullet.x, bullet.y, isCrit ? CRIT_COLOR : bullet.color, isCrit ? 7 : 4, isCrit ? 120 : 90);
           }
+          addWeaponFlash(
+            "impact",
+            bullet.x,
+            bullet.y,
+            isCrit ? CRIT_COLOR : bullet.color,
+            (isCrit ? 18 : 12) * weaponVfx.impactScale,
+            bullet.age * 8,
+          );
           addPulse(bullet.x, bullet.y, isCrit ? CRIT_COLOR : bullet.color, 4, 42, 0.08, 1.2);
           addDamageNumber(
             enemy.x,
@@ -5195,6 +5249,14 @@ export default function ShmupPlayScreen() {
             bossCrit ? CRIT_COLOR : "#ffd43b",
           );
           addSparkBurst(bullet.x, bullet.y, activeBoss.phase === 1 ? "#ffa8a8" : "#ffd43b", 5, 96);
+          addWeaponFlash(
+            "impact",
+            bullet.x,
+            bullet.y,
+            bossCrit ? CRIT_COLOR : bullet.color,
+            (bossCrit ? 20 : 14) * weaponVfx.impactScale,
+            bullet.age * 8,
+          );
           addPulse(
             bullet.x,
             bullet.y,
@@ -5516,20 +5578,48 @@ export default function ShmupPlayScreen() {
 
       for (const bullet of playerBulletsRef.current) {
         const angle = Math.atan2(bullet.vy, bullet.vx);
-        const spriteKey = bullet.spriteKey ?? "bulletPlayer";
+        const trailSprite = getSprite("weaponTrail");
+        if (trailSprite && weaponVfx.trailLayers > 0) {
+          ctx.save();
+          ctx.globalCompositeOperation = "lighter";
+          for (let layer = weaponVfx.trailLayers - 1; layer >= 0; layer--) {
+            const layerScale = 1 + layer * 0.24;
+            const trailWidth = bullet.length * (2.7 + weaponVfx.trailLengthScale) * layerScale;
+            const trailHeight = bullet.radius * 3.3 * weaponVfx.trailWidthScale * layerScale;
+            const offset = trailWidth * (0.34 + layer * 0.04);
+            drawTintedCentered(
+              trailSprite,
+              "weaponTrail",
+              layer === 0 ? bullet.color : bullet.coreColor,
+              bullet.x - Math.cos(angle) * offset,
+              bullet.y - Math.sin(angle) * offset,
+              trailWidth,
+              trailHeight,
+              angle,
+              weaponVfx.trailAlpha / layerScale,
+            );
+          }
+          ctx.restore();
+        }
+        const spriteKey = bullet.spriteKey ?? weaponVfx.spriteKey;
         const sprite = getSprite(spriteKey);
         if (sprite) {
+          ctx.save();
+          ctx.globalCompositeOperation = "lighter";
+          ctx.shadowColor = bullet.color;
+          ctx.shadowBlur = weaponVfx.glow * displayScale;
           drawTintedCentered(
             sprite,
             spriteKey,
             bullet.color,
             bullet.x,
             bullet.y,
-            bullet.length * 2.05,
-            bullet.radius * 4.6,
+            bullet.length * 2.05 * weaponVfx.coreLengthScale,
+            bullet.radius * 4.6 * weaponVfx.coreWidthScale,
             angle,
             0.94
           );
+          ctx.restore();
           continue;
         }
         ctx.save();
@@ -6680,6 +6770,30 @@ export default function ShmupPlayScreen() {
         ctx.restore();
       }
 
+      for (const flash of weaponFlashesRef.current) {
+        const alpha = clamp(flash.life / flash.maxLife, 0, 1);
+        const spriteKey = flash.kind === "muzzle" ? "weaponMuzzle" : "weaponImpact";
+        const sprite = getSprite(spriteKey);
+        if (!sprite) continue;
+        const expansion = 1 + (1 - alpha) * (flash.kind === "impact" ? 0.4 : 0.16);
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.shadowColor = flash.color;
+        ctx.shadowBlur = weaponVfx.glow * displayScale;
+        drawTintedCentered(
+          sprite,
+          spriteKey,
+          flash.color,
+          flash.x,
+          flash.y,
+          flash.size * expansion,
+          flash.size * expansion,
+          flash.rotation,
+          alpha * (flash.kind === "muzzle" ? 0.72 : 0.62),
+        );
+        ctx.restore();
+      }
+
       // Temporal Echo: translucent past-selves re-flying your own path
       for (const echo of echoesRef.current) {
         const age = elapsedMs - echo.startedAtMs;
@@ -7199,6 +7313,7 @@ export default function ShmupPlayScreen() {
     shotColor,
     submitResult,
     playerSpritePath,
+    weaponVfx,
     // Run modifiers and skill effects. These only change between runs, but
     // the loop closes over them, so leaving them out would mean a pilot or
     // modifier swap silently kept the previous run's numbers.
