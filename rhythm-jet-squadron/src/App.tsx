@@ -47,7 +47,8 @@ function AchievementLayer() {
 }
 
 export default function App() {
-  const Router = typeof window !== "undefined" && window.location.protocol === "file:"
+  const isFileRuntime = typeof window !== "undefined" && window.location.protocol === "file:";
+  const Router = isFileRuntime
     ? HashRouter
     : BrowserRouter;
 
@@ -77,7 +78,7 @@ export default function App() {
           <GamepadNavigationLayer />
           <AchievementLayer />
         </div>
-        <Analytics />
+        {!isFileRuntime && <Analytics />}
       </Router>
     </GameProvider>
     </WalletProvider>

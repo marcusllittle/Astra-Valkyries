@@ -157,10 +157,23 @@ binding replacement. The dead organizational IDs were removed, the rebuilt
 post-process spawnables were saved under Lighting, and subsequent validation,
 proof, and master queues completed without new stale-folder warnings.
 
-The candidates still need side-by-side review at their real React placement,
-desktop/mobile crop checks in the runtime, delivery-size and decode review,
-CDN publication, and web/Electron/mobile verification.
+The placement review approved the Home loop as a full-viewport background and
+the Hangar sequence as an inspection-only loop above the loadout. Their local
+H.264 deliveries and frame-zero WebP posters are packaged under
+`/assets/unreal/hub/`. Both are now `integrated` in the manifest.
 
-No shipping React asset was changed. The render manifest remains
-`in-progress`; current local media stays authoritative until comparison,
-runtime, delivery, and platform gates pass.
+Runtime verification covered Home title and menu states plus the Hangar
+loadout at `1440x900` and `390x844`. Both H.264 files reached playable state,
+advanced, produced no console errors, and introduced no horizontal overflow.
+Reduced-motion mode renders the static posters without mounting autoplay
+video. The production build passed exact `file://` and hash-router navigation
+through Home and Hangar with no failed requests, and Capacitor synchronized the
+same production web payload. Windows NSIS assembly still has to run under a
+native Windows Node toolchain because WSL cannot cross-compile the existing
+`bufferutil` module.
+
+The Spaceport candidate is not approved. Nova's existing pre-takeoff clip
+remains the shipping Spaceport presentation. The Hangar approval also does not
+replace the Blender Astra Interceptor takeoff: that clip remains authoritative
+for the launch cinematic until the planned Phase 5 Unreal sequence is clearly
+better.

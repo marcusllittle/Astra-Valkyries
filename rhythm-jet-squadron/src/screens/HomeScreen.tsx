@@ -13,6 +13,7 @@ import { useWallet } from "../context/WalletContext";
 import { syncVolumes } from "../lib/audioEngine";
 import { playTitleMusic, stopMusic } from "../lib/musicGen";
 import { cursorMove, menuConfirm, pressStart } from "../lib/retroSfx";
+import AmbientRenderLoop from "../components/AmbientRenderLoop";
 
 const HAVNAI_URL = import.meta.env.VITE_HAVNAI_WEB_URL ?? "https://joinhavn.io";
 
@@ -261,6 +262,11 @@ export default function HomeScreen() {
       className={`screen home-screen ${phase === "menu" ? "home-menu-phase" : ""}`}
       onClick={phase === "title" ? enterMenu : undefined}
     >
+      <AmbientRenderLoop
+        className="home-render-loop"
+        src="/assets/unreal/hub/home-establishing.mp4"
+        poster="/assets/unreal/hub/home-establishing-poster.webp"
+      />
       <canvas ref={canvasRef} className="home-starfield" />
       <div className="home-atmosphere" aria-hidden />
       <div className="home-vignette" aria-hidden />

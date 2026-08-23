@@ -58,15 +58,22 @@ for (const output of manifest.outputs ?? []) {
   if (!output.delivery?.hd?.startsWith("https://media.joinhavn.io/astra/")) {
     errors.push(`${output.id}: delivery.hd must use media.joinhavn.io/astra`);
   }
-  if (output.delivery?.localFallback && !output.delivery.localFallback.startsWith("/assets/")) {
-    errors.push(`${output.id}: localFallback must be an /assets path`);
-  } else if (output.delivery?.localFallback) {
-    const fallbackUrl = new URL(`../../public${output.delivery.localFallback}`, import.meta.url);
-    try {
-      await access(fallbackUrl);
-    } catch {
-      errors.push(`${output.id}: localFallback does not exist: ${output.delivery.localFallback}`);
+  for (const key of ["localAsset", "poster", "localFallback"]) {
+    const localPath = output.delivery?.[key];
+    if (!localPath) continue;
+    if (!localPath.startsWith("/assets/")) {
+      errors.push(`${output.id}: delivery.${key} must be an /assets path`);
+      continue;
     }
+    const assetUrl = new URL(`../../public${localPath}`, import.meta.url);
+    try {
+      await access(assetUrl);
+    } catch {
+      errors.push(`${output.id}: delivery.${key} does not exist: ${localPath}`);
+    }
+  }
+  if (output.unreal?.status === "integrated" && !output.delivery?.localAsset) {
+    errors.push(`${output.id}: integrated output requires delivery.localAsset`);
   }
 }
 

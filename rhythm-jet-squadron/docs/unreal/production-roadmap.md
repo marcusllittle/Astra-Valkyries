@@ -99,10 +99,11 @@ approval gates.
 
 The reusable stage assemblies, keyed sequences, assigned MRQ presets,
 composition proofs, full 1080p PNG masters, and encoded review candidates are
-recorded in `docs/unreal/phase-3-hub-audit.md`. Home and Spaceport now have
-closed transform and focus curves, while Hangar has a three-point inspection
-arc. They remain production work in progress until runtime comparison and
-web/Electron/mobile gates approve replacement of the current Astra media.
+recorded in `docs/unreal/phase-3-hub-audit.md`. Home and Spaceport have closed
+transform and focus curves, while Hangar has a three-point inspection arc.
+Home and Hangar passed placement and runtime verification and are integrated.
+Spaceport retains Nova's current pre-takeoff clip, and the current Blender
+takeoff remains the launch cinematic until Phase 5 produces a better sequence.
 
 ### Phase 4: zones, bosses, enemies, and combat VFX
 

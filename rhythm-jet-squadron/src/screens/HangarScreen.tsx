@@ -17,6 +17,7 @@ import {
   summarizeOutfitKit,
 } from "../lib/outfitKits";
 import CardArt from "../components/CardArt";
+import AmbientRenderLoop from "../components/AmbientRenderLoop";
 import type { Pilot, Outfit, OwnedOutfit, Ship } from "../types";
 import pilotsData from "../data/pilots.json";
 import outfitsData from "../data/outfits.json";
@@ -167,6 +168,12 @@ export default function HangarScreen() {
         <button className="btn btn-back" onClick={() => navigate("/")}>← Back</button>
         <h2 className="hangar-title">Loadout</h2>
       </div>
+
+      <AmbientRenderLoop
+        className="hangar-inspection-loop"
+        src="/assets/unreal/hub/hangar-inspection.mp4"
+        poster="/assets/unreal/hub/hangar-inspection-poster.webp"
+      />
 
       {/* A HavnAI artifact flying over the hangar. Decor only: nothing below
           reads it and it never enters the loadout or combat simulation. */}

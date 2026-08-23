@@ -13,8 +13,9 @@
       "phase": 3,
       "screens": ["home"],
       "kind": "video",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/L_Astra_HubRenderStage", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_HomeOrbitStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_HomeOrbitLoop", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_UILoop_1080p", "status": "in-progress"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/hub/home-establishing.mp4", "localFallback": "/assets/shmup/vista_nebula_runway.png"}
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/L_Astra_HubRenderStage", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_HomeOrbitStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_HomeOrbitLoop", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_UILoop_1080p", "status": "integrated"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/hub/home-establishing.mp4", "localAsset": "/assets/unreal/hub/home-establishing.mp4", "poster": "/assets/unreal/hub/home-establishing-poster.webp", "localFallback": "/assets/shmup/vista_nebula_runway.png"},
+      "review": {"decision": "replace-home-background", "note": "Integrated as the Home establishing loop after web, file-runtime, and mobile-responsive verification."}
     },
     {
       "id": "hub-spaceport-loop",
@@ -22,15 +23,17 @@
       "screens": ["spaceport"],
       "kind": "video",
       "unreal": {"map": "/Game/AstraRenderLab/Maps/L_Astra_HubRenderStage", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_SpaceportStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_SpaceportLoop", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_UILoop_1080p", "status": "in-progress"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/hub/spaceport-loop.mp4", "localFallback": "/assets/cutins/nova/nova_leaving_port.mp4"}
+      "delivery": {"hd": "https://media.joinhavn.io/astra/hub/spaceport-loop.mp4", "localFallback": "/assets/cutins/nova/nova_leaving_port.mp4"},
+      "review": {"decision": "retain-current", "note": "Keep Nova's pre-takeoff clip as the shipping Spaceport presentation."}
     },
     {
       "id": "hub-hangar-turntable",
       "phase": 3,
       "screens": ["hangar"],
       "kind": "video",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/L_Astra_HubRenderStage", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_HangarStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_HangarInspection", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/hub/hangar-turntable.mp4", "localFallback": "/assets/cutins/ships/astra_interceptor_launch.mp4"}
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/L_Astra_HubRenderStage", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_HangarStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_HangarInspection", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "integrated"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/hub/hangar-turntable.mp4", "localAsset": "/assets/unreal/hub/hangar-inspection.mp4", "poster": "/assets/unreal/hub/hangar-inspection-poster.webp", "localFallback": "/assets/unreal/hub/hangar-inspection-poster.webp"},
+      "review": {"decision": "add-inspection-loop", "note": "Integrated for Hangar inspection after web, file-runtime, and mobile-responsive verification; the Blender launch clip remains authoritative for takeoff."}
     },
     {
       "id": "flow-briefing-nebula",
@@ -62,7 +65,8 @@
       "screens": ["video-cutscene"],
       "kind": "video",
       "unreal": {"map": "/Game/AstraRenderLab/Maps/Hub/L_LaunchDeck", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Flow/LS_Launch_AstraInterceptor", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "planned"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/flow/launch-astra-interceptor.mp4", "localFallback": "/assets/cutins/ships/astra_interceptor_launch.mp4"}
+      "delivery": {"hd": "https://media.joinhavn.io/astra/flow/launch-astra-interceptor.mp4", "localFallback": "/assets/cutins/ships/astra_interceptor_launch.mp4"},
+      "review": {"decision": "retain-current", "note": "Keep the Blender ship takeoff until a future Unreal launch sequence is clearly better."}
     },
     {
       "id": "combat-nebula-plates",

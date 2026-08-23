@@ -240,12 +240,15 @@ body::after {
 
 /* ─── Home Screen — PS1/JRPG Title Screen ────────────── */
 
-.home-screen {
+.screen.home-screen {
   justify-content: center;
   align-items: center;
   overflow: hidden;
   padding: 0;
   min-height: 100vh;
+  width: 100vw;
+  max-width: none;
+  margin-inline: calc(50% - 50vw);
   cursor: default;
 }
 
@@ -254,13 +257,45 @@ body::after {
   z-index: 3;
 }
 
+.ambient-render-loop {
+  position: relative;
+  overflow: hidden;
+  background: #020714;
+}
+
+.ambient-render-loop-poster,
+.ambient-render-loop-video {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ambient-render-loop-video {
+  opacity: 0;
+  transition: opacity 240ms ease;
+}
+
+.ambient-render-loop-video.is-ready {
+  opacity: 1;
+}
+
+.home-render-loop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
 /* Starfield canvas behind everything */
 .home-starfield {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  z-index: 0;
+  z-index: 1;
+  opacity: 0.42;
   pointer-events: none;
 }
 
@@ -1029,6 +1064,19 @@ video.card-art-img {
 .hangar-title {
   font-size: 1.2rem;
   font-weight: 700;
+}
+
+.hangar-inspection-loop {
+  width: 100%;
+  height: clamp(148px, 20vw, 220px);
+  margin-bottom: 10px;
+  border: 1px solid rgba(102, 217, 239, 0.3);
+  border-radius: 6px;
+}
+
+.hangar-inspection-loop .ambient-render-loop-poster,
+.hangar-inspection-loop .ambient-render-loop-video {
+  object-position: center 60%;
 }
 
 /* Owned JoinHavn asset flown as hangar decor. Deliberately short so it
@@ -4155,6 +4203,10 @@ video.card-art-img {
     padding-bottom: 100px;
   }
 
+  .hangar-inspection-loop {
+    height: 118px;
+  }
+
   .card-art {
     height: 120px;
   }
@@ -6885,6 +6937,10 @@ video.card-art-img {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .ambient-render-loop-video {
+    display: none;
+  }
+
   .inbox-shell,
   .inbox-message,
   .inbox-signal-mark i,
