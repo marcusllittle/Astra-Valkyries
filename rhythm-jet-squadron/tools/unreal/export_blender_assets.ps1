@@ -21,6 +21,9 @@ if (-not (Test-Path $Blender)) {
 foreach ($Job in $Jobs) {
   $Source = Join-Path $BlenderRoot $Job.Source
   $Output = Join-Path $StagingDir $Job.Profile
+  if (Test-Path $Output) {
+    Remove-Item -Recurse -Force $Output
+  }
   New-Item -ItemType Directory -Force -Path $Output | Out-Null
 
   & $Blender $Source --background --python $Exporter -- `
