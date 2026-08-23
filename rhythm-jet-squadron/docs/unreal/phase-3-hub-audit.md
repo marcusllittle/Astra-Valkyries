@@ -115,8 +115,22 @@ ship at the start or end camera frame. Fixed manual exposure remains stable
 between the space-only Home composition and the two lit deck environments.
 
 These remain production-layout sequences, not approved final renders. The hub
-still needs MRQ presets, encoded comparison renders, and review at the actual
-UI placement and playback size.
+sequences now have deterministic MRQ assignments:
+
+| Sequence | Render preset |
+| --- | --- |
+| `LS_HomeOrbitLoop` | `MPC_Astra_UILoop_1080p` |
+| `LS_SpaceportLoop` | `MPC_Astra_UILoop_1080p` |
+| `LS_HangarInspection` | `MPC_Astra_Cinematic_1080p` |
+
+The validation preset rendered frame 0 of `LS_HomeOrbitLoop` through the MRQ
+PIE executor at `640x360`. The queue completed normally, the PNG was nonblank,
+and the ship silhouette, cockpit, engines, and orbital background were visible.
+The sequence emitted stale folder-binding warnings for removed organizational
+entries; evaluation completed and the asset remained saved and not dirty.
+
+The hub still needs full-length PNG sequences, encoded comparison renders, and
+review at the actual UI placement and playback size.
 
 No shipping React asset was changed. The render manifest remains
 `in-progress`; current local media stays authoritative until comparison,

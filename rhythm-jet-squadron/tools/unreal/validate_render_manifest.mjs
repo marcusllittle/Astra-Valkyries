@@ -43,10 +43,15 @@ for (const output of manifest.outputs ?? []) {
     coveredScreens.add(screen);
   }
 
-  for (const key of ["map", "sequence"]) {
+  for (const key of ["map", "sequence", "renderPreset"]) {
     const value = output.unreal?.[key];
     if (!value?.startsWith("/Game/AstraRenderLab/")) {
       errors.push(`${output.id}: unreal.${key} is outside /Game/AstraRenderLab`);
+    }
+  }
+  for (const preset of output.unreal?.alternateRenderPresets ?? []) {
+    if (!preset.startsWith("/Game/AstraRenderLab/")) {
+      errors.push(`${output.id}: alternate render preset is outside /Game/AstraRenderLab`);
     }
   }
   if (!statuses.has(output.unreal?.status)) errors.push(`${output.id}: invalid status`);
