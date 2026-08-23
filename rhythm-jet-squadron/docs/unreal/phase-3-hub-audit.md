@@ -2,7 +2,7 @@
 
 Verified through Unreal MCP on 2026-08-23 against
 `D:/UnrealProjects/AstraValkRenderLab` branch
-`agent/hub-environment-polish`.
+`agent/hub-lighting-dressing`.
 
 ## Shared render environment
 
@@ -17,6 +17,13 @@ Verified through Unreal MCP on 2026-08-23 against
   `SourceAssets/Textures/Hub/T_Astra_OrbitalBackdrop_Source.png`.
 - `MI_Astra_DeckSteel` now uses a readable blue-gray metal response while
   preserving the imported Blender launch-deck geometry.
+- `BP_Astra_HubPostProcess` supplies deterministic manual exposure, restrained
+  bloom and motion blur, and shared color finishing. It is bound under the
+  Lighting folder in every hub sequence.
+- `BP_Astra_HubDeckDressing` adds reusable cyan and amber guide strips, deck
+  pylons, emissive beacons, and low-cost practical lights without replacing
+  the imported launch deck. Spaceport and Hangar bind the same compiled
+  spawnable under FX.
 
 The backdrop was generated with OpenAI image generation for this private
 RenderLab project. Prompt: `Premium deep-space panoramic matte painting for
@@ -35,44 +42,50 @@ characters, buildings, UI, logos, text, watermark, lens flare, or sun disk.`
 | `BP_Astra_HangarStage` | Launch deck, Astra Interceptor | Ship inspection assembly |
 
 All three stages reuse the Phase 1 Blender imports. The launch deck top is
-`Z=900 cm`; the Spaceport and Hangar interceptor components were placed at
-`Z=985 cm` after MCP bounds read-back so the ship no longer intersects the
-deck. Every stage Blueprint compiles with warnings treated as errors.
+`Z=900 cm`; the Spaceport and Hangar interceptor components remain at
+`Z=985 cm`, while the Home interceptor is centered at `(0, 0, 1000)` so the
+shared Hub rig can light it consistently. Every stage Blueprint compiles with
+warnings treated as errors.
+
+The Hub and Hangar lighting rigs now place their key, fill, rim, and overhead
+Rect Lights around the ship elevation instead of aiming below the deck. Their
+attenuation ranges and output were retuned for the fixed-exposure pipeline;
+the existing rig assets remain the single reusable lighting source.
 
 ## Production sequences
 
 | Sequence | Rate and range | Spawnables | Camera verification |
 | --- | --- | --- | --- |
-| `LS_HomeOrbitLoop` | 30 fps, 0-300 | Home stage, Hub rig, orbital sky, cine camera | Location and rotation keys at 0 and 300 |
-| `LS_SpaceportLoop` | 30 fps, 0-300 | Spaceport stage, Hub rig, orbital sky, cine camera | Location and rotation keys at 0 and 300 |
-| `LS_HangarInspection` | 24 fps, 0-240 | Hangar stage, Hangar rig, orbital sky, cine camera | Location and rotation keys at 0 and 240 |
+| `LS_HomeOrbitLoop` | 30 fps, 0-300 | Home stage, Hub rig, orbital sky, post process, cine camera | Location and rotation keys at 0 and 300 |
+| `LS_SpaceportLoop` | 30 fps, 0-300 | Spaceport stage, Hub rig, orbital sky, deck dressing, post process, cine camera | Location and rotation keys at 0 and 300 |
+| `LS_HangarInspection` | 24 fps, 0-240 | Hangar stage, Hangar rig, orbital sky, deck dressing, post process, cine camera | Location and rotation keys at 0 and 240 |
 
 Each sequence retains the master camera cut and the Cameras, Lighting, FX, and
 Subject organization. Stage, lighting, and environment spawnables were rebuilt
 from the latest compiled Blueprint defaults. MCP reopen verification resolved
-one bound object for every stage, rig, sky, camera, and camera-component
-binding, so no stale copied CDO remains.
+one bound object for all 6 Home bindings and all 7 Spaceport and Hangar
+bindings, including post process and deck dressing, so no stale copied CDO
+remains.
 
 Camera endpoints now frame the production subjects more tightly:
 
 | Sequence | Start location / rotation | End location / rotation |
 | --- | --- | --- |
-| Home | `(6600, -1900, 1600)` / `(0, -15, 150)` | `(6450, -2100, 1700)` / `(0, -18, 141)` |
+| Home | `(1350, -1050, 1450)` / `(0, -14, 137)` | `(1100, -1400, 1550)` / `(0, -15.5, 124)` |
 | Spaceport | `(2600, -3000, 1800)` / `(0, -14, 136)` | `(2200, -3300, 1600)` / `(0, -9, 123)` |
 | Hangar | `(1800, -1800, 2000)` / `(0, -18, 129)` | `(-1500, -1700, 1750)` / `(0, -15, 55)` |
 
 ## Visual check
 
-MCP viewport captures in `L_Astra_HubRenderStage` confirmed that the
+MCP viewport captures at every sequence endpoint confirmed that the
 interceptor, deck, assigned Astra materials, cyan engine emission, orbital
-backdrop, and profile lighting render in all three assemblies. The clean-map
-check removed the temporary Open World landscape from the shots and exposed
-stale Sequencer spawn templates that are now repaired.
+backdrop, practical dressing, and corrected profile lighting render in all
+three assemblies. Fixed manual exposure remains stable between the space-only
+Home composition and the lit Spaceport and Hangar decks.
 
-These remain blocking/layout sequences, not approved final renders. The hub
-still needs stage dressing, exposure tuning, production camera lenses, MRQ
-presets, and desktop/mobile crop review. In particular, the current deck and
-interceptor lighting is not yet strong enough to replace shipping media.
+These remain production-layout sequences, not approved final renders. The hub
+still needs production camera-lens review, final stage-specific dressing, MRQ
+presets, rendered comparison frames, and desktop/mobile crop review.
 
 No shipping React asset was changed. The render manifest remains
 `in-progress`; current local media stays authoritative until comparison,
