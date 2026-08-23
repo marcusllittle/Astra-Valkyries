@@ -13,7 +13,7 @@
       "phase": 3,
       "screens": ["home"],
       "kind": "video",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/Hub/L_HomeOrbit", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_HomeOrbitStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_HomeOrbitLoop", "status": "in-progress"},
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/L_Astra_HubRenderStage", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_HomeOrbitStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_HomeOrbitLoop", "status": "in-progress"},
       "delivery": {"hd": "https://media.joinhavn.io/astra/hub/home-establishing.mp4", "localFallback": "/assets/shmup/vista_nebula_runway.png"}
     },
     {
@@ -21,7 +21,7 @@
       "phase": 3,
       "screens": ["spaceport"],
       "kind": "video",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/Hub/L_Spaceport", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_SpaceportStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_SpaceportLoop", "status": "in-progress"},
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/L_Astra_HubRenderStage", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_SpaceportStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_SpaceportLoop", "status": "in-progress"},
       "delivery": {"hd": "https://media.joinhavn.io/astra/hub/spaceport-loop.mp4", "localFallback": "/assets/cutins/nova/nova_leaving_port.mp4"}
     },
     {
@@ -29,7 +29,7 @@
       "phase": 3,
       "screens": ["hangar"],
       "kind": "video",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/Hub/L_Hangar", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_HangarStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_HangarInspection", "status": "in-progress"},
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/L_Astra_HubRenderStage", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_HangarStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_HangarInspection", "status": "in-progress"},
       "delivery": {"hd": "https://media.joinhavn.io/astra/hub/hangar-turntable.mp4", "localFallback": "/assets/cutins/ships/astra_interceptor_launch.mp4"}
     },
     {
