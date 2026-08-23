@@ -37,6 +37,7 @@ const STEPS: TutorialStep[] = [
     ],
     keys: [
       { label: "WASD / Arrows", desc: "Move your ship" },
+      { label: "Left Stick / D-pad", desc: "Move your ship" },
       { label: "Touch Pad", desc: "Move" },
     ],
   },
@@ -48,13 +49,14 @@ const STEPS: TutorialStep[] = [
     ],
     keys: [
       { label: "Shift", desc: "Fire secondary" },
+      { label: "A / RT", desc: "Fire secondary" },
       { label: "Touch Button", desc: "Secondary" },
     ],
   },
   {
     title: "Power Chips & Overdrive",
     lines: [
-      "Defeating enemies drops power chips. Collect them to level up your weapon (max Lv 4) and fill the Overdrive meter.",
+      "Defeating enemies drops power chips. Collect them to level up your weapon (max Lv 6) and fill the Overdrive meter.",
       "When Overdrive activates, your score multiplier skyrockets. Keep killing enemies to extend it.",
     ],
   },

@@ -2453,16 +2453,34 @@ video.card-art-img {
   justify-content: center;
 }
 
-@media (max-width: 700px) {
+@media (max-width: 700px), (max-height: 520px) and (orientation: landscape) {
   .results-screen {
-    padding: 10px;
+    min-height: 100dvh;
+    height: 100dvh;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding:
+      max(10px, env(safe-area-inset-top, 0px))
+      max(10px, env(safe-area-inset-right, 0px))
+      max(10px, env(safe-area-inset-bottom, 0px))
+      max(10px, env(safe-area-inset-left, 0px));
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
   }
 
   .results-shell {
-    max-height: calc(100vh - 20px);
+    flex: 0 0 auto;
+    max-height: none;
+    margin: 0 auto;
     padding: 20px 14px 22px;
+    overflow: visible;
   }
+}
 
+@media (max-width: 700px) {
   .results-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -4847,6 +4865,106 @@ video.card-art-img {
   color: var(--text-muted);
 }
 
+.shmup-gamepad-status {
+  min-width: 34px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(116, 216, 255, 0.38);
+  border-radius: 5px;
+  background: rgba(3, 13, 24, 0.78);
+  color: #bcecff;
+  font-size: 0.58rem;
+  font-weight: 800;
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .tutorial-card {
+    width: min(94%, 680px);
+    max-width: 680px;
+    max-height: calc(100vh - 16px);
+    overflow-y: auto;
+    padding: 14px 20px;
+    border-radius: 8px;
+  }
+
+  .tutorial-step-indicator {
+    margin-bottom: 8px;
+  }
+
+  .tutorial-dot {
+    width: 7px;
+    height: 7px;
+  }
+
+  .tutorial-title {
+    margin-bottom: 6px;
+    font-size: 1.05rem;
+  }
+
+  .tutorial-line {
+    margin-bottom: 4px;
+    font-size: 0.78rem;
+    line-height: 1.35;
+  }
+
+  .tutorial-keys {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin: 8px 0;
+    padding: 8px;
+    border-radius: 6px;
+  }
+
+  .tutorial-key-row {
+    min-width: 0;
+    flex-direction: column;
+    gap: 4px;
+    text-align: center;
+    font-size: 0.7rem;
+  }
+
+  .tutorial-kbd {
+    width: 100%;
+    min-width: 0;
+    padding: 3px 5px;
+    font-size: 0.68rem;
+  }
+
+  .tutorial-actions {
+    margin-top: 8px;
+  }
+
+  .pause-card {
+    width: min(94%, 640px);
+    max-width: 640px;
+    max-height: calc(100vh - 16px);
+    overflow-y: auto;
+    padding: 14px 20px;
+    border-radius: 8px;
+  }
+
+  .pause-title {
+    margin-bottom: 12px;
+    font-size: 1.3rem;
+  }
+
+  .pause-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-bottom: 14px;
+  }
+
+  .pause-actions {
+    flex-direction: row;
+  }
+
+  .pause-hint {
+    margin-top: 8px;
+  }
+}
+
 /* ─── Achievement Toast ───────────────────────────────── */
 
 .achievement-toast {
@@ -5184,6 +5302,9 @@ video.card-art-img {
 
 .debrief-screen-shell {
   z-index: 30;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
 }
 
 .debrief-screen-grid {
@@ -5545,7 +5666,13 @@ video.card-art-img {
 @media (max-width: 720px) {
   .briefing-screen-shell,
   .debrief-screen-shell {
+    min-height: 100dvh;
+    height: 100dvh;
     padding-bottom: env(safe-area-inset-bottom, 0);
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
   }
 
   .dialogue-box-shell {
@@ -5586,7 +5713,7 @@ video.card-art-img {
     flex-direction: column;
     padding: 10px;
     gap: 8px;
-    min-height: 100vh;
+    min-height: 100%;
   }
 
   .briefing-hero-panel,

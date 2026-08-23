@@ -8,6 +8,7 @@ interface PauseMenuProps {
   kills: number;
   timeMs: number;
   weaponLevel: number;
+  gamepadConnected?: boolean;
   onResume: () => void;
   onRestart: () => void;
   onQuit: () => void;
@@ -25,6 +26,7 @@ export default function PauseMenu({
   kills,
   timeMs,
   weaponLevel,
+  gamepadConnected = false,
   onResume,
   onRestart,
   onQuit,
@@ -65,7 +67,9 @@ export default function PauseMenu({
           </button>
         </div>
 
-        <p className="pause-hint">Press Escape to resume</p>
+        <p className="pause-hint">
+          {gamepadConnected ? "Escape, Menu, or A to resume" : "Press Escape to resume"}
+        </p>
       </div>
     </div>
   );
