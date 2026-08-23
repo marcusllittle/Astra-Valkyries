@@ -9,6 +9,7 @@
     "build": "tsc -b && vite build",
     "test": "vitest run",
     "lint": "eslint .",
+    "validate:render-manifest": "node tools/unreal/validate_render_manifest.mjs",
     "preview": "vite preview",
     "desktop:start": "npm run build && electron .",
     "desktop:build:mac": "npm run build && electron-builder --mac dmg",
