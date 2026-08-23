@@ -2160,6 +2160,17 @@ video.card-art-img {
     linear-gradient(90deg, rgba(1, 4, 10, 0.38), transparent 24%, transparent 76%, rgba(1, 4, 10, 0.38));
 }
 
+.cinematic-watermark {
+  position: absolute;
+  z-index: 1;
+  right: clamp(18px, 3vw, 52px);
+  bottom: clamp(58px, 7vw, 84px);
+  width: clamp(88px, 10vw, 126px);
+  height: auto;
+  opacity: 0.72;
+  pointer-events: none;
+}
+
 .cinematic-header,
 .cinematic-footer {
   position: absolute;
@@ -2254,6 +2265,13 @@ video.card-art-img {
 
   .cinematic-source {
     display: none;
+  }
+
+  .cinematic-watermark {
+    right: 16px;
+    bottom: 68px;
+    width: 74px;
+    opacity: 0.64;
   }
 }
 
