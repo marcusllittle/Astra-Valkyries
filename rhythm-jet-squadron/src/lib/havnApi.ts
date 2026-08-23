@@ -65,6 +65,61 @@ export interface RewardResult {
   bonuses?: string[] | null;
   multiplier?: number | null;
   artifact_job_id?: string;
+  campaign_contribution?: CampaignContribution;
+}
+
+export interface CampaignContribution {
+  campaign_id: string;
+  eligible: boolean;
+  combat_points: number;
+  target_map_id: string;
+  phase?: AstraCampaign["phase"];
+  progress_percent?: number;
+}
+
+export interface CampaignProgress {
+  current: number;
+  target: number;
+  percent: number;
+}
+
+export interface CampaignEvent {
+  kind: "combat" | "forge";
+  id: string;
+  actor: string;
+  points: number;
+  created_at: number;
+  grade?: string;
+  artifact_type?: "image" | "video";
+}
+
+export interface AstraCampaign {
+  schema: "havnai.astra.community-campaign";
+  version: 1;
+  campaign_id: string;
+  map_id: string;
+  name: string;
+  operation: string;
+  phase: "contested" | "awaiting_forge" | "awaiting_victories" | "secured";
+  secured: boolean;
+  starts_at: number;
+  ends_at: number;
+  progress_percent: number;
+  combat: CampaignProgress & {
+    accepted_runs: number;
+    contributors: number;
+  };
+  forge: CampaignProgress & {
+    settled_artifacts: number;
+    creator_nodes: number;
+  };
+  personal: {
+    combat_points: number;
+    accepted_runs: number;
+    forge_points: number;
+    settled_artifacts: number;
+  } | null;
+  recent_events: CampaignEvent[];
 }
 
 export interface PlayerStats {
@@ -153,6 +208,31 @@ export interface NetworkSnapshot {
   };
 }
 
+export interface NodeRewardClaim {
+  schema_version: "havnai-node-payout-claims.v1";
+  batch_id: number;
+  leaf_index: number;
+  wallet: string;
+  amount_wei: string;
+  amount_hai: string;
+  node_ids: string[];
+  payout_count: number;
+  batch_status: "ready" | "pending" | "published";
+  publish_tx_hash?: string | null;
+  claimed: boolean;
+  claimed_tx_hash?: string | null;
+  claimed_at?: number | null;
+  valid: boolean;
+  network: "sepolia";
+  chain_id: 11155111;
+  explorer_url?: string | null;
+}
+
+export interface NodeRewardClaimsResponse {
+  wallet: string;
+  claims: NodeRewardClaim[];
+}
+
 export interface NetworkJobDetail {
   id: string;
   status: string;
@@ -229,6 +309,27 @@ export interface ArtifactReceiptResponse {
   receipt_sha256: string;
   issued_at: number;
   artifact_url?: string | null;
+}
+
+export interface ArtifactReceiptInclusionProof {
+  batch_id: number;
+  job_id: string;
+  leaf_index: number;
+  receipt_hash: string;
+  leaf_hash: string;
+  proof: Array<{ position: "left" | "right"; hash: string }>;
+  schema_version: "receipt-merkle-batch.v1";
+  merkle_root: string;
+  leaf_count: number;
+  status: "ready" | "pending" | "anchored";
+  anchor_network?: string | null;
+  anchor_chain_id?: number | null;
+  anchor_tx_hash?: string | null;
+  anchor_block?: number | null;
+  anchor_from?: string | null;
+  anchor_to?: string | null;
+  anchored_at?: number | null;
+  valid: boolean;
 }
 
 export interface NetworkFetchResult<T> {
@@ -500,6 +601,30 @@ export async function fetchLeaderboard(limit = 50): Promise<LeaderboardFetchResu
   }
 }
 
+/** Fetch the weekly front derived from accepted runs and final creator work. */
+export async function fetchAstraCampaign(
+  wallet?: string | null,
+): Promise<NetworkFetchResult<AstraCampaign>> {
+  try {
+    const query = wallet ? `?wallet=${encodeURIComponent(wallet)}` : "";
+    const res = await fetchWithRetry(`${API_BASE}/astra/campaign${query}`, {});
+    if (!res.ok) return { data: null, offline: true };
+    const data = await res.json() as Partial<AstraCampaign>;
+    if (
+      data.schema !== "havnai.astra.community-campaign" ||
+      typeof data.campaign_id !== "string" ||
+      !data.combat ||
+      !data.forge ||
+      !Array.isArray(data.recent_events)
+    ) {
+      return { data: null, offline: true };
+    }
+    return { data: data as AstraCampaign, offline: false };
+  } catch {
+    return { data: null, offline: true };
+  }
+}
+
 // ─── Creator Network ────────────────────────────────────────
 
 /** Fetch the public creator topology and its real settlement totals. */
@@ -512,6 +637,26 @@ export async function fetchNetworkSnapshot(): Promise<NetworkFetchResult<Network
       return { data: null, offline: true };
     }
     return { data: raw as NetworkSnapshot, offline: false };
+  } catch {
+    return { data: null, offline: true };
+  }
+}
+
+/** Fetch proof-bound Sepolia rewards for one connected operator wallet. */
+export async function fetchNodeRewardClaims(
+  wallet: string,
+): Promise<NetworkFetchResult<NodeRewardClaimsResponse>> {
+  try {
+    const res = await fetchWithRetry(
+      `${API_BASE}/payouts/claims?wallet=${encodeURIComponent(wallet)}`,
+      {},
+    );
+    if (!res.ok) return { data: null, offline: true };
+    const raw = await res.json() as Partial<NodeRewardClaimsResponse>;
+    if (typeof raw.wallet !== "string" || !Array.isArray(raw.claims)) {
+      return { data: null, offline: true };
+    }
+    return { data: raw as NodeRewardClaimsResponse, offline: false };
   } catch {
     return { data: null, offline: true };
   }
@@ -533,6 +678,10 @@ export function artifactReceiptJsonUrl(jobId: string): string {
   return `${API_BASE}/astra/artifacts/${encodeURIComponent(jobId)}/receipt`;
 }
 
+export function artifactReceiptProofJsonUrl(jobId: string): string {
+  return `${artifactReceiptJsonUrl(jobId)}/proof`;
+}
+
 /** Fetch a finalized, prompt-free receipt for one Astra artifact. */
 export async function fetchArtifactReceipt(
   jobId: string,
@@ -546,6 +695,22 @@ export async function fetchArtifactReceipt(
     return { data: body as ArtifactReceiptResponse, error: null };
   } catch {
     return { data: null, error: "receipt_network_error" };
+  }
+}
+
+/** Fetch the receipt's Merkle inclusion path and Sepolia anchor state. */
+export async function fetchArtifactReceiptProof(
+  jobId: string,
+): Promise<{ data: ArtifactReceiptInclusionProof | null; error: string | null }> {
+  try {
+    const res = await fetch(artifactReceiptProofJsonUrl(jobId));
+    const body = await res.json().catch(() => ({})) as Partial<ArtifactReceiptInclusionProof> & { error?: string };
+    if (!res.ok || !Array.isArray(body.proof) || typeof body.merkle_root !== "string") {
+      return { data: null, error: body.error || `receipt_proof_http_${res.status}` };
+    }
+    return { data: body as ArtifactReceiptInclusionProof, error: null };
+  } catch {
+    return { data: null, error: "receipt_proof_network_error" };
   }
 }
 

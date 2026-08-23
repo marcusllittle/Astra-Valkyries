@@ -9,7 +9,7 @@ import {
   gradeShmupRun,
   type ShmupRunResult,
 } from "../lib/shmupResults";
-import { astraReward, generateRewardImage } from "../lib/havnApi";
+import { astraReward, generateRewardImage, type CampaignContribution } from "../lib/havnApi";
 import { getDialogueForMap } from "../data/dialogues";
 import DialogueBox from "../components/DialogueBox";
 import CutinOverlay from "../components/CutinOverlay";
@@ -71,6 +71,10 @@ function formatTime(timeMs: number): string {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
+function formatMapName(mapId: string): string {
+  return mapId.replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
 export default function ShmupResultsScreen() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -84,6 +88,7 @@ export default function ShmupResultsScreen() {
   const [debriefLineIdx, setDebriefLineIdx] = useState(0);
   const [rankCutin, setRankCutin] = useState<string | null>(null);
   const [artQueued, setArtQueued] = useState(false);
+  const [campaignContribution, setCampaignContribution] = useState<CampaignContribution | null>(null);
 
   const shmupResult = (location.state as { shmupResult?: ShmupRunResult } | undefined)?.shmupResult;
   const mapId = (location.state as { mapId?: string } | undefined)?.mapId;
@@ -196,6 +201,7 @@ export default function ShmupResultsScreen() {
         if (res.ok && res.reward && res.reward > 0) {
           sessionStorage.setItem(`${rewardKey}:shared`, "1");
           setSharedReward(res.reward);
+          setCampaignContribution(res.campaign_contribution ?? null);
           wallet.refreshBalance();
           // A 30-second preflight may already be rendering. The coordinator
           // binds it to this rewarded run and returns its job, avoiding a
@@ -351,6 +357,11 @@ export default function ShmupResultsScreen() {
       {artQueued && (
         <div className="reward-status-note reward-art-note">
           &#x1F3A8; The network is painting your victory — check the Collection gallery soon
+        </div>
+      )}
+      {campaignContribution?.eligible && campaignContribution.combat_points > 0 && (
+        <div className="reward-status-note reward-campaign-note">
+          Community front +{campaignContribution.combat_points} combat / {formatMapName(campaignContribution.target_map_id)}
         </div>
       )}
 

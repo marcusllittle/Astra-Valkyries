@@ -5,18 +5,31 @@ import { useWallet } from "../context/WalletContext";
 import {
   animateRewardArtifact,
   artifactReceiptJsonUrl,
+  fetchAstraCampaign,
   fetchArtifactReceipt,
+  fetchArtifactReceiptProof,
   fetchGalleryImages,
   fetchNetworkJob,
+  fetchNodeRewardClaims,
   fetchNetworkSnapshot,
   resolveHavnAssetUrl,
   type ArtifactReceiptResponse,
+  type ArtifactReceiptInclusionProof,
+  type AstraCampaign,
   type NetworkNode,
+  type NodeRewardClaim,
   type NetworkSnapshot,
 } from "../lib/havnApi";
 import {
+  campaignEventLabel,
+  campaignPhaseLabel,
+  campaignTimeRemaining,
+} from "../lib/communityCampaign";
+import {
   humanizeMachineName,
   mergeForgeArtifacts,
+  summarizeNodeRewards,
+  verifyReceiptInclusionProof,
   verifySha256,
   type ForgeArtifact,
 } from "../lib/networkForge";
@@ -24,6 +37,7 @@ import {
 const ACTIVE_POLL_MS = 6000;
 const IDLE_POLL_MS = 20000;
 const MAX_JOB_DETAILS = 20;
+const HAVNAI_URL = (import.meta.env.VITE_HAVNAI_WEB_URL ?? "https://joinhavn.io").replace(/\/+$/, "");
 
 interface ReceiptViewState {
   jobId: string;
@@ -31,6 +45,9 @@ interface ReceiptViewState {
   data: ArtifactReceiptResponse | null;
   receiptDigestMatches: boolean | null;
   contentDigestMatches: boolean | null;
+  inclusionProof: ArtifactReceiptInclusionProof | null;
+  inclusionProofMatches: boolean | null;
+  inclusionError: string | null;
   error: string | null;
 }
 
@@ -96,7 +113,7 @@ function NodeCard({
         <div><span>Reliability</span><strong>{successRate ? `${formatNumber(successRate, 2)}%` : "New"}</strong></div>
         <div><span>Trust</span><strong>{trustScore == null ? humanizeMachineName(node.trust?.level) : formatNumber(trustScore, 2)}</strong></div>
         <div><span>Attempts</span><strong>{formatNumber(node.performance?.attempts_total ?? 0)}</strong></div>
-        <div><span>Paid</span><strong>{formatNumber(node.payouts?.total ?? 0, 2)} HAI</strong></div>
+        <div><span>Tracked</span><strong>{formatNumber(node.payouts?.total ?? 0, 2)} HAI</strong></div>
       </div>
 
       <div className="network-utilization">
@@ -128,12 +145,16 @@ function NodeCard({
 
 export default function NetworkScreen() {
   const navigate = useNavigate();
-  const { save, equipBanner, selectCreatorNode } = useGame();
+  const { save, equipBanner, selectCreatorNode, selectMap } = useGame();
   const wallet = useWallet();
   const [snapshot, setSnapshot] = useState<NetworkSnapshot | null>(null);
+  const [campaign, setCampaign] = useState<AstraCampaign | null>(null);
+  const [nodeRewards, setNodeRewards] = useState<NodeRewardClaim[]>([]);
   const [artifacts, setArtifacts] = useState<ForgeArtifact[]>([]);
   const [loading, setLoading] = useState(true);
   const [networkOffline, setNetworkOffline] = useState(false);
+  const [campaignOffline, setCampaignOffline] = useState(false);
+  const [rewardsOffline, setRewardsOffline] = useState(false);
   const [artifactsOffline, setArtifactsOffline] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [refreshNonce, setRefreshNonce] = useState(0);
@@ -148,16 +169,24 @@ export default function NetworkScreen() {
 
     const load = async (initial: boolean) => {
       if (initial) setLoading(true);
-      const [networkResult, galleryResult] = await Promise.all([
+      const [networkResult, campaignResult, galleryResult, rewardsResult] = await Promise.all([
         fetchNetworkSnapshot(),
+        fetchAstraCampaign(wallet.address),
         wallet.address
           ? fetchGalleryImages(wallet.address)
           : Promise.resolve({ images: [], offline: false }),
+        wallet.address
+          ? fetchNodeRewardClaims(wallet.address)
+          : Promise.resolve({ data: null, offline: false }),
       ]);
       if (cancelled) return;
 
       if (networkResult.data) setSnapshot(networkResult.data);
+      if (campaignResult.data) setCampaign(campaignResult.data);
+      setNodeRewards(rewardsResult.data?.claims ?? []);
       setNetworkOffline(networkResult.offline);
+      setCampaignOffline(campaignResult.offline);
+      setRewardsOffline(rewardsResult.offline);
       setArtifactsOffline(galleryResult.offline);
 
       const details = new Map();
@@ -216,6 +245,9 @@ export default function NetworkScreen() {
       data: null,
       receiptDigestMatches: null,
       contentDigestMatches: null,
+      inclusionProof: null,
+      inclusionProofMatches: null,
+      inclusionError: null,
       error: null,
     });
     const result = await fetchArtifactReceipt(jobId);
@@ -247,12 +279,19 @@ export default function NetworkScreen() {
         contentDigestMatches = null;
       }
     }
+    const proofResult = await fetchArtifactReceiptProof(jobId);
+    const inclusionProofMatches = proofResult.data
+      ? await verifyReceiptInclusionProof(proofResult.data)
+      : null;
     setReceiptView((current) => current?.jobId === jobId ? {
       jobId,
       loading: false,
       data: result.data,
       receiptDigestMatches,
       contentDigestMatches,
+      inclusionProof: proofResult.data,
+      inclusionProofMatches,
+      inclusionError: proofResult.error,
       error: null,
     } : current);
   };
@@ -279,6 +318,7 @@ export default function NetworkScreen() {
   const queued = snapshot?.job_summary?.queued_jobs ?? summary?.tasks_backlog ?? 0;
   const completedToday = snapshot?.job_summary?.jobs_completed_today ?? summary?.jobs_completed_today ?? 0;
   const distributed = snapshot?.job_summary?.total_distributed ?? summary?.total_rewarded ?? 0;
+  const rewardSummary = useMemo(() => summarizeNodeRewards(nodeRewards), [nodeRewards]);
 
   return (
     <div className="screen network-screen">
@@ -305,14 +345,148 @@ export default function NetworkScreen() {
         <div><span>Creators online</span><strong>{loading && !summary ? "--" : `${summary?.online_nodes ?? 0} / ${summary?.total_nodes ?? 0}`}</strong></div>
         <div><span>Render queue</span><strong>{loading && !summary ? "--" : formatNumber(queued)}</strong></div>
         <div><span>Completed today</span><strong>{loading && !summary ? "--" : formatNumber(completedToday)}</strong></div>
-        <div className="network-metric-reward"><span>Distributed to nodes</span><strong>{loading && !summary ? "--" : `${formatNumber(distributed, 2)} HAI`}</strong></div>
+        <div className="network-metric-reward"><span>Tracked node rewards</span><strong>{loading && !summary ? "--" : `${formatNumber(distributed, 2)} HAI`}</strong></div>
+      </section>
+
+      <section className="network-campaign" aria-label="Community campaign">
+        <div className="network-campaign-head">
+          <div>
+            <span className="network-section-index">01 / COMMUNITY FRONT</span>
+            <h2>{campaign?.name ?? "Synchronizing sector"}</h2>
+            <p>{campaign?.operation ?? "Waiting for campaign telemetry."}</p>
+          </div>
+          {campaign ? (
+            <div className="network-campaign-state">
+              <strong>{campaignPhaseLabel(campaign.phase)}</strong>
+              <span>{campaignTimeRemaining(campaign.ends_at)}</span>
+            </div>
+          ) : null}
+        </div>
+
+        {campaignOffline && !campaign ? (
+          <div className="network-empty">Community front telemetry is unavailable. Retrying automatically.</div>
+        ) : campaign ? (
+          <div className="network-campaign-grid">
+            <div className="network-campaign-objective">
+              <div className="network-campaign-score">
+                <span>Combined advance</span>
+                <strong>{campaign.progress_percent}%</strong>
+              </div>
+
+              <div className="network-campaign-lane">
+                <div>
+                  <span>Pilot combat</span>
+                  <strong>{campaign.combat.current} / {campaign.combat.target}</strong>
+                </div>
+                <div className="network-progress-track" aria-label={`${campaign.combat.percent}% pilot combat progress`}>
+                  <span style={{ width: `${campaign.combat.percent}%` }} />
+                </div>
+                <small>{campaign.combat.accepted_runs} accepted sorties / {campaign.combat.contributors} pilots</small>
+              </div>
+
+              <div className="network-campaign-lane is-forge">
+                <div>
+                  <span>Creator forge</span>
+                  <strong>{campaign.forge.current} / {campaign.forge.target}</strong>
+                </div>
+                <div className="network-progress-track" aria-label={`${campaign.forge.percent}% creator forge progress`}>
+                  <span style={{ width: `${campaign.forge.percent}%` }} />
+                </div>
+                <small>{campaign.forge.settled_artifacts} final artifacts / {campaign.forge.creator_nodes} creator nodes</small>
+              </div>
+
+              <div className="network-campaign-actions">
+                <div>
+                  <span>Your contribution</span>
+                  <strong>
+                    {campaign.personal
+                      ? `${campaign.personal.combat_points} combat / ${campaign.personal.forge_points} forge`
+                      : "Wallet not linked"}
+                  </strong>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => {
+                    selectMap(campaign.map_id);
+                    navigate("/briefing");
+                  }}
+                >
+                  DEPLOY TO FRONT
+                </button>
+              </div>
+            </div>
+
+            <div className="network-campaign-feed">
+              <span className="network-campaign-feed-title">Live contribution ledger</span>
+              {campaign.recent_events.length === 0 ? (
+                <div className="network-campaign-feed-empty">No accepted contributions yet.</div>
+              ) : (
+                campaign.recent_events.slice(0, 6).map((event) => (
+                  <div key={`${event.kind}:${event.id}`} className={`network-campaign-event is-${event.kind}`}>
+                    <span className="network-campaign-event-mark" aria-hidden="true" />
+                    <div>
+                      <strong>{campaignEventLabel(event)}</strong>
+                      <small>{new Date(event.created_at * 1000).toLocaleString()}</small>
+                    </div>
+                    <b>+{event.points}</b>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      <section className="network-settlement" aria-label="Operator settlement">
+        <div className="network-settlement-head">
+          <div>
+            <span className="network-section-index">02 / OPERATOR SETTLEMENT</span>
+            <h2>Your node rewards</h2>
+          </div>
+          <span className="network-status" data-status={rewardsOffline ? "offline" : "online"}>
+            <span className="network-status-dot" />
+            {rewardsOffline ? "Ledger unavailable" : "Sepolia ledger"}
+          </span>
+        </div>
+
+        {!wallet.address ? (
+          <div className="network-settlement-empty">
+            <span>Connect the node operator wallet to resolve its payout proofs.</span>
+            <button
+              type="button"
+              className="btn btn-primary"
+              disabled={!wallet.available || wallet.status === "connecting"}
+              onClick={() => void wallet.connect()}
+            >
+              {wallet.status === "connecting" ? "CONNECTING..." : "CONNECT WALLET"}
+            </button>
+          </div>
+        ) : rewardsOffline ? (
+          <div className="network-settlement-empty">
+            <span>Operator settlement telemetry is unavailable. Retrying automatically.</span>
+          </div>
+        ) : (
+          <div className="network-settlement-grid">
+            <div><span>Tracked</span><strong>{formatNumber(rewardSummary.tracked, 6)} HAI</strong></div>
+            <div className="is-claimable"><span>Claimable</span><strong>{formatNumber(rewardSummary.claimable, 6)} HAI</strong></div>
+            <div><span>Awaiting root</span><strong>{formatNumber(rewardSummary.awaitingRoot, 6)} HAI</strong></div>
+            <div className="is-claimed"><span>Claimed on-chain</span><strong>{formatNumber(rewardSummary.claimed, 6)} HAI</strong></div>
+            <div className="network-settlement-action">
+              <span>{rewardSummary.claimableCount} published proof{rewardSummary.claimableCount === 1 ? "" : "s"}</span>
+              <a className="btn btn-primary" href={`${HAVNAI_URL}/node-rewards`} target="_blank" rel="noopener noreferrer">
+                {rewardSummary.claimableCount > 0 ? "CLAIM ON SEPOLIA" : "OPEN CLAIM LEDGER"}
+              </a>
+            </div>
+          </div>
+        )}
       </section>
 
       <main className="network-workspace">
         <section className="network-panel network-creators">
           <div className="network-section-head">
             <div>
-              <span className="network-section-index">01 / CREATOR TOPOLOGY</span>
+              <span className="network-section-index">03 / CREATOR TOPOLOGY</span>
               <h2>Active compute fleet</h2>
             </div>
             <span className="network-section-count">{nodes.filter((node) => node.online).length} routing</span>
@@ -339,7 +513,7 @@ export default function NetworkScreen() {
         <section className="network-panel network-artifacts">
           <div className="network-section-head">
             <div>
-              <span className="network-section-index">02 / YOUR ARTIFACT LEDGER</span>
+              <span className="network-section-index">04 / YOUR ARTIFACT LEDGER</span>
               <h2>Victory render queue</h2>
             </div>
             {wallet.short && <span className="network-wallet">{wallet.short}</span>}
@@ -385,6 +559,25 @@ export default function NetworkScreen() {
                 const receiptCreator = receipt?.execution.creator_node_id
                   ? nodeNames.get(receipt.execution.creator_node_id) || receipt.execution.creator_node_id
                   : "Unassigned";
+                const inclusion = activeReceipt?.inclusionProof;
+                const anchorVerified = Boolean(
+                  inclusion?.status === "anchored" &&
+                  inclusion.anchor_tx_hash &&
+                  inclusion.valid &&
+                  activeReceipt?.inclusionProofMatches === true
+                );
+                const anchorLabel = anchorVerified
+                  ? "Sepolia verified"
+                  : activeReceipt?.inclusionProofMatches === false
+                    ? "Proof mismatch"
+                    : inclusion?.status === "pending"
+                      ? "Sepolia confirming"
+                      : inclusion?.status === "ready"
+                        ? "Batch ready"
+                        : "Awaiting batch";
+                const anchorUrl = inclusion?.anchor_tx_hash
+                  ? `https://sepolia.etherscan.io/tx/${inclusion.anchor_tx_hash}`
+                  : null;
                 return (
                   <article key={artifact.job_id} className={`network-artifact is-${artifact.forgeStatus}`}>
                     <div className="network-artifact-preview">
@@ -478,6 +671,9 @@ export default function NetworkScreen() {
                                   <span data-check={String(activeReceipt.contentDigestMatches)}>
                                     Content hash {activeReceipt.contentDigestMatches === true ? "match" : activeReceipt.contentDigestMatches === false ? "mismatch" : "unchecked"}
                                   </span>
+                                  <span data-check={anchorVerified ? "true" : activeReceipt.inclusionProofMatches === false ? "false" : "pending"}>
+                                    {anchorLabel}
+                                  </span>
                                 </div>
                               </header>
 
@@ -487,7 +683,8 @@ export default function NetworkScreen() {
                                 <div><span>Route</span><strong>{receipt.routing.preference_honored ? "Wingman honored" : humanizeMachineName(receipt.routing.strategy)}</strong></div>
                                 <div><span>Settlement</span><strong>{humanizeMachineName(receipt.settlement.outcome)}</strong></div>
                                 <div><span>Node reward</span><strong>{formatNumber(receipt.settlement.node_reward, 4)} {humanizeMachineName(receipt.settlement.reward_asset_type)}</strong></div>
-                                <div><span>Chain anchor</span><strong>{receipt.settlement.transaction_hash ? shortIdentity(receipt.settlement.transaction_hash) : "Not anchored"}</strong></div>
+                                <div><span>Receipt batch</span><strong>{inclusion ? `#${inclusion.batch_id} / ${inclusion.leaf_count} leaves` : humanizeMachineName(activeReceipt.inclusionError)}</strong></div>
+                                <div><span>Chain anchor</span><strong>{anchorLabel}</strong></div>
                               </div>
 
                               <div className="network-receipt-digests">
@@ -499,6 +696,12 @@ export default function NetworkScreen() {
                                   <span>RECEIPT SHA-256</span>
                                   <code>{activeReceipt.data.receipt_sha256.replace(/^sha256:/, "")}</code>
                                 </div>
+                                {inclusion && (
+                                  <div>
+                                    <span>MERKLE ROOT</span>
+                                    <code>{inclusion.merkle_root}</code>
+                                  </div>
+                                )}
                               </div>
 
                               <footer className="network-receipt-actions">
@@ -519,6 +722,16 @@ export default function NetworkScreen() {
                                   >
                                     OPEN JSON
                                   </a>
+                                  {anchorUrl && (
+                                    <a
+                                      className="btn btn-small network-chain-link"
+                                      href={anchorUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                    >
+                                      VIEW SEPOLIA TX
+                                    </a>
+                                  )}
                                 </div>
                               </footer>
                             </>
