@@ -1,4 +1,4 @@
-"""Export existing Astra Blender geometry as deterministic Unreal-ready GLB files."""
+"""Export existing Astra Blender geometry as deterministic Unreal-ready FBX files."""
 
 from __future__ import annotations
 
@@ -101,17 +101,18 @@ def export_target(target: ExportTarget, output_dir: Path) -> dict[str, object]:
         obj.hide_viewport = False
         obj.select_set(True)
 
-    output_path = output_dir / f"{target.asset_name}.glb"
-    bpy.ops.export_scene.gltf(
+    output_path = output_dir / f"{target.asset_name}.fbx"
+    bpy.ops.export_scene.fbx(
         filepath=str(output_path),
-        export_format="GLB",
         use_selection=True,
-        export_apply=True,
-        export_yup=True,
-        export_materials="EXPORT",
-        export_cameras=False,
-        export_lights=False,
-        export_animations=False,
+        object_types={"EMPTY", "MESH"},
+        use_mesh_modifiers=True,
+        apply_unit_scale=True,
+        apply_scale_options="FBX_SCALE_UNITS",
+        axis_forward="-Y",
+        axis_up="Z",
+        bake_anim=False,
+        path_mode="AUTO",
     )
     return {
         "assetName": target.asset_name,
@@ -153,8 +154,9 @@ def main() -> None:
         "generatedAt": datetime.now(UTC).isoformat(),
         "coordinateContract": {
             "sourceUnits": "meters",
-            "format": "glTF 2.0 binary",
-            "upAxis": "+Y per glTF; converted by Unreal Interchange",
+            "format": "Autodesk FBX binary",
+            "forwardAxis": "-Y",
+            "upAxis": "+Z",
             "unrealUnits": "centimeters",
         },
         "exports": exports,

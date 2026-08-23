@@ -19,7 +19,7 @@ powershell -ExecutionPolicy Bypass -File tools/unreal/export_blender_assets.ps1
 
 The wrapper opens each existing `.blend` source in Blender 4.5 and invokes
 `tools/blender/export_unreal_geometry.py`. It exports selected root objects or
-named collections as binary glTF (`.glb`) and writes an `exports.json` beside
+named collections as binary FBX (`.fbx`) and writes an `exports.json` beside
 each profile. The metadata records the source SHA-256, Blender version,
 coordinate contract, object count, and output byte size.
 
@@ -31,7 +31,7 @@ Profiles:
 | `weapon-vfx` | `astra_weapon_vfx.blend` | Projectile meshes and weapon FX source geometry |
 | `secondary-boss-vfx` | `astra_secondary_boss_vfx.blend` | Secondary and boss telegraph source geometry |
 
-Do not hand-edit staged GLB files. Change the procedural Blender source and
+Do not hand-edit staged FBX files. Change the procedural Blender source and
 export again.
 
 ## Unreal import
@@ -55,7 +55,10 @@ After import, use MCP read-back tools to verify asset class, bounds, vertex and
 triangle counts, material slots, and Nanite state. Never save unrelated dirty
 assets.
 
-The currently verified MCP surface is recorded in `docs/unreal/mcp-capabilities.md`.
+The MCP import operation currently accepts FBX and OBJ through Unreal's
+`FbxFactory`; GLB is not accepted by this tool even when Interchange is enabled
+in the editor. The currently verified MCP surface is recorded in
+`docs/unreal/mcp-capabilities.md`.
 
 ## Render delivery
 
