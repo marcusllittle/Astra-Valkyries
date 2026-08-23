@@ -1407,10 +1407,19 @@ video.card-art-img {
   flex-wrap: nowrap;
 }
 
-.hud-stat-stack--row {
+.hud-stat-stack.hud-stat-stack--row {
   flex-direction: row;
   align-items: center;
   gap: 8px;
+}
+
+.play-hud .hud-left,
+.play-hud .hud-right {
+  flex-shrink: 0;
+}
+
+.play-hud .hud-left > * {
+  flex: none;
 }
 
 .shmup-hud-center--landscape {
@@ -1444,6 +1453,29 @@ video.card-art-img {
 .hud-combo .combo-text {
   font-size: 0.7rem;
   color: var(--gold);
+}
+
+.hud-graze {
+  min-width: 40px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  color: #9edfff;
+  font-size: 0.58rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.hud-graze strong {
+  color: #d8f5ff;
+  font-size: 0.64rem;
+}
+
+.hud-graze.is-hot,
+.hud-graze.is-hot strong {
+  color: #ffd43b;
+  text-shadow: 0 0 7px rgba(255, 212, 59, 0.48);
 }
 
 .hud-track-title {
@@ -2392,8 +2424,23 @@ video.card-art-img {
 }
 
 .result-item-flawless {
-  grid-column: span 2;
   border-color: rgba(116, 216, 255, 0.35);
+}
+
+.result-item-mastery {
+  border-color: rgba(255, 212, 59, 0.36);
+  background: linear-gradient(160deg, rgba(42, 42, 55, 0.92), rgba(16, 27, 48, 0.78));
+}
+
+.result-item-damage {
+  border-color: rgba(255, 135, 135, 0.28);
+}
+
+@media (min-width: 701px) {
+  .result-item-flawless,
+  .result-item-damage {
+    grid-column: span 2;
+  }
 }
 
 .result-item small {
@@ -4164,6 +4211,16 @@ video.card-art-img {
     font-size: 0.6rem;
   }
 
+  .play-screen .hud-graze {
+    min-width: 34px;
+    gap: 3px;
+    font-size: 0.5rem;
+  }
+
+  .play-screen .hud-graze strong {
+    font-size: 0.54rem;
+  }
+
   .play-screen .hp-pips {
     gap: 3px;
   }
@@ -4380,6 +4437,15 @@ video.card-art-img {
 
   .play-screen .hud-combo .combo-text {
     font-size: 0.55rem;
+  }
+
+  .play-screen .hud-graze {
+    min-width: 30px;
+    font-size: 0.46rem;
+  }
+
+  .play-screen .hud-graze strong {
+    font-size: 0.5rem;
   }
 
   .play-screen .hp-pips {

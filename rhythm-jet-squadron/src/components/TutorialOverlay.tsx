@@ -42,6 +42,13 @@ const STEPS: TutorialStep[] = [
     ],
   },
   {
+    title: "Fly the Edge",
+    lines: [
+      "Slip close to enemy fire without getting hit to graze it. Each bullet rewards score and Overdrive once.",
+      "Keep grazing before the chain expires to raise the payout. Taking a hit breaks the chain.",
+    ],
+  },
+  {
     title: "Secondary Weapon",
     lines: [
       "Each outfit comes with a secondary ability — bombs, barriers, EMP blasts, or drones.",

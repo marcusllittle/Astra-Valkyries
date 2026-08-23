@@ -51,6 +51,7 @@ import {
 } from "../lib/shmupBalance";
 import { gradeShmupRun, type ShmupRunResult } from "../lib/shmupResults";
 import { flawlessRouteReward, isFlawlessRoute } from "../lib/tacticalObjectives";
+import { GRAZE_CHAIN_TIMEOUT_MS, grazeReward } from "../lib/masteryScoring";
 import {
   EMPTY_GAMEPAD_INPUT,
   findActiveGamepad,
@@ -85,6 +86,7 @@ import {
   sfxShoot, sfxEnemyDeath, sfxExplosion, sfxPlayerHit,
   sfxBomb, sfxEmp, sfxShield, sfxDrones, sfxPowerup,
   sfxBossWarning, sfxCrystalBomb, sfxShieldPulse,
+  sfxGraze,
 } from "../lib/retroSfx";
 import pilotsData from "../data/pilots.json";
 import outfitsData from "../data/outfits.json";
@@ -394,6 +396,8 @@ interface HudState {
   bossWarning: boolean;
   flawlessWaves: number;
   flawlessStreak: number;
+  grazes: number;
+  grazeChain: number;
   tacticalNotice: { kind: "flawless" | "broken"; score: number; streak: number } | null;
   secondaryName: string;
   secondaryReady: boolean;
@@ -825,6 +829,8 @@ function createHudState(modifiers: ShmupModifiers, activeMap: ShmupMap): HudStat
     bossWarning: false,
     flawlessWaves: 0,
     flawlessStreak: 0,
+    grazes: 0,
+    grazeChain: 0,
     tacticalNotice: null,
     secondaryName: secondaryName(modifiers.secondaryKey),
     secondaryReady: true,
@@ -984,6 +990,8 @@ export default function ShmupPlayScreen() {
   const backgroundDebrisRef = useRef<BackgroundDebris[]>([]);
   const streakDisplayRef = useRef(0);
   const streakDisplayTimerRef = useRef(0);
+  const grazeDisplayTimerRef = useRef(0);
+  const grazeDisplayScoreRef = useRef(0);
   const keysRef = useRef<Set<string>>(new Set());
   const enemyIdRef = useRef(0);
   const fireTimerRef = useRef(0);
@@ -1070,6 +1078,10 @@ export default function ShmupPlayScreen() {
   const scoreRef = useRef(0);
   const killsRef = useRef(0);
   const damageTakenRef = useRef(0);
+  const grazesRef = useRef(0);
+  const grazeChainRef = useRef(0);
+  const bestGrazeChainRef = useRef(0);
+  const lastGrazeMsRef = useRef(0);
   const activeDeploymentKeyRef = useRef<string | null>(null);
   const activeDeploymentLoopRef = useRef(0);
   const deploymentDamageStartRef = useRef(0);
@@ -1083,6 +1095,7 @@ export default function ShmupPlayScreen() {
     untilMs: number;
   } | null>(null);
   const streakRef = useRef(0);
+  const bestKillStreakRef = useRef(0);
   const bestMultiplierRef = useRef(1);
   const multiplierSaveReadyRef = useRef(false);
   const lastFrameRef = useRef(0);
@@ -1479,6 +1492,8 @@ export default function ShmupPlayScreen() {
     trailParticlesRef.current = [];
     streakDisplayRef.current = 0;
     streakDisplayTimerRef.current = 0;
+    grazeDisplayTimerRef.current = 0;
+    grazeDisplayScoreRef.current = 0;
     enemyIdRef.current = 0;
     fireTimerRef.current = 0;
     queuedWaveSpawnsRef.current = [];
@@ -1539,6 +1554,10 @@ export default function ShmupPlayScreen() {
     scoreRef.current = 0;
     killsRef.current = 0;
     damageTakenRef.current = 0;
+    grazesRef.current = 0;
+    grazeChainRef.current = 0;
+    bestGrazeChainRef.current = 0;
+    lastGrazeMsRef.current = 0;
     activeDeploymentKeyRef.current = null;
     activeDeploymentLoopRef.current = 0;
     deploymentDamageStartRef.current = 0;
@@ -1547,6 +1566,7 @@ export default function ShmupPlayScreen() {
     bestFlawlessStreakRef.current = 0;
     tacticalNoticeRef.current = null;
     streakRef.current = 0;
+    bestKillStreakRef.current = 0;
     bestMultiplierRef.current = 1;
     multiplierSaveReadyRef.current = hasMultiplierSave;
     lastFrameRef.current = 0;
@@ -1618,6 +1638,12 @@ export default function ShmupPlayScreen() {
     };
 
     const syncHud = (elapsedMs: number) => {
+      if (
+        grazeChainRef.current > 0 &&
+        elapsedMs - lastGrazeMsRef.current > GRAZE_CHAIN_TIMEOUT_MS
+      ) {
+        grazeChainRef.current = 0;
+      }
       const overdriveActive = overdriveUntilRef.current > elapsedMs;
       const boss = bossRef.current;
       const secondaryRemaining = Math.max(0, secondaryCooldownUntilRef.current - elapsedMs);
@@ -1653,6 +1679,8 @@ export default function ShmupPlayScreen() {
           elapsedMs < bossWarningUntilRef.current,
         flawlessWaves: flawlessWavesRef.current,
         flawlessStreak: flawlessStreakRef.current,
+        grazes: grazesRef.current,
+        grazeChain: grazeChainRef.current,
         tacticalNotice: tacticalNoticeRef.current && tacticalNoticeRef.current.untilMs > elapsedMs
           ? {
               kind: tacticalNoticeRef.current.kind,
@@ -2797,6 +2825,7 @@ export default function ShmupPlayScreen() {
       sfxEnemyDeath();
       killsRef.current += 1;
       streakRef.current += 1;
+      bestKillStreakRef.current = Math.max(bestKillStreakRef.current, streakRef.current);
       // Update streak display for on-screen counter
       if (streakRef.current >= 5) {
         streakDisplayRef.current = streakRef.current;
@@ -2991,6 +3020,7 @@ export default function ShmupPlayScreen() {
       playVictoryFanfare();
       killsRef.current += 1;
       streakRef.current += 3;
+      bestKillStreakRef.current = Math.max(bestKillStreakRef.current, streakRef.current);
       const totalMultiplier = getScoreMultiplier(elapsedMs);
       bestMultiplierRef.current = Math.max(bestMultiplierRef.current, totalMultiplier);
       scoreRef.current += Math.round((4200 + scoreFlatBonus) * totalMultiplier * runScoreMult);
@@ -3610,6 +3640,11 @@ export default function ShmupPlayScreen() {
         maxWeaponLevel: weaponLevelRef.current,
         flawlessWaves: flawlessWavesRef.current,
         bestFlawlessStreak: bestFlawlessStreakRef.current,
+        grazes: grazesRef.current,
+        bestGrazeChain: bestGrazeChainRef.current,
+        bestMultiplier: bestMultiplierRef.current,
+        bestKillStreak: bestKillStreakRef.current,
+        damageTaken: damageTakenRef.current,
       };
 
       const scoreRecord: GameResult = {
@@ -3650,6 +3685,8 @@ export default function ShmupPlayScreen() {
       void rumbleGamepad(activeGamepadRef.current, 160, 0.62, 0.34);
       ship.hp = Math.max(0, ship.hp - damageTakenMultiplier);
       damageTakenRef.current += damageTakenMultiplier;
+      grazeChainRef.current = 0;
+      lastGrazeMsRef.current = 0;
       if (activeDeploymentKeyRef.current !== null) {
         flawlessStreakRef.current = 0;
         tacticalNoticeRef.current = {
@@ -4527,6 +4564,9 @@ export default function ShmupPlayScreen() {
       if (streakDisplayTimerRef.current > 0) {
         streakDisplayTimerRef.current -= deltaSeconds;
       }
+      if (grazeDisplayTimerRef.current > 0) {
+        grazeDisplayTimerRef.current -= deltaSeconds;
+      }
 
       // Update background debris
       for (const debris of backgroundDebrisRef.current) {
@@ -5320,16 +5360,32 @@ export default function ShmupPlayScreen() {
           continue;
         }
 
-        // Nova Velocity: a bullet that passes close without hitting is a
-        // graze. Flagged once per bullet so a slow round lingering in the
-        // band across several frames only pays out a single time.
-        if (
-          !bullet.grazed &&
-          (grazeOverdriveGain > 0 || grazeSpeedBurstMs > 0 || grazeDamageBurstMs > 0)
-        ) {
+        // Every pilot can graze. Nova's skill bonuses remain additive to the
+        // universal score and Overdrive payout.
+        if (!bullet.grazed) {
           const grazeDistance = hitDistance + ship.radius * 0.9;
           if (distSq <= grazeDistance * grazeDistance) {
             bullet.grazed = true;
+            const reward = grazeReward(
+              grazeChainRef.current,
+              lastGrazeMsRef.current,
+              elapsedMs,
+              getScoreMultiplier(elapsedMs),
+              runScoreMult,
+            );
+            grazesRef.current += 1;
+            grazeChainRef.current = reward.chain;
+            bestGrazeChainRef.current = Math.max(bestGrazeChainRef.current, reward.chain);
+            lastGrazeMsRef.current = elapsedMs;
+            grazeDisplayScoreRef.current = reward.score;
+            grazeDisplayTimerRef.current = 0.62;
+            scoreRef.current += reward.score;
+            bestMultiplierRef.current = Math.max(
+              bestMultiplierRef.current,
+              getScoreMultiplier(elapsedMs),
+            );
+            addOverdrive(reward.overdrive, elapsedMs);
+            sfxGraze(reward.chain);
             if (grazeOverdriveGain > 0) addOverdrive(grazeOverdriveGain, elapsedMs);
             if (grazeSpeedBurstMs > 0) {
               grazeSpeedBurstUntilRef.current = elapsedMs + grazeSpeedBurstMs;
@@ -5338,6 +5394,9 @@ export default function ShmupPlayScreen() {
               grazeDamageBurstUntilRef.current = elapsedMs + grazeDamageBurstMs;
             }
             addSparkBurst(bullet.x, bullet.y, "#a5d8ff", 2, 70, [1.2, 2.6]);
+            if (reward.chain % 5 === 0) {
+              addPulse(ship.x, ship.y, "#74d8ff", ship.radius * 1.4, 70, 0.16, 1.4);
+            }
           }
         }
       }
@@ -7003,6 +7062,24 @@ export default function ShmupPlayScreen() {
         ctx.restore();
       }
 
+      if (grazeDisplayTimerRef.current > 0) {
+        const alpha = clamp(grazeDisplayTimerRef.current / 0.25, 0, 1);
+        const chain = grazeChainRef.current;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = chain >= 10 ? "#ffd43b" : "#a5e8ff";
+        ctx.font = `bold ${chain >= 10 ? 13 : 11}px monospace`;
+        ctx.textAlign = "center";
+        ctx.shadowColor = "#000000";
+        ctx.shadowBlur = 4;
+        ctx.fillText(`GRAZE +${grazeDisplayScoreRef.current}`, ship.x, ship.y - ship.radius * 2.5);
+        if (chain >= 5) {
+          ctx.font = "bold 9px monospace";
+          ctx.fillText(`${chain} CHAIN`, ship.x, ship.y - ship.radius * 1.55);
+        }
+        ctx.restore();
+      }
+
       // Kill streak counter
       if (streakDisplayTimerRef.current > 0 && streakDisplayRef.current >= 5) {
         const alpha = clamp(streakDisplayTimerRef.current / 0.5, 0, 1);
@@ -7230,6 +7307,10 @@ export default function ShmupPlayScreen() {
           <div className="hud-score">{hud.score.toLocaleString()}</div>
           <div className="hud-combo">
             <span className="combo-text">{hud.multiplier.toFixed(2)}x</span>
+          </div>
+          <div className={`hud-graze ${hud.grazeChain >= 5 ? "is-hot" : ""}`}>
+            <span>G {hud.grazes}</span>
+            {hud.grazeChain > 1 ? <strong>x{hud.grazeChain}</strong> : null}
           </div>
         </div>
         <div className="hud-center shmup-hud-center shmup-hud-center--landscape">
