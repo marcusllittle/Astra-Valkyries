@@ -13,8 +13,10 @@ Verified through Unreal MCP on 2026-08-23 against the local
   and rendered video.
 - Committed the 38-asset Phase 1 baseline on local `main`.
 - Created local branch `agent/phase2-templates` for the work below.
-- A remote is still required before the Unreal branch can be pushed or reviewed
-  as a pull request.
+- Created the private GitHub remote
+  `https://github.com/marcusllittle/AstraValkRenderLab`.
+- Pushed local `main` and `agent/phase2-templates`, including all required LFS
+  objects, and opened Unreal pull request #1.
 
 ## Materials
 
