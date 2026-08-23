@@ -7,6 +7,11 @@ export type ShmupRunResult = {
   maxWeaponLevel?: number;
   flawlessWaves?: number;
   bestFlawlessStreak?: number;
+  grazes?: number;
+  bestGrazeChain?: number;
+  bestMultiplier?: number;
+  bestKillStreak?: number;
+  damageTaken?: number;
 };
 
 export function gradeShmupRun(result: ShmupRunResult): "S" | "A" | "B" | "C" | "D" {

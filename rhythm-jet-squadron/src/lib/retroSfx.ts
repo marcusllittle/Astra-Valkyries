@@ -99,6 +99,7 @@ export function pressStart() {
 
 // Throttle rapid-fire sounds to avoid audio glitches
 let _lastShot = 0;
+let _lastGraze = 0;
 
 /** Player primary weapon fire — short laser blip */
 export function sfxShoot() {
@@ -122,6 +123,32 @@ export function sfxShoot() {
   osc.connect(g).connect(bus);
   osc.start(t);
   osc.stop(t + 0.07);
+}
+
+/** Close-call reward — a restrained chime that rises with the graze chain. */
+export function sfxGraze(chain: number) {
+  const now = performance.now();
+  if (now - _lastGraze < 45) return;
+  _lastGraze = now;
+
+  const ac = getAudioCtx();
+  const bus = getSfxBus();
+  const t = ac.currentTime;
+  const safeChain = Number.isFinite(chain) ? Math.max(1, Math.floor(chain)) : 1;
+  const frequency = Math.min(1_480, 680 + safeChain * 34);
+
+  const osc = ac.createOscillator();
+  osc.type = safeChain >= 10 ? "triangle" : "sine";
+  osc.frequency.setValueAtTime(frequency, t);
+  osc.frequency.exponentialRampToValueAtTime(frequency * 1.16, t + 0.07);
+
+  const gain = ac.createGain();
+  gain.gain.setValueAtTime(safeChain >= 10 ? 0.055 : 0.04, t);
+  gain.gain.linearRampToValueAtTime(0, t + 0.09);
+
+  osc.connect(gain).connect(bus);
+  osc.start(t);
+  osc.stop(t + 0.09);
 }
 
 /** Enemy destroyed — noise burst + descending tone */

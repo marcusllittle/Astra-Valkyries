@@ -76,6 +76,11 @@ function formatMapName(mapId: string): string {
   return mapId.replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+function formatDamageTaken(damage: number | undefined): string {
+  const safeDamage = Number.isFinite(damage) ? Math.max(0, damage ?? 0) : 0;
+  return Number.isInteger(safeDamage) ? String(safeDamage) : safeDamage.toFixed(1);
+}
+
 export default function ShmupResultsScreen() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -184,6 +189,10 @@ export default function ShmupResultsScreen() {
       shmupResult.bossDefeated ? 1 : 0,
       shmupResult.stage ?? 0,
       shmupResult.maxWeaponLevel ?? 0,
+      shmupResult.grazes ?? 0,
+      shmupResult.bestGrazeChain ?? 0,
+      shmupResult.bestMultiplier ?? 1,
+      shmupResult.damageTaken ?? 0,
     ].join(":");
   }, [shmupResult]);
 
@@ -356,10 +365,25 @@ export default function ShmupResultsScreen() {
           <div className="result-item"><span className="result-label">Boss</span><span className="result-value">{shmupResult.bossDefeated ? "Destroyed" : "Active"}</span></div>
           <div className="result-item"><span className="result-label">Stage</span><span className="result-value">{shmupResult.stage ?? 1}</span></div>
           <div className="result-item"><span className="result-label">Max weapon</span><span className="result-value">{shmupResult.maxWeaponLevel ?? 1}</span></div>
+          <div className="result-item result-item-mastery">
+            <span className="result-label">Peak multiplier</span>
+            <span className="result-value">{(shmupResult.bestMultiplier ?? 1).toFixed(2)}x</span>
+            <small>Kill chain {shmupResult.bestKillStreak ?? 0}</small>
+          </div>
+          <div className="result-item result-item-mastery">
+            <span className="result-label">Grazes</span>
+            <span className="result-value">{shmupResult.grazes ?? 0}</span>
+            <small>Best chain {shmupResult.bestGrazeChain ?? 0}</small>
+          </div>
           <div className="result-item result-item-flawless">
             <span className="result-label">Flawless routes</span>
             <span className="result-value">{shmupResult.flawlessWaves ?? 0}</span>
             <small>Best chain {shmupResult.bestFlawlessStreak ?? 0}</small>
+          </div>
+          <div className="result-item result-item-damage">
+            <span className="result-label">Damage taken</span>
+            <span className="result-value">{formatDamageTaken(shmupResult.damageTaken)}</span>
+            <small>{(shmupResult.damageTaken ?? 0) === 0 ? "Clean flight" : "Chain breaks recorded"}</small>
           </div>
         </section>
 
@@ -392,7 +416,15 @@ export default function ShmupResultsScreen() {
 
         <div className="results-focus-pill">
           <span className="result-label">Next focus</span>
-          <strong>{isFirstRun ? "Refine loadout" : (shmupResult.flawlessWaves ?? 0) === 0 ? "Hold a flawless route" : "Extend the clean-flight chain"}</strong>
+          <strong>
+            {isFirstRun
+              ? "Refine loadout"
+              : (shmupResult.grazes ?? 0) === 0
+                ? "Fly closer to enemy fire"
+                : (shmupResult.damageTaken ?? 0) > 0
+                  ? "Protect the graze chain"
+                  : "Extend the clean-flight chain"}
+          </strong>
         </div>
 
         <footer className="results-buttons">
