@@ -57,7 +57,9 @@ assets.
 
 The MCP import operation currently accepts FBX and OBJ through Unreal's
 `FbxFactory`; GLB is not accepted by this tool even when Interchange is enabled
-in the editor. The currently verified MCP surface is recorded in
+in the editor. The exporter bakes Blender's meter-to-centimeter conversion into
+mesh coordinates because this import path does not honor FBX unit metadata.
+The currently verified MCP surface is recorded in
 `docs/unreal/mcp-capabilities.md`.
 
 ## Render delivery
