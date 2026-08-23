@@ -6,7 +6,7 @@ import outfitsData from "../data/outfits.json";
 import { useWallet } from "../context/WalletContext";
 import {
   creditsForGrade,
-  gradeShmupRun,
+  evaluateShmupRun,
   type ShmupRunResult,
 } from "../lib/shmupResults";
 import { astraReward, generateRewardImage, type CampaignContribution } from "../lib/havnApi";
@@ -99,7 +99,8 @@ export default function ShmupResultsScreen() {
   const shmupResult = (location.state as { shmupResult?: ShmupRunResult } | undefined)?.shmupResult;
   const mapId = (location.state as { mapId?: string } | undefined)?.mapId;
   const runToken = (location.state as { runToken?: string | null } | undefined)?.runToken ?? null;
-  const grade = shmupResult ? gradeShmupRun(shmupResult) : null;
+  const rankBreakdown = shmupResult ? evaluateShmupRun(shmupResult) : null;
+  const grade = rankBreakdown?.grade ?? null;
   const creditsEarned = grade ? creditsForGrade(grade) : 0;
   const activeOutfit = outfitsData.find((o) => o.id === save.selectedOutfitId);
 
@@ -348,15 +349,43 @@ export default function ShmupResultsScreen() {
           {grade}
         </div>
 
-        <p className="results-victory-copy">
-          {didWinRun
-            ? grade === "S"
-              ? "Command-level sortie. The route belongs to the squadron."
-              : "Sector control restored. There is still room to sharpen the flight."
-            : (shmupResult.stage ?? 1) > 1
-              ? "Deep push recorded. Rebuild around the pattern that ended it."
-              : "Early loss recorded. Reset the route and take the opening cleanly."}
-        </p>
+        <section className="results-performance-summary" aria-label="Combat rating">
+          <p className="results-victory-copy">
+            {didWinRun
+              ? grade === "S"
+                ? "Command-level sortie. The route belongs to the squadron."
+                : "Sector control restored. There is still room to sharpen the flight."
+              : (shmupResult.stage ?? 1) > 1
+                ? "Deep push recorded. Rebuild around the pattern that ended it."
+                : "Early loss recorded. Reset the route and take the opening cleanly."}
+          </p>
+          <div className="results-rating-line">
+            <span>Combat rating</span>
+            <strong>{rankBreakdown?.rating ?? 0}/100</strong>
+            <small>
+              {rankBreakdown?.nextGrade
+                ? `${rankBreakdown.pointsToNextGrade} points to ${rankBreakdown.nextGrade}`
+                : "Top rank secured"}
+            </small>
+          </div>
+          <div
+            className="results-rating-track"
+            role="progressbar"
+            aria-label="Combat rating"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={rankBreakdown?.rating ?? 0}
+          >
+            <span style={{ width: `${rankBreakdown?.rating ?? 0}%` }} />
+          </div>
+          {(rankBreakdown?.commendations.length ?? 0) > 0 ? (
+            <div className="results-commendations" aria-label="Performance commendations">
+              {rankBreakdown?.commendations.map((commendation) => (
+                <span key={commendation}>{commendation}</span>
+              ))}
+            </div>
+          ) : null}
+        </section>
 
         <section className="results-grid" aria-label="Run statistics">
           <div className="result-item"><span className="result-label">Score</span><span className="result-value">{displayScore.toLocaleString()}</span></div>
@@ -417,13 +446,17 @@ export default function ShmupResultsScreen() {
         <div className="results-focus-pill">
           <span className="result-label">Next focus</span>
           <strong>
-            {isFirstRun
-              ? "Refine loadout"
-              : (shmupResult.grazes ?? 0) === 0
-                ? "Fly closer to enemy fire"
-                : (shmupResult.damageTaken ?? 0) > 0
-                  ? "Protect the graze chain"
-                  : "Extend the clean-flight chain"}
+            {!shmupResult.bossDefeated
+              ? "Reach and break the sector boss"
+              : (shmupResult.damageTaken ?? 0) > 2
+                ? "Reduce incoming damage"
+                : (shmupResult.flawlessWaves ?? 0) < 3
+                  ? "Hold more flawless routes"
+                  : (shmupResult.bestMultiplier ?? 1) < 2.5
+                    ? "Protect the kill multiplier"
+                    : (shmupResult.grazes ?? 0) < 25
+                      ? "Build a longer graze chain"
+                      : "Push the combat rating toward 100"}
           </strong>
         </div>
 
