@@ -107,8 +107,11 @@ def export_target(target: ExportTarget, output_dir: Path) -> dict[str, object]:
         use_selection=True,
         object_types={"EMPTY", "MESH"},
         use_mesh_modifiers=True,
+        mesh_smooth_type="SMOOTH_GROUP",
         apply_unit_scale=True,
-        apply_scale_options="FBX_SCALE_UNITS",
+        # Bake Blender meters to FBX centimeters. Unreal's MCP FbxFactory
+        # ignores the equivalent unit scale when it is stored as FBX metadata.
+        apply_scale_options="FBX_SCALE_NONE",
         axis_forward="-Y",
         axis_up="Z",
         bake_anim=False,
