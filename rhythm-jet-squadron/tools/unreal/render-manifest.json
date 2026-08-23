@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "project": {
+    "name": "Astra Valkyries Render Lab",
+    "unrealProject": "D:/UnrealProjects/AstraValkRenderLab/AstraValkRenderLab.uproject",
+    "contentRoot": "/Game/AstraRenderLab",
+    "mediaBaseUrl": "https://media.joinhavn.io/astra",
+    "replacementPolicy": "Keep the current Astra asset until the Unreal output passes visual review and platform verification."
+  },
+  "outputs": [
+    {
+      "id": "hub-home-establishing",
+      "phase": 3,
+      "screens": ["home"],
+      "kind": "video",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Hub/L_HomeOrbit", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_HomeEstablishing", "status": "planned"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/hub/home-establishing.mp4", "localFallback": "/assets/shmup/vista_nebula_runway.png"}
+    },
+    {
+      "id": "hub-spaceport-loop",
+      "phase": 3,
+      "screens": ["spaceport"],
+      "kind": "video",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Hub/L_Spaceport", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_SpaceportLoop", "status": "planned"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/hub/spaceport-loop.mp4", "localFallback": "/assets/cutins/nova/nova_leaving_port.mp4"}
+    },
+    {
+      "id": "hub-hangar-turntable",
+      "phase": 3,
+      "screens": ["hangar"],
+      "kind": "video",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Hub/L_Hangar", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_HangarTurntable", "status": "planned"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/hub/hangar-turntable.mp4", "localFallback": "/assets/cutins/ships/astra_interceptor_launch.mp4"}
+    },
+    {
+      "id": "flow-briefing-nebula",
+      "phase": 5,
+      "screens": ["briefing", "video-cutscene"],
+      "kind": "video",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_NebulaRunway", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Flow/LS_Briefing_NebulaRunway", "status": "planned"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/flow/briefing-nebula-runway.mp4", "localFallback": "/assets/cutins/scenes/nebula_runway_briefing.mp4"}
+    },
+    {
+      "id": "flow-briefing-solar",
+      "phase": 5,
+      "screens": ["briefing", "video-cutscene"],
+      "kind": "video",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_SolarRift", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Flow/LS_Briefing_SolarRift", "status": "planned"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/flow/briefing-solar-rift.mp4", "localFallback": "/assets/cutins/scenes/solar_rift_briefing.mp4"}
+    },
+    {
+      "id": "flow-briefing-abyss",
+      "phase": 5,
+      "screens": ["briefing", "video-cutscene"],
+      "kind": "video",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_AbyssCrown", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Flow/LS_Briefing_AbyssCrown", "status": "planned"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/flow/briefing-abyss-crown.mp4", "localFallback": "/assets/cutins/scenes/abyss_crown_briefing.mp4"}
+    },
+    {
+      "id": "flow-launch-interceptor",
+      "phase": 5,
+      "screens": ["video-cutscene"],
+      "kind": "video",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Hub/L_LaunchDeck", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Flow/LS_Launch_AstraInterceptor", "status": "planned"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/flow/launch-astra-interceptor.mp4", "localFallback": "/assets/cutins/ships/astra_interceptor_launch.mp4"}
+    },
+    {
+      "id": "combat-nebula-plates",
+      "phase": 4,
+      "screens": ["shmup"],
+      "kind": "image-sequence",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_NebulaRunway", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Combat/LS_CombatPlate_NebulaRunway", "status": "planned"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/combat/nebula-runway/", "localFallback": "/assets/shmup/background_far.png"}
+    },
+    {
+      "id": "combat-solar-plates",
+      "phase": 4,
+      "screens": ["shmup"],
+      "kind": "image-sequence",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_SolarRift", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Combat/LS_CombatPlate_SolarRift", "status": "planned"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/combat/solar-rift/", "localFallback": "/assets/shmup/background_far_solar.png"}
+    },
+    {
+      "id": "combat-abyss-plates",
+      "phase": 4,
+      "screens": ["shmup"],
+      "kind": "image-sequence",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_AbyssCrown", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Combat/LS_CombatPlate_AbyssCrown", "status": "planned"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/combat/abyss-crown/", "localFallback": "/assets/shmup/background_far_abyss.png"}
+    },
+    {
+      "id": "combat-boss-intros",
+      "phase": 4,
+      "screens": ["shmup", "video-cutscene"],
+      "kind": "video-set",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_BossStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Combat/LS_BossIntro_Master", "status": "planned"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/combat/boss-intros/", "localFallback": "/assets/shmup/boss_aegis_dreadnought.png"}
+    },
+    {
+      "id": "flow-results-debriefs",
+      "phase": 5,
+      "screens": ["shmup-results"],
+      "kind": "image-set",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_Debrief", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Flow/LS_Debrief_Master", "status": "planned"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/flow/debriefs/", "localFallback": "/assets/cutins/scenes/nebula_runway_debrief.png"}
+    },
+    {
+      "id": "flow-return-spaceport",
+      "phase": 5,
+      "screens": ["video-cutscene", "spaceport"],
+      "kind": "video",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Hub/L_Spaceport", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Flow/LS_Return_Spaceport", "status": "planned"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/flow/return-spaceport.mp4", "localFallback": "/assets/cutins/nova/nova_return_to_port.mp4"}
+    },
+    {
+      "id": "shop-gacha-reveal",
+      "phase": 6,
+      "screens": ["shop"],
+      "kind": "video-set",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_GachaStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Collection/LS_GachaReveal_Master", "status": "planned"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/gacha/reveals/", "localFallback": "/assets/cutins/aurora_borealis_reveal.mp4"}
+    },
+    {
+      "id": "collection-turntables",
+      "phase": 6,
+      "screens": ["collection"],
+      "kind": "video-set",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_CollectionStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Collection/LS_CollectionTurntable_Master", "status": "planned"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/collection/turntables/", "localFallback": "/assets/outfits/aurora_borealis_cutscene.mp4"}
+    },
+    {
+      "id": "codex-dossier-renders",
+      "phase": 6,
+      "screens": ["codex"],
+      "kind": "image-set",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_DossierStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Collection/LS_DossierRender_Master", "status": "planned"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/codex/dossiers/", "localFallback": "/assets/_codex_audit/boss_dreadnought.png"}
+    },
+    {
+      "id": "missions-sector-plates",
+      "phase": 7,
+      "screens": ["missions"],
+      "kind": "image-set",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_HoloMap", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Utility/LS_MissionSector_Master", "status": "planned"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/utility/missions/", "localFallback": "/assets/maps/nebula-runway.png"}
+    },
+    {
+      "id": "skills-vfx-previews",
+      "phase": 7,
+      "screens": ["skills"],
+      "kind": "video-set",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_VFXStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Utility/LS_SkillPreview_Master", "status": "planned"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/utility/skills/", "localFallback": "/assets/shmup/blender-vfx/secondary_burst.png"}
+    },
+    {
+      "id": "leaderboard-season-plate",
+      "phase": 7,
+      "screens": ["leaderboard"],
+      "kind": "image",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_TrophyStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Utility/LS_LeaderboardSeason", "status": "planned"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/utility/leaderboard-season.webp", "localFallback": "/assets/shmup/vista_solar_rift.png"}
+    },
+    {
+      "id": "network-forge-loop",
+      "phase": 7,
+      "screens": ["network"],
+      "kind": "video",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_NetworkForge", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Utility/LS_NetworkForgeLoop", "status": "planned"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/utility/network-forge-loop.mp4", "localFallback": "/assets/shmup/blender-vfx/secondary_sigil.png"}
+    },
+    {
+      "id": "settings-low-motion-plate",
+      "phase": 7,
+      "screens": ["settings"],
+      "kind": "image",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_UtilityStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Utility/LS_SettingsPlate", "status": "planned"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/utility/settings.webp", "localFallback": "/assets/shmup/background_far.png"}
+    },
+    {
+      "id": "marketing-key-art",
+      "phase": 8,
+      "screens": [],
+      "kind": "image-set",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_MarketingStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Marketing/LS_KeyArt_Master", "status": "planned"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/marketing/key-art/", "localFallback": "/assets/ships/astra_interceptor.png"}
+    }
+  ]
+}
