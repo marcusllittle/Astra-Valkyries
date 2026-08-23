@@ -2,7 +2,7 @@
 
 Verified through Unreal MCP on 2026-08-23 against
 `D:/UnrealProjects/AstraValkRenderLab` branch
-`agent/hub-camera-crop-validation`.
+`agent/hub-stage-specific-dressing`.
 
 ## Shared render environment
 
@@ -24,6 +24,10 @@ Verified through Unreal MCP on 2026-08-23 against
   pylons, emissive beacons, and low-cost practical lights without replacing
   the imported launch deck. Spaceport and Hangar bind the same compiled
   spawnable under FX.
+- `BP_Astra_SpaceportDressing` adds an open launch gantry, dock signals,
+  traffic towers, and cool overhead illumination around the shared deck.
+- `BP_Astra_HangarDressing` adds an enclosed service wall, bay framing,
+  maintenance pods, ceiling rails, and warmer overhead illumination.
 
 The backdrop was generated with OpenAI image generation for this private
 RenderLab project. Prompt: `Premium deep-space panoramic matte painting for
@@ -57,15 +61,15 @@ the existing rig assets remain the single reusable lighting source.
 | Sequence | Rate and range | Spawnables | Camera verification |
 | --- | --- | --- | --- |
 | `LS_HomeOrbitLoop` | 30 fps, 0-300 | Home stage, Hub rig, orbital sky, post process, cine camera | Location and rotation keys at 0 and 300 |
-| `LS_SpaceportLoop` | 30 fps, 0-300 | Spaceport stage, Hub rig, orbital sky, deck dressing, post process, cine camera | Location and rotation keys at 0 and 300 |
-| `LS_HangarInspection` | 24 fps, 0-240 | Hangar stage, Hangar rig, orbital sky, deck dressing, post process, cine camera | Location and rotation keys at 0 and 240 |
+| `LS_SpaceportLoop` | 30 fps, 0-300 | Spaceport stage, Hub rig, orbital sky, deck dressing, Spaceport gantry, post process, cine camera | Location and rotation keys at 0 and 300 |
+| `LS_HangarInspection` | 24 fps, 0-240 | Hangar stage, Hangar rig, orbital sky, deck dressing, Hangar service bay, post process, cine camera | Location and rotation keys at 0 and 240 |
 
 Each sequence retains the master camera cut and the Cameras, Lighting, FX, and
 Subject organization. Stage, lighting, and environment spawnables were rebuilt
 from the latest compiled Blueprint defaults. MCP reopen verification resolved
-one bound object for all 6 Home bindings and all 7 Spaceport and Hangar
-bindings, including post process and deck dressing, so no stale copied CDO
-remains.
+one bound object for all 6 Home bindings and all 8 Spaceport and Hangar
+bindings, including post process, shared deck dressing, and stage-specific
+dressing, so no stale copied CDO remains.
 
 Camera endpoints now frame the production subjects more tightly:
 
@@ -104,12 +108,15 @@ context to crop away behind the app UI.
 MCP viewport captures at every sequence endpoint confirmed that the
 interceptor, deck, assigned Astra materials, cyan engine emission, orbital
 backdrop, practical dressing, and corrected profile lighting render in all
-three assemblies. Fixed manual exposure remains stable between the space-only
-Home composition and the lit Spaceport and Hangar decks.
+three assemblies. Spaceport now reads as an open exterior launch platform with
+a gantry and traffic markers, while Hangar reads as an enclosed maintenance bay
+with a rear service wall and ceiling rails. Neither dressing pass obscures the
+ship at the start or end camera frame. Fixed manual exposure remains stable
+between the space-only Home composition and the two lit deck environments.
 
 These remain production-layout sequences, not approved final renders. The hub
-still needs final stage-specific dressing, MRQ presets, encoded comparison
-renders, and review at the actual UI placement and playback size.
+still needs MRQ presets, encoded comparison renders, and review at the actual
+UI placement and playback size.
 
 No shipping React asset was changed. The render manifest remains
 `in-progress`; current local media stays authoritative until comparison,
