@@ -1237,6 +1237,61 @@ video.card-art-img {
   height: clamp(250px, 32vw, 430px);
 }
 
+.hangar-choice-grid .ship-card-art {
+  height: auto;
+  aspect-ratio: 832 / 1216;
+  background-color: #07111f;
+}
+
+.ship-card-art .card-art-img {
+  object-fit: contain;
+  object-position: center;
+}
+
+.ship-card-art::after {
+  height: 18%;
+  background: linear-gradient(180deg, transparent, rgba(8, 14, 27, 0.32));
+}
+
+.hangar-ship-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+  margin-top: 7px;
+  color: #9eb9ef;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.hangar-ship-meta span + span::before {
+  content: "/";
+  margin-right: 12px;
+  color: rgba(158, 185, 239, 0.42);
+}
+
+.hangar-ship-brief {
+  min-width: 0;
+}
+
+.hangar-ship-brief strong {
+  display: block;
+  margin-bottom: 3px;
+  color: #c3d3ff;
+  font-size: 0.78rem;
+}
+
+.hangar-ship-brief p {
+  margin: 0 0 5px;
+}
+
+.hangar-ship-brief span {
+  display: block;
+  color: #8fa7d8;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
 .outfit-filter-toggle {
   display: inline-flex;
   align-items: center;
@@ -4404,6 +4459,15 @@ video.card-art-img {
 
   .hangar-choice-grid .card-art {
     height: min(92vw, 430px);
+  }
+
+  .hangar-choice-grid .ship-card-art {
+    height: auto;
+    aspect-ratio: 832 / 1216;
+  }
+
+  .hangar-ship-meta span + span::before {
+    content: none;
   }
 
   .outfit-filter-toggle {

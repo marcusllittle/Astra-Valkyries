@@ -297,12 +297,21 @@ export default function HangarScreen() {
             aria-labelledby="hangar-tab-ship"
           >
             <header className="hangar-panel-head">
-              <div>
-                <span className="hangar-panel-label">Ship</span>
+              <div className="hangar-ship-identity">
                 <h3>{selectedShip?.name ?? "Select Ship"}</h3>
+                {selectedShip && (
+                  <div className="hangar-ship-meta">
+                    <span>{selectedShip.className} frame</span>
+                    <span>{selectedShip.manufacturer}</span>
+                  </div>
+                )}
               </div>
               {selectedShip && (
-                <p><strong>{selectedShip.trait.label}.</strong> {selectedShip.description}</p>
+                <div className="hangar-ship-brief">
+                  <strong>{selectedShip.trait.label}</strong>
+                  <p>{selectedShip.description}</p>
+                  <span>{selectedShip.trait.description}</span>
+                </div>
               )}
             </header>
             <div className="hangar-choice-grid">
@@ -312,6 +321,7 @@ export default function HangarScreen() {
                   className={`card ship-card ${ship.id === save.selectedShipId ? "selected" : ""}`}
                   role="button"
                   tabIndex={0}
+                  aria-pressed={ship.id === save.selectedShipId}
                   data-gamepad-default={ship.id === save.selectedShipId ? "true" : undefined}
                   onClick={() => selectShip(ship.id)}
                   onKeyDown={(event) => {
@@ -324,6 +334,7 @@ export default function HangarScreen() {
                     title={ship.name}
                     artUrl={ship.artUrl}
                     artPlaceholder={ship.artPlaceholder}
+                    className="ship-card-art"
                   />
                   <div className="card-info">
                     <strong className="card-title">{ship.name}</strong>
