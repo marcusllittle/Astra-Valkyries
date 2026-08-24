@@ -73,8 +73,9 @@
       "phase": 4,
       "screens": ["shmup"],
       "kind": "image-sequence",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_NebulaRunway", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Combat/LS_CombatPlate_NebulaRunway", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "planned"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/combat/nebula-runway/", "localFallback": "/assets/shmup/background_far.png"}
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_NebulaRunway", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Zones/BP_NebulaRunway_CombatStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Combat/LS_CombatPlate_NebulaRunway", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/combat/nebula-runway/", "localFallback": "/assets/shmup/background_far.png"},
+      "review": {"decision": "awaiting-clean-render", "note": "The reusable Nebula stage, material variants, Niagara variants, and 24 fps combat sequence are authored and MCP-validated. Keep the current gameplay background until clean MRQ proofs pass desktop and centered mobile crop review."}
     },
     {
       "id": "combat-solar-plates",
@@ -97,8 +98,18 @@
       "phase": 4,
       "screens": ["shmup", "video-cutscene"],
       "kind": "video-set",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_BossStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Combat/LS_BossIntro_Master", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "planned"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/combat/boss-intros/", "localFallback": "/assets/shmup/boss_aegis_dreadnought.png"}
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_NebulaRunway", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Bosses/LS_BossIntro_AegisDreadnought", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/combat/boss-intros/", "localFallback": "/assets/shmup/boss_aegis_dreadnought.png"},
+      "review": {"decision": "blockout-only", "note": "The Aegis core and two long weapon arms are independently bindable and keyframed for scale and framing. The primitive geometry is previsualization only; retain the current Aegis art until the three production meshes are generated in Blender and clearly pass render review."}
+    },
+    {
+      "id": "combat-aegis-arm-break-previz",
+      "phase": 4,
+      "screens": ["shmup"],
+      "kind": "video",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_NebulaRunway", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Bosses/LS_Aegis_ArmBreak_Previz", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/combat/boss-intros/aegis-arm-break-previz.mp4", "localFallback": "/assets/shmup/boss_aegis_dreadnought.png"},
+      "review": {"decision": "technical-previz-only", "note": "This sequence proves independent left- and right-arm detachment and Niagara break-effect binding. It is not a shipping cinematic and must be rebuilt against the final Blender boss pieces."}
     },
     {
       "id": "flow-results-debriefs",

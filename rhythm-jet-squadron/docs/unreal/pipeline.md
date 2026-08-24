@@ -107,6 +107,17 @@ preset with:
 py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_mrq_sample_hub_1080p.py"
 ```
 
+Run the Phase 4 Nebula combat, Aegis intro, and arm-break proof set with:
+
+```text
+py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_mrq_sample_phase4_nebula.py"
+```
+
+This queues nine 1920x1080 frames under
+`Saved/AstraRenders/phase4-nebula-proof-1080p`. The Aegis sequences remain
+blockout-only until their three independently pivoted Blender meshes replace
+the primitive previsualization actors.
+
 After those proofs pass, render the full Home, Spaceport, and Hangar masters
 with:
 
