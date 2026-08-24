@@ -100,7 +100,7 @@
       "kind": "video-set",
       "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_NebulaRunway", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Bosses/LS_BossIntro_AegisDreadnought", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
       "delivery": {"hd": "https://media.joinhavn.io/astra/combat/boss-intros/", "localFallback": "/assets/shmup/boss_aegis_dreadnought.png"},
-      "review": {"decision": "blockout-only", "note": "The Aegis core and two long weapon arms are independently bindable and keyframed for scale and framing. The primitive geometry is previsualization only; retain the current Aegis art until the three production meshes are generated in Blender and clearly pass render review."}
+      "review": {"decision": "production-geometry-pending-sequence", "note": "The verified Blender core and two long weapon arms now exist as independent Unreal candidates with stable pivots and materials. This manifest still points to the untouched blockout sequence; retain the current Aegis art until a new production-bound sequence passes desktop and centered mobile render review."}
     },
     {
       "id": "combat-aegis-arm-break-previz",
@@ -109,7 +109,7 @@
       "kind": "video",
       "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_NebulaRunway", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Bosses/LS_Aegis_ArmBreak_Previz", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
       "delivery": {"hd": "https://media.joinhavn.io/astra/combat/boss-intros/aegis-arm-break-previz.mp4", "localFallback": "/assets/shmup/boss_aegis_dreadnought.png"},
-      "review": {"decision": "technical-previz-only", "note": "This sequence proves independent left- and right-arm detachment and Niagara break-effect binding. It is not a shipping cinematic and must be rebuilt against the final Blender boss pieces."}
+      "review": {"decision": "technical-previz-only", "note": "This untouched blockout sequence proves independent left- and right-arm detachment and Niagara break-effect binding. The three verified Blender pieces are available, but a new production-bound arm-break sequence and clean MRQ review are still required."}
     },
     {
       "id": "flow-results-debriefs",
