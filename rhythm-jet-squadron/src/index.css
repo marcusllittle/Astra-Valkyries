@@ -1680,10 +1680,6 @@ video.card-art-img {
   position: relative;
 }
 
-.boss-health--landscape {
-  padding: 2px 12px;
-}
-
 .secondary-compact--landscape {
   top: 44px;
 }
@@ -1871,42 +1867,70 @@ video.card-art-img {
   to { filter: saturate(1.15); }
 }
 
-.boss-health {
-  width: 100%;
-  padding: 8px 12px;
-  background:
-    linear-gradient(180deg, rgba(9, 15, 32, 0.88), rgba(9, 15, 32, 0.62)),
-    linear-gradient(90deg, rgba(255, 107, 107, 0.08), rgba(255, 212, 59, 0.06));
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.24);
+.boss-health-inline {
+  width: clamp(150px, 26vw, 320px);
+  min-width: 0;
 }
 
 .boss-health-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 6px;
+  margin-bottom: 3px;
   font-size: 0.74rem;
   color: #ffe8cc;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0;
 }
 
-.boss-health-track {
-  width: 100%;
-  height: 12px;
-  border-radius: 999px;
+.boss-health-top span:first-child {
+  min-width: 0;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.08);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.boss-health-top span:last-child {
+  flex: none;
+  margin-left: 8px;
+}
+
+.boss-health-segments {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.8fr) minmax(0, 1fr);
+  gap: 3px;
+  width: 100%;
+  height: 10px;
+}
+
+.boss-part-track {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.4);
 }
 
-.boss-health-fill {
+.boss-part-track i {
+  display: block;
   height: 100%;
-  background: linear-gradient(90deg, #ff6b6b, #ff922b, #ffd43b);
+  background: linear-gradient(90deg, #ff6b6b, #ff922b);
   box-shadow: 0 0 18px rgba(255, 146, 43, 0.45);
   transition: width 0.08s linear;
+}
+
+.boss-part-track--core i {
+  background: linear-gradient(90deg, #ff922b, #ffd43b);
+}
+
+.boss-part-track b {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.82);
+  font: 700 7px/1 monospace;
+  text-shadow: 0 1px 2px #000;
 }
 
 .play-canvas {
@@ -4760,6 +4784,19 @@ video.card-art-img {
 
 /* ─── Landscape mobile: height-constrained screens ─── */
 @media (max-height: 500px) and (orientation: landscape) {
+  .boss-health-inline {
+    width: clamp(130px, 24vw, 250px);
+  }
+
+  .boss-health-top {
+    margin-bottom: 2px;
+    font-size: 0.58rem;
+  }
+
+  .boss-health-segments {
+    height: 8px;
+  }
+
   .play-screen .play-hud {
     padding: 2px 6px;
     gap: 4px;

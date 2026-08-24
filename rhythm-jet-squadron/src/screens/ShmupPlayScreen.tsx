@@ -82,6 +82,20 @@ import {
   type ShmupMap,
   type ShmupWaveEnemy,
 } from "../lib/shmupWaves";
+import {
+  createBossArmStates,
+  damageBossArm,
+  findNearestBossTarget,
+  getBossArmHealthRatio,
+  getBossHomeY,
+  getBossPartLayout,
+  getLivingBossArmCount,
+  hitTestBossParts,
+  type BossArmSide,
+  type BossArmStates,
+  type BossPartBounds,
+  type BossPartId,
+} from "../lib/bossEncounter";
 import type {
   Outfit,
   OwnedOutfit,
@@ -269,6 +283,7 @@ interface BossState {
   radius: number;
   hp: number;
   maxHp: number;
+  arms: BossArmStates;
   age: number;
   phase: 1 | 2 | 3;
   fireCooldown: number;
@@ -416,6 +431,8 @@ interface HudState {
   bossActive: boolean;
   bossLabel: string;
   bossHpRatio: number;
+  bossLeftArmRatio: number;
+  bossRightArmRatio: number;
   bossWarning: boolean;
   flawlessWaves: number;
   flawlessStreak: number;
@@ -843,6 +860,8 @@ function createHudState(modifiers: ShmupModifiers, activeMap: ShmupMap): HudStat
     bossActive: false,
     bossLabel: "",
     bossHpRatio: 0,
+    bossLeftArmRatio: 0,
+    bossRightArmRatio: 0,
     bossWarning: false,
     flawlessWaves: 0,
     flawlessStreak: 0,
@@ -1701,6 +1720,8 @@ export default function ShmupPlayScreen() {
         bossActive: boss !== null,
         bossLabel: boss?.name ?? "",
         bossHpRatio: boss ? clamp(boss.hp / boss.maxHp, 0, 1) : 0,
+        bossLeftArmRatio: boss ? getBossArmHealthRatio(boss.arms.left) : 0,
+        bossRightArmRatio: boss ? getBossArmHealthRatio(boss.arms.right) : 0,
         bossWarning:
           boss === null &&
           bossIntroStartedRef.current &&
@@ -2127,6 +2148,30 @@ export default function ShmupPlayScreen() {
       ctx.restore();
     };
 
+    const getBossLayoutFor = (boss: BossState) => getBossPartLayout({
+      archetype: boss.archetype,
+      x: boss.x,
+      y: boss.y,
+      radius: boss.radius,
+      canvasWidth: canvas.width,
+      canvasHeight: canvas.height,
+      displayScale,
+      mobile: isMobileDevice,
+    });
+
+    const getBossPartBounds = (
+      boss: BossState,
+      partId: BossPartId,
+    ): BossPartBounds => getBossLayoutFor(boss)[partId];
+
+    const getLivingBossGunPorts = (boss: BossState): BossPartBounds[] => {
+      const layout = getBossLayoutFor(boss);
+      const ports: BossPartBounds[] = [];
+      if (!boss.arms.left.destroyed) ports.push(layout.leftArm);
+      if (!boss.arms.right.destroyed) ports.push(layout.rightArm);
+      return ports;
+    };
+
     const drawTiledBackground = (
       sprite: HTMLImageElement | null,
       elapsedMs: number,
@@ -2380,6 +2425,7 @@ export default function ShmupPlayScreen() {
         radius: activeMap.bossArchetype === "leviathan" ? 62 : activeMap.bossArchetype === "tyrant" ? 54 : 58,
         hp: activeMap.bossMaxHp,
         maxHp: activeMap.bossMaxHp,
+        arms: createBossArmStates(activeMap.bossMaxHp),
         age: 0,
         phase: 1,
         fireCooldown: 0.65,
@@ -2693,7 +2739,8 @@ export default function ShmupPlayScreen() {
 
     // Aegis signature: a wall spanning the arena with a single gap to thread.
     const fireBroadsideWall = (boss: BossState) => {
-      const columns = 11;
+      const livingArms = getLivingBossArmCount(boss.arms);
+      const columns = 7 + livingArms * 2;
       const spacing = canvas.width / (columns - 1);
       // gap biased toward the player so it is reachable but never free
       const playerCol = Math.round((ship.x / canvas.width) * (columns - 1));
@@ -2712,7 +2759,10 @@ export default function ShmupPlayScreen() {
           spriteKey: "bulletBoss",
         });
       }
-      addSparkBurst(boss.x, boss.y + boss.radius * 0.4, activeMap.palette.bossPrimary, 10, 120);
+      const ports = getLivingBossGunPorts(boss);
+      for (const port of ports.length > 0 ? ports : [getBossLayoutFor(boss).core]) {
+        addSparkBurst(port.muzzleX, port.muzzleY, activeMap.palette.bossPrimary, 6, 120);
+      }
     };
 
     // Leviathan signature: radial shockwave thrown off at the bottom of its dive.
@@ -2736,20 +2786,26 @@ export default function ShmupPlayScreen() {
     };
 
     const shootBossBullets = (boss: BossState) => {
-      const dx = ship.x - boss.x;
-      const dy = ship.y - boss.y;
-      const length = Math.hypot(dx, dy) || 1;
-      const baseVx = (dx / length) * 180;
-      const baseVy = (dy / length) * 180;
+      const layout = getBossLayoutFor(boss);
+      const armPorts = getLivingBossGunPorts(boss);
+      const firingPorts = armPorts.length > 0 ? armPorts : [layout.core];
+      const aimedVelocity = (port: BossPartBounds, speed = 180) => {
+        const dx = ship.x - port.muzzleX;
+        const dy = ship.y - port.muzzleY;
+        const length = Math.hypot(dx, dy) || 1;
+        return { vx: (dx / length) * speed, vy: (dy / length) * speed };
+      };
 
       if (boss.archetype === "tyrant") {
         const lanceSpread = boss.phase === 1 ? 24 : boss.phase === 2 ? 52 : 78;
-        for (const side of [-1, 1]) {
+        for (const port of firingPorts) {
+          const side = port.id === "leftArm" ? -1 : port.id === "rightArm" ? 1 : 0;
+          const aim = aimedVelocity(port);
           pushEnemyBullet({
-            x: boss.x + side * (18 + boss.phase * 6),
-            y: boss.y + boss.radius * 0.45,
-            vx: baseVx * 0.42 + side * lanceSpread,
-            vy: baseVy + 38,
+            x: port.muzzleX,
+            y: port.muzzleY,
+            vx: aim.vx * 0.42 + side * lanceSpread,
+            vy: aim.vy + 38,
             radius: boss.phase === 3 ? 8 : 6.5,
             color: boss.phase === 3 ? "#ff6b6b" : activeMap.palette.bossShotColor,
             coreColor: "#fff4e6",
@@ -2758,11 +2814,13 @@ export default function ShmupPlayScreen() {
           });
         }
         if (boss.phase >= 2) {
-          for (const vx of [-140, 0, 140]) {
+          const crossfire = armPorts.length === 2 ? [-140, 0, 140] : [0];
+          for (let index = 0; index < crossfire.length; index++) {
+            const port = firingPorts[index % firingPorts.length];
             pushEnemyBullet({
-              x: boss.x,
-              y: boss.y + boss.radius * 0.6,
-              vx,
+              x: port.muzzleX,
+              y: port.muzzleY,
+              vx: crossfire[index],
               vy: 220 + boss.phase * 12,
               radius: 7,
               color: "#ffa94d",
@@ -2776,11 +2834,19 @@ export default function ShmupPlayScreen() {
       }
 
       if (boss.archetype === "leviathan") {
-        const offsets = boss.phase === 1 ? [-90, -30, 30, 90] : boss.phase === 2 ? [-140, -84, -28, 28, 84, 140] : [-180, -126, -72, -18, 18, 72, 126, 180];
-        for (const offset of offsets) {
+        const fullOffsets = boss.phase === 1 ? [-90, -30, 30, 90] : boss.phase === 2 ? [-140, -84, -28, 28, 84, 140] : [-180, -126, -72, -18, 18, 72, 126, 180];
+        const shotCount = armPorts.length === 2
+          ? fullOffsets.length
+          : armPorts.length === 1
+            ? Math.ceil(fullOffsets.length / 2)
+            : 1;
+        for (let index = 0; index < shotCount; index++) {
+          const ratio = shotCount === 1 ? 0.5 : index / (shotCount - 1);
+          const offset = fullOffsets[0] + (fullOffsets[fullOffsets.length - 1] - fullOffsets[0]) * ratio;
+          const port = firingPorts[index % firingPorts.length];
           pushEnemyBullet({
-            x: boss.x,
-            y: boss.y + boss.radius * 0.55,
+            x: port.muzzleX,
+            y: port.muzzleY,
             vx: offset,
             vy: 150 + boss.phase * 26,
             radius: boss.phase === 3 ? 7 : 6,
@@ -2793,18 +2859,27 @@ export default function ShmupPlayScreen() {
         return;
       }
 
-      const fanOffsets = boss.phase === 1 ? [-54, -18, 18, 54] : boss.phase === 2 ? [-96, -48, -16, 16, 48, 96] : [-126, -84, -42, 0, 42, 84, 126];
+      const fullFanOffsets = boss.phase === 1 ? [-54, -18, 18, 54] : boss.phase === 2 ? [-96, -48, -16, 16, 48, 96] : [-126, -84, -42, 0, 42, 84, 126];
       const shotColor = boss.phase === 1 ? activeMap.palette.enemyShotColor : activeMap.palette.bossShotColor;
       const shotCore = boss.phase === 1 ? activeMap.palette.enemyShotCore : activeMap.palette.bossShotCore;
       const shotRadius = boss.phase === 1 ? 6 : 7;
       const shotLength = boss.phase === 1 ? 14 : 16;
 
-      for (const offset of fanOffsets) {
+      const fanCount = armPorts.length === 2
+        ? fullFanOffsets.length
+        : armPorts.length === 1
+          ? Math.ceil(fullFanOffsets.length / 2)
+          : 1;
+      for (let index = 0; index < fanCount; index++) {
+        const ratio = fanCount === 1 ? 0.5 : index / (fanCount - 1);
+        const offset = fullFanOffsets[0] + (fullFanOffsets[fullFanOffsets.length - 1] - fullFanOffsets[0]) * ratio;
+        const port = firingPorts[index % firingPorts.length];
+        const aim = aimedVelocity(port);
         pushEnemyBullet({
-          x: boss.x,
-          y: boss.y + boss.radius * 0.7,
-          vx: baseVx + offset,
-          vy: baseVy + 26,
+          x: port.muzzleX,
+          y: port.muzzleY,
+          vx: aim.vx + offset,
+          vy: aim.vy + 26,
           radius: shotRadius,
           color: shotColor,
           coreColor: shotCore,
@@ -2814,10 +2889,11 @@ export default function ShmupPlayScreen() {
       }
 
       if (boss.phase >= 2) {
-        for (const side of [-1, 1]) {
+        for (const port of firingPorts) {
+          const side = port.id === "leftArm" ? -1 : port.id === "rightArm" ? 1 : 0;
           pushEnemyBullet({
-            x: boss.x + side * 30,
-            y: boss.y + 12,
+            x: port.muzzleX,
+            y: port.muzzleY,
             vx: side * 150,
             vy: 210,
             radius: 6,
@@ -2831,15 +2907,22 @@ export default function ShmupPlayScreen() {
     };
 
     const shootBossBurst = (boss: BossState) => {
+      const layout = getBossLayoutFor(boss);
+      const armPorts = getLivingBossGunPorts(boss);
+      const firingPorts = armPorts.length > 0 ? armPorts : [layout.core];
+      const outputScale = 0.45 + armPorts.length * 0.275;
+
       if (boss.archetype === "tyrant") {
         const rings = boss.phase === 3 ? 2 : 1;
         for (let ring = 0; ring < rings; ring++) {
-          const bulletCount = boss.phase === 1 ? 6 : boss.phase === 2 ? 8 : 10;
+          const fullCount = boss.phase === 1 ? 6 : boss.phase === 2 ? 8 : 10;
+          const bulletCount = Math.max(3, Math.round(fullCount * outputScale));
           for (let index = 0; index < bulletCount; index++) {
             const angle = (Math.PI * 0.22) + (Math.PI * 0.56 * index) / Math.max(1, bulletCount - 1) + ring * 0.08;
+            const port = firingPorts[index % firingPorts.length];
             pushEnemyBullet({
-              x: boss.x,
-              y: boss.y + boss.radius * 0.45,
+              x: port.muzzleX,
+              y: port.muzzleY,
               vx: Math.cos(angle) * (165 + ring * 18),
               vy: Math.sin(angle) * (165 + ring * 18),
               radius: 6,
@@ -2854,14 +2937,16 @@ export default function ShmupPlayScreen() {
       }
 
       if (boss.archetype === "leviathan") {
-        const bulletCount = boss.phase === 1 ? 8 : boss.phase === 2 ? 12 : 16;
+        const fullCount = boss.phase === 1 ? 8 : boss.phase === 2 ? 12 : 16;
+        const bulletCount = Math.max(4, Math.round(fullCount * outputScale));
         for (let index = 0; index < bulletCount; index++) {
           const ratio = index / Math.max(1, bulletCount - 1);
           const angle = Math.PI * 0.1 + Math.PI * 0.8 * ratio;
           const speed = boss.phase === 3 ? 225 : 190;
+          const port = firingPorts[index % firingPorts.length];
           pushEnemyBullet({
-            x: boss.x + Math.sin(ratio * Math.PI) * 12,
-            y: boss.y + boss.radius * 0.4,
+            x: port.muzzleX,
+            y: port.muzzleY,
             vx: Math.cos(angle) * speed,
             vy: Math.sin(angle) * (speed * 0.9),
             radius: boss.phase === 3 ? 7 : 6,
@@ -2876,7 +2961,8 @@ export default function ShmupPlayScreen() {
 
       const startAngle = boss.phase === 1 ? Math.PI * 0.18 : Math.PI * 0.08;
       const endAngle = Math.PI - startAngle;
-      const bulletCount = boss.phase === 1 ? 9 : boss.phase === 2 ? 13 : 18;
+      const fullCount = boss.phase === 1 ? 9 : boss.phase === 2 ? 13 : 18;
+      const bulletCount = Math.max(4, Math.round(fullCount * outputScale));
       const shotColor = boss.phase === 1 ? activeMap.palette.enemyShotColor : activeMap.palette.bossShotColor;
       const shotCore = boss.phase === 1 ? activeMap.palette.enemyShotCore : activeMap.palette.bossShotCore;
 
@@ -2884,9 +2970,10 @@ export default function ShmupPlayScreen() {
         const ratio = index / (bulletCount - 1);
         const angle = startAngle + (endAngle - startAngle) * ratio;
         const speed = boss.phase === 3 ? 210 : 185;
+        const port = firingPorts[index % firingPorts.length];
         pushEnemyBullet({
-          x: boss.x,
-          y: boss.y + boss.radius * 0.55,
+          x: port.muzzleX,
+          y: port.muzzleY,
           vx: Math.cos(angle) * speed,
           vy: Math.sin(angle) * speed,
           radius: boss.phase === 1 ? 5 : 6,
@@ -3119,6 +3206,40 @@ export default function ShmupPlayScreen() {
       finishRun(elapsedMs, true);
     };
 
+    const getBossArmState = (boss: BossState, side: BossArmSide) => boss.arms[side];
+
+    const applyBossPartDamage = (
+      boss: BossState,
+      partId: BossPartId,
+      damage: number,
+      elapsedMs: number,
+    ): boolean => {
+      if (partId === "core") {
+        boss.hp -= damage;
+        if (boss.hp > 0) return false;
+
+        const bossX = boss.x;
+        const bossY = boss.y;
+        bossRef.current = null;
+        registerBossDefeat(elapsedMs, bossX, bossY);
+        return true;
+      }
+
+      const side: BossArmSide = partId === "leftArm" ? "left" : "right";
+      const arm = getBossArmState(boss, side);
+      if (!damageBossArm(arm, damage)) return false;
+
+      const part = getBossPartBounds(boss, partId);
+      sfxExplosion();
+      scoreRef.current += Math.round(850 * getScoreMultiplier(elapsedMs) * runScoreMult);
+      addExplosion(part.x, part.y, activeMap.palette.bossSecondary, 24, 4.2);
+      addSparkBurst(part.x, part.y, "#ffffff", 22, 210, [2.8, 6.8]);
+      addPulse(part.x, part.y, activeMap.palette.bossPrimary, 18, 250, 0.3, 3.2);
+      addScreenShake(4.2, 0.24);
+      addOverdrive(18, elapsedMs);
+      return false;
+    };
+
     const applyAreaBlast = (
       x: number,
       y: number,
@@ -3160,17 +3281,13 @@ export default function ShmupPlayScreen() {
 
       const boss = bossRef.current;
       if (boss) {
-        const blastDistance = radius + boss.radius;
-        if (distanceSquared(x, y, boss.x, boss.y) <= blastDistance * blastDistance) {
-          boss.hp -= bossDamage;
-          addSparkBurst(boss.x, boss.y, color, 14, 150, [2.4, 5.8]);
-          addPulse(boss.x, boss.y, color, 16, 210, 0.2, 2.8);
-          if (boss.hp <= 0) {
-            const bossX = boss.x;
-            const bossY = boss.y;
-            bossRef.current = null;
-            registerBossDefeat(elapsedMs, bossX, bossY);
-          }
+        const layout = getBossLayoutFor(boss);
+        const hitPartId = hitTestBossParts(layout, boss.arms, x, y, radius);
+        if (hitPartId) {
+          const hitPart = layout[hitPartId];
+          applyBossPartDamage(boss, hitPartId, bossDamage, elapsedMs);
+          addSparkBurst(hitPart.x, hitPart.y, color, 14, 150, [2.4, 5.8]);
+          addPulse(hitPart.x, hitPart.y, color, 16, 210, 0.2, 2.8);
         }
       }
     };
@@ -4075,9 +4192,21 @@ export default function ShmupPlayScreen() {
       }
       const bossNear = bossRef.current;
       if (bossNear) {
-        const reach = ship.radius + bossNear.radius * 0.5;
-        if (distanceSquared(ship.x, ship.y, bossNear.x, bossNear.y) <= reach * reach) {
-          bossNear.hp -= SHMUP_BALANCE.effects.afterburnRamBossDamage * secondaryDamageMult * deltaSeconds * 2;
+        const layout = getBossLayoutFor(bossNear);
+        const hitPartId = hitTestBossParts(
+          layout,
+          bossNear.arms,
+          ship.x,
+          ship.y,
+          ship.radius + 6,
+        );
+        if (hitPartId) {
+          applyBossPartDamage(
+            bossNear,
+            hitPartId,
+            SHMUP_BALANCE.effects.afterburnRamBossDamage * secondaryDamageMult * deltaSeconds * 2,
+            elapsedMs,
+          );
         }
       }
       // burn trail behind the ship
@@ -4172,9 +4301,16 @@ export default function ShmupPlayScreen() {
 
       const boss = bossRef.current;
       if (boss) {
-        const d2 = distanceSquared(x, y, boss.x, boss.y);
-        if (d2 <= bestDistance) {
-          bestTarget = { x: boss.x, y: boss.y };
+        const bossTarget = findNearestBossTarget(
+          getBossLayoutFor(boss),
+          boss.arms,
+          x,
+          y,
+          Math.sqrt(bestDistance),
+        );
+        if (bossTarget) {
+          bestDistance = distanceSquared(x, y, bossTarget.x, bossTarget.y);
+          bestTarget = bossTarget;
         }
       }
 
@@ -4588,13 +4724,14 @@ export default function ShmupPlayScreen() {
           }
         }
         if (!shouldDetonate && bossRef.current) {
-          const hitDistance = bossRef.current.radius + bomb.radius;
-          if (
-            distanceSquared(bossRef.current.x, bossRef.current.y, bomb.x, bomb.y) <=
-            hitDistance * hitDistance
-          ) {
-            shouldDetonate = true;
-          }
+          const boss = bossRef.current;
+          shouldDetonate = hitTestBossParts(
+            getBossLayoutFor(boss),
+            boss.arms,
+            bomb.x,
+            bomb.y,
+            bomb.radius,
+          ) !== null;
         }
 
         if (shouldDetonate) {
@@ -4882,6 +5019,8 @@ export default function ShmupPlayScreen() {
       if (boss) {
         const bossDelta = deltaSeconds * enemyTimeScale;
         boss.age += bossDelta;
+        if (boss.arms.left.destroyed) boss.arms.left.detachAge += bossDelta;
+        if (boss.arms.right.destroyed) boss.arms.right.detachAge += bossDelta;
 
         // Determine phase from bossPhases config
         const phases = activeMap.bossPhases;
@@ -4911,10 +5050,16 @@ export default function ShmupPlayScreen() {
         const moveSpeed = phaseConfig?.moveSpeed ?? (boss.phase === 1 ? 0.95 : boss.phase === 2 ? 1.35 : 1.8);
         const moveFreq = phaseConfig?.moveFreq ?? (boss.phase === 1 ? 86 : boss.phase === 2 ? 132 : 160);
 
-        const bossTargetY = 128;
+        const bossLayout = getBossLayoutFor(boss);
+        const bossTargetY = getBossHomeY(
+          canvas.height,
+          bossLayout.bodyHeight,
+          isMobileDevice,
+        );
         boss.homeY = bossTargetY;
-        const edgeMin = boss.radius * 0.55 + 10;
-        const edgeMax = canvas.width - boss.radius * 0.55 - 10;
+        const armHalfSpan = bossLayout.rightArm.x - boss.x + bossLayout.rightArm.radiusX;
+        const edgeMin = armHalfSpan + 10;
+        const edgeMax = canvas.width - armHalfSpan - 10;
         const baseX = canvas.width / 2 + Math.sin(boss.age * moveSpeed) * moveFreq;
 
         // ── Choreography: pressure → tell → signature move → punish window ──
@@ -5265,19 +5410,26 @@ export default function ShmupPlayScreen() {
       if (activeBoss) {
         for (let bulletIndex = playerBulletsRef.current.length - 1; bulletIndex >= 0; bulletIndex--) {
           const bullet = playerBulletsRef.current[bulletIndex];
-          const hitDistance = activeBoss.radius + bullet.radius;
-          if (
-            distanceSquared(activeBoss.x, activeBoss.y, bullet.x, bullet.y) >
-            hitDistance * hitDistance
-          ) {
-            continue;
-          }
+          const bossLayout = getBossLayoutFor(activeBoss);
+          const hitPartId = hitTestBossParts(
+            bossLayout,
+            activeBoss.arms,
+            bullet.x,
+            bullet.y,
+            bullet.radius,
+          );
+          if (!hitPartId) continue;
 
           // bossDamageMult is the one skill that only pays against bosses.
           const bossCrit = rollCrit();
           const bossDealt =
             bullet.damage * bossDamageMult * (bossCrit ? critDamageMult : 1);
-          activeBoss.hp -= bossDealt;
+          const bossDefeated = applyBossPartDamage(
+            activeBoss,
+            hitPartId,
+            bossDealt,
+            elapsedMs,
+          );
           consumePlayerBullet(bulletIndex);
           addDamageNumber(
             bullet.x,
@@ -5285,7 +5437,10 @@ export default function ShmupPlayScreen() {
             Math.round(bossDealt * 10),
             bossCrit ? CRIT_COLOR : "#ffd43b",
           );
-          addSparkBurst(bullet.x, bullet.y, activeBoss.phase === 1 ? "#ffa8a8" : "#ffd43b", 5, 96);
+          const impactColor = hitPartId === "core"
+            ? activeBoss.phase === 1 ? "#ffa8a8" : "#ffd43b"
+            : activeMap.palette.bossSecondary;
+          addSparkBurst(bullet.x, bullet.y, impactColor, 5, 96);
           addWeaponFlash(
             "impact",
             bullet.x,
@@ -5297,7 +5452,7 @@ export default function ShmupPlayScreen() {
           addPulse(
             bullet.x,
             bullet.y,
-            activeBoss.phase === 1 ? "#ff8787" : "#ffd43b",
+            impactColor,
             5,
             54,
             0.1,
@@ -5306,13 +5461,7 @@ export default function ShmupPlayScreen() {
           addScreenShake(activeBoss.phase === 1 ? 0.35 : 0.55, 0.05);
           extendOverdrive(elapsedMs, OVERDRIVE_EXTENSION_PER_BOSS_HIT_MS);
 
-          if (activeBoss.hp <= 0) {
-            const bossX = activeBoss.x;
-            const bossY = activeBoss.y;
-            bossRef.current = null;
-            registerBossDefeat(elapsedMs, bossX, bossY);
-            break;
-          }
+          if (bossDefeated) break;
         }
       }
 
@@ -5501,11 +5650,14 @@ export default function ShmupPlayScreen() {
       }
 
       if (bossRef.current) {
-        const hitDistance = ship.radius + bossRef.current.radius * 0.78;
-        if (
-          distanceSquared(ship.x, ship.y, bossRef.current.x, bossRef.current.y) <=
-          hitDistance * hitDistance
-        ) {
+        const activeBoss = bossRef.current;
+        if (hitTestBossParts(
+          getBossLayoutFor(activeBoss),
+          activeBoss.arms,
+          ship.x,
+          ship.y,
+          ship.radius,
+        )) {
           handleShipHit(elapsedMs);
         }
       }
@@ -6237,6 +6389,7 @@ export default function ShmupPlayScreen() {
 
       if (bossRef.current) {
         const boss = bossRef.current;
+        const bossLayout = getBossLayoutFor(boss);
         // Distinct rendered sprite per archetype; canvas-procedural fallback below
         const sprite = getSprite(
           boss.archetype === "tyrant"
@@ -6257,7 +6410,7 @@ export default function ShmupPlayScreen() {
 
         if (sprite) {
           ctx.save();
-          const bGlowR = boss.radius * 3.4 * displayScale;
+          const bGlowR = Math.max(bossLayout.bodyWidth * 0.72, bossLayout.bodyHeight * 0.58);
           const glow = ctx.createRadialGradient(boss.x, boss.y + 12, 12 * displayScale, boss.x, boss.y + 12, bGlowR);
           glow.addColorStop(
             0,
@@ -6358,17 +6511,119 @@ export default function ShmupPlayScreen() {
             ctx.restore();
           }
 
-          // Draw at the sprite's own aspect so each hull keeps its real
-          // proportions — the Aegis is a long ship, the Tyrant a wide wheel.
-          const bossW = boss.radius * 5.2;
-          const bossH = bossW * (sprite.naturalHeight / sprite.naturalWidth || 1);
-          drawSpriteCentered(
-            sprite,
+          const drawCroppedBossPart = (
+            sourceXRatio: number,
+            sourceWidthRatio: number,
+            x: number,
+            y: number,
+            width: number,
+            rotation: number,
+            alpha = 1,
+          ) => {
+            const sourceX = sprite.naturalWidth * sourceXRatio;
+            const sourceWidth = sprite.naturalWidth * sourceWidthRatio;
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.translate(x, y);
+            ctx.rotate(rotation);
+            ctx.drawImage(
+              sprite,
+              sourceX,
+              0,
+              sourceWidth,
+              sprite.naturalHeight,
+              -width / 2,
+              -bossLayout.bodyHeight / 2,
+              width,
+              bossLayout.bodyHeight,
+            );
+            ctx.restore();
+          };
+
+          const drawArmConnector = (side: BossArmSide, part: BossPartBounds) => {
+            const direction = side === "left" ? -1 : 1;
+            const arm = boss.arms[side];
+            const coreEdgeX = boss.x + direction * bossLayout.bodyWidth * 0.17;
+            const armInnerX = part.x - direction * part.radiusX * 0.72;
+            const endX = arm.destroyed
+              ? coreEdgeX + direction * bossLayout.bodyWidth * 0.075
+              : armInnerX;
+            ctx.save();
+            ctx.lineCap = "round";
+            ctx.strokeStyle = "rgba(5, 9, 20, 0.92)";
+            ctx.lineWidth = Math.max(8, bossLayout.bodyHeight * 0.09);
+            ctx.beginPath();
+            ctx.moveTo(coreEdgeX, boss.y + bossLayout.bodyHeight * 0.02);
+            ctx.lineTo(endX, part.y);
+            ctx.stroke();
+            ctx.strokeStyle = arm.destroyed
+              ? "rgba(255, 107, 107, 0.72)"
+              : `${activeMap.palette.bossSecondary}b8`;
+            ctx.lineWidth = Math.max(2, bossLayout.bodyHeight * 0.025);
+            ctx.shadowColor = arm.destroyed ? "#ff6b6b" : activeMap.palette.bossPrimary;
+            ctx.shadowBlur = arm.destroyed ? 12 : 8;
+            ctx.beginPath();
+            ctx.moveTo(coreEdgeX, boss.y + bossLayout.bodyHeight * 0.02);
+            ctx.lineTo(endX, part.y);
+            ctx.stroke();
+            ctx.restore();
+          };
+
+          drawArmConnector("left", bossLayout.leftArm);
+          drawArmConnector("right", bossLayout.rightArm);
+
+          const armPose = Math.sin(boss.age * 1.35) * 0.012;
+          const drawArm = (
+            side: BossArmSide,
+            part: BossPartBounds,
+            sourceXRatio: number,
+          ) => {
+            const arm = boss.arms[side];
+            const direction = side === "left" ? -1 : 1;
+            const width = bossLayout.bodyWidth * 0.39;
+            if (!arm.destroyed) {
+              drawCroppedBossPart(
+                sourceXRatio,
+                0.39,
+                part.x,
+                part.y,
+                width,
+                direction * (0.018 + armPose),
+              );
+              ctx.save();
+              ctx.fillStyle = activeMap.palette.bossShotCore;
+              ctx.shadowColor = activeMap.palette.bossShotColor;
+              ctx.shadowBlur = 12;
+              ctx.beginPath();
+              ctx.arc(part.muzzleX, part.muzzleY, Math.max(2.4, bossLayout.bodyWidth * 0.012), 0, Math.PI * 2);
+              ctx.fill();
+              ctx.restore();
+              return;
+            }
+
+            const detachDuration = 0.82;
+            if (arm.detachAge >= detachDuration) return;
+            const progress = arm.detachAge / detachDuration;
+            drawCroppedBossPart(
+              sourceXRatio,
+              0.39,
+              part.x + direction * progress * bossLayout.bodyWidth * 0.58,
+              part.y + progress * progress * bossLayout.bodyHeight * 0.72,
+              width,
+              direction * (0.03 + progress * 2.8),
+              1 - progress,
+            );
+          };
+
+          drawArm("left", bossLayout.leftArm, 0);
+          drawArm("right", bossLayout.rightArm, 0.61);
+          drawCroppedBossPart(
+            0.28,
+            0.44,
             boss.x,
             boss.y,
-            bossW,
-            bossH,
-            Math.sin(boss.age * 0.8) * 0.03
+            bossLayout.bodyWidth * 0.44,
+            Math.sin(boss.age * 0.8) * 0.018,
           );
         } else {
           const br = boss.radius;
@@ -6783,41 +7038,6 @@ export default function ShmupPlayScreen() {
           ctx.restore();
         }
 
-        // Boss health bar with phase markers
-        if (boss.y > 0) {
-          const barW = 180;
-          const barH = 8;
-          const barX = canvas.width / 2 - barW / 2;
-          const barY = 16;
-          const hpRatio = clamp(boss.hp / boss.maxHp, 0, 1);
-          ctx.save();
-          // Background
-          ctx.fillStyle = "rgba(0,0,0,0.6)";
-          ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
-          // HP fill
-          const hpColor = boss.phase === 1 ? "#4dabf7" : boss.phase === 2 ? "#ff922b" : "#ff4444";
-          ctx.fillStyle = hpColor;
-          ctx.fillRect(barX, barY, barW * hpRatio, barH);
-          // Phase markers
-          const phases = activeMap.bossPhases;
-          if (phases) {
-            ctx.strokeStyle = "rgba(255,255,255,0.5)";
-            ctx.lineWidth = 1;
-            for (let i = 1; i < phases.length; i++) {
-              const markerX = barX + barW * phases[i].hpThreshold;
-              ctx.beginPath();
-              ctx.moveTo(markerX, barY - 2);
-              ctx.lineTo(markerX, barY + barH + 2);
-              ctx.stroke();
-            }
-          }
-          // Boss name
-          ctx.fillStyle = "#ffffff";
-          ctx.font = "bold 10px monospace";
-          ctx.textAlign = "center";
-          ctx.fillText(boss.name, canvas.width / 2, barY - 4);
-          ctx.restore();
-        }
       }
 
       for (const chip of chipsRef.current) {
@@ -7560,10 +7780,33 @@ export default function ShmupPlayScreen() {
               />
             ))}
           </div>
-          <div className="shmup-subtitle">
-            Lv{hud.weaponLevel} {hud.weaponLabel} &middot; {hud.waveLabel}
-            {hud.flawlessWaves > 0 ? ` · Clean ${hud.flawlessWaves}` : ""}
-          </div>
+          {hud.bossActive ? (
+            <div className="boss-health-inline">
+              <div className="boss-health-top">
+                <span>{hud.bossLabel}</span>
+                <span>{Math.round(hud.bossHpRatio * 100)}%</span>
+              </div>
+              <div className="boss-health-segments">
+                <span className="boss-part-track" aria-label={`Left arm ${Math.round(hud.bossLeftArmRatio * 100)} percent`}>
+                  <i style={{ width: `${hud.bossLeftArmRatio * 100}%` }} />
+                  <b>L</b>
+                </span>
+                <span className="boss-part-track boss-part-track--core" aria-label={`Core ${Math.round(hud.bossHpRatio * 100)} percent`}>
+                  <i style={{ width: `${hud.bossHpRatio * 100}%` }} />
+                  <b>CORE</b>
+                </span>
+                <span className="boss-part-track" aria-label={`Right arm ${Math.round(hud.bossRightArmRatio * 100)} percent`}>
+                  <i style={{ width: `${hud.bossRightArmRatio * 100}%` }} />
+                  <b>R</b>
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="shmup-subtitle">
+              Lv{hud.weaponLevel} {hud.weaponLabel} &middot; {hud.waveLabel}
+              {hud.flawlessWaves > 0 ? ` · Clean ${hud.flawlessWaves}` : ""}
+            </div>
+          )}
         </div>
 
         {/* ── Overdrive meter (inline in HUD) ─────────── */}
@@ -7681,21 +7924,6 @@ export default function ShmupPlayScreen() {
       {/* ── Boss bar (only when boss active) ────────── */}
       {hud.bossWarning ? (
         <div className="boss-warning-banner">Warning: {activeMap.bossName} incoming</div>
-      ) : null}
-
-      {hud.bossActive ? (
-        <div className="boss-health boss-health--landscape">
-          <div className="boss-health-top">
-            <span>{hud.bossLabel}</span>
-            <span>{Math.round(hud.bossHpRatio * 100)}%</span>
-          </div>
-          <div className="boss-health-track">
-            <div
-              className="boss-health-fill"
-              style={{ width: `${hud.bossHpRatio * 100}%` }}
-            />
-          </div>
-        </div>
       ) : null}
 
       {/* ── Secondary cooldown (compact, only when relevant) ─ */}
