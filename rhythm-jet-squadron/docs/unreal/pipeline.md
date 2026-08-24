@@ -17,6 +17,9 @@ Run from Windows PowerShell in the app directory:
 powershell -ExecutionPolicy Bypass -File tools/unreal/export_blender_assets.ps1
 ```
 
+To iterate only the Aegis source and exports, append
+`-Profiles aegis-boss`.
+
 The wrapper opens each existing `.blend` source in Blender 4.5 and invokes
 `tools/blender/export_unreal_geometry.py`. It exports selected root objects or
 named collections as binary FBX (`.fbx`) and writes an `exports.json` beside
@@ -30,9 +33,18 @@ Profiles:
 | `launch-v2` | `astra_interceptor_launch_v2.blend` | Interceptor, launch deck, orbital world |
 | `weapon-vfx` | `astra_weapon_vfx.blend` | Projectile meshes and weapon FX source geometry |
 | `secondary-boss-vfx` | `astra_secondary_boss_vfx.blend` | Secondary and boss telegraph source geometry |
+| `aegis-boss` | `astra_aegis_dreadnought.blend` (generated) | Independent Aegis core, left arm, and right arm production meshes |
 
 Do not hand-edit staged FBX files. Change the procedural Blender source and
 export again.
+
+The `aegis-boss` job first runs `generate_aegis_dreadnought.py`, validates the
+three roots, assembled width, material names, pivots, and symmetry, and writes a
+source preview plus `geometry-contract.json`. It then exports
+`SM_Aegis_Core.fbx`, `SM_Aegis_LeftArm.fbx`, and `SM_Aegis_RightArm.fbx`. The
+exporter temporarily normalizes each source root to world origin so each FBX
+keeps its separation-socket pivot; `exports.json` retains the intended Unreal
+assembly positions at `X=0`, `X=-3600`, and `X=3600` cm.
 
 ## Unreal import
 
@@ -50,6 +62,7 @@ Destination rules:
 | Launch deck/environment | `/Game/AstraRenderLab/Art/Environments/Blender` |
 | Projectile geometry | `/Game/AstraRenderLab/Art/Props/Weapons/Blender` |
 | Secondary/boss geometry | `/Game/AstraRenderLab/FX/SourceGeometry/Blender` |
+| Aegis production pieces | `/Game/AstraRenderLab/Art/Bosses/Aegis/Blender` |
 
 After import, use MCP read-back tools to verify asset class, bounds, vertex and
 triangle counts, material slots, and Nanite state. Never save unrelated dirty

@@ -77,6 +77,37 @@ production root names, pivots, material slots, orientation, and mobile
 readability requirements are specified in
 `SourceAssets/Concept/Bosses/Aegis/README.md` in the Unreal repository.
 
+### Production geometry handoff
+
+The procedural `aegis-boss` Blender profile now generates and exports three
+independent production candidates:
+
+- `SM_Aegis_Core`
+- `SM_Aegis_LeftArm`
+- `SM_Aegis_RightArm`
+
+The generated contract measures an assembled width of `9113.08 cm`. The core
+contains 3824 vertices and 1960 triangles; each mirrored arm contains 3360
+vertices and 1740 triangles. All three retain the six stable Aegis material
+slots, use the existing Astra master-material instances, and import with zeroed
+socket pivots. Nanite is intentionally disabled because the existing cyan and
+danger energy instances use additive blending, which Nanite rejects; these
+pieces are only 1740-1960 triangles. Unreal read-back confirms that the core
+faces to `Y=-3200 cm` and each long battery reaches `Y=-3955 cm`.
+
+`BP_Aegis_Core`, `BP_Aegis_LeftArm`, and `BP_Aegis_RightArm` expose the pieces
+as independent movable spawnable candidates. The compiled
+`BP_AegisDreadnought_ProductionCandidate` assembles them at `X=0`, `X=-3600`,
+and `X=3600 cm` for visual comparison. The original blockout assets and both
+blockout sequences remain unchanged.
+
+Sequencer's current MCP class-swap operation retains only the last replacement
+when several custom spawnables are changed in one duplicated sequence, and its
+track-copy operation does not expose the custom spawnable tracks. Failed
+comparison duplicates were deleted rather than checked in. The production
+sequence must therefore be rebuilt with explicit bindings and keyframes; no
+blockout sequence has been relabeled as production.
+
 ## Sequencer verification
 
 MCP reopened and evaluated all three sequences. Every binding resolved one
@@ -118,7 +149,8 @@ intro frames, and attached/break/detached arm frames.
 
 Approval remains blocked on all of the following:
 
-1. Replace the primitive Aegis pieces with the three Blender production roots.
+1. Rebuild the two Aegis sequences with explicit bindings to the three verified
+   production Blueprints; do not mutate the blockout sequences in place.
 2. Review clean MRQ frames at 16:9 and in the centered `390x844` crop.
 3. Confirm the boss reads as one ship against a goliath without filling the
    mobile playfield.

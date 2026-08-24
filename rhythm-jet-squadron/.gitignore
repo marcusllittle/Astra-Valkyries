@@ -15,6 +15,7 @@ release
 android
 ios
 tools/unreal/staging/
+*.blend1
 
 # Editor directories and files
 .vscode/*

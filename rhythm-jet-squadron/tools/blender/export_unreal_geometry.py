@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import bpy
+from mathutils import Matrix
 
 
 @dataclass(frozen=True)
@@ -18,6 +19,8 @@ class ExportTarget:
     asset_name: str
     source_kind: str
     source_name: str
+    normalize_root: bool = False
+    assembly_location_cm: tuple[float, float, float] | None = None
 
 
 PROFILES: dict[str, tuple[ExportTarget, ...]] = {
@@ -48,6 +51,29 @@ PROFILES: dict[str, tuple[ExportTarget, ...]] = {
         ExportTarget("SM_BossWarningRing", "collection", "Boss Warning Ring"),
         ExportTarget("SM_BossLaserLane", "collection", "Boss Laser Lane"),
         ExportTarget("SM_BossTarget", "collection", "Boss Target"),
+    ),
+    "aegis-boss": (
+        ExportTarget(
+            "SM_Aegis_Core",
+            "root",
+            "Aegis_Core",
+            normalize_root=True,
+            assembly_location_cm=(0, 0, 0),
+        ),
+        ExportTarget(
+            "SM_Aegis_LeftArm",
+            "root",
+            "Aegis_LeftArm",
+            normalize_root=True,
+            assembly_location_cm=(-3600, 0, 0),
+        ),
+        ExportTarget(
+            "SM_Aegis_RightArm",
+            "root",
+            "Aegis_RightArm",
+            normalize_root=True,
+            assembly_location_cm=(3600, 0, 0),
+        ),
     ),
 }
 
@@ -102,21 +128,31 @@ def export_target(target: ExportTarget, output_dir: Path) -> dict[str, object]:
         obj.select_set(True)
 
     output_path = output_dir / f"{target.asset_name}.fbx"
-    bpy.ops.export_scene.fbx(
-        filepath=str(output_path),
-        use_selection=True,
-        object_types={"EMPTY", "MESH"},
-        use_mesh_modifiers=True,
-        mesh_smooth_type="SMOOTH_GROUP",
-        apply_unit_scale=True,
-        # Bake Blender meters to FBX centimeters. Unreal's MCP FbxFactory
-        # ignores the equivalent unit scale when it is stored as FBX metadata.
-        apply_scale_options="FBX_SCALE_NONE",
-        axis_forward="-Y",
-        axis_up="Z",
-        bake_anim=False,
-        path_mode="AUTO",
-    )
+    root = bpy.data.objects.get(target.source_name) if target.normalize_root else None
+    original_matrix = root.matrix_world.copy() if root else None
+    try:
+        if root:
+            root.matrix_world = Matrix.Identity(4)
+            bpy.context.view_layer.update()
+        bpy.ops.export_scene.fbx(
+            filepath=str(output_path),
+            use_selection=True,
+            object_types={"EMPTY", "MESH"},
+            use_mesh_modifiers=True,
+            mesh_smooth_type="SMOOTH_GROUP",
+            apply_unit_scale=True,
+            # Bake Blender meters to FBX centimeters. Unreal's MCP FbxFactory
+            # ignores the equivalent unit scale when it is stored as FBX metadata.
+            apply_scale_options="FBX_SCALE_NONE",
+            axis_forward="-Y",
+            axis_up="Z",
+            bake_anim=False,
+            path_mode="AUTO",
+        )
+    finally:
+        if root and original_matrix:
+            root.matrix_world = original_matrix
+            bpy.context.view_layer.update()
     return {
         "assetName": target.asset_name,
         "file": output_path.name,
@@ -124,6 +160,8 @@ def export_target(target: ExportTarget, output_dir: Path) -> dict[str, object]:
         "sourceKind": target.source_kind,
         "sourceName": target.source_name,
         "objectCount": len(objects),
+        "pivotNormalized": target.normalize_root,
+        "assemblyLocationCm": target.assembly_location_cm,
     }
 
 
