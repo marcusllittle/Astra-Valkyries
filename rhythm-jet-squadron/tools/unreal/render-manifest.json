@@ -100,7 +100,7 @@
       "kind": "video-set",
       "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_NebulaRunway", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Bosses/LS_BossIntro_AegisDreadnought_Production", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
       "delivery": {"hd": "https://media.joinhavn.io/astra/combat/boss-intros/", "localFallback": "/assets/shmup/boss_aegis_dreadnought.png"},
-      "review": {"decision": "production-render-review", "note": "The explicit production sequence binds the verified Blender core and two weapon arms, the combat lighting rig, telegraph FX, exhaust FX, and a mobile-safe camera. Six clean 1920x1080 MRQ proof frames were reviewed in widescreen and a centered 390x844 crop. Framing passes, but retain the current Aegis art until the production look is explicitly approved."}
+      "review": {"decision": "refine-stylized-premium", "note": "The explicit production sequence and six-frame MRQ proof are technically valid. A stylized purple, pink, and orange material pass improved separation, but the current low-angle composition still collapses the broad armor silhouette and does not beat the shipping sprite. Keep the fallback and continue with a higher three-quarter presentation before approval."}
     },
     {
       "id": "combat-aegis-arm-break",
@@ -109,7 +109,7 @@
       "kind": "video",
       "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_NebulaRunway", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Bosses/LS_Aegis_ArmBreak_Production", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
       "delivery": {"hd": "https://media.joinhavn.io/astra/combat/boss-intros/aegis-arm-break.mp4", "localFallback": "/assets/shmup/boss_aegis_dreadnought.png"},
-      "review": {"decision": "production-render-review", "note": "The core remains stable while both long arms hold through frame 64, then detach independently to X=-6500/+6500 with opposing roll and pitch plus separate break FX. The centered mobile proof preserves the core and attached-arm silhouette and leaves the lower playfield open; retain the current fallback pending explicit visual approval."}
+      "review": {"decision": "refine-stylized-premium", "note": "The independent arm choreography and impact FX remain technically valid. The first stylized-premium proof improves palette separation but still reads below the shipping boss at gameplay size, so no runtime replacement is approved."}
     },
     {
       "id": "flow-results-debriefs",

@@ -165,4 +165,18 @@ The production candidate is intentionally dark and emissive; it must be judged
 against the shipping fallback at gameplay size. Browser, Electron, and mobile
 integration checks begin only after that approval.
 
+### Stylized-premium continuation
+
+The continuation branch preserves the production bindings and revises the six
+Aegis material instances toward Astra's purple armor, cyan accent, and
+pink-orange threat language. It also moves both production cameras closer while
+retaining the lower gameplay-safe region. A new six-frame 1920x1080 MRQ proof
+confirmed the material and camera changes render correctly.
+
+The revised proof is still not approved for runtime use. Its low three-quarter
+angle compresses the planar dreadnought silhouette into thin bars and remains
+less legible than `boss_aegis_dreadnought.png`. The next proof must use a higher
+three-quarter view that exposes the armor planes; the current sprite remains the
+authoritative fallback.
+
 No Unreal output from this slice is integrated into the React runtime.
