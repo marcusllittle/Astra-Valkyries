@@ -179,4 +179,18 @@ less legible than `boss_aegis_dreadnought.png`. The next proof must use a higher
 three-quarter view that exposes the armor planes; the current sprite remains the
 authoritative fallback.
 
+The next iteration rebuilt the procedural Blender contract instead of masking
+the problem in Unreal. The core now has wider shoulder masses, each detachable
+arm has a broad overlapping shield plane and battery housing, and the attachment
+pivots moved from `X=-3600/+3600` to `X=-3000/+3000` cm. The assembled source is
+`8911.13 cm` wide and retains the same six material-slot names. Blender generated
+and exported all three pieces with a validated contract; Unreal replaced the
+meshes in place, restored all material assignments, and updated both production
+sequences without changing their bindings.
+
+The high three-quarter proof is materially clearer and preserves the arm-break
+choreography, but it remains a review candidate rather than a shipping asset.
+The current sprite continues to win at gameplay scale, so runtime integration is
+still intentionally blocked.
+
 No Unreal output from this slice is integrated into the React runtime.

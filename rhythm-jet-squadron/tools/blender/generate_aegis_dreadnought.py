@@ -14,8 +14,8 @@ from mathutils import Vector
 
 ROOTS = {
     "Aegis_Core": (0.0, 0.0, 0.0),
-    "Aegis_LeftArm": (-36.0, 0.0, 0.0),
-    "Aegis_RightArm": (36.0, 0.0, 0.0),
+    "Aegis_LeftArm": (-30.0, 0.0, 0.0),
+    "Aegis_RightArm": (30.0, 0.0, 0.0),
 }
 MATERIAL_NAMES = (
     "Aegis_CarbonArmor",
@@ -195,12 +195,14 @@ def create_root(name: str) -> tuple[bpy.types.Object, bpy.types.Collection]:
 
 def build_core(materials: dict[str, bpy.types.Material]) -> None:
     root, collection = create_root("Aegis_Core")
-    box("Core main armor", (0, 2, 0), (50, 39, 7), root, collection, materials["carbon"], bevel=0.7)
-    wedge("Core forward keel", (0, -23, -1.5), 24, 18, 7, root, collection, materials["ceramic"])
-    box("Citadel", (0, 8, 7), (17, 20, 14), root, collection, materials["steel"], bevel=0.55)
+    box("Core main armor", (0, 2, 0), (54, 44, 8), root, collection, materials["carbon"], bevel=0.8)
+    wedge("Core forward keel", (0, -25, -1.5), 28, 20, 8, root, collection, materials["ceramic"])
+    box("Citadel", (0, 7, 7.5), (19, 23, 15), root, collection, materials["steel"], bevel=0.6)
     wedge("Command crown", (0, 5, 16), 11, 17, 9, root, collection, materials["ceramic"], point_forward=False)
-    box("Port armor plane", (-15.5, -5, 4), (15, 25, 3.5), root, collection, materials["ceramic"], rotation=(0, 0, math.radians(-5)), bevel=0.45)
-    box("Starboard armor plane", (15.5, -5, 4), (15, 25, 3.5), root, collection, materials["ceramic"], rotation=(0, 0, math.radians(5)), bevel=0.45)
+    box("Port armor plane", (-17, -4, 4.5), (18, 31, 4.2), root, collection, materials["ceramic"], rotation=(0, 0, math.radians(-5)), bevel=0.55)
+    box("Starboard armor plane", (17, -4, 4.5), (18, 31, 4.2), root, collection, materials["ceramic"], rotation=(0, 0, math.radians(5)), bevel=0.55)
+    box("Port shoulder mass", (-24, 7, 2.5), (12, 22, 8), root, collection, materials["steel"], rotation=(0, 0, math.radians(-7)), bevel=0.6)
+    box("Starboard shoulder mass", (24, 7, 2.5), (12, 22, 8), root, collection, materials["steel"], rotation=(0, 0, math.radians(7)), bevel=0.6)
     cylinder("Front reactor housing", (0, -19.8, 1.5), 8.5, 3.2, root, collection, materials["gold"], vertices=20)
     cylinder("Front reactor", (0, -21.7, 1.5), 6.2, 1.2, root, collection, materials["cyan"], vertices=20)
     for side in (-1, 1):
@@ -213,12 +215,12 @@ def build_arm(side: int, materials: dict[str, bpy.types.Material]) -> None:
     side_name = "Left" if side < 0 else "Right"
     root, collection = create_root(f"Aegis_{side_name}Arm")
     inward = -side
-    box("Separation collar", (inward * 4.8, 1, 0), (10, 11, 8), root, collection, materials["steel"], bevel=0.45)
-    cylinder("Exposed socket", (inward * 9.4, 1, 0), 3.1, 1.4, root, collection, materials["danger"], rotation=(0, math.pi / 2, 0), vertices=16)
-    box("Shoulder armor", (side * 3.8, -2, 1.5), (10, 18, 10), root, collection, materials["carbon"], rotation=(0, 0, math.radians(side * 5)), bevel=0.55)
-    box("Outer shield plane", (side * 5.2, -5, 5.8), (7, 23, 3.5), root, collection, materials["ceramic"], rotation=(0, 0, math.radians(side * 4)), bevel=0.45)
-    wedge("Long weapon battery", (side * 4.2, -19, 0), 9.5, 35, 6.5, root, collection, materials["steel"])
-    box("Battery upper armor", (side * 4.2, -18, 4.1), (8.2, 25, 2.1), root, collection, materials["carbon"], bevel=0.32)
+    box("Separation collar", (inward * 8.0, 2, 0), (15, 15, 9), root, collection, materials["steel"], bevel=0.55)
+    cylinder("Exposed socket", (inward * 15.2, 2, 0), 3.5, 1.6, root, collection, materials["danger"], rotation=(0, math.pi / 2, 0), vertices=16)
+    box("Shoulder armor", (side * 1.5, 0, 1.5), (23, 25, 11), root, collection, materials["carbon"], rotation=(0, 0, math.radians(side * 4)), bevel=0.7)
+    box("Outer shield plane", (side * 3.0, -4, 6.3), (21, 31, 4.2), root, collection, materials["ceramic"], rotation=(0, 0, math.radians(side * 4)), bevel=0.55)
+    wedge("Long weapon battery", (side * 3.0, -20, 0), 13, 37, 7.5, root, collection, materials["steel"])
+    box("Battery upper armor", (side * 3.0, -18, 4.8), (12, 27, 2.8), root, collection, materials["carbon"], bevel=0.4)
     box("Battery gold rail", (side * 4.2, -20, 5.3), (1.0, 24, 0.55), root, collection, materials["gold"], bevel=0.06)
     box("Battery energy channel", (side * 2.4, -19, 5.35), (0.65, 22, 0.5), root, collection, materials["cyan"], bevel=0.05)
     cylinder("Primary muzzle housing", (side * 4.2, -37.2, 0), 4.2, 3.2, root, collection, materials["gold"], vertices=16)
@@ -253,7 +255,7 @@ def validate_and_write_contract(path: Path | None) -> None:
     all_meshes = [obj for obj in bpy.data.objects if obj.type == "MESH"]
     bounds_min, bounds_max = object_world_bounds(all_meshes)
     width_cm = round((bounds_max[0] - bounds_min[0]) * 100, 2)
-    if not 8800 <= width_cm <= 9400:
+    if not 8800 <= width_cm <= 9200:
         raise RuntimeError(f"Aegis assembled width must be near 9000 cm, got {width_cm}")
 
     piece_data = {}
@@ -347,9 +349,9 @@ def main() -> None:
     args = parse_args()
     clear_scene()
     materials = {
-        "carbon": material(MATERIAL_NAMES[0], (0.006, 0.009, 0.018, 1), 0.92, 0.19),
-        "ceramic": material(MATERIAL_NAMES[1], (0.19, 0.22, 0.32, 1), 0.5, 0.24),
-        "steel": material(MATERIAL_NAMES[2], (0.035, 0.05, 0.085, 1), 0.86, 0.3),
+        "carbon": material(MATERIAL_NAMES[0], (0.055, 0.012, 0.14, 1), 0.52, 0.28),
+        "ceramic": material(MATERIAL_NAMES[1], (0.32, 0.07, 0.5, 1), 0.42, 0.22),
+        "steel": material(MATERIAL_NAMES[2], (0.1, 0.025, 0.2, 1), 0.72, 0.28),
         "gold": material(MATERIAL_NAMES[3], (0.62, 0.2, 0.035, 1), 0.78, 0.2),
         "cyan": material(MATERIAL_NAMES[4], (0.01, 0.24, 0.55, 1), 0.3, 0.13, (0.01, 0.65, 1.0, 1), 7.0),
         "danger": material(MATERIAL_NAMES[5], (0.5, 0.025, 0.01, 1), 0.2, 0.15, (1.0, 0.035, 0.005, 1), 8.0),
