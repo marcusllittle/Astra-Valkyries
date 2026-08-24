@@ -21,6 +21,7 @@ import { fileURLToPath } from "node:url";
 const APP = fileURLToPath(new URL("../../", import.meta.url));
 const SOURCE = join(APP, "src/components/InboxOverlay.tsx");
 const PILOT_DIR = join(APP, "public/assets/inbox/pilot");
+const SCENE_DIR = join(APP, "public/assets/cutins/scenes");
 
 const source = readFileSync(SOURCE, "utf8");
 
@@ -77,6 +78,7 @@ describe("inbox attachments", () => {
     const missing = named.filter(
       (name) =>
         !existsSync(join(PILOT_DIR, name)) &&
+        !existsSync(join(SCENE_DIR, name)) &&
         !existsSync(join(APP, "public/assets/outfits", name)) &&
         !existsSync(join(APP, "public/assets/pilots", name)),
     );
@@ -120,5 +122,22 @@ describe("inbox attachments", () => {
       orphaned,
       `Portraits shipped in public/assets/inbox/pilot but never referenced:\n${orphaned.join("\n")}`,
     ).toEqual([]);
+  });
+
+  it("leads with operational motion before progressive private rewards", () => {
+    expect(source).toMatch(/priority:\s*120,[\s\S]*nebula_runway_briefing\.mp4/);
+    expect(source).toMatch(/if \(index < 12\) return 8 \+ index \* 2;/);
+    expect(source).toMatch(/priority:\s*index < 15 \? 35 : index < 32 \? 14 : index < 40 \? 8 : 2/);
+    expect(source).toContain('type InboxView = "comms" | "vault";');
+    expect(source).toContain("Media Vault");
+  });
+
+  it("identifies every single-pilot portrait", () => {
+    const mapSource = source.slice(
+      source.indexOf("const PORTRAIT_PILOT"),
+      source.indexOf("const UNVERIFIED_SENDER"),
+    );
+    const identified = mapSource.match(/"job-[a-f0-9]+\.png":\s*"(?:Nova|Rex|Yuki)"/g) ?? [];
+    expect(identified).toHaveLength(49);
   });
 });
