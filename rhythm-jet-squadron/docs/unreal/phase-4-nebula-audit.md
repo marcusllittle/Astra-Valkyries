@@ -119,6 +119,8 @@ folders were present.
 | `LS_CombatPlate_NebulaRunway` | 24 fps, 0-240 | 13 | Zone approach, combat lane, boss scale |
 | `LS_BossIntro_AegisDreadnought` | 24 fps, 0-144 | 11 | Core and arm reveal with weapon telegraph |
 | `LS_Aegis_ArmBreak_Previz` | 24 fps, 0-120 | 11 | Independent arm-break choreography |
+| `LS_BossIntro_AegisDreadnought_Production` | 24 fps, 0-144 | 10 | Production geometry reveal, telegraph, and mobile-safe camera |
+| `LS_Aegis_ArmBreak_Production` | 24 fps, 0-120 | 10 | Production three-piece break with independent impact FX |
 
 The arm-break key audit confirmed that both arms remain attached through frame
 64, then move from `X=-3600/+3600` to `X=-6500/+6500` by frame 119. Their roll
@@ -136,26 +138,31 @@ open unsaved Open World contributes landscape and cloud actors. The camera
 visualization was isolated without saving editor state, and the user's level
 visibility and sky-sphere transform were restored after the check.
 
-A clean MRQ proof is still required. Run this from Unreal's Output Log command
-field after the intended render map can be loaded:
+A clean production MRQ proof was rendered with:
 
 ```text
-py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_mrq_sample_phase4_nebula.py"
+py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_mrq_sample_phase4_aegis_production.py"
 ```
 
-The script queues nine 1920x1080 proof frames under
-`Saved/AstraRenders/phase4-nebula-proof-1080p`: three combat frames, three boss
-intro frames, and attached/break/detached arm frames.
+The script queues six 1920x1080 proof frames under
+`Saved/AstraRenders/phase4-aegis-production-proof-1080p`: approach, reveal,
+threat, attached, impact, and detached. The final pass was inspected at 16:9
+and as centered `498x1080` crops scaled to `390x844`.
 
-Approval remains blocked on all of the following:
+The production proof established:
 
-1. Rebuild the two Aegis sequences with explicit bindings to the three verified
-   production Blueprints; do not mutate the blockout sequences in place.
-2. Review clean MRQ frames at 16:9 and in the centered `390x844` crop.
-3. Confirm the boss reads as one ship against a goliath without filling the
-   mobile playfield.
-4. Confirm both long arms remain distinct targets and detach cleanly.
-5. Compare the output against Astra's current background and Aegis art.
-6. Run browser, Electron, and mobile checks only after a candidate is approved.
+1. Both sequences explicitly bind the three production Blueprints; the
+   blockout sequences remain untouched.
+2. The centered mobile crop retains the core and both attached arms while
+   leaving the lower playfield open for Astra's runtime player ship and UI.
+3. Left and right arms remain separate through frame 64, then move and rotate
+   independently with separate break FX.
+4. Duplicate automatically generated transform tracks were removed before the
+   final render, leaving one transform track per spawnable.
+
+Visual approval is still required before replacing Astra's current Aegis art.
+The production candidate is intentionally dark and emissive; it must be judged
+against the shipping fallback at gameplay size. Browser, Electron, and mobile
+integration checks begin only after that approval.
 
 No Unreal output from this slice is integrated into the React runtime.

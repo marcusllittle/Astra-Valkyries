@@ -98,18 +98,18 @@
       "phase": 4,
       "screens": ["shmup", "video-cutscene"],
       "kind": "video-set",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_NebulaRunway", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Bosses/LS_BossIntro_AegisDreadnought", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_NebulaRunway", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Bosses/LS_BossIntro_AegisDreadnought_Production", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
       "delivery": {"hd": "https://media.joinhavn.io/astra/combat/boss-intros/", "localFallback": "/assets/shmup/boss_aegis_dreadnought.png"},
-      "review": {"decision": "production-geometry-pending-sequence", "note": "The verified Blender core and two long weapon arms now exist as independent Unreal candidates with stable pivots and materials. This manifest still points to the untouched blockout sequence; retain the current Aegis art until a new production-bound sequence passes desktop and centered mobile render review."}
+      "review": {"decision": "production-render-review", "note": "The explicit production sequence binds the verified Blender core and two weapon arms, the combat lighting rig, telegraph FX, exhaust FX, and a mobile-safe camera. Six clean 1920x1080 MRQ proof frames were reviewed in widescreen and a centered 390x844 crop. Framing passes, but retain the current Aegis art until the production look is explicitly approved."}
     },
     {
-      "id": "combat-aegis-arm-break-previz",
+      "id": "combat-aegis-arm-break",
       "phase": 4,
       "screens": ["shmup"],
       "kind": "video",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_NebulaRunway", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Bosses/LS_Aegis_ArmBreak_Previz", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/combat/boss-intros/aegis-arm-break-previz.mp4", "localFallback": "/assets/shmup/boss_aegis_dreadnought.png"},
-      "review": {"decision": "technical-previz-only", "note": "This untouched blockout sequence proves independent left- and right-arm detachment and Niagara break-effect binding. The three verified Blender pieces are available, but a new production-bound arm-break sequence and clean MRQ review are still required."}
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_NebulaRunway", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Bosses/LS_Aegis_ArmBreak_Production", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/combat/boss-intros/aegis-arm-break.mp4", "localFallback": "/assets/shmup/boss_aegis_dreadnought.png"},
+      "review": {"decision": "production-render-review", "note": "The core remains stable while both long arms hold through frame 64, then detach independently to X=-6500/+6500 with opposing roll and pitch plus separate break FX. The centered mobile proof preserves the core and attached-arm silhouette and leaves the lower playfield open; retain the current fallback pending explicit visual approval."}
     },
     {
       "id": "flow-results-debriefs",

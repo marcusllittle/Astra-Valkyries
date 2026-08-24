@@ -131,6 +131,17 @@ This queues nine 1920x1080 frames under
 blockout-only until their three independently pivoted Blender meshes replace
 the primitive previsualization actors.
 
+Run the production Aegis intro and arm-break sample set with:
+
+```text
+py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_mrq_sample_phase4_aegis_production.py"
+```
+
+This queues six 1920x1080 frames under
+`Saved/AstraRenders/phase4-aegis-production-proof-1080p`. Review the full-width
+frames and a centered `498x1080` crop scaled to `390x844` before approving a
+mobile replacement.
+
 After those proofs pass, render the full Home, Spaceport, and Hangar masters
 with:
 
