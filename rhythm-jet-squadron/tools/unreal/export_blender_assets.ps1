@@ -12,7 +12,8 @@ if ($Profiles.Count -gt 0) {
     "aegis-boss",
     "cryo-boss",
     "helios-boss",
-    "enemy-fleet"
+    "enemy-fleet",
+    "claude-models"
   )
   [string[]]$UnknownProfiles = @($Profiles | Where-Object { $_ -notin $KnownProfiles })
   if ($UnknownProfiles.Count -gt 0) {
@@ -48,6 +49,12 @@ $Jobs = @(
     Profile = "enemy-fleet"
     Source = "astra_enemy_fleet.blend"
     Generator = "generate_enemy_fleet.py"
+  },
+  @{
+    Profile = "claude-models"
+    Source = "astra_claude_model_library.blend"
+    Generator = "generate_claude_model_library.py"
+    SourceDir = "imports\claude-models"
   }
 )
 
@@ -68,22 +75,26 @@ foreach ($Job in $Jobs) {
 
   if ($Job.Generator) {
     $Generator = Join-Path $BlenderRoot $Job.Generator
-    $GeneratorProcess = Start-Process -FilePath $Blender -ArgumentList @(
+    $GeneratorArgs = @(
       "--background",
       "--python-exit-code", "1",
       "--python", $Generator,
       "--",
       "--source", $Source,
-      "--preview", (Join-Path $Output "$($Job.Profile)_source_preview.png"),
       "--contract", (Join-Path $Output "geometry-contract.json")
-    ) -Wait -PassThru
-
+    )
+    if ($Job.SourceDir) {
+      $GeneratorArgs += @("--source-dir", (Join-Path $BlenderRoot $Job.SourceDir))
+    } else {
+      $GeneratorArgs += @("--preview", (Join-Path $Output "$($Job.Profile)_source_preview.png"))
+    }
+    $GeneratorProcess = Start-Process -FilePath $Blender -ArgumentList $GeneratorArgs -Wait -PassThru
     if ($GeneratorProcess.ExitCode -ne 0) {
       throw "Blender generation failed for $($Job.Profile)"
     }
   }
 
-  $ExportProcess = Start-Process -FilePath $Blender -ArgumentList @(
+  $ExportArgs = @(
     $Source,
     "--background",
     "--python-exit-code", "1",
@@ -92,8 +103,8 @@ foreach ($Job in $Jobs) {
     "--profile", $Job.Profile,
     "--source", $Source,
     "--output-dir", $Output
-  ) -Wait -PassThru
-
+  )
+  $ExportProcess = Start-Process -FilePath $Blender -ArgumentList $ExportArgs -Wait -PassThru
   if ($ExportProcess.ExitCode -ne 0) {
     throw "Blender export failed for $($Job.Profile)"
   }

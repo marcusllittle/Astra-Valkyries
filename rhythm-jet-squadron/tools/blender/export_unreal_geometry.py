@@ -142,6 +142,73 @@ PROFILES: dict[str, tuple[ExportTarget, ...]] = {
             "Tank",
         )
     ),
+    "claude-models": (
+        ExportTarget(
+            "SM_Claude_AstraInterceptor_Candidate",
+            "root",
+            "Claude_AstraInterceptor",
+            normalize_root=True,
+        ),
+        ExportTarget(
+            "SM_Claude_ValkyrieLancer_Candidate",
+            "root",
+            "Claude_ValkyrieLancer",
+            normalize_root=True,
+        ),
+        ExportTarget(
+            "SM_Claude_SeraphGuard_Candidate",
+            "root",
+            "Claude_SeraphGuard",
+            normalize_root=True,
+        ),
+        *(
+            ExportTarget(
+                f"SM_Claude_{boss}_{piece}_Candidate",
+                "root",
+                f"Claude_{boss}_{piece}",
+                normalize_root=True,
+            )
+            for boss, pieces in (
+                ("Aegis", ("Core", "LeftArm", "RightArm")),
+                ("Cryo", ("Core", "LeftArm", "RightArm")),
+                ("Helios", ("Core", "LeftArms", "RightArms")),
+            )
+            for piece in pieces
+        ),
+        *(
+            ExportTarget(
+                f"SM_Claude_Enemy_{name}_Candidate",
+                "root",
+                f"Claude_Enemy_{name}",
+                normalize_root=True,
+            )
+            for name in (
+                "Drifter",
+                "Sine",
+                "Zigzag",
+                "Charger",
+                "Sniper",
+                "Bomber",
+                "Orbiter",
+                "Splitter",
+                "Swarm",
+                "Dreadnought",
+                "Tank",
+            )
+        ),
+        ExportTarget(
+            "SM_Claude_Pickup_PowerChip_Candidate",
+            "root",
+            "Claude_Pickup_PowerChip",
+            normalize_root=True,
+        ),
+        ExportTarget(
+            "SM_Claude_Pickup_PulseRing_Candidate",
+            "root",
+            "Claude_Pickup_PulseRing",
+            normalize_root=True,
+        ),
+    ),
 }
 
 
@@ -197,6 +264,9 @@ def export_target(target: ExportTarget, output_dir: Path) -> dict[str, object]:
     output_path = output_dir / f"{target.asset_name}.fbx"
     root = bpy.data.objects.get(target.source_name) if target.normalize_root else None
     original_matrix = root.matrix_world.copy() if root else None
+    assembly_location_cm = target.assembly_location_cm
+    if root and assembly_location_cm is None:
+        assembly_location_cm = tuple(value * 100 for value in root.matrix_world.translation)
     try:
         if root:
             root.matrix_world = Matrix.Identity(4)
@@ -228,7 +298,7 @@ def export_target(target: ExportTarget, output_dir: Path) -> dict[str, object]:
         "sourceName": target.source_name,
         "objectCount": len(objects),
         "pivotNormalized": target.normalize_root,
-        "assemblyLocationCm": target.assembly_location_cm,
+        "assemblyLocationCm": assembly_location_cm,
     }
 
 

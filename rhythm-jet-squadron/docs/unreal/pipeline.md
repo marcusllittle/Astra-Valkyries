@@ -29,6 +29,9 @@ To iterate only the Helios Tyrant source and exports, append
 To iterate only the reusable enemy fleet, append
 `-Profiles enemy-fleet`.
 
+To rebuild the Claude procedural model candidates, append
+`-Profiles claude-models`.
+
 The wrapper opens each existing `.blend` source in Blender 4.5 and invokes
 `tools/blender/export_unreal_geometry.py`. It exports selected root objects or
 named collections as binary FBX (`.fbx`) and writes an `exports.json` beside
@@ -46,6 +49,7 @@ Profiles:
 | `cryo-boss` | `astra_cryo_leviathan.blend` (generated) | Independent Cryo Leviathan core and detachable long weapon arms |
 | `helios-boss` | `astra_helios_tyrant.blend` (generated) | Independent Helios reactor and detachable solar-lance assemblies |
 | `enemy-fleet` | `astra_enemy_fleet.blend` (generated) | Eleven gameplay enemy silhouettes with one shared material contract |
+| `claude-models` | `astra_claude_model_library.blend` (generated from checked-in GLBs) | Three ships, three-piece bosses, enemies, and pickups for isolated comparison renders |
 
 Do not hand-edit staged FBX files. Change the procedural Blender source and
 export again.
@@ -74,6 +78,18 @@ named roots against light, specialist, and heavy scale limits, and requires
 the same five material slots on every export. It writes one source preview,
 `geometry-contract.json`, and eleven independent `SM_Enemy_*` FBX files.
 
+The `claude-models` job runs `generate_claude_model_library.py` against the
+hash-pinned handoffs in `tools/blender/imports/claude-models`. It converts the
+nine GLBs into one reproducible Blender library and 25 candidate FBXs. Aegis,
+Cryo, and Helios each export as a core plus independently pivoted left and
+right arm assemblies. The source Three.js pages are retained under
+`tools/modeling/claude-procedural`.
+
+Claude candidate exports must import under
+`/Game/AstraRenderLab/Art/Candidates/ClaudeModels`, never over the existing
+Blender production meshes. Promote a candidate only after Unreal comparison
+renders show a clear improvement at its intended screen size.
+
 ## Unreal import
 
 Import with the Unreal MCP
@@ -94,6 +110,7 @@ Destination rules:
 | Cryo Leviathan production pieces | `/Game/AstraRenderLab/Art/Bosses/CryoLeviathan/Blender` |
 | Helios Tyrant production pieces | `/Game/AstraRenderLab/Art/Bosses/HeliosTyrant/Blender` |
 | Enemy fleet production meshes | `/Game/AstraRenderLab/Art/Enemies/Blender` |
+| Claude procedural candidates | `/Game/AstraRenderLab/Art/Candidates/ClaudeModels` |
 
 After import, use MCP read-back tools to verify asset class, bounds, vertex and
 triangle counts, material slots, and Nanite state. Never save unrelated dirty

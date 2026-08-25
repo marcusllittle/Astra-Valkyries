@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Astra Valkyries — Model Library</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; background: #0d1014; color: #d6dbe2; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  a { color: #6fb1fc; }
+  a:hover { color: #a8cfff; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 72px 32px 96px; }
+  h1 { font-size: 26px; font-weight: 500; letter-spacing: 0.06em; margin: 0 0 8px; }
+  .sub { font-size: 12px; letter-spacing: 0.1em; color: #78818c; margin-bottom: 56px; }
+  .group { font-size: 11px; letter-spacing: 0.22em; color: #78818c; margin: 44px 0 16px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .card { display: grid; gap: 6px; padding: 20px; border: 1px solid #1e242c; border-radius: 4px; text-decoration: none; background: #11151a; }
+  .card:hover { border-color: #35404c; background: #141a20; }
+  .card .k { font-size: 10px; letter-spacing: 0.2em; }
+  .card .n { font-size: 17px; color: #e6eaf0; letter-spacing: 0.03em; }
+  .card .m { font-size: 11px; color: #78818c; letter-spacing: 0.06em; }
+  .note { margin-top: 56px; font-size: 11px; line-height: 1.9; color: #78818c; letter-spacing: 0.04em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Astra Valkyries — Model Library</h1>
+  <div class="sub">Built from the repo's key art and ships.json · OBJ + MTL or GLB per model</div>
+
+  <div class="group">PLAYER SHIPS</div>
+  <div class="grid">
+    <a class="card" href="astra-interceptor.html"><span class="k" style="color:#6fb1fc">SHIP_ASTRA_INTERCEPTOR</span><span class="n">Astra Interceptor</span><span class="m">Icarus Dynamics · 15.4 m</span></a>
+    <a class="card" href="valkyrie-lancer.html"><span class="k" style="color:#f08221">SHIP_VALKYRIE_LANCER</span><span class="n">Valkyrie Lancer</span><span class="m">Sol Frontier Works · 18.2 m</span></a>
+    <a class="card" href="seraph-guard.html"><span class="k" style="color:#c99a3f">SHIP_SERAPH_GUARD</span><span class="n">Seraph Guard</span><span class="m">Crown Orbital · 19.6 m</span></a>
+  </div>
+
+  <div class="group">BOSSES</div>
+  <div class="grid">
+    <a class="card" href="aegis-dreadnought.html"><span class="k" style="color:#ff9fc0">BOSS_AEGIS_DREADNOUGHT</span><span class="n">Aegis Dreadnought</span><span class="m">Dreadnought · 62 m</span></a>
+    <a class="card" href="helios-tyrant.html"><span class="k" style="color:#e08a3c">BOSS_HELIOS_TYRANT</span><span class="n">Helios Tyrant</span><span class="m">Siege fortress · 34 m</span></a>
+    <a class="card" href="cryo-leviathan.html"><span class="k" style="color:#8fc4e8">BOSS_CRYO_LEVIATHAN</span><span class="n">Cryo Leviathan</span><span class="m">Bio-frame · 46 m</span></a>
+  </div>
+
+  <div class="group">ENEMIES &amp; PICKUPS</div>
+  <div class="grid">
+    <a class="card" href="tank-fortress.html"><span class="k" style="color:#7fd6d6">ENEMY_TANK_FORTRESS</span><span class="n">Tank Fortress</span><span class="m">Heavy emplacement · 14 m</span></a>
+    <a class="card" href="enemy-squadron.html"><span class="k" style="color:#ff9fa8">ENEMY_SQUADRON</span><span class="n">Enemy Squadron</span><span class="m">10 craft · drifter to dreadnought</span></a>
+    <a class="card" href="pickups.html"><span class="k" style="color:#ffd98a">PICKUP_SET</span><span class="n">Pickups</span><span class="m">Power chip · Pulse ring</span></a>
+  </div>
+
+  <div class="note">
+    Every model is metres, y-up, nose toward −Z, base resting on y = 0, with named meshes and materials so the OBJ or GLB
+    imports as a readable part list. Drag to orbit, wheel to zoom, then use the download buttons on each page.
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "sourceArchive": {
+    "file": "Game model creation setup.zip",
+    "sha256": "f439df83e45a311c758a86266a6492b8eea1937eef7cb1febad39ebbd6d1b6df"
+  },
+  "coordinateContract": {
+    "units": "meters",
+    "upAxis": "+Y",
+    "forwardAxis": "-Z"
+  },
+  "exports": [
+    {"file": "aegis-dreadnought.glb", "sha256": "f88587e5a27e2566116a24a4c6de6cd21cf52fc372a786d65acfbeccb2f2d348"},
+    {"file": "astra-interceptor.glb", "sha256": "9d644f3ee42700fa438881cf5d1dee0a6404e65d4b4a2b69629c5107a40fec75"},
+    {"file": "cryo-leviathan.glb", "sha256": "0a56d99b6d6989affb1e72ea13757f246b20537f2abd6d83998e6ef71b649c6f"},
+    {"file": "enemy-squadron.glb", "sha256": "481a97ccfd4c1746f7234b2788265655e0628b16e0289414101dc1f16f5a80fb"},
+    {"file": "helios-tyrant.glb", "sha256": "3480d2dfd404b4c72afe248599be7a3844feba66c98c962722aeae6099d63127"},
+    {"file": "pickups.glb", "sha256": "13eb951eb91fc6a42a236c08788993e322d007a4e0122c5c838a00ec8da4f075"},
+    {"file": "seraph-guard.glb", "sha256": "7320b43d5634f1410e72d873dd0c844a88e1af25d7db017b4390d59153f061ad"},
+    {"file": "tank-fortress.glb", "sha256": "b6ca2c19add4a68eee1f73f70141028dc2831ab6bcadc89ff69cad20b1f27df3"},
+    {"file": "valkyrie-lancer.glb", "sha256": "63b83afc9633eb9ee92f46570575a6973e4cac2b09712540f98e8dcda97e4fa3"}
+  ]
+}
