@@ -132,6 +132,24 @@
       "review": {"decision": "retain-current", "note": "The independently pivoted geometry-v2 arms attach at X=-3000/+3000 through frame 64, then separate to X=-6500/+6500 with distinct break FX. The sequence passes its technical proof but remains unapproved for runtime replacement."}
     },
     {
+      "id": "combat-cryo-leviathan-intro",
+      "phase": 4,
+      "screens": ["shmup", "video-cutscene"],
+      "kind": "video",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_AbyssCrown", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Bosses/LS_BossIntro_CryoLeviathan", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/combat/boss-intros/cryo-leviathan.mp4", "localFallback": "/assets/shmup/boss_cryo_leviathan.png"},
+      "review": {"decision": "retain-current", "note": "The 13,617.81 cm three-piece boss, dedicated materials, Niagara wrappers, and mobile-safe intro framing pass a six-frame technical MRQ proof. The current model is still a production prototype and the sequence does not yet establish player-ship scale, so the shipping sprite remains authoritative."}
+    },
+    {
+      "id": "combat-cryo-leviathan-arm-break",
+      "phase": 4,
+      "screens": ["shmup"],
+      "kind": "video",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_AbyssCrown", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Bosses/LS_CryoLeviathan_ArmBreak", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/combat/boss-intros/cryo-leviathan-arm-break.mp4", "localFallback": "/assets/shmup/boss_cryo_leviathan.png"},
+      "review": {"decision": "retain-current", "note": "Both long arms remain attached through frame 64 and then separate independently to X=-8200/+8200 by frame 119 with distinct break FX. The technical contract is valid, but the visual candidate is not approved for React integration."}
+    },
+    {
       "id": "flow-results-debriefs",
       "phase": 5,
       "screens": ["shmup-results"],

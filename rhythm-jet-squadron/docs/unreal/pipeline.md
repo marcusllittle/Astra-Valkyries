@@ -20,6 +20,9 @@ powershell -ExecutionPolicy Bypass -File tools/unreal/export_blender_assets.ps1
 To iterate only the Aegis source and exports, append
 `-Profiles aegis-boss`.
 
+To iterate only the Cryo Leviathan source and exports, append
+`-Profiles cryo-boss`.
+
 The wrapper opens each existing `.blend` source in Blender 4.5 and invokes
 `tools/blender/export_unreal_geometry.py`. It exports selected root objects or
 named collections as binary FBX (`.fbx`) and writes an `exports.json` beside
@@ -34,6 +37,7 @@ Profiles:
 | `weapon-vfx` | `astra_weapon_vfx.blend` | Projectile meshes and weapon FX source geometry |
 | `secondary-boss-vfx` | `astra_secondary_boss_vfx.blend` | Secondary and boss telegraph source geometry |
 | `aegis-boss` | `astra_aegis_dreadnought.blend` (generated) | Independent Aegis core, left arm, and right arm production meshes |
+| `cryo-boss` | `astra_cryo_leviathan.blend` (generated) | Independent Cryo Leviathan core and detachable long weapon arms |
 
 Do not hand-edit staged FBX files. Change the procedural Blender source and
 export again.
@@ -45,6 +49,11 @@ source preview plus `geometry-contract.json`. It then exports
 exporter temporarily normalizes each source root to world origin so each FBX
 keeps its separation-socket pivot; `exports.json` retains the intended Unreal
 assembly positions at `X=0`, `X=-3600`, and `X=3600` cm.
+
+The `cryo-boss` job runs `generate_cryo_leviathan.py` and validates a
+three-piece, six-material contract. It exports `SM_Cryo_Core.fbx`,
+`SM_Cryo_LeftArm.fbx`, and `SM_Cryo_RightArm.fbx` with normalized pivots
+and intended assembly positions at `X=0`, `X=-3200`, and `X=3200` cm.
 
 ## Unreal import
 
@@ -63,6 +72,7 @@ Destination rules:
 | Projectile geometry | `/Game/AstraRenderLab/Art/Props/Weapons/Blender` |
 | Secondary/boss geometry | `/Game/AstraRenderLab/FX/SourceGeometry/Blender` |
 | Aegis production pieces | `/Game/AstraRenderLab/Art/Bosses/Aegis/Blender` |
+| Cryo Leviathan production pieces | `/Game/AstraRenderLab/Art/Bosses/CryoLeviathan/Blender` |
 
 After import, use MCP read-back tools to verify asset class, bounds, vertex and
 triangle counts, material slots, and Nanite state. Never save unrelated dirty
