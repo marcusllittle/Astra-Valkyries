@@ -100,8 +100,9 @@
       "phase": 4,
       "screens": ["shmup"],
       "kind": "image-sequence",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_SolarRift", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Combat/LS_CombatPlate_SolarRift", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "planned"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/combat/solar-rift/", "localFallback": "/assets/shmup/background_far_solar.png"}
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_SolarRift", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Zones/BP_SolarRift_CombatStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Combat/LS_CombatPlate_SolarRift", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/combat/solar-rift/", "localFallback": "/assets/shmup/background_far_solar.png"},
+      "review": {"decision": "awaiting-density-tuning", "note": "The Solar stage, materials, explicit 13-binding sequence, and Free Niagara-derived ambient, projectile, and impact systems pass a three-frame 1080p MRQ proof with no Niagara initialization errors. Keep the current background until effect density and centered mobile framing pass gameplay-scale review."}
     },
     {
       "id": "combat-abyss-plates",
