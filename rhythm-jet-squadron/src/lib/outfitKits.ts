@@ -5,6 +5,29 @@ import {
   secondaryName,
 } from "./kitNames";
 
+const RARITY_PROGRESSION: Record<Outfit["rarity"], number> = {
+  Common: 0,
+  Rare: 1,
+  SR: 2,
+  SSR: 3,
+};
+
+const OUTFIT_PROGRESSION_OVERRIDES: Record<string, number> = {
+  outfit_09: 0, // Frost Nova: Yuki starter
+  outfit_05: 1, // Cloud Walker: Yuki second
+  outfit_03: 2, // Desert Storm: promoted out of starter tier
+};
+
+export function compareOutfitProgression(a: Outfit, b: Outfit): number {
+  const aOverride = OUTFIT_PROGRESSION_OVERRIDES[a.id];
+  const bOverride = OUTFIT_PROGRESSION_OVERRIDES[b.id];
+  if (aOverride !== undefined || bOverride !== undefined) {
+    return (aOverride ?? 100) - (bOverride ?? 100);
+  }
+  const rarityDifference = RARITY_PROGRESSION[a.rarity] - RARITY_PROGRESSION[b.rarity];
+  return rarityDifference || a.id.localeCompare(b.id);
+}
+
 export function isOutfitPilotLocked(
   outfit: Outfit,
   selectedPilotId: string | null

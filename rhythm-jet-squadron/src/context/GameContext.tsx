@@ -28,10 +28,7 @@ const DEFAULT_SETTINGS: GameSettings = {
 };
 
 function getStarterOutfits(): OwnedOutfit[] {
-  const commons = outfitsData
-    .filter((outfit) => outfit.rarity === "Common")
-    .slice(0, 3)
-    .map((outfit) => outfit.id);
+  const starterIdsByPilot = ["outfit_01", "outfit_02", "outfit_09"];
   const rares = outfitsData.filter((outfit) => outfit.rarity === "Rare");
   const srPilotSpecific = outfitsData.filter(
     (outfit) => outfit.rarity === "SR" && Boolean(outfit.pilotId)
@@ -40,7 +37,7 @@ function getStarterOutfits(): OwnedOutfit[] {
   const rare = rares[Math.floor(Math.random() * rares.length)];
   const sr = srPilotSpecific[Math.floor(Math.random() * srPilotSpecific.length)];
 
-  const starterIds = [commons[0], commons[1], commons[2], rare?.id, sr?.id].filter(
+  const starterIds = [...starterIdsByPilot, rare?.id, sr?.id].filter(
     (id): id is string => Boolean(id)
   );
 

@@ -36,6 +36,8 @@ const SECONDARY_NAMES: Record<string, string> = {
   temporalEcho: "Temporal Echo",
   superbloom: "Superbloom",
   starfallSwarm: "Starfall Swarm",
+  shadowPulse: "Shadow Pulse Array",
+  thunderStrike: "Thunder Strike",
   decoyBurn: "Decoy Burn",
   tideGuard: "Tide Guard",
 };

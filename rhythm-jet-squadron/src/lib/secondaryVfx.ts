@@ -38,6 +38,8 @@ const KIND_BY_SECONDARY: Record<ShmupSecondaryKey, SecondaryVfxKind> = {
   temporalEcho: "sigil",
   superbloom: "burst",
   starfallSwarm: "target",
+  shadowPulse: "target",
+  thunderStrike: "burst",
   decoyBurn: "target",
   tideGuard: "shield",
 };
