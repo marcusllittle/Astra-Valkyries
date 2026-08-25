@@ -133,6 +133,13 @@ Run the Phase 4 Nebula combat, Aegis intro, and arm-break proof set with:
 py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_mrq_sample_phase4_nebula.py"
 ```
 
+Render the Solar Rift start, middle, and end proof after its resumable builder
+has completed with:
+
+```text
+py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_mrq_sample_phase4_solar.py"
+```
+
 This queues nine 1920x1080 frames under
 `Saved/AstraRenders/phase4-nebula-proof-1080p`. The Aegis sequences remain
 blockout-only until their three independently pivoted Blender meshes replace
