@@ -98,6 +98,29 @@ PROFILES: dict[str, tuple[ExportTarget, ...]] = {
             assembly_location_cm=(3200, 0, 0),
         ),
     ),
+    "helios-boss": (
+        ExportTarget(
+            "SM_Helios_Core",
+            "root",
+            "Helios_Core",
+            normalize_root=True,
+            assembly_location_cm=(0, 0, 0),
+        ),
+        ExportTarget(
+            "SM_Helios_LeftLance",
+            "root",
+            "Helios_LeftLance",
+            normalize_root=True,
+            assembly_location_cm=(-3400, 0, 0),
+        ),
+        ExportTarget(
+            "SM_Helios_RightLance",
+            "root",
+            "Helios_RightLance",
+            normalize_root=True,
+            assembly_location_cm=(3400, 0, 0),
+        ),
+    ),
 }
 
 

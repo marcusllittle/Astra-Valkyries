@@ -10,7 +10,8 @@ if ($Profiles.Count -gt 0) {
     "weapon-vfx",
     "secondary-boss-vfx",
     "aegis-boss",
-    "cryo-boss"
+    "cryo-boss",
+    "helios-boss"
   )
   [string[]]$UnknownProfiles = @($Profiles | Where-Object { $_ -notin $KnownProfiles })
   if ($UnknownProfiles.Count -gt 0) {
@@ -36,6 +37,11 @@ $Jobs = @(
     Profile = "cryo-boss"
     Source = "astra_cryo_leviathan.blend"
     Generator = "generate_cryo_leviathan.py"
+  },
+  @{
+    Profile = "helios-boss"
+    Source = "astra_helios_tyrant.blend"
+    Generator = "generate_helios_tyrant.py"
   }
 )
 
