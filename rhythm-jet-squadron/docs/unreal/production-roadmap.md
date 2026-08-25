@@ -149,6 +149,10 @@ better sequence.
 - Reuse production maps, materials, rigs, and characters for 16:9, 1:1, 4:5,
   and 9:16 stills/loops.
 - Gate: marketing outputs reference the same source assets and manifest lineage.
+- Current state: six campaign sequences, a shared marketing stage, four
+  delivery presets, and 24 composition proofs are complete. Multi-aspect
+  framing is functional; all art remains gated after failing campaign-quality
+  comparison, so no public marketing replacement is claimed.
 
 ### Phase 9: runtime integration and release verification
 

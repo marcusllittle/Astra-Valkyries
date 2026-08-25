@@ -390,8 +390,54 @@
       "phase": 8,
       "screens": [],
       "kind": "image-set",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_MarketingStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Marketing/LS_KeyArt_Master", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Marketing_4K", "alternateRenderPresets": ["/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Marketing_Vertical_4K"], "status": "planned"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/marketing/key-art/", "localFallback": "/assets/ships/astra_interceptor.png"}
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_MarketingStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Marketing/LS_KeyArt_Master", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Marketing_4K", "alternateRenderPresets": ["/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Marketing_Square_4K", "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Marketing_Portrait_4K", "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Marketing_Vertical_4K"], "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/marketing/key-art/", "localFallback": "/assets/ships/astra_interceptor.png"},
+      "review": {"decision": "retain-current", "note": "Multi-aspect framing works, but the proof is an empty service bay and is not campaign key art."}
+    },
+    {
+      "id": "marketing-spaceport-neon",
+      "phase": 8,
+      "screens": [],
+      "kind": "image-set",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Hub/L_Spaceport", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Marketing/LS_Campaign_SpaceportNeon", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Marketing_4K", "alternateRenderPresets": ["/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Marketing_Square_4K", "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Marketing_Portrait_4K", "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Marketing_Vertical_4K"], "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/marketing/spaceport-neon/", "localFallback": "/assets/shmup/vista_nebula_runway.png"},
+      "review": {"decision": "retain-current", "note": "The environment is aspect-safe but too empty and low-detail for public campaign use."}
+    },
+    {
+      "id": "marketing-aegis-dreadnought",
+      "phase": 8,
+      "screens": [],
+      "kind": "image-set",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_NebulaRunway", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Marketing/LS_Campaign_AegisDreadnought", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Marketing_4K", "alternateRenderPresets": ["/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Marketing_Square_4K", "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Marketing_Portrait_4K", "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Marketing_Vertical_4K"], "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/marketing/aegis-dreadnought/", "localFallback": "/assets/shmup/boss_aegis_dreadnought.png"},
+      "review": {"decision": "retain-current", "note": "Composition is reusable, but the boss still reads as production blockout geometry."}
+    },
+    {
+      "id": "marketing-helios-tyrant",
+      "phase": 8,
+      "screens": [],
+      "kind": "image-set",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_SolarRift", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Marketing/LS_Campaign_HeliosTyrant", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Marketing_4K", "alternateRenderPresets": ["/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Marketing_Square_4K", "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Marketing_Portrait_4K", "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Marketing_Vertical_4K"], "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/marketing/helios-tyrant/", "localFallback": "/assets/shmup/boss_helios_tyrant.png"},
+      "review": {"decision": "retain-current", "note": "The silhouette survives all crops, but material and geometry detail are below campaign quality."}
+    },
+    {
+      "id": "marketing-cryo-leviathan",
+      "phase": 8,
+      "screens": [],
+      "kind": "image-set",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_AbyssCrown", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Marketing/LS_Campaign_CryoLeviathan", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Marketing_4K", "alternateRenderPresets": ["/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Marketing_Square_4K", "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Marketing_Portrait_4K", "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Marketing_Vertical_4K"], "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/marketing/cryo-leviathan/", "localFallback": "/assets/shmup/boss_cryo_leviathan.png"},
+      "review": {"decision": "retain-current", "note": "The three-piece boss reads clearly, but remains too stylized and low-detail for marketing delivery."}
+    },
+    {
+      "id": "marketing-gacha-ssr",
+      "phase": 8,
+      "screens": [],
+      "kind": "image-set",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_GachaStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Marketing/LS_Campaign_GachaSSR", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Marketing_4K", "alternateRenderPresets": ["/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Marketing_Square_4K", "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Marketing_Portrait_4K", "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Marketing_Vertical_4K"], "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/marketing/gacha-ssr/", "localFallback": "/assets/shmup/vista_solar_rift.png"},
+      "review": {"decision": "retain-current", "note": "The sampled reveal is nearly black and has no readable featured reward subject."}
     }
   ]
 }
