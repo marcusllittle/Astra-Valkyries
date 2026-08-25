@@ -100,8 +100,9 @@
       "phase": 4,
       "screens": ["shmup"],
       "kind": "image-sequence",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_SolarRift", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Combat/LS_CombatPlate_SolarRift", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "planned"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/combat/solar-rift/", "localFallback": "/assets/shmup/background_far_solar.png"}
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_SolarRift", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Zones/BP_SolarRift_CombatStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Combat/LS_CombatPlate_SolarRift", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/combat/solar-rift/", "localFallback": "/assets/shmup/background_far_solar.png"},
+      "review": {"decision": "awaiting-density-tuning", "note": "The Solar stage, materials, explicit 13-binding sequence, and Free Niagara-derived ambient, projectile, and impact systems pass a three-frame 1080p MRQ proof with no Niagara initialization errors. Keep the current background until effect density and centered mobile framing pass gameplay-scale review."}
     },
     {
       "id": "combat-abyss-plates",
@@ -118,7 +119,7 @@
       "kind": "video-set",
       "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_NebulaRunway", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Bosses/LS_BossIntro_AegisDreadnought_Production", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
       "delivery": {"hd": "https://media.joinhavn.io/astra/combat/boss-intros/", "localFallback": "/assets/shmup/boss_aegis_dreadnought.png"},
-      "review": {"decision": "production-render-review", "note": "The explicit production sequence binds the verified Blender core and two weapon arms, the combat lighting rig, telegraph FX, exhaust FX, and a mobile-safe camera. Six clean 1920x1080 MRQ proof frames were reviewed in widescreen and a centered 390x844 crop. Framing passes, but retain the current Aegis art until the production look is explicitly approved."}
+      "review": {"decision": "retain-current", "note": "The geometry-v2 proof uses an 8911.13 cm broad three-piece silhouette, closer attachment pivots, purple armor, and a higher three-quarter camera. It is materially clearer than the first candidate but still does not beat the shipping sprite at gameplay scale, so the fallback remains authoritative."}
     },
     {
       "id": "combat-aegis-arm-break",
@@ -127,7 +128,7 @@
       "kind": "video",
       "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_NebulaRunway", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Bosses/LS_Aegis_ArmBreak_Production", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
       "delivery": {"hd": "https://media.joinhavn.io/astra/combat/boss-intros/aegis-arm-break.mp4", "localFallback": "/assets/shmup/boss_aegis_dreadnought.png"},
-      "review": {"decision": "production-render-review", "note": "The core remains stable while both long arms hold through frame 64, then detach independently to X=-6500/+6500 with opposing roll and pitch plus separate break FX. The centered mobile proof preserves the core and attached-arm silhouette and leaves the lower playfield open; retain the current fallback pending explicit visual approval."}
+      "review": {"decision": "retain-current", "note": "The independently pivoted geometry-v2 arms attach at X=-3000/+3000 through frame 64, then separate to X=-6500/+6500 with distinct break FX. The sequence passes its technical proof but remains unapproved for runtime replacement."}
     },
     {
       "id": "flow-results-debriefs",
