@@ -120,6 +120,13 @@ preset with:
 py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_mrq_sample_hub_1080p.py"
 ```
 
+For the Neon Parallax Hangar and Spaceport candidates, render start, middle,
+and end frames with:
+
+```text
+py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_mrq_sample_neon_hub_1080p.py"
+```
+
 Run the Phase 4 Nebula combat, Aegis intro, and arm-break proof set with:
 
 ```text
