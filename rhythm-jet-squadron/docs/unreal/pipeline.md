@@ -245,6 +245,18 @@ These proofs write under
 blocked until production pilot geometry exists; never substitute the empty
 studio or a low-detail stand-in for the current outfit media.
 
+Build and sample the Phase 7 utility-screen sources with:
+
+```text
+py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_build_phase7_utility.py"
+py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_mrq_sample_phase7_utility.py"
+```
+
+The sampler writes eight comparison frames under
+`Saved/AstraRenders/phase7-utility-proof-1080p`. Mission, ability, trophy, and
+forge outputs remain supporting-media candidates and must never displace
+screen controls or dense operational information.
+
 After those proofs pass, render the full Home, Spaceport, and Hangar masters
 with:
 
