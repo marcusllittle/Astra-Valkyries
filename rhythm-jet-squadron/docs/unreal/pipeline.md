@@ -26,6 +26,9 @@ To iterate only the Cryo Leviathan source and exports, append
 To iterate only the Helios Tyrant source and exports, append
 `-Profiles helios-boss`.
 
+To iterate only the reusable enemy fleet, append
+`-Profiles enemy-fleet`.
+
 The wrapper opens each existing `.blend` source in Blender 4.5 and invokes
 `tools/blender/export_unreal_geometry.py`. It exports selected root objects or
 named collections as binary FBX (`.fbx`) and writes an `exports.json` beside
@@ -42,6 +45,7 @@ Profiles:
 | `aegis-boss` | `astra_aegis_dreadnought.blend` (generated) | Independent Aegis core, left arm, and right arm production meshes |
 | `cryo-boss` | `astra_cryo_leviathan.blend` (generated) | Independent Cryo Leviathan core and detachable long weapon arms |
 | `helios-boss` | `astra_helios_tyrant.blend` (generated) | Independent Helios reactor and detachable solar-lance assemblies |
+| `enemy-fleet` | `astra_enemy_fleet.blend` (generated) | Eleven gameplay enemy silhouettes with one shared material contract |
 
 Do not hand-edit staged FBX files. Change the procedural Blender source and
 export again.
@@ -65,6 +69,11 @@ three-piece, six-material solar-reactor contract. It exports
 `SM_Helios_RightLance.fbx` with normalized pivots and intended assembly
 positions at `X=0`, `X=-3400`, and `X=3400` cm.
 
+The `enemy-fleet` job runs `generate_enemy_fleet.py`, validates all eleven
+named roots against light, specialist, and heavy scale limits, and requires
+the same five material slots on every export. It writes one source preview,
+`geometry-contract.json`, and eleven independent `SM_Enemy_*` FBX files.
+
 ## Unreal import
 
 Import with the Unreal MCP
@@ -84,6 +93,7 @@ Destination rules:
 | Aegis production pieces | `/Game/AstraRenderLab/Art/Bosses/Aegis/Blender` |
 | Cryo Leviathan production pieces | `/Game/AstraRenderLab/Art/Bosses/CryoLeviathan/Blender` |
 | Helios Tyrant production pieces | `/Game/AstraRenderLab/Art/Bosses/HeliosTyrant/Blender` |
+| Enemy fleet production meshes | `/Game/AstraRenderLab/Art/Enemies/Blender` |
 
 After import, use MCP read-back tools to verify asset class, bounds, vertex and
 triangle counts, material slots, and Nanite state. Never save unrelated dirty
@@ -187,6 +197,17 @@ This queues six 1920x1080 frames under
 `Saved/AstraRenders/phase4-aegis-production-proof-1080p`. Review the full-width
 frames and a centered `498x1080` crop scaled to `390x844` before approving a
 mobile replacement.
+
+Build and render the Phase 4 enemy presentation set with:
+
+```text
+py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_build_enemy_fleet.py"
+py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_mrq_sample_phase4_enemies.py"
+```
+
+The sampler queues start, profile, and threat frames for the light,
+specialist, and heavy presentation sequences under
+`Saved/AstraRenders/phase4-enemy-presentation-proof-1080p`.
 
 After those proofs pass, render the full Home, Spaceport, and Hangar masters
 with:

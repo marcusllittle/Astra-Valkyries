@@ -123,6 +123,42 @@
       "review": {"decision": "retain-current", "note": "The geometry-v2 proof uses an 8911.13 cm broad three-piece silhouette, closer attachment pivots, purple armor, and a higher three-quarter camera. It is materially clearer than the first candidate but still does not beat the shipping sprite at gameplay scale, so the fallback remains authoritative."}
     },
     {
+      "id": "combat-enemy-light-presentation",
+      "phase": 4,
+      "screens": ["shmup", "codex"],
+      "kind": "image-sequence",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_NebulaRunway", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Combat/LS_EnemyPresentation_Light", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/combat/enemies/light/", "localFallback": "/assets/shmup/enemy_drifter.png"},
+      "review": {"decision": "retain-current", "note": "The light fleet has stable meshes, materials, Blueprints, centered presentation framing, and a clean three-frame proof. The procedural detail does not yet beat the shipping sprites at gameplay scale, so no React replacement is approved."}
+    },
+    {
+      "id": "combat-enemy-specialist-presentation",
+      "phase": 4,
+      "screens": ["shmup", "codex"],
+      "kind": "image-sequence",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_NebulaRunway", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Combat/LS_EnemyPresentation_Specialist", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/combat/enemies/specialist/", "localFallback": "/assets/shmup/enemy_bomber.png"},
+      "review": {"decision": "retain-current", "note": "The specialist fleet has distinct silhouettes and a clean three-frame technical proof. The current Unreal detail level is not a visual upgrade over the shipping sprites, so the fallback remains authoritative."}
+    },
+    {
+      "id": "combat-enemy-heavy-presentation",
+      "phase": 4,
+      "screens": ["shmup", "codex"],
+      "kind": "image-sequence",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_NebulaRunway", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Combat/LS_EnemyPresentation_Heavy", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/combat/enemies/heavy/", "localFallback": "/assets/shmup/enemy_dreadnought.png"},
+      "review": {"decision": "retain-current", "note": "The heavy class passes geometry, Blueprint, and framing checks, but still reads as blockout-quality in the 1080p proof. The shipping Dreadnought and Tank sprites remain authoritative."}
+    },
+    {
+      "id": "combat-enemy-vfx-set",
+      "phase": 4,
+      "screens": ["shmup", "skills"],
+      "kind": "vfx-set",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_NebulaRunway", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Templates/LS_Template_VFXAlpha_60", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_VFXAlpha_1080p", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/combat/enemies/vfx/", "localFallback": "/assets/shmup/blender-vfx/secondary_burst.png"},
+      "review": {"decision": "awaiting-alpha-proof", "note": "Hit, shield-break, death-burst, and telegraph Niagara systems compile cleanly with reusable wrappers. Runtime integration remains gated on dedicated alpha renders and gameplay-density comparison."}
+    },
+    {
       "id": "combat-aegis-arm-break",
       "phase": 4,
       "screens": ["shmup"],
