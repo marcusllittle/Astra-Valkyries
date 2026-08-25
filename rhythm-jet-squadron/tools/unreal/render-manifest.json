@@ -246,25 +246,64 @@
       "id": "shop-gacha-reveal",
       "phase": 6,
       "screens": ["shop"],
-      "kind": "video-set",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_GachaStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Collection/LS_GachaReveal_Master", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "planned"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/gacha/reveals/", "localFallback": "/assets/cutins/aurora_borealis_reveal.mp4"}
+      "kind": "video",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_GachaStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Collection/LS_GachaReveal_SSR", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/gacha/reveals/ssr-energy.mp4", "localFallback": "/assets/outfits/aurora_borealis_cutscene.mp4"},
+      "review": {"decision": "supporting-layer-only", "note": "The keyed Niagara energy chamber is reusable behind a future character reveal, but it does not beat the current outfit-specific SSR cutscene as a standalone asset."}
     },
     {
       "id": "collection-turntables",
       "phase": 6,
       "screens": ["collection"],
       "kind": "video-set",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_CollectionStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Collection/LS_CollectionTurntable_Master", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_UILoop_1080p", "status": "planned"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/collection/turntables/", "localFallback": "/assets/outfits/aurora_borealis_cutscene.mp4"}
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_CollectionStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Collection/LS_CollectionTurntable_Template", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_UILoop_1080p", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/collection/turntables/", "localFallback": "/assets/outfits/aurora_borealis_cutscene.mp4"},
+      "review": {"decision": "blocked-awaiting-character-geometry", "note": "The neutral stage and camera template are ready, but the Render Lab has no production pilot/outfit mesh. Keep the current outfit videos."}
     },
     {
-      "id": "codex-dossier-renders",
+      "id": "codex-dossier-aegis",
       "phase": 6,
       "screens": ["codex"],
-      "kind": "image-set",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_DossierStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Collection/LS_DossierRender_Master", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Still_4K", "status": "planned"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/codex/dossiers/", "localFallback": "/assets/_codex_audit/boss_dreadnought.png"}
+      "kind": "image",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_DossierStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Collection/LS_Dossier_AegisDreadnought", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Still_4K", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/codex/dossiers/aegis-dreadnought.png", "localFallback": "/assets/shmup/boss_aegis_dreadnought.png"},
+      "review": {"decision": "retain-current", "note": "The Unreal proof is darker, smaller, and less detailed than the current Aegis close-up."}
+    },
+    {
+      "id": "codex-dossier-helios",
+      "phase": 6,
+      "screens": ["codex"],
+      "kind": "image",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_DossierStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Collection/LS_Dossier_HeliosTyrant", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Still_4K", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/codex/dossiers/helios-tyrant.png", "localFallback": "/assets/shmup/boss_helios_tyrant.png"},
+      "review": {"decision": "retain-current", "note": "The environment pass is readable, but the current Helios close-up has stronger subject scale and detail."}
+    },
+    {
+      "id": "codex-dossier-cryo",
+      "phase": 6,
+      "screens": ["codex"],
+      "kind": "image",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_DossierStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Collection/LS_Dossier_CryoLeviathan", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Still_4K", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/codex/dossiers/cryo-leviathan.png", "localFallback": "/assets/shmup/boss_cryo_leviathan.png"},
+      "review": {"decision": "retain-current", "note": "The Unreal Cryo proof is a low-detail distant subject and does not beat the authored close-up."}
+    },
+    {
+      "id": "codex-dossier-drifter",
+      "phase": 6,
+      "screens": ["codex"],
+      "kind": "image",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_DossierStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Collection/LS_Dossier_Enemy_Drifter", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Still_4K", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/codex/dossiers/drifter.png", "localFallback": "/assets/shmup/enemy_drifter.png"},
+      "review": {"decision": "retain-current", "note": "The Unreal silhouette is too small and simple at Codex size; keep the current Drifter art."}
+    },
+    {
+      "id": "codex-dossier-dreadnought-escort",
+      "phase": 6,
+      "screens": ["codex"],
+      "kind": "image",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_DossierStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Collection/LS_Dossier_Enemy_Dreadnought", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Still_4K", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/codex/dossiers/dreadnought-escort.png", "localFallback": "/assets/shmup/enemy_dreadnought.png"},
+      "review": {"decision": "retain-current", "note": "The Unreal escort proof lacks the visual detail and immediate readability of the current asset."}
     },
     {
       "id": "missions-sector-plates",

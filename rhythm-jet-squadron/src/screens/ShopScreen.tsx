@@ -2,12 +2,13 @@
  * Shop Screen - Gacha pulls with featured banner and pity counter.
  */
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGame } from "../context/GameContext";
 import { useWallet } from "../context/WalletContext";
 import CardArt from "../components/CardArt";
 import CutinOverlay from "../components/CutinOverlay";
+import OutfitMediaPreview from "../components/OutfitMediaPreview";
 import { summarizeOutfitKit } from "../lib/outfitKits";
 import {
   pullOne,
@@ -53,8 +54,6 @@ export default function ShopScreen() {
   const [pity, setPity] = useState<PityState>(loadPityState);
 
   const featured = getFeaturedOutfit();
-
-  useEffect(() => { setPity(loadPityState()); }, []);
 
   const hasSharedBalance = wallet.status === "connected" && wallet.sharedBalance !== null && wallet.sharedBalance > 0;
   const canAffordWithCredits = (count: 1 | 10) => save.credits >= (count === 1 ? PULL_COST_1 : PULL_COST_10);
@@ -243,20 +242,12 @@ export default function ShopScreen() {
       )}
 
       {previewResult && (
-        <div className="card-preview-overlay" onClick={() => setPreviewResult(null)}>
-          <div className="card-preview-modal panel-surface" onClick={(e) => e.stopPropagation()}>
-            <div className={`card outfit-card card-preview-card rarity-${previewResult.outfit.rarity.toLowerCase()}`}>
-              <CardArt title={previewResult.outfit.name} artUrl={previewResult.outfit.artUrl} artPlaceholder={previewResult.outfit.artPlaceholder} rarity={previewResult.outfit.rarity} className="card-preview-art" motionMode="never" />
-              <div className="card-info">
-                <strong className="card-title">{previewResult.outfit.name}</strong>
-                <span className="rarity-text" style={{ color: RARITY_COLORS[previewResult.outfit.rarity] }}>{previewResult.outfit.rarity}</span>
-                <div className="perk-label">{summarizeOutfitKit(previewResult.outfit)}</div>
-                {previewResult.isNew ? <span className="new-badge">NEW Pull</span> : <span className="shard-badge">Duplicate • +{previewResult.shardsGained} shards</span>}
-              </div>
-            </div>
-            <button className="btn btn-secondary" onClick={() => setPreviewResult(null)}>Close</button>
-          </div>
-        </div>
+        <OutfitMediaPreview
+          outfit={previewResult.outfit}
+          status={previewResult.isNew ? "New acquisition" : "Duplicate conversion"}
+          progress={previewResult.isNew ? undefined : `+${previewResult.shardsGained} shards`}
+          onClose={() => setPreviewResult(null)}
+        />
       )}
 
       {activeCutin && <CutinOverlay key={activeCutin.id} src={activeCutin.url} onComplete={() => setActiveCutin(null)} />}
