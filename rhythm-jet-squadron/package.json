@@ -6,9 +6,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "npm run generate:render-media",
     "build": "tsc -b && vite build",
     "test": "vitest run",
     "lint": "eslint .",
+    "generate:render-media": "node tools/unreal/generate_runtime_media_catalog.mjs",
+    "validate:runtime-media": "node tools/unreal/generate_runtime_media_catalog.mjs --check",
     "validate:render-manifest": "node tools/unreal/validate_render_manifest.mjs",
     "preview": "vite preview",
     "desktop:start": "npm run build && electron .",
@@ -18,6 +21,7 @@
     "mobile:add:android": "cap add android",
     "mobile:add:ios": "cap add ios",
     "mobile:sync": "npm run build && cap sync",
+    "mobile:build:android": "powershell -ExecutionPolicy Bypass -File tools/mobile/build_android_debug.ps1",
     "mobile:android": "npm run build && cap sync android && cap open android",
     "mobile:ios": "npm run build && cap sync ios && cap open ios"
   },

@@ -81,9 +81,9 @@ Implementation status and MCP verification are recorded in
 `docs/unreal/phase-2-template-audit.md`.
 
 The reusable material, lighting, Niagara, Sequencer, and Movie Render Queue
-baseline is callable and saved. Seven project-owned MRQ presets now cover
-cinematic, UI-loop, still, alpha VFX, horizontal marketing, vertical marketing,
-and low-cost validation output. The project has Alpha Output enabled, and
+baseline is callable and saved. Nine project-owned MRQ presets now cover
+cinematic, UI-loop, still, alpha VFX, four marketing aspect ratios, and low-cost
+validation output. The project has Alpha Output enabled, and
 frame 0 of all three Hub sequences rendered through the Unreal Python/MRQ API
 at the expected resolution with unique output paths. Final encoded comparison
 renders now exist locally; in-app review and platform verification remain
@@ -160,6 +160,10 @@ better sequence.
 - Verify Vite web build, Electron package smoke test, and Capacitor sync/build.
 - Run unit tests, manifest validation, media existence checks, and visual review.
 - Gate: no Unreal dependency is added to the shipping runtime.
+- Current state: the approval-gated runtime catalog and HD/local resolver are
+  complete. Zero Unreal outputs are approved, so the generated shipping catalog
+  is intentionally empty. Web, packaged Windows Electron, and Android debug APK
+  verification pass; iOS compilation remains a macOS/Xcode release-host task.
 
 ## Branch strategy
 

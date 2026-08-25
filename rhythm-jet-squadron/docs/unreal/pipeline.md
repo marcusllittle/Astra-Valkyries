@@ -113,6 +113,20 @@ Every sequence/render must have an entry in `render-manifest.json` before final
 rendering. The entry records the owning screen, Unreal map, sequence, render
 preset, HD URL, local fallback, phase, and approval status.
 
+Only `approved` and `integrated` entries can enter the runtime media catalog.
+Generate and verify that catalog with:
+
+```bash
+npm run generate:render-media
+npm run validate:runtime-media
+```
+
+The generated `src/generated/renderMediaCatalog.ts` intentionally excludes
+planned, in-progress, and rejected candidates. `getApprovedRenderMedia` returns
+the HD delivery URL plus a packaged fallback, or packaged media directly when
+HD is disabled. Build generation prevents manifest approvals from being missed
+without allowing unreviewed URLs into React, Electron, or Capacitor.
+
 The project-owned MRQ presets live under
 `/Game/AstraRenderLab/Cinematics/RenderPresets`:
 

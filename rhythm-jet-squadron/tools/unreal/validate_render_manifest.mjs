@@ -75,6 +75,13 @@ for (const output of manifest.outputs ?? []) {
   if (output.unreal?.status === "integrated" && !output.delivery?.localAsset) {
     errors.push(`${output.id}: integrated output requires delivery.localAsset`);
   }
+  if (["approved", "integrated"].includes(output.unreal?.status)) {
+    const compactFallback =
+      output.delivery?.localFallback ?? output.delivery?.localAsset ?? output.delivery?.poster;
+    if (!compactFallback) {
+      errors.push(`${output.id}: approved output requires a compact local fallback`);
+    }
+  }
 }
 
 for (const screen of routedScreens) {
