@@ -2,6 +2,11 @@ const path = require("node:path");
 const { app, BrowserWindow } = require("electron");
 
 const isDev = !app.isPackaged;
+const debugPort = process.env.ASTRA_ELECTRON_DEBUG_PORT;
+
+if (debugPort && /^\d+$/.test(debugPort)) {
+  app.commandLine.appendSwitch("remote-debugging-port", debugPort);
+}
 
 function createMainWindow() {
   const mainWindow = new BrowserWindow({
