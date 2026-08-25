@@ -109,8 +109,9 @@
       "phase": 4,
       "screens": ["shmup"],
       "kind": "image-sequence",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_AbyssCrown", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Combat/LS_CombatPlate_AbyssCrown", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "planned"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/combat/abyss-crown/", "localFallback": "/assets/shmup/background_far_abyss.png"}
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_AbyssCrown", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Zones/BP_AbyssCrown_CombatStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Combat/LS_CombatPlate_AbyssCrown", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/combat/abyss-crown/", "localFallback": "/assets/shmup/background_far_abyss.png"},
+      "review": {"decision": "awaiting-density-tuning", "note": "The Abyss stage, five material instances, explicit nine-binding environment sequence, and three Free Niagara-derived systems pass a three-frame 1080p MRQ proof. The unrelated Aegis blockout bindings were removed, but the portal and lane effects overwhelm the centered mobile crop by the end frame, so the current background remains authoritative."}
     },
     {
       "id": "combat-boss-intros",

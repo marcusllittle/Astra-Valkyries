@@ -140,6 +140,17 @@ has completed with:
 py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_mrq_sample_phase4_solar.py"
 ```
 
+Render the Abyss Crown environment proof after its builder and explicit
+Sequencer binding repair have completed with:
+
+```text
+py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_mrq_sample_phase4_abyss.py"
+```
+
+This queues start, middle, and end frames under
+`Saved/AstraRenders/phase4-abyss-proof-1080p`. Check the full-width images and
+a centered `608x1080` crop before approving any gameplay replacement.
+
 This queues nine 1920x1080 frames under
 `Saved/AstraRenders/phase4-nebula-proof-1080p`. The Aegis sequences remain
 blockout-only until their three independently pivoted Blender meshes replace
