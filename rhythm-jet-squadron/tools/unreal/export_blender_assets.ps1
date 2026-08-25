@@ -9,7 +9,8 @@ if ($Profiles.Count -gt 0) {
     "launch-v2",
     "weapon-vfx",
     "secondary-boss-vfx",
-    "aegis-boss"
+    "aegis-boss",
+    "cryo-boss"
   )
   [string[]]$UnknownProfiles = @($Profiles | Where-Object { $_ -notin $KnownProfiles })
   if ($UnknownProfiles.Count -gt 0) {
@@ -30,6 +31,11 @@ $Jobs = @(
     Profile = "aegis-boss"
     Source = "astra_aegis_dreadnought.blend"
     Generator = "generate_aegis_dreadnought.py"
+  },
+  @{
+    Profile = "cryo-boss"
+    Source = "astra_cryo_leviathan.blend"
+    Generator = "generate_cryo_leviathan.py"
   }
 )
 
@@ -50,22 +56,33 @@ foreach ($Job in $Jobs) {
 
   if ($Job.Generator) {
     $Generator = Join-Path $BlenderRoot $Job.Generator
-    & $Blender --background --python-exit-code 1 --python $Generator -- `
-      --source $Source `
-      --preview (Join-Path $Output "aegis_source_preview.png") `
-      --contract (Join-Path $Output "geometry-contract.json")
+    $GeneratorProcess = Start-Process -FilePath $Blender -ArgumentList @(
+      "--background",
+      "--python-exit-code", "1",
+      "--python", $Generator,
+      "--",
+      "--source", $Source,
+      "--preview", (Join-Path $Output "$($Job.Profile)_source_preview.png"),
+      "--contract", (Join-Path $Output "geometry-contract.json")
+    ) -Wait -PassThru
 
-    if ($LASTEXITCODE -ne 0) {
+    if ($GeneratorProcess.ExitCode -ne 0) {
       throw "Blender generation failed for $($Job.Profile)"
     }
   }
 
-  & $Blender $Source --background --python-exit-code 1 --python $Exporter -- `
-    --profile $Job.Profile `
-    --source $Source `
-    --output-dir $Output
+  $ExportProcess = Start-Process -FilePath $Blender -ArgumentList @(
+    $Source,
+    "--background",
+    "--python-exit-code", "1",
+    "--python", $Exporter,
+    "--",
+    "--profile", $Job.Profile,
+    "--source", $Source,
+    "--output-dir", $Output
+  ) -Wait -PassThru
 
-  if ($LASTEXITCODE -ne 0) {
+  if ($ExportProcess.ExitCode -ne 0) {
     throw "Blender export failed for $($Job.Profile)"
   }
 }

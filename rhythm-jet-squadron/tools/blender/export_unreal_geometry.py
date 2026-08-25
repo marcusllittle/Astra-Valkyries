@@ -75,6 +75,29 @@ PROFILES: dict[str, tuple[ExportTarget, ...]] = {
             assembly_location_cm=(3600, 0, 0),
         ),
     ),
+    "cryo-boss": (
+        ExportTarget(
+            "SM_Cryo_Core",
+            "root",
+            "Cryo_Core",
+            normalize_root=True,
+            assembly_location_cm=(0, 0, 0),
+        ),
+        ExportTarget(
+            "SM_Cryo_LeftArm",
+            "root",
+            "Cryo_LeftArm",
+            normalize_root=True,
+            assembly_location_cm=(-3200, 0, 0),
+        ),
+        ExportTarget(
+            "SM_Cryo_RightArm",
+            "root",
+            "Cryo_RightArm",
+            normalize_root=True,
+            assembly_location_cm=(3200, 0, 0),
+        ),
+    ),
 }
 
 
