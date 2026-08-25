@@ -13,6 +13,7 @@ import { buildShmupLoadout, describePilotPerk, describeShipModifiers } from "../
 import { RUN_MODIFIERS, getScoreSwingPercent } from "../data/modifiers";
 import { SHMUP_MAPS } from "../lib/shmupWaves";
 import {
+  compareOutfitProgression,
   isOutfitPilotLocked,
   summarizeOutfitKit,
 } from "../lib/outfitKits";
@@ -116,8 +117,8 @@ export default function HangarScreen() {
   };
 
   const displayedOutfits = showAllOutfits
-    ? allOutfits
-    : allOutfits.filter((outfit) => isOutfitInDefaultView(outfit));
+    ? [...allOutfits].sort(compareOutfitProgression)
+    : allOutfits.filter((outfit) => isOutfitInDefaultView(outfit)).sort(compareOutfitProgression);
 
   const universalOutfits = displayedOutfits.filter((outfit) => !outfit.pilotId);
   const pilotOutfitGroups = pilots

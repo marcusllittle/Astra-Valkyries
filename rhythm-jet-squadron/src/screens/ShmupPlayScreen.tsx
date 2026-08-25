@@ -206,6 +206,15 @@ interface EnemyBullet {
   grazed?: boolean;
 }
 
+interface ShadowPulseOrb {
+  angle: number;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  launched: boolean;
+}
+
 interface EnemyState {
   id: number;
   pattern: EnemyPattern;
@@ -1079,6 +1088,12 @@ export default function ShmupPlayScreen() {
   // Starfall Swarm: independent lances, not a fixed orbit ring.
   const starfallUntilRef = useRef(0);
   const starfallTimerRef = useRef(0);
+  const shadowPulseUntilRef = useRef(0);
+  const shadowPulseOrbsRef = useRef<ShadowPulseOrb[]>([]);
+  const thunderStrikeRef = useRef<{
+    untilMs: number;
+    bolts: { x1: number; y1: number; x2: number; y2: number; seed: number }[];
+  }>({ untilMs: 0, bolts: [] });
   // Decoy Burn: shadow duplicates that pull fire, then cook off.
   const decoysRef = useRef<{ x: number; y: number; vx: number; vy: number; hp: number; bornMs: number }[]>([]);
   // Tide Guard: a charging escort ring that physically eats bullets.
@@ -1585,6 +1600,9 @@ export default function ShmupPlayScreen() {
     bloomsRef.current = [];
     starfallUntilRef.current = 0;
     starfallTimerRef.current = 0;
+    shadowPulseUntilRef.current = 0;
+    shadowPulseOrbsRef.current = [];
+    thunderStrikeRef.current = { untilMs: 0, bolts: [] };
     decoysRef.current = [];
     tideGuardRef.current = { until: 0, nodes: [], charge: 0 };
     phaseShiftUntilRef.current = 0;
@@ -3515,15 +3533,69 @@ export default function ShmupPlayScreen() {
           return;
         }
         case "starfallSwarm": {
-          // Ocean Drift's drones, but they actually hunt: each lance fires
-          // homing rounds that ricochet off the arena walls, so a miss keeps
-          // looking for something to hit.
+          // Two full sidecraft lock to Nova's wings, roll independently, and
+          // fire hunting lances while her Starfall Rail remains unchanged.
           sfxDrones();
           starfallUntilRef.current = elapsedMs + secondaryDurationMs;
           starfallTimerRef.current = 0;
           startSecondaryCooldown(elapsedMs);
           addPulse(ship.x, ship.y, "#4dd4ff", 18, 190, 0.18, 2.9);
           addSparkBurst(ship.x, ship.y, "#e6f9ff", 16, 190, [2.2, 5.2]);
+          return;
+        }
+        case "shadowPulse": {
+          sfxEmp();
+          const count = SHMUP_BALANCE.effects.shadowPulseOrbs;
+          shadowPulseUntilRef.current = elapsedMs + secondaryDurationMs;
+          shadowPulseOrbsRef.current = Array.from({ length: count }, (_, index) => ({
+            angle: -Math.PI / 2 + (index / count) * Math.PI * 2,
+            x: ship.x,
+            y: ship.y,
+            vx: 0,
+            vy: 0,
+            launched: false,
+          }));
+          startSecondaryCooldown(elapsedMs);
+          addPulse(ship.x, ship.y, "#9d7dff", 22, 210, 0.22, 3.2);
+          addSparkBurst(ship.x, ship.y, "#d0bfff", 20, 210, [2.2, 5.6]);
+          return;
+        }
+        case "thunderStrike": {
+          sfxEmp();
+          const cfg = SHMUP_BALANCE.effects;
+          const targets = enemiesRef.current
+            .slice()
+            .sort((a, b) => distanceSquared(ship.x, ship.y, a.x, a.y) - distanceSquared(ship.x, ship.y, b.x, b.y))
+            .slice(0, cfg.thunderStrikeTargets)
+            .map((enemy) => ({ x: enemy.x, y: enemy.y, boss: false }));
+          if (bossRef.current) {
+            targets.push({ x: bossRef.current.x, y: bossRef.current.y, boss: true });
+          }
+          const bolts = targets.map((target, index) => ({
+            x1: clamp(target.x + (index % 2 === 0 ? -34 : 34), 0, canvas.width),
+            y1: -24,
+            x2: target.x,
+            y2: target.y,
+            seed: elapsedMs * 0.013 + index * 19.7,
+          }));
+          thunderStrikeRef.current = { untilMs: elapsedMs + cfg.thunderStrikeFreezeMs, bolts };
+          freezeUntilRef.current = Math.max(freezeUntilRef.current, elapsedMs + cfg.thunderStrikeFreezeMs);
+          for (const target of targets) {
+            applyAreaBlast(
+              target.x,
+              target.y,
+              target.boss ? 76 : 42,
+              cfg.thunderStrikeDamage,
+              target.boss ? cfg.thunderStrikeBossDamage : 0,
+              elapsedMs,
+              "#fff3bf",
+            );
+            addExplosion(target.x, target.y, "#ffd43b", 24, 3.4);
+            addPulse(target.x, target.y, "#f8f9fa", 12, 130, 0.22, 3.0);
+          }
+          statusFlashUntilRef.current = elapsedMs + 300;
+          addScreenShake(4.8, 0.32);
+          startSecondaryCooldown(elapsedMs);
           return;
         }
         case "decoyBurn": {
@@ -3988,19 +4060,41 @@ export default function ShmupPlayScreen() {
         echo.fireTimer -= deltaSeconds;
         if (echo.fireTimer <= 0) {
           echo.fireTimer += SHMUP_BALANCE.effects.echoFireInterval;
-          playerBulletsRef.current.push({
-            x: frame.x, y: frame.y, vx: 0, vy: -760,
-            age: 0, maxLife: 1.5,
-            radius: 4 * ENTITY_SCALE,
-            damage: SHMUP_BALANCE.effects.echoDamage,
-            color: "#d0bfff", coreColor: "#f3f0ff",
-            length: 16 * ENTITY_SCALE,
-            spriteKey: undefined,
-            pierce: 0, driftVx: 0,
-            oscillateAmp: 0, oscillateFreq: 0, oscillatePhase: 0,
-            boomerangTurnAt: 0, boomerangReturnVy: 0, boomerangReturning: false,
-            homingTurnRate: 2.6, homingRange: 420,
-          });
+          const mirrored = spawnPrimaryShots(
+            primaryKey,
+            {
+              x: frame.x,
+              y: frame.y,
+              radius: ship.radius,
+              weaponLevel: weaponLevelRef.current,
+              overdriveActive: overdriveUntilRef.current > elapsedMs,
+              shotColorOverride: "#d0bfff",
+            },
+            elapsedMs,
+          );
+          for (const shot of mirrored) {
+            playerBulletsRef.current.push({
+              x: shot.x, y: shot.y,
+              vx: shot.vx * spreadMultiplier,
+              vy: shot.vy * bulletSpeedMultiplier,
+              age: 0, maxLife: shot.maxLife,
+              radius: shot.radius * ENTITY_SCALE,
+              damage: shot.damage * weaponDamageMultiplier * SHMUP_BALANCE.effects.echoDamageMult,
+              color: "#d0bfff", coreColor: "#f3f0ff",
+              length: shot.length * ENTITY_SCALE,
+              spriteKey: undefined,
+              pierce: shot.pierce ?? 0,
+              driftVx: (shot.driftVx ?? 0) * spreadMultiplier,
+              oscillateAmp: shot.oscillateAmp ?? 0,
+              oscillateFreq: shot.oscillateFreq ?? 0,
+              oscillatePhase: shot.oscillatePhase ?? 0,
+              boomerangTurnAt: shot.boomerangTurnAt ?? 0,
+              boomerangReturnVy: shot.boomerangReturnVy ?? 0,
+              boomerangReturning: false,
+              homingTurnRate: shot.homingTurnRate ?? 0,
+              homingRange: shot.homingRange ?? 0,
+            });
+          }
         }
       }
     };
@@ -4045,14 +4139,15 @@ export default function ShmupPlayScreen() {
     /** Starfall lances: independent hunters with ricocheting homing shots. */
     const updateStarfall = (elapsedMs: number, deltaSeconds: number) => {
       if (starfallUntilRef.current <= elapsedMs) return;
+      droneOrbitRef.current += deltaSeconds * 3.4;
       starfallTimerRef.current -= deltaSeconds;
       if (starfallTimerRef.current > 0) return;
       starfallTimerRef.current += SHMUP_BALANCE.effects.starfallFireInterval;
       const cfg = SHMUP_BALANCE.effects;
       for (let n = 0; n < cfg.starfallLances; n++) {
-        const a = droneOrbitRef.current * 1.4 + (n / cfg.starfallLances) * Math.PI * 2;
-        const lx = ship.x + Math.cos(a) * 40;
-        const ly = ship.y + Math.sin(a) * 30 - 6;
+        const side = n === 0 ? -1 : 1;
+        const lx = ship.x + side * ship.radius * 3.2;
+        const ly = ship.y + Math.sin(droneOrbitRef.current + n * Math.PI) * 5;
         const target = findNearestHomingTarget(lx, ly, 720);
         let vx = 0;
         let vy = -cfg.starfallShotSpeed;
@@ -4078,6 +4173,43 @@ export default function ShmupPlayScreen() {
           bounces: cfg.starfallBounces,
         });
       }
+    };
+
+    const updateShadowPulse = (elapsedMs: number, deltaSeconds: number) => {
+      const orbs = shadowPulseOrbsRef.current;
+      if (!orbs.length) return;
+      if (shadowPulseUntilRef.current <= elapsedMs) {
+        shadowPulseOrbsRef.current = [];
+        return;
+      }
+      const cfg = SHMUP_BALANCE.effects;
+      for (const orb of orbs) {
+        if (!orb.launched) {
+          orb.angle += deltaSeconds * 1.7;
+          orb.x = ship.x + Math.cos(orb.angle) * cfg.shadowPulseOrbitRadius;
+          orb.y = ship.y + Math.sin(orb.angle) * cfg.shadowPulseOrbitRadius;
+          continue;
+        }
+        const target = findNearestHomingTarget(orb.x, orb.y, 1200);
+        if (target) {
+          const dx = target.x - orb.x;
+          const dy = target.y - orb.y;
+          const distance = Math.hypot(dx, dy) || 1;
+          orb.vx += (dx / distance) * cfg.shadowPulseAcceleration * deltaSeconds;
+          orb.vy += (dy / distance) * cfg.shadowPulseAcceleration * deltaSeconds;
+        }
+        const speed = Math.hypot(orb.vx, orb.vy) || 1;
+        const maxSpeed = cfg.shadowPulseLaunchSpeed * 3.6;
+        if (speed > maxSpeed) {
+          orb.vx = (orb.vx / speed) * maxSpeed;
+          orb.vy = (orb.vy / speed) * maxSpeed;
+        }
+        orb.x += orb.vx * deltaSeconds;
+        orb.y += orb.vy * deltaSeconds;
+      }
+      shadowPulseOrbsRef.current = orbs.filter((orb) =>
+        !orb.launched || (orb.x > -60 && orb.x < canvas.width + 60 && orb.y > -60 && orb.y < canvas.height + 60)
+      );
     };
 
     /** Decoys drift, soak fire, and detonate when killed or when they burn out. */
@@ -4346,6 +4478,7 @@ export default function ShmupPlayScreen() {
       updateEchoes(elapsedMs, deltaSeconds);
       updateBlooms(elapsedMs);
       updateStarfall(elapsedMs, deltaSeconds);
+      updateShadowPulse(elapsedMs, deltaSeconds);
       updateDecoys(elapsedMs, deltaSeconds);
       updateTideGuard(elapsedMs);
       const aggressiveRouteActive = activePassives.includes("aggressiveRoute");
@@ -5357,8 +5490,48 @@ export default function ShmupPlayScreen() {
         playerBulletsRef.current.splice(bulletIndex, 1);
       };
 
+      // Shadow Pulse is armed by shooting it. A hit converts one orbiting
+      // ball into a rapidly accelerating hunter instead of damaging it.
+      for (let orbIndex = shadowPulseOrbsRef.current.length - 1; orbIndex >= 0; orbIndex--) {
+        const orb = shadowPulseOrbsRef.current[orbIndex];
+        if (orb.launched) continue;
+        for (let bulletIndex = playerBulletsRef.current.length - 1; bulletIndex >= 0; bulletIndex--) {
+          const bullet = playerBulletsRef.current[bulletIndex];
+          const reach = 10 * ENTITY_SCALE + bullet.radius;
+          if (distanceSquared(orb.x, orb.y, bullet.x, bullet.y) > reach * reach) continue;
+          const target = findNearestHomingTarget(orb.x, orb.y, 1200);
+          const dx = (target?.x ?? orb.x) - orb.x;
+          const dy = (target?.y ?? orb.y - 200) - orb.y;
+          const length = Math.hypot(dx, dy) || 1;
+          orb.vx = (dx / length) * SHMUP_BALANCE.effects.shadowPulseLaunchSpeed;
+          orb.vy = (dy / length) * SHMUP_BALANCE.effects.shadowPulseLaunchSpeed;
+          orb.launched = true;
+          consumePlayerBullet(bulletIndex);
+          addPulse(orb.x, orb.y, "#d0bfff", 8, 74, 0.14, 2.0);
+          addSparkBurst(orb.x, orb.y, "#9d7dff", 9, 130, [1.8, 4.2]);
+          break;
+        }
+      }
+
       for (let enemyIndex = enemiesRef.current.length - 1; enemyIndex >= 0; enemyIndex--) {
         const enemy = enemiesRef.current[enemyIndex];
+        const orbIndex = shadowPulseOrbsRef.current.findIndex((orb) => {
+          if (!orb.launched) return false;
+          const reach = enemy.radius + 10 * ENTITY_SCALE;
+          return distanceSquared(enemy.x, enemy.y, orb.x, orb.y) <= reach * reach;
+        });
+        if (orbIndex >= 0) {
+          const orb = shadowPulseOrbsRef.current[orbIndex];
+          enemy.hp -= SHMUP_BALANCE.effects.shadowPulseDamage;
+          shadowPulseOrbsRef.current.splice(orbIndex, 1);
+          addExplosion(orb.x, orb.y, "#9d7dff", 22, 3.2);
+          addPulse(orb.x, orb.y, "#d0bfff", 12, 110, 0.18, 2.7);
+          if (enemy.hp <= 0) {
+            registerKill(enemy, elapsedMs);
+            enemiesRef.current.splice(enemyIndex, 1);
+            continue;
+          }
+        }
         for (let bulletIndex = playerBulletsRef.current.length - 1; bulletIndex >= 0; bulletIndex--) {
           const bullet = playerBulletsRef.current[bulletIndex];
           const hitDistance = enemy.radius + bullet.radius;
@@ -5408,6 +5581,17 @@ export default function ShmupPlayScreen() {
 
       const activeBoss = bossRef.current;
       if (activeBoss) {
+        const bossLayout = getBossLayoutFor(activeBoss);
+        for (let orbIndex = shadowPulseOrbsRef.current.length - 1; orbIndex >= 0; orbIndex--) {
+          const orb = shadowPulseOrbsRef.current[orbIndex];
+          if (!orb.launched) continue;
+          const hitPartId = hitTestBossParts(bossLayout, activeBoss.arms, orb.x, orb.y, 10 * ENTITY_SCALE);
+          if (!hitPartId) continue;
+          applyBossPartDamage(activeBoss, hitPartId, SHMUP_BALANCE.effects.shadowPulseBossDamage, elapsedMs);
+          shadowPulseOrbsRef.current.splice(orbIndex, 1);
+          addExplosion(orb.x, orb.y, "#9d7dff", 28, 3.6);
+          addScreenShake(2.2, 0.12);
+        }
         for (let bulletIndex = playerBulletsRef.current.length - 1; bulletIndex >= 0; bulletIndex--) {
           const bullet = playerBulletsRef.current[bulletIndex];
           const bossLayout = getBossLayoutFor(activeBoss);
@@ -7153,6 +7337,81 @@ export default function ShmupPlayScreen() {
         ctx.beginPath();
         ctx.arc(frame.x, frame.y, ship.radius * displayScale * 1.2, 0, Math.PI * 2);
         ctx.stroke();
+        ctx.restore();
+      }
+
+      // Starfall Armor: one full escort on each wing. Their horizontal
+      // scale crosses zero during the roll, giving each craft a readable
+      // arcade-style flip without swapping Nova's current weapon.
+      if (starfallUntilRef.current > elapsedMs) {
+        const escortSprite = getSprite("player");
+        for (let n = 0; n < SHMUP_BALANCE.effects.starfallLances; n++) {
+          const side = n === 0 ? -1 : 1;
+          const x = ship.x + side * ship.radius * 3.2;
+          const y = ship.y + Math.sin(droneOrbitRef.current + n * Math.PI) * 5;
+          const flip = Math.cos(elapsedMs / 260 + n * Math.PI * 0.7);
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.scale(side * Math.max(0.08, Math.abs(flip)) * Math.sign(flip || 1), 1);
+          ctx.globalAlpha = 0.88;
+          ctx.shadowColor = "#4dd4ff";
+          ctx.shadowBlur = 14;
+          if (escortSprite) {
+            drawSpriteCentered(escortSprite, 0, 0, ship.radius * 4.4, ship.radius * 4.4, 0, 0.9);
+          } else {
+            ctx.fillStyle = "#e6f9ff";
+            ctx.beginPath();
+            ctx.moveTo(0, -13);
+            ctx.lineTo(10, 11);
+            ctx.lineTo(0, 7);
+            ctx.lineTo(-10, 11);
+            ctx.closePath();
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+      }
+
+      // Shadow Pulse: five armed nodes become bright comet heads once the
+      // player's own fire launches them.
+      for (const orb of shadowPulseOrbsRef.current) {
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.fillStyle = orb.launched ? "#f3f0ff" : "#b197fc";
+        ctx.shadowColor = "#9d7dff";
+        ctx.shadowBlur = orb.launched ? 22 : 14;
+        ctx.beginPath();
+        ctx.arc(orb.x, orb.y, (orb.launched ? 8 : 7) * displayScale, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(208,191,255,0.8)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(orb.x, orb.y, 11 * displayScale, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      if (thunderStrikeRef.current.untilMs > elapsedMs) {
+        const intensity = clamp((thunderStrikeRef.current.untilMs - elapsedMs) / 900, 0.25, 1);
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        for (const bolt of thunderStrikeRef.current.bolts) {
+          ctx.strokeStyle = `rgba(245, 250, 255, ${0.72 + intensity * 0.28})`;
+          ctx.lineWidth = 4.5;
+          ctx.shadowColor = "#74c0fc";
+          ctx.shadowBlur = 24;
+          ctx.beginPath();
+          ctx.moveTo(bolt.x1, bolt.y1);
+          for (let segment = 1; segment <= 11; segment++) {
+            const t = segment / 11;
+            const jitter = Math.sin(bolt.seed + segment * 17.3 + elapsedMs / 34) * 28 * (1 - t * 0.45);
+            ctx.lineTo(
+              bolt.x1 + (bolt.x2 - bolt.x1) * t + jitter,
+              bolt.y1 + (bolt.y2 - bolt.y1) * t,
+            );
+          }
+          ctx.stroke();
+        }
         ctx.restore();
       }
 

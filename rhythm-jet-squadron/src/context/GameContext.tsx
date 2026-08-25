@@ -18,6 +18,7 @@ import {
 } from "../lib/achievements";
 import { getLevelForXp, calculateRunXp } from "../lib/progression";
 import { getDailyMissions, getWeeklyMissions, advanceMissionProgress, gradeMeets } from "../lib/missions";
+import { CORE_STARTER_OUTFIT_IDS, ensureCoreStarterOutfits } from "../lib/starterOutfits";
 
 const STORAGE_KEY = "astra-valkyries-save";
 
@@ -28,10 +29,6 @@ const DEFAULT_SETTINGS: GameSettings = {
 };
 
 function getStarterOutfits(): OwnedOutfit[] {
-  const commons = outfitsData
-    .filter((outfit) => outfit.rarity === "Common")
-    .slice(0, 3)
-    .map((outfit) => outfit.id);
   const rares = outfitsData.filter((outfit) => outfit.rarity === "Rare");
   const srPilotSpecific = outfitsData.filter(
     (outfit) => outfit.rarity === "SR" && Boolean(outfit.pilotId)
@@ -40,7 +37,7 @@ function getStarterOutfits(): OwnedOutfit[] {
   const rare = rares[Math.floor(Math.random() * rares.length)];
   const sr = srPilotSpecific[Math.floor(Math.random() * srPilotSpecific.length)];
 
-  const starterIds = [commons[0], commons[1], commons[2], rare?.id, sr?.id].filter(
+  const starterIds = [...CORE_STARTER_OUTFIT_IDS, rare?.id, sr?.id].filter(
     (id): id is string => Boolean(id)
   );
 
@@ -101,6 +98,7 @@ function loadSave(): SaveData {
       ...defaultSave,
       ...parsed,
       selectedMapId,
+      ownedOutfits: ensureCoreStarterOutfits(parsed.ownedOutfits ?? defaultSave.ownedOutfits),
       settings: { ...DEFAULT_SETTINGS, ...parsed.settings },
     };
   } catch {

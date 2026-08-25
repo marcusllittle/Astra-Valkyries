@@ -37,6 +37,8 @@ export type ShmupSecondaryKey =
   | "temporalEcho"
   | "superbloom"
   | "starfallSwarm"
+  | "shadowPulse"
+  | "thunderStrike"
   | "decoyBurn"
   | "tideGuard";
 
@@ -152,7 +154,7 @@ export const SHMUP_BALANCE: {
     echoWindowMs: number;
     echoMaxGhosts: number;
     echoFireInterval: number;
-    echoDamage: number;
+    echoDamageMult: number;
     superbloomRadius: number;
     superbloomDamage: number;
     superbloomBossDamage: number;
@@ -164,6 +166,16 @@ export const SHMUP_BALANCE: {
     starfallShotSpeed: number;
     starfallDamage: number;
     starfallBounces: number;
+    shadowPulseOrbs: number;
+    shadowPulseOrbitRadius: number;
+    shadowPulseLaunchSpeed: number;
+    shadowPulseAcceleration: number;
+    shadowPulseDamage: number;
+    shadowPulseBossDamage: number;
+    thunderStrikeFreezeMs: number;
+    thunderStrikeTargets: number;
+    thunderStrikeDamage: number;
+    thunderStrikeBossDamage: number;
     decoyLifeMs: number;
     decoyBlastRadius: number;
     decoyDamage: number;
@@ -327,6 +339,8 @@ export const SHMUP_BALANCE: {
     temporalEcho: { cooldownMs: 7600, durationMs: 3200, usesCharges: false },
     superbloom: { cooldownMs: 0, durationMs: 0, usesCharges: true, baseCharges: 2, ssrBonusCharges: 2, bonusMaxCharges: 1 },
     starfallSwarm: { cooldownMs: 9000, durationMs: 11000, usesCharges: false },
+    shadowPulse: { cooldownMs: 7200, durationMs: 9000, usesCharges: false },
+    thunderStrike: { cooldownMs: 9000, durationMs: 900, usesCharges: false },
     decoyBurn: { cooldownMs: 6800, durationMs: 3400, usesCharges: false },
     tideGuard: { cooldownMs: 9600, durationMs: 6000, usesCharges: false },
     afterburn: { cooldownMs: 8200, durationMs: 2600, usesCharges: false },
@@ -459,18 +473,28 @@ export const SHMUP_BALANCE: {
     echoWindowMs: 3200,
     echoMaxGhosts: 3,
     echoFireInterval: 0.16,
-    echoDamage: 1.1,
+    echoDamageMult: 0.72,
     superbloomRadius: 118,
     superbloomDamage: 5,
     superbloomBossDamage: 14,
     superbloomGenerations: 3,
     superbloomSpread: 132,
     superbloomStageMs: 260,
-    starfallLances: 4,
+    starfallLances: 2,
     starfallFireInterval: 0.34,
     starfallShotSpeed: 520,
     starfallDamage: 1.5,
     starfallBounces: 3,
+    shadowPulseOrbs: 5,
+    shadowPulseOrbitRadius: 42,
+    shadowPulseLaunchSpeed: 240,
+    shadowPulseAcceleration: 760,
+    shadowPulseDamage: 8,
+    shadowPulseBossDamage: 24,
+    thunderStrikeFreezeMs: 900,
+    thunderStrikeTargets: 8,
+    thunderStrikeDamage: 16,
+    thunderStrikeBossDamage: 52,
     decoyLifeMs: 3400,
     decoyBlastRadius: 128,
     decoyDamage: 5,
