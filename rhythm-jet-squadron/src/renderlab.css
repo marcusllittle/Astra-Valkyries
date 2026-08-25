@@ -1,0 +1,193 @@
+.renderlab-route-media {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: #020714;
+}
+
+.renderlab-route-media-asset {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.renderlab-route-media-wash {
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 7, 20, 0.42);
+}
+
+.app-container > .screen,
+.app-container > .briefing-screen-shell {
+  position: relative;
+  z-index: 1;
+}
+
+.renderlab-dev-badge {
+  position: fixed;
+  z-index: 10000;
+  top: max(10px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 7px 12px;
+  border: 1px solid #6fffe9;
+  border-radius: 4px;
+  background: rgba(2, 12, 20, 0.94);
+  color: #8ffff0;
+  box-shadow: 0 0 18px rgba(111, 255, 233, 0.28);
+  font: 700 0.72rem/1 "Segoe UI", system-ui, sans-serif;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.renderlab-screen {
+  width: min(100%, 1320px);
+  gap: 16px;
+  overflow-x: hidden;
+}
+
+.renderlab-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 18px;
+  padding: 12px 0 18px;
+  border-bottom: 1px solid rgba(111, 255, 233, 0.25);
+}
+
+.renderlab-header > *,
+.renderlab-status-strip > *,
+.renderlab-entry-body {
+  min-width: 0;
+}
+
+.renderlab-header h1 {
+  font-size: 2rem;
+  letter-spacing: 0;
+}
+
+.renderlab-header p,
+.renderlab-status-strip span {
+  color: var(--text-secondary);
+}
+
+.renderlab-kicker,
+.renderlab-count {
+  color: #7de8dc;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.renderlab-mode-selector {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid rgba(125, 232, 220, 0.42);
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(4, 15, 28, 0.86);
+}
+
+.renderlab-mode-selector button,
+.renderlab-screen-filters button {
+  min-height: 44px;
+  border: 0;
+  border-right: 1px solid rgba(125, 232, 220, 0.24);
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: 700;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.renderlab-mode-selector button:last-child { border-right: 0; }
+.renderlab-mode-selector button.active {
+  background: #79e8dc;
+  color: #031019;
+}
+
+.renderlab-status-strip {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border-left: 3px solid #79e8dc;
+  background: rgba(10, 27, 43, 0.74);
+}
+
+.renderlab-screen-filters {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.renderlab-screen-filters button {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid rgba(125, 232, 220, 0.2);
+  border-radius: 4px;
+  font-size: 0.7rem;
+}
+
+.renderlab-screen-filters button.active {
+  color: #8ffff0;
+  border-color: #79e8dc;
+  background: rgba(121, 232, 220, 0.1);
+}
+
+.renderlab-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+}
+
+.renderlab-entry {
+  display: grid;
+  grid-template-columns: 128px 1fr;
+  min-height: 178px;
+  overflow: hidden;
+  border: 1px solid rgba(147, 168, 209, 0.2);
+  border-radius: 6px;
+  background: rgba(8, 19, 36, 0.9);
+}
+
+.renderlab-entry.selected { border-color: rgba(121, 232, 220, 0.68); }
+.renderlab-entry-media { position: relative; background: #020711; overflow: hidden; }
+.renderlab-entry-media img,
+.renderlab-entry-media video { width: 100%; height: 100%; object-fit: cover; }
+.renderlab-entry-media > span {
+  position: absolute;
+  left: 7px;
+  bottom: 7px;
+  padding: 3px 5px;
+  background: rgba(2, 7, 17, 0.82);
+  color: #a9bbd9;
+  font-size: 0.64rem;
+  text-transform: uppercase;
+}
+
+.renderlab-entry-body { display: flex; flex-direction: column; gap: 7px; padding: 12px; min-width: 0; }
+.renderlab-entry-heading { display: flex; align-items: start; justify-content: space-between; gap: 8px; }
+.renderlab-entry-heading strong { font-size: 0.88rem; text-transform: uppercase; overflow-wrap: anywhere; }
+.renderlab-entry-screens { color: #7de8dc; font-size: 0.67rem; text-transform: uppercase; }
+.renderlab-entry p { color: var(--text-secondary); font-size: 0.72rem; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.renderlab-status { flex: 0 0 auto; padding: 3px 5px; border: 1px solid currentColor; border-radius: 3px; color: #ffd166; font-size: 0.58rem; text-transform: uppercase; }
+.renderlab-status-rejected { color: #ff8fa3; }
+.renderlab-status-approved,
+.renderlab-status-integrated { color: #6ae0a0; }
+.renderlab-override { display: flex; align-items: center; gap: 8px; margin-top: auto; font-size: 0.72rem; font-weight: 700; }
+.renderlab-override input { width: 18px; height: 18px; accent-color: #79e8dc; }
+.renderlab-disabled { margin: auto; padding: 32px; max-width: 620px; }
+
+@media (max-width: 720px) {
+  .renderlab-header { grid-template-columns: 1fr; }
+  .renderlab-count { display: none; }
+  .renderlab-mode-selector button { min-height: 52px; padding: 5px 2px; font-size: 0.66rem; }
+  .renderlab-status-strip { flex-direction: column; }
+  .renderlab-grid { grid-template-columns: 1fr; }
+  .renderlab-entry { grid-template-columns: 96px minmax(0, 1fr); }
+  .renderlab-dev-badge { top: max(6px, env(safe-area-inset-top)); font-size: 0.62rem; }
+}

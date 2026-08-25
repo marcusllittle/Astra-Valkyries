@@ -23,6 +23,10 @@ import NetworkScreen from "./screens/NetworkScreen";
 import VideoCutsceneScreen from "./screens/VideoCutsceneScreen";
 import AchievementToast from "./components/AchievementToast";
 import GamepadNavigationLayer from "./components/GamepadNavigationLayer";
+import RenderLabScreen from "./screens/RenderLabScreen";
+import { RenderLabProvider } from "./context/RenderLabContext";
+import RenderLabOverlay from "./components/RenderLabOverlay";
+import "./renderlab.css";
 
 function AchievementLayer() {
   const { pendingAchievement, dismissAchievement } = useGame();
@@ -56,6 +60,7 @@ export default function App() {
     <WalletProvider>
     <GameProvider>
       <Router>
+        <RenderLabProvider>
         <div className="app-container">
           <Routes>
             <Route path="/" element={<HomeScreen />} />
@@ -73,12 +78,15 @@ export default function App() {
             <Route path="/missions" element={<MissionsScreen />} />
             <Route path="/skills" element={<SkillsScreen />} />
             <Route path="/network" element={<NetworkScreen />} />
+            <Route path="/renderlab" element={<RenderLabScreen />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           <GamepadNavigationLayer />
           <AchievementLayer />
+          <RenderLabOverlay />
         </div>
         {!isFileRuntime && <Analytics />}
+        </RenderLabProvider>
       </Router>
     </GameProvider>
     </WalletProvider>

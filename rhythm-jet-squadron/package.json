@@ -6,11 +6,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:renderlab": "npm run generate:renderlab-media && vite --mode renderlab",
     "prebuild": "npm run generate:render-media",
     "build": "tsc -b && vite build",
     "test": "vitest run",
     "lint": "eslint .",
     "generate:render-media": "node tools/unreal/generate_runtime_media_catalog.mjs",
+    "generate:renderlab-media": "node tools/unreal/generate_renderlab_preview_catalog.mjs",
     "validate:runtime-media": "node tools/unreal/generate_runtime_media_catalog.mjs --check",
     "validate:render-manifest": "node tools/unreal/validate_render_manifest.mjs",
     "preview": "vite preview",

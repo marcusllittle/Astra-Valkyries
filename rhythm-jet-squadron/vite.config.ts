@@ -19,6 +19,9 @@ export default defineConfig(({ mode }) => {
   return {
     base: process.env.VERCEL ? '/' : './',
     plugins: [react()],
+    optimizeDeps: {
+      entries: ['index.html'],
+    },
     server: {
       proxy: {
         '/api': apiProxy,
