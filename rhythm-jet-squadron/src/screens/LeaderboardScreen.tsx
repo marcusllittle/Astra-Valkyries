@@ -56,16 +56,18 @@ export default function LeaderboardScreen() {
   return (
     <div className="screen leaderboard-screen">
       <div className="leaderboard-header">
-        <button className="btn btn-small" onClick={() => navigate("/")}>
-          Back
-        </button>
-        <h2 className="leaderboard-title">Leaderboard</h2>
+        <button className="btn btn-back" onClick={() => navigate("/")}>← Back</button>
+        <div className="leaderboard-heading">
+          <span>Valkyrie command network</span>
+          <h2 className="leaderboard-title">Leaderboard</h2>
+          <p>Live squadron rankings and verified combat earnings.</p>
+        </div>
         <button
-          className="btn btn-small"
+          className="btn btn-small leaderboard-refresh"
           onClick={loadData}
           disabled={loading}
         >
-          {loading ? "..." : "Refresh"}
+          {loading ? "SYNCING" : "REFRESH"}
         </button>
       </div>
 
@@ -122,7 +124,10 @@ export default function LeaderboardScreen() {
         <div className="leaderboard-error">{error}</div>
       ) : offline ? (
         <div className="leaderboard-empty">
-          Online leaderboard unavailable. The game is running in local/offline mode.
+          <span className="leaderboard-empty-mark" aria-hidden="true" />
+          <strong>Command link unavailable</strong>
+          <p>Local scores remain active. Network rankings will resync when the HavnAI link returns.</p>
+          <button className="btn btn-secondary btn-small" onClick={loadData}>Retry link</button>
         </div>
       ) : entries.length === 0 ? (
         <div className="leaderboard-empty">

@@ -306,36 +306,76 @@
       "review": {"decision": "retain-current", "note": "The Unreal escort proof lacks the visual detail and immediate readability of the current asset."}
     },
     {
-      "id": "missions-sector-plates",
+      "id": "missions-sector-nebula",
       "phase": 7,
       "screens": ["missions"],
-      "kind": "image-set",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_HoloMap", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Utility/LS_MissionSector_Master", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Still_4K", "status": "planned"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/utility/missions/", "localFallback": "/assets/maps/nebula-runway.png"}
+      "kind": "image",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_HoloMap", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Utility/LS_MissionSector_NebulaRunway", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Still_4K", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/utility/missions/nebula-runway.png", "localFallback": "/assets/maps/nebula-runway.png"},
+      "review": {"decision": "retain-current", "note": "The proof exposes combat blockout geometry and is not a premium sector hologram."}
     },
     {
-      "id": "skills-vfx-previews",
+      "id": "missions-sector-solar",
+      "phase": 7,
+      "screens": ["missions"],
+      "kind": "image",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_HoloMap", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Utility/LS_MissionSector_SolarRift", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Still_4K", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/utility/missions/solar-rift.png", "localFallback": "/assets/maps/solar-rift.png"},
+      "review": {"decision": "retain-current", "note": "The proof remains a low-detail combat plate and does not improve Missions."}
+    },
+    {
+      "id": "missions-sector-abyss",
+      "phase": 7,
+      "screens": ["missions"],
+      "kind": "image",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_HoloMap", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Utility/LS_MissionSector_AbyssCrown", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Still_4K", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/utility/missions/abyss-crown.png", "localFallback": "/assets/maps/abyss-crown.png"},
+      "review": {"decision": "retain-current", "note": "The proof is not sufficiently authored or legible to support the operations board."}
+    },
+    {
+      "id": "skills-vfx-burst",
       "phase": 7,
       "screens": ["skills"],
-      "kind": "video-set",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_VFXStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Utility/LS_SkillPreview_Master", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_VFXAlpha_1080p", "status": "planned"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/utility/skills/", "localFallback": "/assets/shmup/blender-vfx/secondary_burst.png"}
+      "kind": "video",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_VFXStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Utility/LS_SkillPreview_Burst", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_VFXAlpha_1080p", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/utility/skills/burst.mp4", "localFallback": "/assets/shmup/blender-vfx/secondary_burst.png"},
+      "review": {"decision": "retain-current", "note": "The proof is severely overexposed and cannot ship as an ability preview."}
+    },
+    {
+      "id": "skills-vfx-shield",
+      "phase": 7,
+      "screens": ["skills"],
+      "kind": "video",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_VFXStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Utility/LS_SkillPreview_Shield", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_VFXAlpha_1080p", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/utility/skills/shield.mp4", "localFallback": "/assets/shmup/blender-vfx/secondary_shield.png"},
+      "review": {"decision": "retain-current", "note": "The effect needs dedicated scale, framing, and alpha tuning before integration."}
+    },
+    {
+      "id": "skills-vfx-overdrive",
+      "phase": 7,
+      "screens": ["skills"],
+      "kind": "video",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_VFXStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Utility/LS_SkillPreview_Overdrive", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_VFXAlpha_1080p", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/utility/skills/overdrive.mp4", "localFallback": "/assets/shmup/blender-vfx/secondary_sigil.png"},
+      "review": {"decision": "retain-current", "note": "The inherited reveal effect is not yet a readable, ability-specific preview."}
     },
     {
       "id": "leaderboard-season-plate",
       "phase": 7,
       "screens": ["leaderboard"],
       "kind": "image",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_TrophyStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Utility/LS_LeaderboardSeason", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Still_4K", "status": "planned"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/utility/leaderboard-season.webp", "localFallback": "/assets/shmup/vista_solar_rift.png"}
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_TrophyStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Utility/LS_LeaderboardSeason", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Still_4K", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/utility/leaderboard-season.webp", "localFallback": "/assets/shmup/vista_solar_rift.png"},
+      "review": {"decision": "retain-current", "note": "The proof is an empty service bay and does not support competitive ranking presentation."}
     },
     {
       "id": "network-forge-loop",
       "phase": 7,
       "screens": ["network"],
       "kind": "video",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_NetworkForge", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Utility/LS_NetworkForgeLoop", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_UILoop_1080p", "status": "planned"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/utility/network-forge-loop.mp4", "localFallback": "/assets/shmup/blender-vfx/secondary_sigil.png"}
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_ForgeStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Utility/LS_NetworkForgeLoop", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_UILoop_1080p", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/utility/network-forge-loop.mp4", "localFallback": "/assets/shmup/blender-vfx/secondary_sigil.png"},
+      "review": {"decision": "retain-current", "note": "The proof is a tiny energy mark on black and does not improve the existing Network forge UI."}
     },
     {
       "id": "settings-low-motion-plate",

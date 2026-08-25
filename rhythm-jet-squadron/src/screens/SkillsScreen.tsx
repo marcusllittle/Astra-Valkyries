@@ -37,6 +37,7 @@ export default function SkillsScreen() {
   );
 
   const level = save.pilotLevel[activePilotId] ?? 1;
+  const activePilot = pilots.find((pilot) => pilot.id === activePilotId);
   const earned = getSkillPointsForLevel(level);
   const spent = getSpentPoints(unlocked, activePilotId);
   const available = earned - spent;
@@ -112,22 +113,26 @@ export default function SkillsScreen() {
         ))}
       </div>
 
-      <div className="skills-summary">
-        <span>
-          Level <strong>{level}</strong>
-        </span>
-        <span>
-          Available <strong className={available > 0 ? "skills-points-ready" : ""}>{available}</strong> SP
-        </span>
-        <span>
-          Spent <strong>{spent}</strong> / {earned}
-        </span>
+      <div className="skills-command">
+        <div className="skills-pilot-portrait" style={{ background: activePilot?.artPlaceholder }}>
+          {activePilot?.artUrl && <img src={activePilot.artUrl} alt="" />}
+        </div>
+        <div className="skills-pilot-readout">
+          <span className="skills-pilot-kicker">Pilot development</span>
+          <strong>{activePilot?.name ?? "Pilot"}</strong>
+          <small>{activePilot?.perk.label}</small>
+        </div>
+        <div className="skills-summary">
+          <span>Level <strong>{level}</strong></span>
+          <span>Available <strong className={available > 0 ? "skills-points-ready" : ""}>{available}</strong> SP</span>
+          <span>Spent <strong>{spent}</strong> / {earned}</span>
+        </div>
       </div>
 
       {available === 0 && spent === 0 && (
         <p className="empty-msg">
           No skill points yet. Pilots earn one point every two levels — fly a
-          run to start levelling {pilots.find((p) => p.id === activePilotId)?.name.split(" ")[0]}.
+          run to start levelling {activePilot?.name.split(" ")[0]}.
         </p>
       )}
 

@@ -140,6 +140,9 @@ better sequence.
 - Missions: sector holograms. Skills: short ability previews. Leaderboard:
   restrained seasonal plate. Network: forge loop. Settings: low-motion still.
 - Gate: assets remain background/supporting media and never reduce scanability.
+- Current state: utility maps, materials, Niagara wrappers, sequences, and
+  proof renders are complete. Skills and Leaderboard hierarchy is upgraded;
+  all Unreal media candidates remain gated after failing visual comparison.
 
 ### Phase 8: marketing renders
 
