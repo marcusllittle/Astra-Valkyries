@@ -36,6 +36,24 @@
       "review": {"decision": "reject-placement", "note": "Rejected after in-app product review: the passive low-detail strip adds no loadout value. The Hangar now prioritizes visual Pilot, Ship, Map, Outfit, and Modifier tabs; the Blender launch clip remains authoritative for takeoff."}
     },
     {
+      "id": "hub-spaceport-neon-loop",
+      "phase": 3,
+      "screens": ["spaceport"],
+      "kind": "video",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/L_Astra_HubRenderStage", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_SpaceportNeonStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_SpaceportNeonLoop", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_UILoop_1080p", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/hub/spaceport-neon-loop.mp4", "localFallback": "/assets/cutins/nova/nova_leaving_port.mp4"},
+      "review": {"decision": "candidate-environment", "note": "Neon Parallax geometry is re-authored with Astra materials as an open orbital gantry. The vendor ship and old low-detail Astra Interceptor are hidden. Keep Nova's pre-takeoff clip until a full render passes product and platform review."}
+    },
+    {
+      "id": "hub-hangar-neon-flythrough",
+      "phase": 3,
+      "screens": ["hangar"],
+      "kind": "video",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/L_Astra_HubRenderStage", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_HangarNeonStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_HangarNeonInspection", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/hub/hangar-neon-flythrough.mp4", "localFallback": "/assets/cutins/ships/astra_interceptor_launch.mp4"},
+      "review": {"decision": "candidate-environment", "note": "The candidate is an Astra-material Neon service bay flythrough, not another passive ship strip. The vendor ship and old low-detail Astra Interceptor are hidden. Keep the Blender takeoff clip authoritative until explicit approval."}
+    },
+    {
       "id": "flow-briefing-nebula",
       "phase": 5,
       "screens": ["briefing", "video-cutscene"],
