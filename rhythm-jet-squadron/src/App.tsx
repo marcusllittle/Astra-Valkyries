@@ -21,6 +21,7 @@ import MissionsScreen from "./screens/MissionsScreen";
 import SkillsScreen from "./screens/SkillsScreen";
 import NetworkScreen from "./screens/NetworkScreen";
 import VideoCutsceneScreen from "./screens/VideoCutsceneScreen";
+import FormShiftPrototypeScreen from "./screens/FormShiftPrototypeScreen";
 import AchievementToast from "./components/AchievementToast";
 import GamepadNavigationLayer from "./components/GamepadNavigationLayer";
 
@@ -68,6 +69,7 @@ export default function App() {
             <Route path="/leaderboard" element={<LeaderboardScreen />} />
             <Route path="/briefing" element={<BriefingScreen />} />
             <Route path="/video-cutscene" element={<VideoCutsceneScreen />} />
+            <Route path="/form-shift-prototype" element={<FormShiftPrototypeScreen />} />
             <Route path="/codex" element={<CodexScreen />} />
             <Route path="/spaceport" element={<SpaceportScreen />} />
             <Route path="/missions" element={<MissionsScreen />} />
