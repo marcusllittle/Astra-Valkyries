@@ -209,6 +209,24 @@ The sampler queues start, profile, and threat frames for the light,
 specialist, and heavy presentation sequences under
 `Saved/AstraRenders/phase4-enemy-presentation-proof-1080p`.
 
+Build the Phase 5 briefing, launch, debrief, and return templates with:
+
+```text
+py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_build_phase5_flow.py"
+```
+
+After the checked-in sequences have been loaded, render start, midpoint, and
+end proof frames for all eight deliverable shots with:
+
+```text
+py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_mrq_sample_phase5_flow.py"
+```
+
+This queues 24 frames under
+`Saved/AstraRenders/phase5-mission-flow-proof-1080p`. These are comparison
+proofs only. Keep all current React media until a full render passes desktop,
+centered mobile crop, Electron, and mobile build review.
+
 After those proofs pass, render the full Home, Spaceport, and Hangar masters
 with:
 
