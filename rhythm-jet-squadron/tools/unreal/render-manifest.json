@@ -58,33 +58,36 @@
       "phase": 5,
       "screens": ["briefing", "video-cutscene"],
       "kind": "video",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_NebulaRunway", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Flow/LS_Briefing_NebulaRunway", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "planned"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/flow/briefing-nebula-runway.mp4", "localFallback": "/assets/cutins/scenes/nebula_runway_briefing.mp4"}
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_NebulaRunway", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Flow/LS_Briefing_NebulaRunway", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/flow/briefing-nebula-runway.mp4", "localFallback": "/assets/cutins/scenes/nebula_runway_briefing.mp4"},
+      "review": {"decision": "retain-current", "note": "The 24 fps zone template and Niagara bindings pass MCP and MRQ checks, but the proof is a dark blockout and does not beat the current briefing video."}
     },
     {
       "id": "flow-briefing-solar",
       "phase": 5,
       "screens": ["briefing", "video-cutscene"],
       "kind": "video",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_SolarRift", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Flow/LS_Briefing_SolarRift", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "planned"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/flow/briefing-solar-rift.mp4", "localFallback": "/assets/cutins/scenes/solar_rift_briefing.mp4"}
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_SolarRift", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Flow/LS_Briefing_SolarRift", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/flow/briefing-solar-rift.mp4", "localFallback": "/assets/cutins/scenes/solar_rift_briefing.mp4"},
+      "review": {"decision": "retain-current", "note": "The 24 fps zone template and Niagara bindings pass MCP and MRQ checks, but the effect density obscures the route and does not beat the current briefing video."}
     },
     {
       "id": "flow-briefing-abyss",
       "phase": 5,
       "screens": ["briefing", "video-cutscene"],
       "kind": "video",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_AbyssCrown", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Flow/LS_Briefing_AbyssCrown", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "planned"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/flow/briefing-abyss-crown.mp4", "localFallback": "/assets/cutins/scenes/abyss_crown_briefing.mp4"}
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_AbyssCrown", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Flow/LS_Briefing_AbyssCrown", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/flow/briefing-abyss-crown.mp4", "localFallback": "/assets/cutins/scenes/abyss_crown_briefing.mp4"},
+      "review": {"decision": "retain-current", "note": "The 24 fps zone template and Niagara bindings pass MCP and MRQ checks, but the proof remains a low-detail blockout and does not beat the current briefing video."}
     },
     {
       "id": "flow-launch-interceptor",
       "phase": 5,
       "screens": ["video-cutscene"],
       "kind": "video",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/Hub/L_LaunchDeck", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Flow/LS_Launch_AstraInterceptor", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "planned"},
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Hub/L_LaunchDeck", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Flow/LS_Launch_AstraInterceptor", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
       "delivery": {"hd": "https://media.joinhavn.io/astra/flow/launch-astra-interceptor.mp4", "localFallback": "/assets/cutins/ships/astra_interceptor_launch.mp4"},
-      "review": {"decision": "retain-current", "note": "Keep the Blender ship takeoff until a future Unreal launch sequence is clearly better."}
+      "review": {"decision": "retain-current", "note": "The keyed launch timing is reusable, but the low-detail Interceptor and blockout deck do not beat the current Blender takeoff. Keep the Blender ship takeoff authoritative."}
     },
     {
       "id": "combat-nebula-plates",
@@ -204,20 +207,40 @@
       "review": {"decision": "awaiting-gameplay-comparison", "note": "Both beam pylons remain attached through frame 64 and separate independently to X=-8600/+8600 by frame 119 with distinct break FX. The technical choreography passes; runtime integration remains gated."}
     },
     {
-      "id": "flow-results-debriefs",
+      "id": "flow-results-debrief-nebula",
       "phase": 5,
       "screens": ["shmup-results"],
-      "kind": "image-set",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_Debrief", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Flow/LS_Debrief_Master", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Still_4K", "status": "planned"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/flow/debriefs/", "localFallback": "/assets/cutins/scenes/nebula_runway_debrief.png"}
+      "kind": "image",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_Debrief", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Flow/LS_Debrief_NebulaRunway", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Still_4K", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/flow/debriefs/nebula-runway.png", "localFallback": "/assets/cutins/scenes/nebula_runway_debrief.png"},
+      "review": {"decision": "retain-current", "note": "The debrief sequence is callable and keyed, but the ship is too dark and small to replace the current authored debrief still."}
+    },
+    {
+      "id": "flow-results-debrief-solar",
+      "phase": 5,
+      "screens": ["shmup-results"],
+      "kind": "image",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_Debrief", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Flow/LS_Debrief_SolarRift", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Still_4K", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/flow/debriefs/solar-rift.png", "localFallback": "/assets/cutins/scenes/solar_rift_debrief.png"},
+      "review": {"decision": "retain-current", "note": "The debrief sequence is callable and keyed, but dense foreground streaks obscure the low-detail ship and do not beat the current still."}
+    },
+    {
+      "id": "flow-results-debrief-abyss",
+      "phase": 5,
+      "screens": ["shmup-results"],
+      "kind": "image",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Stages/L_Debrief", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Flow/LS_Debrief_AbyssCrown", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Still_4K", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/flow/debriefs/abyss-crown.png", "localFallback": "/assets/cutins/scenes/abyss_crown_debrief.png"},
+      "review": {"decision": "retain-current", "note": "The debrief sequence is callable and keyed, but the ship and environment remain prototype quality and do not beat the current still."}
     },
     {
       "id": "flow-return-spaceport",
       "phase": 5,
       "screens": ["video-cutscene", "spaceport"],
       "kind": "video",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/Hub/L_Spaceport", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Flow/LS_Return_Spaceport", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "planned"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/flow/return-spaceport.mp4", "localFallback": "/assets/cutins/nova/nova_return_to_port.mp4"}
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Hub/L_Spaceport", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Flow/LS_Return_Spaceport", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/flow/return-spaceport.mp4", "localFallback": "/assets/cutins/nova/nova_return_to_port.mp4"},
+      "review": {"decision": "retain-current", "note": "The reverse arrival timing is reusable, but the low-detail Interceptor and sparse gantry do not beat Nova's current return clip."}
     },
     {
       "id": "shop-gacha-reveal",
