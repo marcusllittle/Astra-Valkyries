@@ -50,7 +50,7 @@ foreach ($Job in $Jobs) {
 
   if ($Job.Generator) {
     $Generator = Join-Path $BlenderRoot $Job.Generator
-    & $Blender --background --python $Generator -- `
+    & $Blender --background --python-exit-code 1 --python $Generator -- `
       --source $Source `
       --preview (Join-Path $Output "aegis_source_preview.png") `
       --contract (Join-Path $Output "geometry-contract.json")
@@ -60,7 +60,7 @@ foreach ($Job in $Jobs) {
     }
   }
 
-  & $Blender $Source --background --python $Exporter -- `
+  & $Blender $Source --background --python-exit-code 1 --python $Exporter -- `
     --profile $Job.Profile `
     --source $Source `
     --output-dir $Output
