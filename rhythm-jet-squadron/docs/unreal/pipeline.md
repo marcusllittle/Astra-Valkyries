@@ -123,6 +123,8 @@ The project-owned MRQ presets live under
 | `MPC_Astra_Still_4K` | 4K still and dossier masters |
 | `MPC_Astra_VFXAlpha_1080p` | 60 fps RGBA VFX image sequences |
 | `MPC_Astra_Marketing_4K` | 4K horizontal marketing masters |
+| `MPC_Astra_Marketing_Square_4K` | 2160-square marketing masters |
+| `MPC_Astra_Marketing_Portrait_4K` | 2160x2700 4:5 marketing masters |
 | `MPC_Astra_Marketing_Vertical_4K` | 4K vertical marketing masters |
 | `MPC_Astra_Validation_640x360` | One-frame render-pipeline checks |
 
@@ -157,6 +159,19 @@ and end frames with:
 ```text
 py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_mrq_sample_neon_hub_1080p.py"
 ```
+
+Build the shared Phase 8 campaign sources and render one reduced-resolution
+composition proof in each delivery aspect with:
+
+```text
+py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_build_phase8_marketing.py"
+py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_mrq_sample_phase8_marketing.py"
+```
+
+The sampler writes 24 frames under
+`Saved/AstraRenders/phase8-marketing-composition-proof`. Marketing sequences
+carry a Sequencer bool track that disables fixed camera aspect constraints;
+this prevents letterboxing while preserving the source shot's camera lineage.
 
 Run the Phase 4 Nebula combat, Aegis intro, and arm-break proof set with:
 
