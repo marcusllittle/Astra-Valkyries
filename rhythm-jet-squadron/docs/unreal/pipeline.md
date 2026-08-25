@@ -227,6 +227,24 @@ This queues 24 frames under
 proofs only. Keep all current React media until a full render passes desktop,
 centered mobile crop, Electron, and mobile build review.
 
+Build the Phase 6 gacha, Collection turntable, and Codex dossier sources with:
+
+```text
+py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_build_phase6_collection.py"
+```
+
+Render the gacha start/charge/impact frames, Collection studio check, and five
+4K dossier comparisons with:
+
+```text
+py "D:/UnrealProjects/AstraValkRenderLab/Content/Python/astra_mrq_sample_phase6_collection.py"
+```
+
+These proofs write under
+`Saved/AstraRenders/phase6-collection-proof-1080p`. The Collection template is
+blocked until production pilot geometry exists; never substitute the empty
+studio or a low-detail stand-in for the current outfit media.
+
 After those proofs pass, render the full Home, Spaceport, and Hangar masters
 with:
 

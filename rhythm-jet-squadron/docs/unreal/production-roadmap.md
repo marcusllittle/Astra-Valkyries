@@ -131,6 +131,9 @@ better sequence.
 - Build rarity-aware gacha reveals and neutral collection/dossier turntables.
 - Preserve strong existing pilot/outfit cut-ins; replace only approved entries.
 - Gate: every replacement has a local poster/fallback and manifest destination.
+- Current state: templates and proof renders are complete; the motion-first
+  Shop/Collection viewer is integrated, while Unreal art replacements remain
+  gated on production character geometry and stronger dossier renders.
 
 ### Phase 7: utility-screen polish
 

@@ -17,6 +17,7 @@ import {
   type OwnedAsset,
 } from "../lib/havnApi";
 import CardArt from "../components/CardArt";
+import OutfitMediaPreview from "../components/OutfitMediaPreview";
 import type { Outfit, OwnedOutfit, Pilot } from "../types";
 import outfitsData from "../data/outfits.json";
 import pilotsData from "../data/pilots.json";
@@ -420,58 +421,23 @@ export default function CollectionScreen() {
       </>}
 
       {previewOutfit && (
-        <div className="card-preview-overlay" onClick={() => setPreviewOutfitId(null)}>
-          <div className="card-preview-modal panel-surface" onClick={(event) => event.stopPropagation()}>
-            <div
-              className={`card outfit-card card-preview-card rarity-${previewOutfit.rarity.toLowerCase()} ${previewIsOwned ? "" : "card-locked"}`}
-            >
-              <CardArt
-                title={previewOutfit.name}
-                artUrl={previewOutfit.artUrl}
-                                artPlaceholder={previewOutfit.artPlaceholder}
-                rarity={previewOutfit.rarity}
-                className="card-preview-art"
-                motionMode="never"
-              />
-              <div className="card-info">
-                <strong className="card-title">{previewOutfit.name}</strong>
-                <span
-                  className="rarity-text"
-                  style={{ color: RARITY_COLORS[previewOutfit.rarity] }}
-                >
-                  {previewOutfit.rarity}{!previewIsOwned ? " • Locked" : ""}
-                </span>
-                <div className="star-display">
-                  {previewOwned
-                    ? `${"★".repeat(previewOwned.stars)}${"☆".repeat(5 - previewOwned.stars)}`
-                    : "☆☆☆☆☆"}
-                </div>
-                {previewOutfit.pilotId && (
-                  <div className="rarity-badge">
-                    {pilotNameById.get(previewOutfit.pilotId) ?? previewOutfit.pilotId}
-                  </div>
-                )}
-                <div className="perk-label">{summarizeOutfitKit(previewOutfit)}</div>
-                {previewNextThreshold && (
-                  <div className="shard-progress">
-                    Shards: {previewOwned?.shards ?? 0}/{previewNextThreshold}
-                  </div>
-                )}
-                {previewIsOwned && previewUpgradable && (
-                  <button
-                    className="btn btn-upgrade"
-                    onClick={() => upgradeOutfit(previewOutfit.id)}
-                  >
-                    ★ Upgrade
-                  </button>
-                )}
-              </div>
-            </div>
-            <button className="btn btn-secondary" onClick={() => setPreviewOutfitId(null)}>
-              Close
+        <OutfitMediaPreview
+          outfit={previewOutfit}
+          pilotName={previewOutfit.pilotId
+            ? pilotNameById.get(previewOutfit.pilotId) ?? previewOutfit.pilotId
+            : undefined}
+          status={previewIsOwned ? "Owned loadout" : "Locked loadout"}
+          stars={previewOwned?.stars ?? 0}
+          progress={previewNextThreshold
+            ? `${previewOwned?.shards ?? 0} / ${previewNextThreshold} shards`
+            : previewIsOwned ? "Maximum calibration" : undefined}
+          action={previewIsOwned && previewUpgradable ? (
+            <button type="button" className="btn btn-upgrade" onClick={() => upgradeOutfit(previewOutfit.id)}>
+              ★ Upgrade
             </button>
-          </div>
-        </div>
+          ) : undefined}
+          onClose={() => setPreviewOutfitId(null)}
+        />
       )}
     </div>
   );
