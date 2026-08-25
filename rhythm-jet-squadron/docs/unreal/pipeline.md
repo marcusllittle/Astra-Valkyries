@@ -23,6 +23,9 @@ To iterate only the Aegis source and exports, append
 To iterate only the Cryo Leviathan source and exports, append
 `-Profiles cryo-boss`.
 
+To iterate only the Helios Tyrant source and exports, append
+`-Profiles helios-boss`.
+
 The wrapper opens each existing `.blend` source in Blender 4.5 and invokes
 `tools/blender/export_unreal_geometry.py`. It exports selected root objects or
 named collections as binary FBX (`.fbx`) and writes an `exports.json` beside
@@ -38,6 +41,7 @@ Profiles:
 | `secondary-boss-vfx` | `astra_secondary_boss_vfx.blend` | Secondary and boss telegraph source geometry |
 | `aegis-boss` | `astra_aegis_dreadnought.blend` (generated) | Independent Aegis core, left arm, and right arm production meshes |
 | `cryo-boss` | `astra_cryo_leviathan.blend` (generated) | Independent Cryo Leviathan core and detachable long weapon arms |
+| `helios-boss` | `astra_helios_tyrant.blend` (generated) | Independent Helios reactor and detachable solar-lance assemblies |
 
 Do not hand-edit staged FBX files. Change the procedural Blender source and
 export again.
@@ -54,6 +58,12 @@ The `cryo-boss` job runs `generate_cryo_leviathan.py` and validates a
 three-piece, six-material contract. It exports `SM_Cryo_Core.fbx`,
 `SM_Cryo_LeftArm.fbx`, and `SM_Cryo_RightArm.fbx` with normalized pivots
 and intended assembly positions at `X=0`, `X=-3200`, and `X=3200` cm.
+
+The `helios-boss` job runs `generate_helios_tyrant.py` and validates a
+three-piece, six-material solar-reactor contract. It exports
+`SM_Helios_Core.fbx`, `SM_Helios_LeftLance.fbx`, and
+`SM_Helios_RightLance.fbx` with normalized pivots and intended assembly
+positions at `X=0`, `X=-3400`, and `X=3400` cm.
 
 ## Unreal import
 
@@ -73,6 +83,7 @@ Destination rules:
 | Secondary/boss geometry | `/Game/AstraRenderLab/FX/SourceGeometry/Blender` |
 | Aegis production pieces | `/Game/AstraRenderLab/Art/Bosses/Aegis/Blender` |
 | Cryo Leviathan production pieces | `/Game/AstraRenderLab/Art/Bosses/CryoLeviathan/Blender` |
+| Helios Tyrant production pieces | `/Game/AstraRenderLab/Art/Bosses/HeliosTyrant/Blender` |
 
 After import, use MCP read-back tools to verify asset class, bounds, vertex and
 triangle counts, material slots, and Nanite state. Never save unrelated dirty

@@ -150,6 +150,24 @@
       "review": {"decision": "retain-current", "note": "Both long arms remain attached through frame 64 and then separate independently to X=-8200/+8200 by frame 119 with distinct break FX. The technical contract is valid, but the visual candidate is not approved for React integration."}
     },
     {
+      "id": "combat-helios-tyrant-intro",
+      "phase": 4,
+      "screens": ["shmup", "video-cutscene"],
+      "kind": "video",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_SolarRift", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Bosses/LS_BossIntro_HeliosTyrant", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/combat/boss-intros/helios-tyrant.mp4", "localFallback": "/assets/shmup/boss_helios_tyrant.png"},
+      "review": {"decision": "awaiting-gameplay-comparison", "note": "The 13,614.41 cm reactor, paired solar lances, dedicated materials, and localized Niagara pass a six-frame 1080p MRQ proof with mobile-safe framing. The proof is materially stronger than the flat fallback, but no React replacement is approved until a player-ship scale shot and gameplay comparison pass."}
+    },
+    {
+      "id": "combat-helios-tyrant-lance-break",
+      "phase": 4,
+      "screens": ["shmup"],
+      "kind": "video",
+      "unreal": {"map": "/Game/AstraRenderLab/Maps/Zones/L_SolarRift", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Bosses/LS_HeliosTyrant_LanceBreak", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/combat/boss-intros/helios-tyrant-lance-break.mp4", "localFallback": "/assets/shmup/boss_helios_tyrant.png"},
+      "review": {"decision": "awaiting-gameplay-comparison", "note": "Both beam pylons remain attached through frame 64 and separate independently to X=-8600/+8600 by frame 119 with distinct break FX. The technical choreography passes; runtime integration remains gated."}
+    },
+    {
       "id": "flow-results-debriefs",
       "phase": 5,
       "screens": ["shmup-results"],
