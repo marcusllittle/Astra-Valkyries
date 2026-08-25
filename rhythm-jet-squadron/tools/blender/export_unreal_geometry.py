@@ -121,6 +121,27 @@ PROFILES: dict[str, tuple[ExportTarget, ...]] = {
             assembly_location_cm=(3400, 0, 0),
         ),
     ),
+    "enemy-fleet": tuple(
+        ExportTarget(
+            f"SM_Enemy_{name}",
+            "root",
+            f"Enemy_{name}",
+            normalize_root=True,
+        )
+        for name in (
+            "Drifter",
+            "Sine",
+            "Zigzag",
+            "Orbiter",
+            "Charger",
+            "Splitter",
+            "Bomber",
+            "Sniper",
+            "Swarm",
+            "Dreadnought",
+            "Tank",
+        )
+    ),
 }
 
 
