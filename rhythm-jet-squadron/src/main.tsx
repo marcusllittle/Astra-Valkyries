@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 import "./game-flow.css";
+import "./family-safe-mobile.css";
 
 if (typeof document !== "undefined") {
   document.addEventListener(
