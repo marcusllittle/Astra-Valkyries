@@ -1,0 +1,47 @@
+/* Temporary family-safe presentation and Safari mobile-control hardening.
+ * This branch is intended for family playtesting. It deliberately hides all
+ * Inbox media until a proper content-rating setting is implemented.
+ */
+
+/* Family-safe lock: keep mission/squadron text, hide all image/video media and
+ * the Media Vault so mature pilot artwork cannot be opened accidentally. */
+.inbox-attachments,
+.inbox-vault,
+.inbox-view-tabs button:nth-child(2) {
+  display: none !important;
+}
+
+/* Do not advertise an attachment type when attachments are intentionally hidden. */
+.inbox-item-media {
+  display: none !important;
+}
+
+/* Safari/iPhone landscape can place the bottom/right browser chrome or safe-area
+ * over the gameplay ability control. Keep the button inside both safe areas and
+ * give it a reliable touch target above the canvas. */
+.shmup-touch-secondary {
+  position: fixed !important;
+  right: max(18px, calc(env(safe-area-inset-right) + 12px)) !important;
+  bottom: max(22px, calc(env(safe-area-inset-bottom) + 18px)) !important;
+  z-index: 80 !important;
+  min-width: 76px !important;
+  min-height: 76px !important;
+  touch-action: manipulation !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@supports (height: 100dvh) {
+  .shmup-touch-secondary {
+    bottom: max(22px, calc(env(safe-area-inset-bottom) + 18px)) !important;
+  }
+}
+
+/* Extra breathing room for short landscape Safari viewports. */
+@media (hover: none) and (pointer: coarse) and (max-height: 520px) {
+  .shmup-touch-secondary {
+    right: max(16px, calc(env(safe-area-inset-right) + 10px)) !important;
+    bottom: max(16px, calc(env(safe-area-inset-bottom) + 12px)) !important;
+    min-width: 72px !important;
+    min-height: 72px !important;
+  }
+}
