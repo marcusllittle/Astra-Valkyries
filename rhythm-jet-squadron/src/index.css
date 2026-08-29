@@ -1228,54 +1228,6 @@ video.card-art-img {
   gap: 12px;
 }
 
-.hangar-renderlab-fleet {
-  position: relative;
-  height: clamp(200px, 24vw, 290px);
-  margin-bottom: 14px;
-  overflow: hidden;
-  border: 1px solid rgba(125, 232, 220, 0.42);
-  border-radius: 6px;
-  background: #020711;
-}
-
-.hangar-renderlab-fleet img,
-.hangar-renderlab-fleet video {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: center;
-}
-
-.hangar-renderlab-fleet > div {
-  position: absolute;
-  inset: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 14px;
-  background: rgba(2, 7, 17, 0.88);
-}
-
-.hangar-renderlab-fleet strong,
-.hangar-renderlab-fleet span {
-  min-width: 0;
-  letter-spacing: 0;
-}
-
-.hangar-renderlab-fleet strong {
-  color: #e9f5ff;
-  font-size: 0.82rem;
-  text-transform: uppercase;
-}
-
-.hangar-renderlab-fleet span {
-  color: #7de8dc;
-  font-size: 0.7rem;
-  text-align: right;
-}
-
 .hangar-choice-grid .card {
   min-width: 0;
   border-radius: 8px;

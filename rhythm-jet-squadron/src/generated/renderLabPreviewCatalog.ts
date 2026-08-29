@@ -5,7 +5,6 @@ export interface RenderLabCandidateEntry {
   phase: number;
   screens: readonly string[];
   kind: string;
-  placement?: "route-background" | "inline";
   status: string;
   decision?: string;
   note?: string;
@@ -633,21 +632,5 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "note": "The sampled reveal is nearly black and has no readable featured reward subject.",
     "candidate": "https://media.joinhavn.io/astra/marketing/gacha-ssr/",
     "fallback": "/assets/shmup/vista_solar_rift.png"
-  },
-  "fleet-preview-claude-candidates": {
-    "id": "fleet-preview-claude-candidates",
-    "phase": 3,
-    "screens": [
-      "hangar",
-      "collection",
-      "codex"
-    ],
-    "kind": "image",
-    "placement": "inline",
-    "status": "in-progress",
-    "decision": "awaiting-model-quality-review",
-    "note": "First local MCP-captured proof of all three Claude ship candidates under isolated lighting. The fleet composition is useful for validation, but the models and lighting are not approved production replacements.",
-    "candidate": "/assets/renderlab/unreal/fleet-preview.png",
-    "fallback": "/assets/ships/astra_interceptor.png"
   }
 };

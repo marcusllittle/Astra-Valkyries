@@ -19,9 +19,6 @@ import {
 } from "../lib/outfitKits";
 import { resolveAssetUrl } from "../lib/assetUrl";
 import CardArt from "../components/CardArt";
-import RenderLabMedia from "../components/RenderLabMedia";
-import { useRenderLab } from "../context/RenderLabContext";
-import { renderLabPreviewCatalog } from "../generated/renderLabPreviewCatalog";
 import type { Pilot, Outfit, OwnedOutfit, Ship } from "../types";
 import pilotsData from "../data/pilots.json";
 import outfitsData from "../data/outfits.json";
@@ -47,7 +44,6 @@ const MAP_ART_BY_ID: Record<string, string> = {
 
 export default function HangarScreen() {
   const navigate = useNavigate();
-  const { usesCandidate } = useRenderLab();
   const { save, selectPilot, selectShip, selectMap, selectOutfit, setSelectedModifiers } = useGame();
   const [activeTab, setActiveTab] = useState<HangarTab>("pilot");
   const [kitWarning, setKitWarning] = useState<string | null>(null);
@@ -101,7 +97,6 @@ export default function HangarScreen() {
       : summarizeOutfitKit(selectedOutfit)
     : "No outfit selected";
   const selectedPilotId = save.selectedPilotId;
-  const fleetPreview = renderLabPreviewCatalog["fleet-preview-claude-candidates"];
 
   const tabSummaries: Record<HangarTab, string> = {
     pilot: selectedPilot?.name ?? "Choose pilot",
@@ -320,15 +315,6 @@ export default function HangarScreen() {
                 </div>
               )}
             </header>
-            {fleetPreview && usesCandidate(fleetPreview.id) && (
-              <div className="hangar-renderlab-fleet">
-                <RenderLabMedia entry={fleetPreview} decorative />
-                <div>
-                  <strong>Three-ship fleet proof</strong>
-                  <span>Unreal candidate models · local development preview</span>
-                </div>
-              </div>
-            )}
             <div className="hangar-choice-grid">
               {ownedShips.map((ship) => (
                 <div
