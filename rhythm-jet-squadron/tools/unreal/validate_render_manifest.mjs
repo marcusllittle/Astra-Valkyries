@@ -25,6 +25,11 @@ const routedScreenSet = new Set(routedScreens);
 const ids = new Set();
 const coveredScreens = new Set();
 const errors = [];
+const transitionFallbacks = new Set([
+  "/assets/cutins/nova/nova_leaving_port.mp4",
+  "/assets/cutins/nova/nova_return_to_port.mp4",
+  "/assets/cutins/ships/astra_interceptor_launch.mp4",
+]);
 
 if (manifest.schemaVersion !== 1) errors.push("schemaVersion must be 1");
 if (manifest.project?.contentRoot !== "/Game/AstraRenderLab") {
@@ -55,6 +60,21 @@ for (const output of manifest.outputs ?? []) {
     }
   }
   if (!statuses.has(output.unreal?.status)) errors.push(`${output.id}: invalid status`);
+  if (output.provenance) {
+    if (!output.provenance.sourceType) errors.push(`${output.id}: provenance.sourceType is required`);
+    if (output.provenance.sourceType === "marketplace" && !output.provenance.package) {
+      errors.push(`${output.id}: marketplace provenance requires package`);
+    }
+    if (output.provenance.sourceType === "marketplace" && !output.provenance.license) {
+      errors.push(`${output.id}: marketplace provenance requires license`);
+    }
+  }
+  if (output.render?.resolution && !/^\d+x\d+$/.test(output.render.resolution)) {
+    errors.push(`${output.id}: render.resolution must use WIDTHxHEIGHT`);
+  }
+  if (output.integration?.destination?.includes("environment") && transitionFallbacks.has(output.delivery?.localFallback)) {
+    errors.push(`${output.id}: transition video cannot be used as an environment fallback`);
+  }
   if (!output.delivery?.hd?.startsWith("https://media.joinhavn.io/astra/")) {
     errors.push(`${output.id}: delivery.hd must use media.joinhavn.io/astra`);
   }

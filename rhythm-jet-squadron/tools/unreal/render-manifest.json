@@ -18,15 +18,6 @@
       "review": {"decision": "reject-placement", "note": "Rejected after in-app product review: a single low-detail ship gives one frame undue prominence and does not represent Astra's three-ship roster. Keep Home fleet-neutral until substantially better ship models exist."}
     },
     {
-      "id": "hub-spaceport-loop",
-      "phase": 3,
-      "screens": ["spaceport"],
-      "kind": "video",
-      "unreal": {"map": "/Game/AstraRenderLab/Maps/L_Astra_HubRenderStage", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_SpaceportStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_SpaceportLoop", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_UILoop_1080p", "status": "in-progress"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/hub/spaceport-loop.mp4", "localFallback": "/assets/cutins/nova/nova_leaving_port.mp4"},
-      "review": {"decision": "retain-current", "note": "Keep Nova's pre-takeoff clip as the shipping Spaceport presentation."}
-    },
-    {
       "id": "hub-hangar-turntable",
       "phase": 3,
       "screens": ["hangar"],
@@ -41,8 +32,11 @@
       "screens": ["spaceport"],
       "kind": "video",
       "unreal": {"map": "/Game/AstraRenderLab/Maps/L_Astra_HubRenderStage", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_SpaceportNeonStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_SpaceportNeonLoop", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_UILoop_1080p", "status": "in-progress"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/hub/spaceport-neon-loop.mp4", "localFallback": "/assets/cutins/nova/nova_leaving_port.mp4"},
-      "review": {"decision": "candidate-environment", "note": "Neon Parallax geometry is re-authored with Astra materials as an open orbital gantry. The vendor ship and old low-detail Astra Interceptor are hidden. Keep Nova's pre-takeoff clip until a full render passes product and platform review."}
+      "provenance": {"sourceType": "marketplace", "package": "Neon Parallax", "license": "Fab marketplace acquisition", "sourceAssets": ["/Game/NeonParallax/Meshes"], "modifiedAssets": ["/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_SpaceportNeonStage", "/Game/AstraRenderLab/Materials/Instances/Hub/Neon"]},
+      "render": {"localPath": "Saved/MovieRenders/AstraRenderLab/Hub/Spaceport", "resolution": "1920x1080", "durationSeconds": 12, "frameRate": 30},
+      "integration": {"destination": "/spaceport environment layer"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/hub/spaceport-neon-loop.mp4"},
+      "review": {"decision": "candidate-environment", "note": "Approved command-bay direction is being rebuilt as a premium orbital concourse. Nova's launch and return clips remain transition media and are not environment fallbacks."}
     },
     {
       "id": "hub-hangar-neon-flythrough",
@@ -50,8 +44,11 @@
       "screens": ["hangar"],
       "kind": "video",
       "unreal": {"map": "/Game/AstraRenderLab/Maps/L_Astra_HubRenderStage", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_HangarNeonStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_HangarNeonInspection", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_Cinematic_1080p", "status": "in-progress"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/hub/hangar-neon-flythrough.mp4", "localFallback": "/assets/cutins/ships/astra_interceptor_launch.mp4"},
-      "review": {"decision": "candidate-environment", "note": "The candidate is an Astra-material Neon service bay flythrough, not another passive ship strip. The vendor ship and old low-detail Astra Interceptor are hidden. Keep the Blender takeoff clip authoritative until explicit approval."}
+      "provenance": {"sourceType": "marketplace", "package": "Neon Parallax", "license": "Fab marketplace acquisition", "sourceAssets": ["/Game/NeonParallax/Meshes"], "modifiedAssets": ["/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_HangarNeonStage", "/Game/AstraRenderLab/Materials/Instances/Hub/Neon"]},
+      "render": {"localPath": "Saved/MovieRenders/AstraRenderLab/Hub/Hangar", "resolution": "1920x1080", "durationSeconds": 12, "frameRate": 30},
+      "integration": {"destination": "/hangar environment and inspection layer"},
+      "delivery": {"hd": "https://media.joinhavn.io/astra/hub/hangar-neon-flythrough.mp4"},
+      "review": {"decision": "candidate-environment", "note": "The service-bay candidate must frame all three approved ship choices cleanly. Ship launch media remains a transition and is not an environment fallback."}
     },
     {
       "id": "flow-briefing-nebula",

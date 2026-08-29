@@ -6,8 +6,10 @@ interface RenderLabMediaProps {
   entry: RenderLabCandidateEntry;
   className?: string;
   decorative?: boolean;
-  onSourceChange?: (source: "candidate" | "fallback" | "missing") => void;
+  onSourceChange?: (source: RenderLabMediaSource) => void;
 }
+
+export type RenderLabMediaSource = "checking" | "candidate" | "fallback" | "missing";
 
 const VIDEO_EXTENSIONS = /\.(mp4|webm|mov)(?:[?#]|$)/i;
 const IMAGE_EXTENSIONS = /\.(png|jpe?g|webp|avif|gif)(?:[?#]|$)/i;
@@ -25,17 +27,25 @@ export default function RenderLabMedia({
   );
   const [failedCandidate, setFailedCandidate] = useState(!candidateIsRenderable);
   const [failedFallback, setFailedFallback] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const src = failedCandidate || !candidateIsRenderable ? sources.fallbackSrc : sources.candidateSrc;
-  const source = src ? (failedCandidate ? "fallback" : "candidate") : "missing";
+  const source: RenderLabMediaSource = !src || failedFallback
+    ? "missing"
+    : !loaded
+      ? "checking"
+      : failedCandidate
+        ? "fallback"
+        : "candidate";
   const isRenderable = Boolean(src && (VIDEO_EXTENSIONS.test(src) || IMAGE_EXTENSIONS.test(src)));
 
   useEffect(() => {
-    onSourceChange?.(failedFallback ? "missing" : source);
-  }, [failedFallback, onSourceChange, source]);
+    onSourceChange?.(source);
+  }, [onSourceChange, source]);
 
   if (!src || failedFallback || !isRenderable) return null;
 
   const fail = () => {
+    setLoaded(false);
     if (!failedCandidate && sources.fallbackSrc && sources.fallbackSrc !== sources.candidateSrc) {
       setFailedCandidate(true);
     } else {
@@ -55,6 +65,7 @@ export default function RenderLabMedia({
       <video
         {...common}
         src={src}
+        onLoadedData={() => setLoaded(true)}
         poster={sources.poster}
         autoPlay
         muted
@@ -70,6 +81,7 @@ export default function RenderLabMedia({
     return (
       <img
         {...common}
+        onLoad={() => setLoaded(true)}
         src={src}
         alt={decorative ? "" : entry.id.replace(/-/g, " ")}
         aria-hidden={decorative || undefined}

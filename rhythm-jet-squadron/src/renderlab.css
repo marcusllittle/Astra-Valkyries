@@ -123,6 +123,31 @@
   padding-bottom: 4px;
 }
 
+.renderlab-phase-filters {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+}
+
+.renderlab-phase-filters button {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 209, 102, 0.25);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.renderlab-phase-filters button.active {
+  border-color: #ffd166;
+  color: #ffe39a;
+  background: rgba(255, 209, 102, 0.08);
+}
+
 .renderlab-screen-filters button {
   flex: 0 0 auto;
   min-height: 34px;
@@ -156,6 +181,7 @@
 
 .renderlab-entry.selected { border-color: rgba(121, 232, 220, 0.68); }
 .renderlab-entry-media { position: relative; background: #020711; overflow: hidden; }
+.renderlab-media-missing { display: grid; width: 100%; height: 100%; place-items: center; padding: 12px; color: #ffb0bc; font-size: 0.65rem; font-weight: 700; text-align: center; }
 .renderlab-entry-media img,
 .renderlab-entry-media video { width: 100%; height: 100%; object-fit: cover; }
 .renderlab-entry-media > span {
@@ -173,6 +199,13 @@
 .renderlab-entry-heading { display: flex; align-items: start; justify-content: space-between; gap: 8px; }
 .renderlab-entry-heading strong { font-size: 0.88rem; text-transform: uppercase; overflow-wrap: anywhere; }
 .renderlab-entry-screens { color: #7de8dc; font-size: 0.67rem; text-transform: uppercase; }
+.renderlab-source-state { width: fit-content; padding: 2px 5px; border: 1px solid #ffd166; color: #ffd166; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; }
+.renderlab-source-state[data-source="candidate"] { border-color: #6ae0a0; color: #6ae0a0; }
+.renderlab-source-state[data-source="fallback"] { border-color: #ffb86b; color: #ffb86b; }
+.renderlab-source-state[data-source="missing"] { border-color: #ff8fa3; color: #ff8fa3; }
+.renderlab-metadata { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 8px; margin: 0; font-size: 0.65rem; }
+.renderlab-metadata dt { color: #8294b4; text-transform: uppercase; }
+.renderlab-metadata dd { margin: 0; color: #dbe6fa; overflow-wrap: anywhere; }
 .renderlab-entry p { color: var(--text-secondary); font-size: 0.72rem; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .renderlab-status { flex: 0 0 auto; padding: 3px 5px; border: 1px solid currentColor; border-radius: 3px; color: #ffd166; font-size: 0.58rem; text-transform: uppercase; }
 .renderlab-status-rejected { color: #ff8fa3; }

@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { renderLabPreviewCatalog } from "../generated/renderLabPreviewCatalog";
 import { useRenderLab } from "../context/RenderLabContext";
 import RenderLabMedia from "./RenderLabMedia";
+import type { RenderLabMediaSource } from "./RenderLabMedia";
 
 const ROUTE_SCREENS: Record<string, string> = {
   "/": "home",
@@ -39,7 +40,7 @@ export default function RenderLabOverlay() {
     return () => window.clearInterval(timer);
   }, [entries.length]);
 
-  const handleSourceChange = useCallback((source: "candidate" | "fallback" | "missing") => {
+  const handleSourceChange = useCallback((source: RenderLabMediaSource) => {
     if (source === "missing" && entries.length > 1) {
       setIndex((current) => (current + 1) % entries.length);
     }
