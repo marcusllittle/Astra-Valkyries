@@ -1,0 +1,17 @@
+{
+  "outputs": [
+    {
+      "id": "fleet-preview-claude-candidates",
+      "phase": 3,
+      "screens": ["hangar", "collection", "codex"],
+      "kind": "image",
+      "placement": "inline",
+      "status": "in-progress",
+      "decision": "awaiting-model-quality-review",
+      "note": "First local MCP-captured proof of all three Claude ship candidates under isolated lighting. The fleet composition is useful for validation, but the models and lighting are not approved production replacements.",
+      "candidate": "/assets/renderlab/unreal/fleet-preview.png",
+      "fallback": "/assets/ships/astra_interceptor.png",
+      "unrealMap": "/Game/AstraRenderLab/Maps/Stages/L_FleetPreview"
+    }
+  ]
+}

@@ -3,9 +3,11 @@ import { renderLabPreviewCatalog } from "../generated/renderLabPreviewCatalog";
 import { shouldUseRenderLabCandidate } from "../lib/renderLabPreview";
 
 describe("Render Lab development preview", () => {
-  it("contains every manifest entry, including rejected candidates", () => {
-    expect(Object.keys(renderLabPreviewCatalog)).toHaveLength(48);
+  it("contains manifest entries and local development proofs", () => {
+    expect(Object.keys(renderLabPreviewCatalog)).toHaveLength(49);
     expect(renderLabPreviewCatalog["hub-home-establishing"].status).toBe("rejected");
+    expect(renderLabPreviewCatalog["fleet-preview-claude-candidates"].candidate)
+      .toBe("/assets/renderlab/unreal/fleet-preview.png");
   });
 
   it("forces every candidate in all mode without considering approval", () => {

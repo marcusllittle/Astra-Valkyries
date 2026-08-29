@@ -28,7 +28,7 @@ export default function RenderLabOverlay() {
   const screen = ROUTE_SCREENS[pathname];
   const entries = useMemo(
     () => Object.values(renderLabPreviewCatalog).filter(
-      (entry) => screen && entry.screens.includes(screen) && usesCandidate(entry.id),
+      (entry) => screen && entry.placement !== "inline" && entry.screens.includes(screen) && usesCandidate(entry.id),
     ),
     [screen, usesCandidate],
   );
