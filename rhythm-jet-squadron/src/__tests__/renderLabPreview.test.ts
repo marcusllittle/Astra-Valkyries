@@ -17,6 +17,7 @@ describe("Render Lab development preview", () => {
     expect(spaceport.provenance?.package).toContain("Neon Parallax");
     expect(spaceport.destination).toContain("spaceport");
     expect(spaceport.candidate).toBe("/assets/renderlab/spaceport/spaceport-command-bay-mrq.webp");
+    expect(spaceport.currentReviewAsset).toBe("/assets/renderlab/current/spaceport-current.png");
     expect(spaceport.deliveryCandidate).toBe("https://media.joinhavn.io/astra/hub/spaceport-neon-loop.mp4");
   });
 

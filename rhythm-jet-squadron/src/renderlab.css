@@ -213,6 +213,123 @@
 .renderlab-status-integrated { color: #6ae0a0; }
 .renderlab-override { display: flex; align-items: center; gap: 8px; margin-top: auto; font-size: 0.72rem; font-weight: 700; }
 .renderlab-override input { width: 18px; height: 18px; accent-color: #79e8dc; }
+.renderlab-review-button {
+  min-height: 34px;
+  border: 1px solid rgba(121, 232, 220, 0.52);
+  border-radius: 4px;
+  background: rgba(121, 232, 220, 0.08);
+  color: #8ffff0;
+  font-weight: 800;
+  cursor: pointer;
+}
+.renderlab-review-button:hover { background: rgba(121, 232, 220, 0.16); }
+.renderlab-review-backdrop {
+  position: fixed;
+  z-index: 11000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 4, 12, 0.92);
+}
+.renderlab-review-workspace {
+  display: flex;
+  flex-direction: column;
+  width: min(1600px, 100%);
+  max-height: calc(100dvh - 40px);
+  overflow: auto;
+  border: 1px solid rgba(121, 232, 220, 0.45);
+  border-radius: 6px;
+  background: #06101f;
+  box-shadow: 0 22px 80px rgba(0, 0, 0, 0.65);
+}
+.renderlab-review-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(121, 232, 220, 0.22);
+}
+.renderlab-review-header h2 { margin-top: 3px; font-size: 1.35rem; text-transform: uppercase; }
+.renderlab-icon-button,
+.renderlab-fullscreen-button {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(169, 187, 217, 0.4);
+  border-radius: 4px;
+  background: rgba(3, 11, 23, 0.88);
+  color: #f2f6ff;
+  font-size: 1.35rem;
+  cursor: pointer;
+}
+.renderlab-review-header .renderlab-icon-button { position: relative; z-index: 12001; flex: 0 0 auto; }
+.renderlab-comparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+  background: rgba(121, 232, 220, 0.22);
+}
+.renderlab-comparison-pane { margin: 0; min-width: 0; background: #020711; }
+.renderlab-comparison-pane figcaption {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  color: #91a5c8;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+.renderlab-comparison-pane figcaption strong { color: #eef4ff; }
+.renderlab-candidate-pane figcaption strong { color: #8ffff0; }
+.renderlab-comparison-media {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: #00040b;
+}
+.renderlab-comparison-media img,
+.renderlab-comparison-media video { width: 100%; height: 100%; object-fit: contain; }
+.renderlab-comparison-media:fullscreen { background: #000; }
+.renderlab-fullscreen-button { position: absolute; right: 10px; bottom: 10px; }
+.renderlab-reference-missing { display: grid; gap: 8px; max-width: 340px; padding: 24px; color: #91a5c8; text-align: center; }
+.renderlab-reference-missing strong { color: #ffd166; }
+.renderlab-review-details {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+  gap: 22px;
+  padding: 16px 18px;
+  border-top: 1px solid rgba(147, 168, 209, 0.16);
+}
+.renderlab-review-details p { margin-top: 6px; color: var(--text-secondary); line-height: 1.45; }
+.renderlab-review-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px 18px;
+  border-top: 1px solid rgba(147, 168, 209, 0.2);
+  background: #09162a;
+}
+.renderlab-review-actions > span { max-width: 520px; color: #91a5c8; font-size: 0.68rem; font-weight: 700; }
+.renderlab-review-actions > div { display: flex; gap: 8px; }
+.renderlab-review-actions button {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid #536786;
+  border-radius: 4px;
+  background: transparent;
+  color: #dbe6fa;
+  font-weight: 800;
+  cursor: pointer;
+}
+.renderlab-review-actions button.active { border-color: #f2f6ff; background: #dbe6fa; color: #06101f; }
+.renderlab-review-actions button.active.revise { border-color: #ffd166; background: #ffd166; }
+.renderlab-review-actions button.active.approve { border-color: #79e8dc; background: #79e8dc; }
 .renderlab-disabled { margin: auto; padding: 32px; max-width: 620px; }
 
 @media (max-width: 720px) {
@@ -223,4 +340,11 @@
   .renderlab-grid { grid-template-columns: 1fr; }
   .renderlab-entry { grid-template-columns: 96px minmax(0, 1fr); }
   .renderlab-dev-badge { top: max(6px, env(safe-area-inset-top)); font-size: 0.62rem; }
+  .renderlab-review-backdrop { padding: 0; }
+  .renderlab-review-workspace { width: 100%; max-height: 100dvh; min-height: 100dvh; border: 0; border-radius: 0; }
+  .renderlab-comparison { grid-template-columns: 1fr; }
+  .renderlab-comparison-media { aspect-ratio: 16 / 9; }
+  .renderlab-review-details { grid-template-columns: 1fr; }
+  .renderlab-review-actions { align-items: stretch; flex-direction: column; }
+  .renderlab-review-actions > div { display: grid; grid-template-columns: 1fr; }
 }

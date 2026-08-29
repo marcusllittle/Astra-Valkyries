@@ -24,6 +24,7 @@ export interface RenderLabCandidateEntry {
   };
   destination?: string;
   candidate?: string;
+  currentReviewAsset?: string;
   deliveryCandidate?: string;
   fallback?: string;
   poster?: string;
@@ -89,6 +90,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     },
     "destination": "/spaceport environment layer",
     "candidate": "/assets/renderlab/spaceport/spaceport-command-bay-mrq.webp",
+    "currentReviewAsset": "/assets/renderlab/current/spaceport-current.png",
     "deliveryCandidate": "https://media.joinhavn.io/astra/hub/spaceport-neon-loop.mp4"
   },
   "hub-hangar-neon-flythrough": {
