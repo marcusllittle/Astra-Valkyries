@@ -32,11 +32,11 @@
       "screens": ["spaceport"],
       "kind": "video",
       "unreal": {"map": "/Game/AstraRenderLab/Maps/L_Astra_HubRenderStage", "stageBlueprint": "/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_SpaceportNeonStage", "sequence": "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_SpaceportNeonLoop", "renderPreset": "/Game/AstraRenderLab/Cinematics/RenderPresets/MPC_Astra_UILoop_1080p", "status": "in-progress"},
-      "provenance": {"sourceType": "marketplace", "package": "Neon Parallax", "license": "Fab marketplace acquisition", "sourceAssets": ["/Game/NeonParallax/Meshes"], "modifiedAssets": ["/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_SpaceportNeonStage", "/Game/AstraRenderLab/Materials/Instances/Hub/Neon"]},
-      "render": {"localPath": "Saved/MovieRenders/AstraRenderLab/Hub/Spaceport", "resolution": "1920x1080", "durationSeconds": 12, "frameRate": 30},
+      "provenance": {"sourceType": "hybrid", "package": "Neon Parallax + approved Astra concept matte", "license": "Fab marketplace acquisition and project-owned generated concept", "sourceAssets": ["/Game/NeonParallax/Meshes", "/Game/AstraRenderLab/Art/Environments/ConceptMattes/T_Spaceport_CommandBay_Concept"], "modifiedAssets": ["/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_SpaceportNeonStage", "/Game/AstraRenderLab/Materials/Masters/M_Astra_ConceptMatte", "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_SpaceportNeonLoop"]},
+      "render": {"localPath": "Saved/AstraRenders/spaceport-command-bay-proof", "resolution": "1920x1080", "durationSeconds": 10, "frameRate": 30, "reviewFormat": "MRQ still"},
       "integration": {"destination": "/spaceport environment layer"},
-      "delivery": {"hd": "https://media.joinhavn.io/astra/hub/spaceport-neon-loop.mp4"},
-      "review": {"decision": "candidate-environment", "note": "Approved command-bay direction is being rebuilt as a premium orbital concourse. Nova's launch and return clips remain transition media and are not environment fallbacks."}
+      "delivery": {"hd": "https://media.joinhavn.io/astra/hub/spaceport-neon-loop.mp4", "reviewAsset": "/assets/renderlab/spaceport/spaceport-command-bay-mrq.webp"},
+      "review": {"decision": "awaiting-phase-review", "note": "The center MRQ frame now establishes the approved orbital command bay with a concept-derived matte, real Unreal deck, Neon foreground architecture, and cinematic lighting. Start/end framing still needs refinement before the 10-second loop can be approved. Nova launch and return clips remain separate transition media."}
     },
     {
       "id": "hub-hangar-neon-flythrough",

@@ -119,7 +119,7 @@ export default function RenderLabScreen() {
                 {(entry.provenance || entry.render || entry.destination) && (
                   <dl className="renderlab-metadata">
                     {entry.provenance && <><dt>Source</dt><dd>{entry.provenance.package ?? entry.provenance.sourceType}</dd></>}
-                    {entry.render?.resolution && <><dt>Render</dt><dd>{entry.render.resolution}{entry.render.durationSeconds ? ` · ${entry.render.durationSeconds}s` : ""}</dd></>}
+                    {entry.render?.resolution && <><dt>Render</dt><dd>{entry.render.resolution}{entry.render.durationSeconds ? ` · ${entry.render.durationSeconds}s` : ""}{entry.render.reviewFormat ? ` · ${entry.render.reviewFormat}` : ""}</dd></>}
                     {entry.destination && <><dt>Destination</dt><dd>{entry.destination}</dd></>}
                   </dl>
                 )}
