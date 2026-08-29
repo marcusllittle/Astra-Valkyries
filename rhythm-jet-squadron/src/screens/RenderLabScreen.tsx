@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import RenderLabMedia from "../components/RenderLabMedia";
+import type { RenderLabMediaSource } from "../components/RenderLabMedia";
 import { useRenderLab } from "../context/RenderLabContext";
 import { renderLabPreviewCatalog } from "../generated/renderLabPreviewCatalog";
 import type { RenderLabMode } from "../lib/renderLabPreview";
@@ -15,14 +16,17 @@ export default function RenderLabScreen() {
   const navigate = useNavigate();
   const { enabled, mode, overrides, setMode, setOverride, usesCandidate } = useRenderLab();
   const [screenFilter, setScreenFilter] = useState("all");
+  const [phaseFilter, setPhaseFilter] = useState<number | "all">("all");
+  const [mediaSources, setMediaSources] = useState<Record<string, RenderLabMediaSource>>({});
   const entries = useMemo(() => Object.values(renderLabPreviewCatalog), []);
   const screens = useMemo(
     () => [...new Set(entries.flatMap((entry) => entry.screens))].sort(),
     [entries],
   );
-  const visibleEntries = screenFilter === "all"
-    ? entries
-    : entries.filter((entry) => entry.screens.includes(screenFilter));
+  const phases = useMemo(() => [...new Set(entries.map((entry) => entry.phase))].sort(), [entries]);
+  const visibleEntries = entries.filter((entry) =>
+    (screenFilter === "all" || entry.screens.includes(screenFilter)) &&
+    (phaseFilter === "all" || entry.phase === phaseFilter));
 
   if (!enabled) {
     return (
@@ -77,13 +81,30 @@ export default function RenderLabScreen() {
         ))}
       </nav>
 
+      <nav className="renderlab-phase-filters" aria-label="Filter candidates by production phase">
+        <button className={phaseFilter === "all" ? "active" : ""} onClick={() => setPhaseFilter("all")}>ALL PHASES</button>
+        {phases.map((phase) => (
+          <button key={phase} className={phaseFilter === phase ? "active" : ""} onClick={() => setPhaseFilter(phase)}>
+            PHASE {phase}
+          </button>
+        ))}
+      </nav>
+
       <div className="renderlab-grid">
         {visibleEntries.map((entry) => {
           const selected = usesCandidate(entry.id);
           return (
             <article className={`renderlab-entry ${selected ? "selected" : ""}`} key={entry.id}>
               <div className="renderlab-entry-media">
-                <RenderLabMedia entry={entry} decorative />
+                <RenderLabMedia
+                  entry={entry}
+                  decorative
+                  onSourceChange={(source) => setMediaSources((current) =>
+                    current[entry.id] === source ? current : { ...current, [entry.id]: source })}
+                />
+                {mediaSources[entry.id] === "missing" && (
+                  <div className="renderlab-media-missing">NO CANDIDATE RENDER</div>
+                )}
                 <span>{entry.kind.replace(/-/g, " ")}</span>
               </div>
               <div className="renderlab-entry-body">
@@ -92,6 +113,16 @@ export default function RenderLabScreen() {
                   <span className={`renderlab-status renderlab-status-${entry.status}`}>{entry.status}</span>
                 </div>
                 <span className="renderlab-entry-screens">{entry.screens.join(" · ") || "marketing"}</span>
+                <div className="renderlab-source-state" data-source={mediaSources[entry.id] ?? "checking"}>
+                  {(mediaSources[entry.id] ?? "checking").replace(/-/g, " ")}
+                </div>
+                {(entry.provenance || entry.render || entry.destination) && (
+                  <dl className="renderlab-metadata">
+                    {entry.provenance && <><dt>Source</dt><dd>{entry.provenance.package ?? entry.provenance.sourceType}</dd></>}
+                    {entry.render?.resolution && <><dt>Render</dt><dd>{entry.render.resolution}{entry.render.durationSeconds ? ` · ${entry.render.durationSeconds}s` : ""}</dd></>}
+                    {entry.destination && <><dt>Destination</dt><dd>{entry.destination}</dd></>}
+                  </dl>
+                )}
                 <p>{entry.note ?? "No review note recorded."}</p>
                 <label className="renderlab-override">
                   <input
