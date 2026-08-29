@@ -78,7 +78,7 @@ for (const output of manifest.outputs ?? []) {
   if (!output.delivery?.hd?.startsWith("https://media.joinhavn.io/astra/")) {
     errors.push(`${output.id}: delivery.hd must use media.joinhavn.io/astra`);
   }
-  for (const key of ["localAsset", "poster", "localFallback"]) {
+  for (const key of ["localAsset", "poster", "localFallback", "reviewAsset", "currentReviewAsset"]) {
     const localPath = output.delivery?.[key];
     if (!localPath) continue;
     if (!localPath.startsWith("/assets/")) {

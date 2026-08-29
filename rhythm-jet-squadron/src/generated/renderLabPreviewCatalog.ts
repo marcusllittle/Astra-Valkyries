@@ -20,9 +20,12 @@ export interface RenderLabCandidateEntry {
     resolution?: string;
     durationSeconds?: number;
     frameRate?: number;
+    reviewFormat?: string;
   };
   destination?: string;
   candidate?: string;
+  currentReviewAsset?: string;
+  deliveryCandidate?: string;
   fallback?: string;
   poster?: string;
 }
@@ -38,7 +41,8 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "status": "rejected",
     "decision": "reject-placement",
     "note": "Rejected after in-app product review: a single low-detail ship gives one frame undue prominence and does not represent Astra's three-ship roster. Keep Home fleet-neutral until substantially better ship models exist.",
-    "candidate": "https://media.joinhavn.io/astra/hub/home-establishing.mp4"
+    "candidate": "https://media.joinhavn.io/astra/hub/home-establishing.mp4",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/hub/home-establishing.mp4"
   },
   "hub-hangar-turntable": {
     "id": "hub-hangar-turntable",
@@ -50,7 +54,8 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "status": "rejected",
     "decision": "reject-placement",
     "note": "Rejected after in-app product review: the passive low-detail strip adds no loadout value. The Hangar now prioritizes visual Pilot, Ship, Map, Outfit, and Modifier tabs; the Blender launch clip remains authoritative for takeoff.",
-    "candidate": "https://media.joinhavn.io/astra/hub/hangar-turntable.mp4"
+    "candidate": "https://media.joinhavn.io/astra/hub/hangar-turntable.mp4",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/hub/hangar-turntable.mp4"
   },
   "hub-spaceport-neon-loop": {
     "id": "hub-spaceport-neon-loop",
@@ -60,28 +65,33 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     ],
     "kind": "video",
     "status": "in-progress",
-    "decision": "candidate-environment",
-    "note": "Approved command-bay direction is being rebuilt as a premium orbital concourse. Nova's launch and return clips remain transition media and are not environment fallbacks.",
+    "decision": "awaiting-phase-review",
+    "note": "The center MRQ frame now establishes the approved orbital command bay with a concept-derived matte, real Unreal deck, Neon foreground architecture, and cinematic lighting. Start/end framing still needs refinement before the 10-second loop can be approved. Nova launch and return clips remain separate transition media.",
     "provenance": {
-      "sourceType": "marketplace",
-      "package": "Neon Parallax",
-      "license": "Fab marketplace acquisition",
+      "sourceType": "hybrid",
+      "package": "Neon Parallax + approved Astra concept matte",
+      "license": "Fab marketplace acquisition and project-owned generated concept",
       "sourceAssets": [
-        "/Game/NeonParallax/Meshes"
+        "/Game/NeonParallax/Meshes",
+        "/Game/AstraRenderLab/Art/Environments/ConceptMattes/T_Spaceport_CommandBay_Concept"
       ],
       "modifiedAssets": [
         "/Game/AstraRenderLab/Art/Stages/Hub/BP_Astra_SpaceportNeonStage",
-        "/Game/AstraRenderLab/Materials/Instances/Hub/Neon"
+        "/Game/AstraRenderLab/Materials/Masters/M_Astra_ConceptMatte",
+        "/Game/AstraRenderLab/Cinematics/Sequences/Hub/LS_SpaceportNeonLoop"
       ]
     },
     "render": {
-      "localPath": "Saved/MovieRenders/AstraRenderLab/Hub/Spaceport",
+      "localPath": "Saved/AstraRenders/spaceport-command-bay-proof",
       "resolution": "1920x1080",
-      "durationSeconds": 12,
-      "frameRate": 30
+      "durationSeconds": 10,
+      "frameRate": 30,
+      "reviewFormat": "MRQ still"
     },
     "destination": "/spaceport environment layer",
-    "candidate": "https://media.joinhavn.io/astra/hub/spaceport-neon-loop.mp4"
+    "candidate": "/assets/renderlab/spaceport/spaceport-command-bay-mrq.webp",
+    "currentReviewAsset": "/assets/renderlab/current/spaceport-current.png",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/hub/spaceport-neon-loop.mp4"
   },
   "hub-hangar-neon-flythrough": {
     "id": "hub-hangar-neon-flythrough",
@@ -112,7 +122,8 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
       "frameRate": 30
     },
     "destination": "/hangar environment and inspection layer",
-    "candidate": "https://media.joinhavn.io/astra/hub/hangar-neon-flythrough.mp4"
+    "candidate": "https://media.joinhavn.io/astra/hub/hangar-neon-flythrough.mp4",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/hub/hangar-neon-flythrough.mp4"
   },
   "flow-briefing-nebula": {
     "id": "flow-briefing-nebula",
@@ -126,6 +137,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The 24 fps zone template and Niagara bindings pass MCP and MRQ checks, but the proof is a dark blockout and does not beat the current briefing video.",
     "candidate": "https://media.joinhavn.io/astra/flow/briefing-nebula-runway.mp4",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/flow/briefing-nebula-runway.mp4",
     "fallback": "/assets/cutins/scenes/nebula_runway_briefing.mp4"
   },
   "flow-briefing-solar": {
@@ -140,6 +152,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The 24 fps zone template and Niagara bindings pass MCP and MRQ checks, but the effect density obscures the route and does not beat the current briefing video.",
     "candidate": "https://media.joinhavn.io/astra/flow/briefing-solar-rift.mp4",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/flow/briefing-solar-rift.mp4",
     "fallback": "/assets/cutins/scenes/solar_rift_briefing.mp4"
   },
   "flow-briefing-abyss": {
@@ -154,6 +167,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The 24 fps zone template and Niagara bindings pass MCP and MRQ checks, but the proof remains a low-detail blockout and does not beat the current briefing video.",
     "candidate": "https://media.joinhavn.io/astra/flow/briefing-abyss-crown.mp4",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/flow/briefing-abyss-crown.mp4",
     "fallback": "/assets/cutins/scenes/abyss_crown_briefing.mp4"
   },
   "flow-launch-interceptor": {
@@ -167,6 +181,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The keyed launch timing is reusable, but the low-detail Interceptor and blockout deck do not beat the current Blender takeoff. Keep the Blender ship takeoff authoritative.",
     "candidate": "https://media.joinhavn.io/astra/flow/launch-astra-interceptor.mp4",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/flow/launch-astra-interceptor.mp4",
     "fallback": "/assets/cutins/ships/astra_interceptor_launch.mp4"
   },
   "combat-nebula-plates": {
@@ -180,6 +195,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "awaiting-clean-render",
     "note": "The reusable Nebula stage, material variants, Niagara variants, and 24 fps combat sequence are authored and MCP-validated. Keep the current gameplay background until clean MRQ proofs pass desktop and centered mobile crop review.",
     "candidate": "https://media.joinhavn.io/astra/combat/nebula-runway/",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/combat/nebula-runway/",
     "fallback": "/assets/shmup/background_far.png"
   },
   "combat-solar-plates": {
@@ -193,6 +209,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "awaiting-density-tuning",
     "note": "The Solar stage, materials, explicit 13-binding sequence, and Free Niagara-derived ambient, projectile, and impact systems pass a three-frame 1080p MRQ proof with no Niagara initialization errors. Keep the current background until effect density and centered mobile framing pass gameplay-scale review.",
     "candidate": "https://media.joinhavn.io/astra/combat/solar-rift/",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/combat/solar-rift/",
     "fallback": "/assets/shmup/background_far_solar.png"
   },
   "combat-abyss-plates": {
@@ -206,6 +223,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "awaiting-density-tuning",
     "note": "The Abyss stage, five material instances, explicit nine-binding environment sequence, and three Free Niagara-derived systems pass a three-frame 1080p MRQ proof. The unrelated Aegis blockout bindings were removed, but the portal and lane effects overwhelm the centered mobile crop by the end frame, so the current background remains authoritative.",
     "candidate": "https://media.joinhavn.io/astra/combat/abyss-crown/",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/combat/abyss-crown/",
     "fallback": "/assets/shmup/background_far_abyss.png"
   },
   "combat-boss-intros": {
@@ -220,6 +238,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The geometry-v2 proof uses an 8911.13 cm broad three-piece silhouette, closer attachment pivots, purple armor, and a higher three-quarter camera. It is materially clearer than the first candidate but still does not beat the shipping sprite at gameplay scale, so the fallback remains authoritative.",
     "candidate": "https://media.joinhavn.io/astra/combat/boss-intros/",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/combat/boss-intros/",
     "fallback": "/assets/shmup/boss_aegis_dreadnought.png"
   },
   "combat-enemy-light-presentation": {
@@ -234,6 +253,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The light fleet has stable meshes, materials, Blueprints, centered presentation framing, and a clean three-frame proof. The procedural detail does not yet beat the shipping sprites at gameplay scale, so no React replacement is approved.",
     "candidate": "https://media.joinhavn.io/astra/combat/enemies/light/",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/combat/enemies/light/",
     "fallback": "/assets/shmup/enemy_drifter.png"
   },
   "combat-enemy-specialist-presentation": {
@@ -248,6 +268,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The specialist fleet has distinct silhouettes and a clean three-frame technical proof. The current Unreal detail level is not a visual upgrade over the shipping sprites, so the fallback remains authoritative.",
     "candidate": "https://media.joinhavn.io/astra/combat/enemies/specialist/",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/combat/enemies/specialist/",
     "fallback": "/assets/shmup/enemy_bomber.png"
   },
   "combat-enemy-heavy-presentation": {
@@ -262,6 +283,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The heavy class passes geometry, Blueprint, and framing checks, but still reads as blockout-quality in the 1080p proof. The shipping Dreadnought and Tank sprites remain authoritative.",
     "candidate": "https://media.joinhavn.io/astra/combat/enemies/heavy/",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/combat/enemies/heavy/",
     "fallback": "/assets/shmup/enemy_dreadnought.png"
   },
   "combat-enemy-vfx-set": {
@@ -276,6 +298,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "awaiting-alpha-proof",
     "note": "Hit, shield-break, death-burst, and telegraph Niagara systems compile cleanly with reusable wrappers. Runtime integration remains gated on dedicated alpha renders and gameplay-density comparison.",
     "candidate": "https://media.joinhavn.io/astra/combat/enemies/vfx/",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/combat/enemies/vfx/",
     "fallback": "/assets/shmup/blender-vfx/secondary_burst.png"
   },
   "combat-aegis-arm-break": {
@@ -289,6 +312,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The independently pivoted geometry-v2 arms attach at X=-3000/+3000 through frame 64, then separate to X=-6500/+6500 with distinct break FX. The sequence passes its technical proof but remains unapproved for runtime replacement.",
     "candidate": "https://media.joinhavn.io/astra/combat/boss-intros/aegis-arm-break.mp4",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/combat/boss-intros/aegis-arm-break.mp4",
     "fallback": "/assets/shmup/boss_aegis_dreadnought.png"
   },
   "combat-cryo-leviathan-intro": {
@@ -303,6 +327,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The 13,617.81 cm three-piece boss, dedicated materials, Niagara wrappers, and mobile-safe intro framing pass a six-frame technical MRQ proof. The current model is still a production prototype and the sequence does not yet establish player-ship scale, so the shipping sprite remains authoritative.",
     "candidate": "https://media.joinhavn.io/astra/combat/boss-intros/cryo-leviathan.mp4",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/combat/boss-intros/cryo-leviathan.mp4",
     "fallback": "/assets/shmup/boss_cryo_leviathan.png"
   },
   "combat-cryo-leviathan-arm-break": {
@@ -316,6 +341,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "Both long arms remain attached through frame 64 and then separate independently to X=-8200/+8200 by frame 119 with distinct break FX. The technical contract is valid, but the visual candidate is not approved for React integration.",
     "candidate": "https://media.joinhavn.io/astra/combat/boss-intros/cryo-leviathan-arm-break.mp4",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/combat/boss-intros/cryo-leviathan-arm-break.mp4",
     "fallback": "/assets/shmup/boss_cryo_leviathan.png"
   },
   "combat-helios-tyrant-intro": {
@@ -330,6 +356,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "awaiting-gameplay-comparison",
     "note": "The 13,614.41 cm reactor, paired solar lances, dedicated materials, and localized Niagara pass a six-frame 1080p MRQ proof with mobile-safe framing. The proof is materially stronger than the flat fallback, but no React replacement is approved until a player-ship scale shot and gameplay comparison pass.",
     "candidate": "https://media.joinhavn.io/astra/combat/boss-intros/helios-tyrant.mp4",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/combat/boss-intros/helios-tyrant.mp4",
     "fallback": "/assets/shmup/boss_helios_tyrant.png"
   },
   "combat-helios-tyrant-lance-break": {
@@ -343,6 +370,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "awaiting-gameplay-comparison",
     "note": "Both beam pylons remain attached through frame 64 and separate independently to X=-8600/+8600 by frame 119 with distinct break FX. The technical choreography passes; runtime integration remains gated.",
     "candidate": "https://media.joinhavn.io/astra/combat/boss-intros/helios-tyrant-lance-break.mp4",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/combat/boss-intros/helios-tyrant-lance-break.mp4",
     "fallback": "/assets/shmup/boss_helios_tyrant.png"
   },
   "flow-results-debrief-nebula": {
@@ -356,6 +384,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The debrief sequence is callable and keyed, but the ship is too dark and small to replace the current authored debrief still.",
     "candidate": "https://media.joinhavn.io/astra/flow/debriefs/nebula-runway.png",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/flow/debriefs/nebula-runway.png",
     "fallback": "/assets/cutins/scenes/nebula_runway_debrief.png"
   },
   "flow-results-debrief-solar": {
@@ -369,6 +398,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The debrief sequence is callable and keyed, but dense foreground streaks obscure the low-detail ship and do not beat the current still.",
     "candidate": "https://media.joinhavn.io/astra/flow/debriefs/solar-rift.png",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/flow/debriefs/solar-rift.png",
     "fallback": "/assets/cutins/scenes/solar_rift_debrief.png"
   },
   "flow-results-debrief-abyss": {
@@ -382,6 +412,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The debrief sequence is callable and keyed, but the ship and environment remain prototype quality and do not beat the current still.",
     "candidate": "https://media.joinhavn.io/astra/flow/debriefs/abyss-crown.png",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/flow/debriefs/abyss-crown.png",
     "fallback": "/assets/cutins/scenes/abyss_crown_debrief.png"
   },
   "flow-return-spaceport": {
@@ -396,6 +427,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The reverse arrival timing is reusable, but the low-detail Interceptor and sparse gantry do not beat Nova's current return clip.",
     "candidate": "https://media.joinhavn.io/astra/flow/return-spaceport.mp4",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/flow/return-spaceport.mp4",
     "fallback": "/assets/cutins/nova/nova_return_to_port.mp4"
   },
   "shop-gacha-reveal": {
@@ -409,6 +441,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "supporting-layer-only",
     "note": "The keyed Niagara energy chamber is reusable behind a future character reveal, but it does not beat the current outfit-specific SSR cutscene as a standalone asset.",
     "candidate": "https://media.joinhavn.io/astra/gacha/reveals/ssr-energy.mp4",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/gacha/reveals/ssr-energy.mp4",
     "fallback": "/assets/outfits/aurora_borealis_cutscene.mp4"
   },
   "collection-turntables": {
@@ -422,6 +455,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "blocked-awaiting-character-geometry",
     "note": "The neutral stage and camera template are ready, but the Render Lab has no production pilot/outfit mesh. Keep the current outfit videos.",
     "candidate": "https://media.joinhavn.io/astra/collection/turntables/",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/collection/turntables/",
     "fallback": "/assets/outfits/aurora_borealis_cutscene.mp4"
   },
   "codex-dossier-aegis": {
@@ -435,6 +469,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The Unreal proof is darker, smaller, and less detailed than the current Aegis close-up.",
     "candidate": "https://media.joinhavn.io/astra/codex/dossiers/aegis-dreadnought.png",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/codex/dossiers/aegis-dreadnought.png",
     "fallback": "/assets/shmup/boss_aegis_dreadnought.png"
   },
   "codex-dossier-helios": {
@@ -448,6 +483,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The environment pass is readable, but the current Helios close-up has stronger subject scale and detail.",
     "candidate": "https://media.joinhavn.io/astra/codex/dossiers/helios-tyrant.png",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/codex/dossiers/helios-tyrant.png",
     "fallback": "/assets/shmup/boss_helios_tyrant.png"
   },
   "codex-dossier-cryo": {
@@ -461,6 +497,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The Unreal Cryo proof is a low-detail distant subject and does not beat the authored close-up.",
     "candidate": "https://media.joinhavn.io/astra/codex/dossiers/cryo-leviathan.png",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/codex/dossiers/cryo-leviathan.png",
     "fallback": "/assets/shmup/boss_cryo_leviathan.png"
   },
   "codex-dossier-drifter": {
@@ -474,6 +511,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The Unreal silhouette is too small and simple at Codex size; keep the current Drifter art.",
     "candidate": "https://media.joinhavn.io/astra/codex/dossiers/drifter.png",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/codex/dossiers/drifter.png",
     "fallback": "/assets/shmup/enemy_drifter.png"
   },
   "codex-dossier-dreadnought-escort": {
@@ -487,6 +525,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The Unreal escort proof lacks the visual detail and immediate readability of the current asset.",
     "candidate": "https://media.joinhavn.io/astra/codex/dossiers/dreadnought-escort.png",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/codex/dossiers/dreadnought-escort.png",
     "fallback": "/assets/shmup/enemy_dreadnought.png"
   },
   "missions-sector-nebula": {
@@ -500,6 +539,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The proof exposes combat blockout geometry and is not a premium sector hologram.",
     "candidate": "https://media.joinhavn.io/astra/utility/missions/nebula-runway.png",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/utility/missions/nebula-runway.png",
     "fallback": "/assets/maps/nebula-runway.png"
   },
   "missions-sector-solar": {
@@ -513,6 +553,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The proof remains a low-detail combat plate and does not improve Missions.",
     "candidate": "https://media.joinhavn.io/astra/utility/missions/solar-rift.png",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/utility/missions/solar-rift.png",
     "fallback": "/assets/maps/solar-rift.png"
   },
   "missions-sector-abyss": {
@@ -526,6 +567,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The proof is not sufficiently authored or legible to support the operations board.",
     "candidate": "https://media.joinhavn.io/astra/utility/missions/abyss-crown.png",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/utility/missions/abyss-crown.png",
     "fallback": "/assets/maps/abyss-crown.png"
   },
   "skills-vfx-burst": {
@@ -539,6 +581,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The proof is severely overexposed and cannot ship as an ability preview.",
     "candidate": "https://media.joinhavn.io/astra/utility/skills/burst.mp4",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/utility/skills/burst.mp4",
     "fallback": "/assets/shmup/blender-vfx/secondary_burst.png"
   },
   "skills-vfx-shield": {
@@ -552,6 +595,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The effect needs dedicated scale, framing, and alpha tuning before integration.",
     "candidate": "https://media.joinhavn.io/astra/utility/skills/shield.mp4",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/utility/skills/shield.mp4",
     "fallback": "/assets/shmup/blender-vfx/secondary_shield.png"
   },
   "skills-vfx-overdrive": {
@@ -565,6 +609,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The inherited reveal effect is not yet a readable, ability-specific preview.",
     "candidate": "https://media.joinhavn.io/astra/utility/skills/overdrive.mp4",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/utility/skills/overdrive.mp4",
     "fallback": "/assets/shmup/blender-vfx/secondary_sigil.png"
   },
   "leaderboard-season-plate": {
@@ -578,6 +623,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The proof is an empty service bay and does not support competitive ranking presentation.",
     "candidate": "https://media.joinhavn.io/astra/utility/leaderboard-season.webp",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/utility/leaderboard-season.webp",
     "fallback": "/assets/shmup/vista_solar_rift.png"
   },
   "network-forge-loop": {
@@ -591,6 +637,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The proof is a tiny energy mark on black and does not improve the existing Network forge UI.",
     "candidate": "https://media.joinhavn.io/astra/utility/network-forge-loop.mp4",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/utility/network-forge-loop.mp4",
     "fallback": "/assets/shmup/blender-vfx/secondary_sigil.png"
   },
   "settings-low-motion-plate": {
@@ -602,6 +649,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "kind": "image",
     "status": "planned",
     "candidate": "https://media.joinhavn.io/astra/utility/settings.webp",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/utility/settings.webp",
     "fallback": "/assets/shmup/background_far.png"
   },
   "marketing-key-art": {
@@ -613,6 +661,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "Multi-aspect framing works, but the proof is an empty service bay and is not campaign key art.",
     "candidate": "https://media.joinhavn.io/astra/marketing/key-art/",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/marketing/key-art/",
     "fallback": "/assets/ships/astra_interceptor.png"
   },
   "marketing-spaceport-neon": {
@@ -624,6 +673,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The environment is aspect-safe but too empty and low-detail for public campaign use.",
     "candidate": "https://media.joinhavn.io/astra/marketing/spaceport-neon/",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/marketing/spaceport-neon/",
     "fallback": "/assets/shmup/vista_nebula_runway.png"
   },
   "marketing-aegis-dreadnought": {
@@ -635,6 +685,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "Composition is reusable, but the boss still reads as production blockout geometry.",
     "candidate": "https://media.joinhavn.io/astra/marketing/aegis-dreadnought/",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/marketing/aegis-dreadnought/",
     "fallback": "/assets/shmup/boss_aegis_dreadnought.png"
   },
   "marketing-helios-tyrant": {
@@ -646,6 +697,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The silhouette survives all crops, but material and geometry detail are below campaign quality.",
     "candidate": "https://media.joinhavn.io/astra/marketing/helios-tyrant/",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/marketing/helios-tyrant/",
     "fallback": "/assets/shmup/boss_helios_tyrant.png"
   },
   "marketing-cryo-leviathan": {
@@ -657,6 +709,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The three-piece boss reads clearly, but remains too stylized and low-detail for marketing delivery.",
     "candidate": "https://media.joinhavn.io/astra/marketing/cryo-leviathan/",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/marketing/cryo-leviathan/",
     "fallback": "/assets/shmup/boss_cryo_leviathan.png"
   },
   "marketing-gacha-ssr": {
@@ -668,6 +721,7 @@ export const renderLabPreviewCatalog: Readonly<Record<string, RenderLabCandidate
     "decision": "retain-current",
     "note": "The sampled reveal is nearly black and has no readable featured reward subject.",
     "candidate": "https://media.joinhavn.io/astra/marketing/gacha-ssr/",
+    "deliveryCandidate": "https://media.joinhavn.io/astra/marketing/gacha-ssr/",
     "fallback": "/assets/shmup/vista_solar_rift.png"
   }
 };

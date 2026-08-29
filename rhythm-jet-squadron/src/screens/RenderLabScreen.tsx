@@ -1,10 +1,15 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import RenderLabMedia from "../components/RenderLabMedia";
 import type { RenderLabMediaSource } from "../components/RenderLabMedia";
 import { useRenderLab } from "../context/RenderLabContext";
 import { renderLabPreviewCatalog } from "../generated/renderLabPreviewCatalog";
 import type { RenderLabMode } from "../lib/renderLabPreview";
+import {
+  readRenderLabReviewDecisions,
+  writeRenderLabReviewDecision,
+  type RenderLabReviewDecision,
+} from "../lib/renderLabReview";
 
 const MODES: { id: RenderLabMode; label: string }[] = [
   { id: "current", label: "CURRENT" },
@@ -18,6 +23,9 @@ export default function RenderLabScreen() {
   const [screenFilter, setScreenFilter] = useState("all");
   const [phaseFilter, setPhaseFilter] = useState<number | "all">("all");
   const [mediaSources, setMediaSources] = useState<Record<string, RenderLabMediaSource>>({});
+  const [reviewEntryId, setReviewEntryId] = useState(() => new URLSearchParams(window.location.search).get("review"));
+  const [reviewDecisions, setReviewDecisions] = useState(readRenderLabReviewDecisions);
+  const reviewMediaRef = useRef<HTMLDivElement>(null);
   const entries = useMemo(() => Object.values(renderLabPreviewCatalog), []);
   const screens = useMemo(
     () => [...new Set(entries.flatMap((entry) => entry.screens))].sort(),
@@ -27,6 +35,31 @@ export default function RenderLabScreen() {
   const visibleEntries = entries.filter((entry) =>
     (screenFilter === "all" || entry.screens.includes(screenFilter)) &&
     (phaseFilter === "all" || entry.phase === phaseFilter));
+  const reviewEntry = reviewEntryId ? renderLabPreviewCatalog[reviewEntryId] : undefined;
+
+  useEffect(() => {
+    if (!reviewEntry) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setReviewEntryId(null);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [reviewEntry]);
+
+  const openReview = (id: string) => {
+    setReviewEntryId(id);
+    window.history.replaceState(null, "", `/renderlab?review=${encodeURIComponent(id)}`);
+  };
+
+  const closeReview = () => {
+    setReviewEntryId(null);
+    window.history.replaceState(null, "", "/renderlab");
+  };
+
+  const decide = (decision: RenderLabReviewDecision) => {
+    if (!reviewEntry) return;
+    setReviewDecisions((current) => writeRenderLabReviewDecision(reviewEntry.id, decision, current));
+  };
 
   if (!enabled) {
     return (
@@ -119,11 +152,14 @@ export default function RenderLabScreen() {
                 {(entry.provenance || entry.render || entry.destination) && (
                   <dl className="renderlab-metadata">
                     {entry.provenance && <><dt>Source</dt><dd>{entry.provenance.package ?? entry.provenance.sourceType}</dd></>}
-                    {entry.render?.resolution && <><dt>Render</dt><dd>{entry.render.resolution}{entry.render.durationSeconds ? ` · ${entry.render.durationSeconds}s` : ""}</dd></>}
+                    {entry.render?.resolution && <><dt>Render</dt><dd>{entry.render.resolution}{entry.render.durationSeconds ? ` · ${entry.render.durationSeconds}s` : ""}{entry.render.reviewFormat ? ` · ${entry.render.reviewFormat}` : ""}</dd></>}
                     {entry.destination && <><dt>Destination</dt><dd>{entry.destination}</dd></>}
                   </dl>
                 )}
                 <p>{entry.note ?? "No review note recorded."}</p>
+                <button className="renderlab-review-button" type="button" onClick={() => openReview(entry.id)}>
+                  REVIEW
+                </button>
                 <label className="renderlab-override">
                   <input
                     type="checkbox"
@@ -138,6 +174,73 @@ export default function RenderLabScreen() {
           );
         })}
       </div>
+
+      {reviewEntry && (
+        <div className="renderlab-review-backdrop" role="presentation" onMouseDown={(event) => {
+          if (event.target === event.currentTarget) closeReview();
+        }}>
+          <section className="renderlab-review-workspace" role="dialog" aria-modal="true" aria-labelledby="renderlab-review-title">
+            <header className="renderlab-review-header">
+              <div>
+                <span className="renderlab-kicker">Current versus candidate</span>
+                <h2 id="renderlab-review-title">{reviewEntry.id.replace(/-/g, " ")}</h2>
+              </div>
+              <button className="renderlab-icon-button" type="button" aria-label="Close review" title="Close review" onClick={closeReview}>×</button>
+            </header>
+
+            <div className="renderlab-comparison">
+              <figure className="renderlab-comparison-pane">
+                <figcaption><strong>CURRENT SHIPPING</strong><span>What players see now</span></figcaption>
+                <div className="renderlab-comparison-media">
+                  {reviewEntry.currentReviewAsset ? (
+                    <img src={reviewEntry.currentReviewAsset} alt={`Current shipping ${reviewEntry.screens.join(" ")} screen`} />
+                  ) : (
+                    <div className="renderlab-reference-missing">
+                      <strong>NO CAPTURE YET</strong>
+                      <span>The current asset remains active until a review reference is captured.</span>
+                    </div>
+                  )}
+                </div>
+              </figure>
+
+              <figure className="renderlab-comparison-pane renderlab-candidate-pane">
+                <figcaption><strong>UNREAL CANDIDATE</strong><span>{reviewEntry.render?.resolution ?? "Render pending"}</span></figcaption>
+                <div className="renderlab-comparison-media" ref={reviewMediaRef}>
+                  <RenderLabMedia entry={reviewEntry} />
+                  <button
+                    className="renderlab-fullscreen-button"
+                    type="button"
+                    aria-label="View candidate full screen"
+                    title="View candidate full screen"
+                    onClick={() => reviewMediaRef.current?.requestFullscreen()}
+                  >⛶</button>
+                </div>
+              </figure>
+            </div>
+
+            <div className="renderlab-review-details">
+              <div>
+                <strong>{reviewEntry.provenance?.package ?? reviewEntry.provenance?.sourceType ?? "Source not recorded"}</strong>
+                <p>{reviewEntry.note ?? "No review note recorded."}</p>
+              </div>
+              <dl className="renderlab-metadata">
+                <dt>Status</dt><dd>{reviewEntry.status}</dd>
+                <dt>Destination</dt><dd>{reviewEntry.destination ?? "Not assigned"}</dd>
+                <dt>Review</dt><dd>{reviewDecisions[reviewEntry.id]?.replace(/-/g, " ") ?? "Undecided"}</dd>
+              </dl>
+            </div>
+
+            <footer className="renderlab-review-actions">
+              <span>DEV REVIEW ONLY. This records local intent and does not approve or ship the manifest entry.</span>
+              <div role="group" aria-label="Local review decision">
+                <button className={reviewDecisions[reviewEntry.id] === "keep-current" ? "active" : ""} onClick={() => decide("keep-current")}>KEEP CURRENT</button>
+                <button className={reviewDecisions[reviewEntry.id] === "revise" ? "active revise" : ""} onClick={() => decide("revise")}>REVISE</button>
+                <button className={reviewDecisions[reviewEntry.id] === "approve-candidate" ? "active approve" : ""} onClick={() => decide("approve-candidate")}>APPROVE CANDIDATE</button>
+              </div>
+            </footer>
+          </section>
+        </div>
+      )}
     </main>
   );
 }

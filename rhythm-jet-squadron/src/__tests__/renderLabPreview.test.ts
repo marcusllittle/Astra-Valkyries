@@ -14,8 +14,11 @@ describe("Render Lab development preview", () => {
     const hangar = renderLabPreviewCatalog["hub-hangar-neon-flythrough"];
     expect(spaceport.fallback).toBeUndefined();
     expect(hangar.fallback).toBeUndefined();
-    expect(spaceport.provenance?.package).toBe("Neon Parallax");
+    expect(spaceport.provenance?.package).toContain("Neon Parallax");
     expect(spaceport.destination).toContain("spaceport");
+    expect(spaceport.candidate).toBe("/assets/renderlab/spaceport/spaceport-command-bay-mrq.webp");
+    expect(spaceport.currentReviewAsset).toBe("/assets/renderlab/current/spaceport-current.png");
+    expect(spaceport.deliveryCandidate).toBe("https://media.joinhavn.io/astra/hub/spaceport-neon-loop.mp4");
   });
 
   it("forces every candidate in all mode without considering approval", () => {
